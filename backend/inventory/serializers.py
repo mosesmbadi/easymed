@@ -272,7 +272,7 @@ class PurchaseOrderItemSerializer(BaseItemSerializer, BaseSupplierSerializer):
 class PurchaseOrderSerializer(serializers.ModelSerializer):
     requisition_items = serializers.ListField(child=serializers.IntegerField(), write_only=True, required=False)
     items = PurchaseOrderItemSerializer(source='po_items', many=True, read_only=True)  
-    ordered_by = serializers.CharField(source='ordered_by.get_fullname', read_only=True)
+    ordered_by = serializers.PrimaryKeyRelatedField(queryset=CustomUser.objects.all(), required=True)
     approved_by = serializers.CharField(source='approved_by.get_fullname', read_only=True, allow_null=True, default="Not Approved")
     total_items_ordered = serializers.SerializerMethodField(read_only=True)
     total_amount_before_vat = serializers.SerializerMethodField(read_only=True)
@@ -284,6 +284,11 @@ class PurchaseOrderSerializer(serializers.ModelSerializer):
         fields = ['id', 'PO_number', 'is_dispatched', 'status', 'total_items_ordered', 'total_amount_before_vat',
                   'total_vat_amount', 'total_amount', 'ordered_by', 'approved_by', 'items', 'requisition', 'requisition_items',]
         read_only_fields = ['id', 'PO_number', 'date_created', 'items']
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['ordered_by'] = instance.ordered_by.get_fullname()
+        return data
 
     def create(self, validated_data):
         requisition_item_ids = validated_data.pop('requisition_items', [])
