@@ -40,18 +40,14 @@ from .models import (
 
 from .serializers import (
     ItemSerializer,
-    PurchaseOrderCreateSerializer,
-    PurchaseOrderListSerializer,
-    PurchaseOrderItemListUPdateSerializer,
     InventorySerializer,
     SupplierSerializer,
     SupplierInvoiceSerializer,
     DepartmentSerializer,
-    RequisitionItemCreateSerializer,
-    RequisitionCreateSerializer,
-    RequisitionUpdateSerializer,
-    RequisitionItemListUpdateSerializer,
-    RequisitionListSerializer,
+    RequisitionSerializer,
+    RequisitionItemSerializer,
+    PurchaseOrderSerializer,
+    PurchaseOrderItemSerializer,
     IncomingItemSerializer,
     InsuranceItemSalePriceSerializer,
     GoodsReceiptNoteSerializer,
@@ -102,31 +98,18 @@ class DepartmentViewSet(viewsets.ModelViewSet):
 
 class RequisitionViewSet(viewsets.ModelViewSet):
     queryset = Requisition.objects.all().order_by('-id')
+    serializer_class = RequisitionSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['requested_by', 'department']
-
-    def get_serializer_class(self):
-        if self.action in ['create']:
-            return RequisitionCreateSerializer
-        elif self.action in ['retrieve', 'list']:
-            return RequisitionListSerializer
-        elif self.action in ['update', 'partial_update']:
-            return RequisitionUpdateSerializer
-        return super().get_serializer_class()
 
     
 class RequisitionItemViewSet(viewsets.ModelViewSet):
     queryset = RequisitionItem.objects.all()
-    serializer_class = RequisitionItemListUpdateSerializer
+    serializer_class = RequisitionItemSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_class = RequisitionItemFilter
 
-    def get_serializer_class(self):
-        if self.request.method == "POST":
-            return RequisitionItemCreateSerializer
-        elif self.request.method in ["PUT", "PATCH"]:
-            return RequisitionItemListUpdateSerializer
-        return super().get_serializer_class()
+
     
     def get_queryset(self):
         requisition_id = self.kwargs.get('requisition_pk')
@@ -198,7 +181,7 @@ class SupplierInvoiceViewSet(viewsets.ModelViewSet):
 
 
 class PurchaseOrderViewSet(viewsets.ModelViewSet):
-    serializer_class = PurchaseOrderCreateSerializer
+    serializer_class = PurchaseOrderSerializer
     http_method_names = ['get', 'post', 'put', 'patch', 'delete']
 
     def get_queryset(self):
@@ -215,14 +198,11 @@ class PurchaseOrderViewSet(viewsets.ModelViewSet):
             'requested_by': self.request.user 
         }
     
-    def get_serializer_class(self):
-        if self.request.method == 'post':
-            return PurchaseOrderCreateSerializer
-        return PurchaseOrderListSerializer
+
     
     def create(self, request, *args, **kwargs):
         context = self.get_serializer_context()
-        serializer = PurchaseOrderCreateSerializer(data=request.data, context=context)
+        serializer = PurchaseOrderSerializer(data=request.data, context=context)
         serializer.is_valid(raise_exception=True)
         try:
             serializer.save(created_by=self.request.user)
@@ -230,11 +210,17 @@ class PurchaseOrderViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"error": str(e)},status=status.HTTP_400_BAD_REQUEST)
 
+    @action(detail=False, methods=['get'])
+    def all_purchase_orders(self, request):
+        purchase_orders = PurchaseOrder.objects.all()
+        serializer = PurchaseOrderSerializer(purchase_orders, many=True)
+        return Response(serializer.data)
    
 class PurchaseOrderItemViewSet(viewsets.ModelViewSet):
-    serializer_class = PurchaseOrderItemListUPdateSerializer
+    serializer_class = PurchaseOrderItemSerializer
     allowed_http_methods = ['get', 'put']
     lookup_field = 'id' 
+
     def get_queryset(self):
         purchase_order_id = self.kwargs.get('purchaseorder_pk')
         return PurchaseOrderItem.objects.filter(purchase_order=purchase_order_id)
