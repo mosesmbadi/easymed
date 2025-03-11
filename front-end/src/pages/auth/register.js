@@ -71,7 +71,7 @@ const SignUp = () => {
         ...formValue,
         role: "patient",
         profession: "",
-        group: 2
+        group: 1
       };
       setLoading(true);
       await registerUser(formData).then(() => {
