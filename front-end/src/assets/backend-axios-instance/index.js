@@ -1,7 +1,7 @@
 import axios from "axios";
 
 export const backendAxiosInstance = axios.create({
-    baseURL: "http://api:8080/",
+    baseURL: "http://127.0.0.1:8080",
 });
 
 backendAxiosInstance.interceptors.request.use(async (request) => {
