@@ -81,7 +81,7 @@ class Item(AbstractBaseModel):
     vat_rate= models.DecimalField(max_digits=5, decimal_places=2, default=16.0) 
     packed = models.CharField(max_length=255, default=1)
     subpacked = models.CharField(max_length=255, default=1)
-    slow_moving_period = models.IntegerField(null=True, blank=True)
+    slow_moving_period = models.IntegerField(default=90)
 
     @property
     def buying_price(self):

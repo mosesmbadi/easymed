@@ -11,7 +11,7 @@ from django.http import HttpResponse
 from django.conf import settings
 from rest_framework.generics import ListAPIView
 from django.utils import timezone
-from django.db import models
+from django.db.models.functions import Now
 from django.db.models import F
 from datetime import timedelta
 
@@ -40,18 +40,14 @@ from .models import (
 
 from .serializers import (
     ItemSerializer,
-    PurchaseOrderCreateSerializer,
-    PurchaseOrderListSerializer,
-    PurchaseOrderItemListUPdateSerializer,
     InventorySerializer,
     SupplierSerializer,
     SupplierInvoiceSerializer,
     DepartmentSerializer,
-    RequisitionItemCreateSerializer,
-    RequisitionCreateSerializer,
-    RequisitionUpdateSerializer,
-    RequisitionItemListUpdateSerializer,
-    RequisitionListSerializer,
+    RequisitionSerializer,
+    RequisitionItemSerializer,
+    PurchaseOrderSerializer,
+    PurchaseOrderItemSerializer,
     IncomingItemSerializer,
     InsuranceItemSalePriceSerializer,
     GoodsReceiptNoteSerializer,
@@ -66,8 +62,6 @@ from .filters import (
     SupplierFilter,
     RequisitionItemFilter
 )
-
-from billing.models import InvoiceItem
 
 class ItemViewSet(viewsets.ModelViewSet):
     queryset = Item.objects.all()
@@ -104,31 +98,18 @@ class DepartmentViewSet(viewsets.ModelViewSet):
 
 class RequisitionViewSet(viewsets.ModelViewSet):
     queryset = Requisition.objects.all().order_by('-id')
+    serializer_class = RequisitionSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['requested_by', 'department']
-
-    def get_serializer_class(self):
-        if self.action in ['create']:
-            return RequisitionCreateSerializer
-        elif self.action in ['retrieve', 'list']:
-            return RequisitionListSerializer
-        elif self.action in ['update', 'partial_update']:
-            return RequisitionUpdateSerializer
-        return super().get_serializer_class()
 
     
 class RequisitionItemViewSet(viewsets.ModelViewSet):
     queryset = RequisitionItem.objects.all()
-    serializer_class = RequisitionItemListUpdateSerializer
+    serializer_class = RequisitionItemSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_class = RequisitionItemFilter
 
-    def get_serializer_class(self):
-        if self.request.method == "POST":
-            return RequisitionItemCreateSerializer
-        elif self.request.method in ["PUT", "PATCH"]:
-            return RequisitionItemListUpdateSerializer
-        return super().get_serializer_class()
+
     
     def get_queryset(self):
         requisition_id = self.kwargs.get('requisition_pk')
@@ -137,14 +118,7 @@ class RequisitionItemViewSet(viewsets.ModelViewSet):
     def get_serializer_context(self):
         requisition_id = self.kwargs.get('requisition_pk')
         return {'requisition_id': requisition_id}
-    
-    @action(detail=False, methods=['get'], url_path='all_items')
-    def all_items(self, request):
-        """Custom endpoint to return all requisition items ordered by status"""
-        items = RequisitionItem.objects.filter(status='PENDING')
-        serializer = self.get_serializer(items, many=True)
-        return Response(serializer.data)
-    
+
 
 class InventoryViewSet(viewsets.ModelViewSet):
     queryset = Inventory.objects.all()
@@ -155,45 +129,30 @@ class InventoryViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='slow-moving-items')
     def slow_moving_items(self, request):
-        """
-        
-        URL: /inventory/inventories/slow-moving-items/
-        """
-        # Fetch all inventory items with non-zero quantity and slow_moving_period set.
-        # Also, select related 'item' and 'department' fields.
-        # This query can be optimized by using a more efficient database query.
         inventory_items = Inventory.objects.filter(
             quantity_at_hand__gt=0,
-            item__slow_moving_period__isnull=False
+            item__slow_moving_period__isnull=False,
+            last_deducted_at__isnull=False,
+        ).annotate(
+            days_without_transactions=(Now() - F('last_deducted_at'))
+        ).filter(
+            days_without_transactions__gte=F('item__slow_moving_period') * timedelta(days=1)
         ).select_related('item', 'department')
 
-        current_time = timezone.now()
-        slow_moving_items = []
+        slow_moving_items = [{
+            'item_id': inv.item.id,
+            'item_name': inv.item.name,
+            'category': inv.item.category,
+            'department': inv.department.name,
+            'quantity': inv.quantity_at_hand,
+            'days_without_transactions': inv.days_without_transactions.days,
+            'slow_moving_period': inv.item.slow_moving_period,
+            'lot_number': inv.lot_number,
+            'expiry_date': inv.expiry_date,
+            'purchase_price': inv.purchase_price,
+            'sale_price': inv.sale_price
+        } for inv in inventory_items]
 
-        for inv in inventory_items:
-            try:
-                if inv.last_deducted_at:
-                    days_without_transactions = (current_time - inv.last_deducted_at).days
-                    print(f"Days without transaction would be this : {days_without_transactions}")
-                    if days_without_transactions > inv.item.slow_moving_period:
-                        slow_moving_items.append({
-                            'item_id': inv.item.id,
-                            'item_name': inv.item.name,
-                            'category': inv.item.category,
-                            'department': inv.department.name,
-                            'quantity': inv.quantity_at_hand,
-                            'days_without_transactions': days_without_transactions,
-                            'slow_moving_period': inv.item.slow_moving_period,
-                            'lot_number': inv.lot_number,
-                            'expiry_date': inv.expiry_date,
-                            'purchase_price': inv.purchase_price,
-                            'sale_price': inv.sale_price
-                        })
-
-                else:
-                    print("PLEASE GO")
-            except Exception as e:
-                    print(f"Error getting slow moving items: {e}")
         return Response(slow_moving_items)
 
 
@@ -220,8 +179,9 @@ class SupplierInvoiceViewSet(viewsets.ModelViewSet):
         )
         return queryset
 
+
 class PurchaseOrderViewSet(viewsets.ModelViewSet):
-    serializer_class = PurchaseOrderCreateSerializer
+    serializer_class = PurchaseOrderSerializer
     http_method_names = ['get', 'post', 'put', 'patch', 'delete']
 
     def get_queryset(self):
@@ -238,32 +198,29 @@ class PurchaseOrderViewSet(viewsets.ModelViewSet):
             'requested_by': self.request.user 
         }
     
-    def get_serializer_class(self):
-        if self.request.method == 'post':
-            return PurchaseOrderCreateSerializer
-        return PurchaseOrderListSerializer
+
     
     def create(self, request, *args, **kwargs):
         context = self.get_serializer_context()
-        serializer = PurchaseOrderCreateSerializer(data=request.data, context=context)
+        serializer = PurchaseOrderSerializer(data=request.data, context=context)
         serializer.is_valid(raise_exception=True)
         try:
             serializer.save(created_by=self.request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response({"error": str(e)},status=status.HTTP_400_BAD_REQUEST)
-        
+
     @action(detail=False, methods=['get'])
     def all_purchase_orders(self, request):
         purchase_orders = PurchaseOrder.objects.all()
-        serializer = PurchaseOrderListSerializer(purchase_orders, many=True)
+        serializer = PurchaseOrderSerializer(purchase_orders, many=True)
         return Response(serializer.data)
-
    
 class PurchaseOrderItemViewSet(viewsets.ModelViewSet):
-    serializer_class = PurchaseOrderItemListUPdateSerializer
+    serializer_class = PurchaseOrderItemSerializer
     allowed_http_methods = ['get', 'put']
     lookup_field = 'id' 
+
     def get_queryset(self):
         purchase_order_id = self.kwargs.get('purchaseorder_pk')
         return PurchaseOrderItem.objects.filter(purchase_order=purchase_order_id)
@@ -297,7 +254,7 @@ class InventoryFilterView(ListAPIView):
         if filter_type == 'low_quantity':
             queryset = queryset.filter(quantity_at_hand__lte=F('re_order_level'))
         elif filter_type == 'near_expiry':
-            today = now().date()
+            today = timezone.now().date()
             three_months_later = today + timedelta(days=90)  # 3 months from now
             five_months_later = today + timedelta(days=150)  # 5 months from now
             queryset = queryset.filter(expiry_date__range=[three_months_later, five_months_later])
