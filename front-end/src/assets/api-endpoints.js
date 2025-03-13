@@ -85,6 +85,7 @@ export const API_URL = {
   PURCHASE_ORDER_ITEM: "/inventory/purchase-order-item/",
   FETCH_INCOMING_ITEMS: "/inventory/incoming-item/",
   FETCH_SUPPLIER_INVOICE: "/inventory/supplier-invoice/",
+  FETCH_INVOICE: "/inventory/supplier_invoice_pdf/",
   FETCH_GOODS_RECEIPT_NOTE: "/inventory/goods-receipt-note/",
   FETCH_DEPARTMENTS: "/inventory/departments/",
 
@@ -236,6 +237,7 @@ export const APP_API_URL = {
   PURCHASE_ORDER_ITEM: "/api/inventory/purchase-order-item",
   FETCH_INCOMING_ITEMS: "/api/inventory/incomingItem",
   FETCH_SUPPLIER_INVOICE: "/api/inventory/supplier-invoice/",
+  FETCH_INVOICE:"/api/inventory/fetch-invoice/",
   FETCH_GOODS_RECEIPT_NOTE: "/api/inventory/goods-receipt-note/",
   FETCH_DEPARTMENTS: "/api/groups/department/",
 
