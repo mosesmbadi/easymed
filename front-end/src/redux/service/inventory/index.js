@@ -368,3 +368,40 @@ export const createGRNote = (payload, auth) =>{
             })
     })
 }
+
+export const fetchSupplierInvoice = (auth) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+        axiosInstance.get(`${APP_API_URL.FETCH_SUPPLIER_INVOICE}`, {
+            headers: {
+                Authorization: `Bearer ${auth.token}` 
+            }
+        })
+        .then((res) => {
+            resolve(res.data);
+        })
+        .catch((err) => {
+            reject(err.message);
+        });
+    });
+};
+export const fetchInvoice = async (auth, supplier_id) => {
+    if (!auth?.token) {
+        console.error("Auth token is missing");
+        throw new Error("Authentication token is required");
+     }
+ 
+     const url = `${APP_API_URL.FETCH_INVOICE}?supplier_id=${supplier_id}`;
+     try {
+        const response = await axios.get(url, {
+            headers: {
+                Authorization: `Bearer ${auth.token}`,
+            },
+            responseType: "arraybuffer",
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching invoice:", error.response?.status, error.response?.data);
+        throw error;
+    }
+};
