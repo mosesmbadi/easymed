@@ -117,3 +117,33 @@ export const fetchDepartments = (auth) =>{
             })
     })
 }
+
+export const resetPassword = async (email) => {
+    try {
+        const response = await axios.post(`${APP_API_URL.PASSWORD_RESET}`, { email });
+        return response.data; 
+
+    } catch (error) {
+        throw new Error(error.response?.data?.message || "Failed to reset password");
+    }
+};
+
+export const updatePassword = async (uidb64, token, new_password, confirm_password) => {
+    try {
+        if (!uidb64 || !token) {
+            throw new Error("Missing UID or token");
+        }
+
+        const response = await axios.post(
+            `${APP_API_URL.CHANGE_PASSWORD}/${uidb64}/${token}/`,
+            { new_password, confirm_password }
+        );
+
+        return response.data;
+    } catch (error) {
+        throw new Error(error.response?.data?.message || "Failed to update password");
+    }
+};
+
+
+
