@@ -23,13 +23,14 @@ def send_password_reset_email(request, user, subject_prefix="Password Reset Requ
     Sends an email to the user with a link to reset their password."""
     token = PasswordResetTokenGenerator().make_token(user)
     uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
-    password_reset_confirm_url = reverse(
-        'customuser:password_reset_confirm',
-        kwargs={'uidb64': uidb64, 'token': token}
-    )
-    full_url = request.build_absolute_uri(password_reset_confirm_url)
+    # password_reset_confirm_url = reverse(
+    #     'customuser:password_reset_confirm',
+    #     kwargs={'uidb64': uidb64, 'token': token}
+    # )
+    
+    reset_link= f"http://127.0.0.1:3000/auth/reset/{uidb64}/{token}"
 
-    message = f"Click the link below to reset your password:\n{full_url}\n\nThis link will expire in 10 minutes. If you do not reset your password within this time, you will need to request a new password reset."
+    message = f"Click the link below to reset your password:\n{reset_link}\n\nThis link will expire in 10 minutes. If you do not reset your password within this time, you will need to request a new password reset."
 
     send_mail(
         subject=f"{subject_prefix}",  
