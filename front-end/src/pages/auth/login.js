@@ -126,9 +126,9 @@ const Login = () => {
                 )}
                 Login
               </button>
-              <div className="flex gap-4">
-                <p>Forgot Password ? </p>
-                <span className="text-primary_light"><Link href="/auth/forgot-password"> Reset </Link></span>
+              <div className="flex items-center gap-4">
+              <p>Forgot Password ? </p>
+              <span className="text-primary_light"><Link href="/auth/forgot-password"> Reset </Link></span>
               </div>
               <div className="flex gap-4">
                 <p>Do you have an account ? </p>

@@ -13,9 +13,9 @@ const ChangePassword = () => {
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
   const [loading, setLoading] = useState(false);
 
-    // Ensure uidb64 and token are properly decoded
-    const decodedUidb64 = uidb64 ? decodeURIComponent(uidb64) : "";
-    const decodedToken = token ? decodeURIComponent(token) : "";
+  // Ensure uidb64 and token are properly decoded
+  const decodedUidb64 = uidb64 ? decodeURIComponent(uidb64) : "";
+  const decodedToken = token ? decodeURIComponent(token) : "";
 
   const togglePasswordVisibility = () => setPasswordVisible(!passwordVisible);
   const toggleConfirmPasswordVisibility = () => setConfirmPasswordVisible(!confirmPasswordVisible);
@@ -43,12 +43,21 @@ const ChangePassword = () => {
 
   const handleSubmit = async (values, { resetForm }) => {
     setLoading(true);
-    
+
     try {
-      const response = await updatePassword(decodedUidb64, decodedToken, values.new_password, values.confirm_password);
-      
+      const response = await updatePassword(
+        uidb64,
+        token,
+        values.new_password,
+        values.confirm_password
+      );
+
       toast.success("Password reset successfully!");
       resetForm();
+      // Redirect to login after 2 seconds
+      setTimeout(() => {
+        router.push("/auth/login");
+      }, 2000);
     } catch (error) {
       toast.error(error.message);
     } finally {

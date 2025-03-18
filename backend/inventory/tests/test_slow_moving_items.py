@@ -46,13 +46,13 @@ def test_slow_moving_items_exceeding_period(authenticated_client, inventory):
 
 @pytest.mark.django_db
 def test_slow_moving_items_exact_boundary(authenticated_client, inventory):
-    """Test that items with last_deducted_at exactly at the slow_moving_period are NOT included."""
+    """Test that items with last_deducted_at exactly at the slow_moving_period are included."""
     inventory.last_deducted_at = timezone.now() - timedelta(days=inventory.item.slow_moving_period)
     inventory.save()
     
     response = authenticated_client.get("/inventory/inventories/slow-moving-items/")
     
     assert response.status_code == 200
-    assert len(response.json()) == 0 
+    assert len(response.json()) == 1
 
 

@@ -49,19 +49,23 @@ export const getUserById = (auth) =>{
         })
     })
 }
-export const updateUser = (payload, auth) => {
+
+export const updateUser = (payload, auth) =>{
     const axiosInstance = UseAxios(auth);
-    return new Promise((resolve, reject) => {
-        axiosInstance.post(`${APP_API_URL.PASSWORD_RESET}`, payload)
-            .then((res) => {
-                resolve(res.data);
+    console.log("HELLO CALLED UPDATE USER")
+    return new Promise((resolve,reject) =>{
+        axiosInstance.put(`${APP_API_URL.FETCH_USER_BY_ID}`,{
+            body:payload,
+        })
+            .then((res) =>{
+                resolve(res.data)
             })
-            .catch((err) => {
-                console.log("PASSWORD_RESET_ERROR", err);
-                reject(err.message);
-            });
-    });
-};
+            .catch((err) =>{
+                console.log("USER_STATUS_UPDATE_ERROR ",err)
+                reject(err.message)
+            })
+    })
+}
 
 export const deleteUser = (payload, auth) =>{
     const axiosInstance = UseAxios(auth);

@@ -1,3 +1,4 @@
+
 import { API_URL, API_METHODS } from "@/assets/api-endpoints";
 import { backendAxiosInstance } from "@/assets/backend-axios-instance";
 
@@ -13,8 +14,6 @@ export default async function handler(req, res) {
     if (req.method === API_METHODS.POST) {
         try {
             const body = req.body;
-            console.log("RESET_PASSWORD_URL:", API_URL.PASSWORD_RESET);
-            console.log("Received Payload:", body);
 
             const response = await backendAxiosInstance.post(`${API_URL.PASSWORD_RESET}`, body);
 

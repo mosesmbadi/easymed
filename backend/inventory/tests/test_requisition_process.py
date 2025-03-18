@@ -1,7 +1,7 @@
 import pytest
 
 from inventory.models import RequisitionItem, Item, Supplier, Inventory
-from inventory.serializers import RequisitionCreateSerializer 
+from inventory.serializers import RequisitionSerializer 
 
 @pytest.fixture
 def item2():
@@ -69,7 +69,7 @@ def test_requsition_item_with_mising_supplier(requisition, user, supplier, inven
         ]
     }
 
-    serializer = RequisitionCreateSerializer(data=requisition_data)
+    serializer = RequisitionSerializer(data=requisition_data)
     assert serializer.is_valid(), serializer.errors  
 
     requisition = serializer.save()
@@ -115,7 +115,7 @@ def test_creating_requisition_with_same_item_same_supplier(
         ],
     }
 
-    serializer = RequisitionCreateSerializer(data=requisition_data)
+    serializer = RequisitionSerializer(data=requisition_data)
     assert serializer.is_valid(), serializer.errors
 
     requisition = serializer.save()

@@ -5,7 +5,6 @@ import { AiOutlineRight } from "react-icons/ai";
 const DashboardCards = ({dashData, index}) => {
   return (
     <Grid item md={4} xs={12}>
-      <p>hi</p>
       <section
         className={`${
           index === 1
