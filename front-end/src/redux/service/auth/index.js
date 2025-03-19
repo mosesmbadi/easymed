@@ -145,5 +145,3 @@ export const updatePassword = async (uidb64, token, new_password, confirm_passwo
     }
 };
 
-
-
