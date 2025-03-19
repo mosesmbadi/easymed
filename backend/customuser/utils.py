@@ -27,7 +27,7 @@ def send_password_reset_email(request, user, subject_prefix="Password Reset Requ
     #     'customuser:password_reset_confirm',
     #     kwargs={'uidb64': uidb64, 'token': token}
     # )
-
+    
     reset_link= f"http://127.0.0.1:3000/auth/reset/{uidb64}/{token}"
 
     message = f"Click the link below to reset your password:\n{reset_link}\n\nThis link will expire in 10 minutes. If you do not reset your password within this time, you will need to request a new password reset."
