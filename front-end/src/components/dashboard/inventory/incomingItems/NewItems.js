@@ -71,7 +71,7 @@ const NewItems = () => {
     };
   
     useEffect(() => {
-      if(auth){
+      if(auth.token){
         dispatch(getAllSuppliers(auth));
         dispatch(getAllItems(auth));
         dispatch(getItems(auth));

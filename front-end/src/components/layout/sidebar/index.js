@@ -17,7 +17,7 @@ const Sidebar = () => {
   const companyDetails = useSelector((store) => store.company.companyDetails);
 
   useEffect(() => {
-    if (auth) {
+    if (auth.token) {
       dispatch(getCompanyDetails(auth));
     }
   }, [auth]);

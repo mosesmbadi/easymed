@@ -33,7 +33,7 @@ const InventoryDataGrid = ({department}) => {
   const filteredInventories = inventories.filter((inventory)=> inventory.item_name.toLowerCase().includes(searchQuery.toLowerCase()))
 
   useEffect(() => {
-    if (auth) {
+    if (auth.token) {
       dispatch(selectedDepartment !== "All" ? getAllInventories(auth, selectedDepartment, "") : getAllInventories(auth, department, ""));
       dispatch(getAllTheDepartments(auth));
       // dispatch(getAllInvoiceItems(auth));

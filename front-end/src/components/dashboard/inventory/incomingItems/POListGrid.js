@@ -105,10 +105,8 @@ const POListGrid = () => {
   }
 
   useEffect(() => {
-    if (auth) {
+    if (auth.token) {
       dispatch(getAllPurchaseOrders(auth));
-      dispatch(getAllDoctors(auth))
-      dispatch(getAllTheUsers(auth))
     }
   }, [auth]);
 

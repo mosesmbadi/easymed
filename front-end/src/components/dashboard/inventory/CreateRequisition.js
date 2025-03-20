@@ -59,12 +59,6 @@ const CreateRequisition = () => {
     department: Yup.object().required("This field is required!"),
   });
 
-  useEffect(() => {
-    if (auth) {
-      dispatch(getAllDoctors(auth));
-    }
-  }, [auth]);
-
   const onMenuClick = async (menu, data) => {
     console.log(data)
     if (menu.action === "remove") {
@@ -143,8 +137,10 @@ const CreateRequisition = () => {
   };
 
   useEffect(()=> {
-    dispatch(getAllTheDepartments(auth));
-  }, [])
+    if(auth.token){
+      dispatch(getAllTheDepartments(auth));
+    }
+  }, [auth])
 
   return (
     <section ref={pdfRef}>

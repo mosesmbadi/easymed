@@ -133,10 +133,12 @@ const ReceiveIncomingItems = ({ open, setOpen, selectedRowData, setSelectedRowDa
     }
 
     useEffect( () => {
-        if(selectedRowData?.status === 'PARTIAL'){
-            getCreatedIncomingItemsForPartialPO()
+        if(auth.token){
+            if(selectedRowData?.status === 'PARTIAL'){
+                getCreatedIncomingItemsForPartialPO()
+            }
         }
-    }, [])
+    }, [auth])
     
 
   return (
