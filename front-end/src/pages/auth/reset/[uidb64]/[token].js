@@ -54,7 +54,6 @@ const ChangePassword = () => {
 
       toast.success("Password reset successfully!");
       resetForm();
-      // Redirect to login after 2 seconds
       setTimeout(() => {
         router.push("/auth/login");
       }, 2000);

@@ -26,7 +26,7 @@ const IncomingItemsGrid = () => {
   const [showNavButtons, setShowNavButtons] = useState(true);
 
   useEffect(()=>{
-    if (auth){
+    if (auth.token){
       dispatch(getAllIncomingItems(auth));
       dispatch(getItems(auth))
     }

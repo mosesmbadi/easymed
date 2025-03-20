@@ -132,10 +132,8 @@ const PurchaseOrdersDatagrid = () => {
   );
 
   useEffect(() => {
-    if (auth) {
+    if (auth.token) {
       dispatch(getAllPurchaseOrders(auth));
-      dispatch(getAllDoctors(auth));
-      dispatch(getAllTheUsers(auth));
     }
   }, [auth, dispatch]);
 
@@ -199,13 +197,15 @@ const PurchaseOrdersDatagrid = () => {
         <Column dataField="date_created" caption="Requested Date" />
         <Column dataField="" caption="" cellRender={actionsFunc} />
       </DataGrid>
-      
-      <ViewPurchaseOrderItemsModal 
-        open={open} 
-        setOpen={setOpen} 
-        selectedRowData={selectedRowData} 
-        setSelectedRowData={setSelectedRowData}
-      />
+
+      {open && (
+        <ViewPurchaseOrderItemsModal 
+          open={open} 
+          setOpen={setOpen} 
+          selectedRowData={selectedRowData} 
+          setSelectedRowData={setSelectedRowData}
+        />
+      )}
     </section>
   );
 };

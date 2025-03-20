@@ -123,7 +123,7 @@ const RequisitionDatagrid = () => {
   }
 
   useEffect(() => {
-    if (auth) {
+    if (auth.token) {
       dispatch(getAllRequisitions(auth));
       dispatch(getAllSuppliers(auth));
       dispatch(getAllItems(auth));
@@ -223,7 +223,14 @@ const RequisitionDatagrid = () => {
           cellRender={actionsFunc}
         />
       </DataGrid>
-      <ViewRequisitionItemsModal open={open} setOpen={setOpen} setSelectedRowData={setSelectedRowData} selectedRowData={selectedRowData}/>
+      {open && (
+        <ViewRequisitionItemsModal 
+          open={open} 
+          setOpen={setOpen} 
+          setSelectedRowData={setSelectedRowData} 
+          selectedRowData={selectedRowData}
+        />
+      )}
     </section>
   );
 };
