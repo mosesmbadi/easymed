@@ -20,7 +20,6 @@ const AddGroup = () => {
 
     const addNewGroup = async (values) => {
         setLoading(true);
-        console.log("Auth Token:", auth?.token); // Debugging
 
         try {
             await createGroup(values, auth); 

@@ -4,16 +4,33 @@ import { useSelector } from 'react-redux';
 import { addPermission } from '@/redux/service/auth';
 import { fetchGroupPermissions } from '@/redux/service/auth';
 import { useAuth } from '@/assets/hooks/use-auth';
+import ConfirmPermissionModal from './confirm';
 
 const GroupPermissionItem = ({ group }) => {
   const auth = useAuth()
   const allPermissions = useSelector((store) => store.auth.allPermissions);
   const userCurrentPermissions = useSelector((store) => store.auth.userPermissions);
   const [availableUserPermissions, setAvailableUserPermissions] = useState();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [selectedPermission, setSelectedPermission] = useState(null); // Track selected permission
 
   const getUserAvailablePermissions = async (id, auth) => {
     await fetchGroupPermissions(id, auth).then((res) => setAvailableUserPermissions(res.permissions))
   }
+
+  const handleCheckboxChange = (perm) => {
+    setSelectedPermission(perm);
+    setConfirmOpen(true);
+  };
+
+  // Function to confirm and add permission
+  const handleConfirm = async () => {
+    if (!selectedPermission) return;
+
+    handleChanged(selectedPermission);
+    await handleAddPermission();
+    setConfirmOpen(false);
+  };
 
   // currently removes and adds permissions from frontend and need logic to add to backend.
   const handleAddPermission = async () => {
@@ -46,7 +63,7 @@ const GroupPermissionItem = ({ group }) => {
     } catch (error) {
       console.error("Error adding permissions:", error);
     }
-};
+  };
 
   const handleChanged = (perm) => {
     console.log("Clicked Permission:", perm); // Log the clicked permission
@@ -64,7 +81,7 @@ const GroupPermissionItem = ({ group }) => {
     }
 
     console.log("Updated availableUserPermissions:", availableUserPermissions); // Log updated permissions
-};
+  };
 
   useEffect(() => {
     if (auth) {
@@ -78,8 +95,9 @@ const GroupPermissionItem = ({ group }) => {
       <input
         type='checkbox'
         onChange={() => {
-          handleChanged(perm);  
-          handleAddPermission(); 
+          handleCheckboxChange(perm);
+          handleChanged(perm);
+          handleAddPermission();
         }}
         checked={availableUserPermissions?.some(permission => permission.name === perm.name)}
       />
@@ -96,6 +114,14 @@ const GroupPermissionItem = ({ group }) => {
           {allPermissionsAvailable}
         </ul>
       </div>
+      <ConfirmPermissionModal
+        confirmOpen={confirmOpen}
+        setConfirmOpen={setConfirmOpen}
+        onConfirm={handleAddPermission}
+        perm={selectedPermission}
+        group={group}
+      />
+
     </div>
   )
 }
