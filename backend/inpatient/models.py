@@ -7,12 +7,26 @@ from customuser.models import NurseProfile, DoctorProfile
 
 # Create your models here.
 class Ward(models.Model):
+    GENDER_CHOICES = (
+        ('male', 'Male'),
+        ('female', 'Female'),
+    )
+
+    WARD_TYPES = (
+        ('general', 'General'),
+        ('maternity', 'Maternity'),
+        ('pediatrics', 'Pediatrics'),
+        ('amenity', 'Amenity')
+    )
     name = models.CharField(max_length=50, unique=True)  
+    ward_type = models.CharField(max_length=10, choices=WARD_TYPES, default='general')
+    gender = models.CharField(max_length=10, choices=GENDER_CHOICES, default='male')
     capacity = models.PositiveIntegerField(default=10)   
     created_at = models.DateTimeField(default=timezone.now)
 
+
     def __str__(self):
-        return self.name
+        return f'{self.name} - ({self.get_ward_type_display()}) - {self.get_gender_display()}'
 
 
 class Bed(models.Model):

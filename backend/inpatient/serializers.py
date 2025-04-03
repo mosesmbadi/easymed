@@ -8,36 +8,30 @@ from customuser.models import NurseProfile, DoctorProfile
 
 User = get_user_model()
 
-class WardSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Ward
-        fields = ['id', 'name', 'capacity', 'created_at']
-
-class BedSerializer(serializers.ModelSerializer):
-    ward = WardSerializer(read_only=True)
-    class Meta:
-        model = Bed
-        fields = ['id', 'ward', 'bed_number', 'status']
-
 class PatientAdmissionSerializer(serializers.ModelSerializer):
-    patient = serializers.PrimaryKeyRelatedField(queryset=Patient.objects.all())
-    ward = serializers.PrimaryKeyRelatedField(queryset=Ward.objects.all())
-    bed = serializers.PrimaryKeyRelatedField(queryset=Bed.objects.all())
-    admitted_by = serializers.PrimaryKeyRelatedField(queryset=User.objects.filter(role='doctor'), 
-                                              default=serializers.CurrentUserDefault())
+    ward = serializers.PrimaryKeyRelatedField(queryset=Ward.objects.all(), write_only=True)
+    bed = serializers.PrimaryKeyRelatedField(queryset=Bed.objects.all(), write_only=True)
+
+
+    patient_first_name = serializers.CharField(source='patient.first_name', read_only=True)
+    patient_second_name = serializers.CharField(source='patient.second_name', read_only=True)
+    patient_age = serializers.IntegerField(source='patient.age', read_only=True)
+    patient_gender = serializers.CharField(source='patient.gender', read_only=True)
     admission_id = serializers.CharField(read_only=True)
+    admitted_by_name = serializers.CharField(source='admitted_by.get_fullname', read_only=True)  # Add this field
 
     class Meta:
         model = PatientAdmission
-        fields = ['id', 'patient', 'admission_id', 'ward', 'bed', 'reason_for_admission', 
-                  'admitted_by', 'admitted_at', 'discharged_at']
+        fields = [
+            'id','admission_id', 'patient', 'patient_first_name', 'patient_second_name', 'patient_age', 'patient_gender', 
+            'ward', 'bed', 'reason_for_admission', 
+            'admitted_by_name', 'admitted_at', 'discharged_at'
+            ]
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data['ward'] = instance.ward.name
         data['bed'] = instance.bed.bed_number
-        data['patient'] = f'{instance.patient.first_name} {instance.patient.second_name}'
-        data['admitted_by'] = instance.admitted_by.get_fullname()
         return data
 
     def validate(self, data):
@@ -50,6 +44,20 @@ class PatientAdmissionSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"bed": "The bed does not belong to the selected ward."})
 
         return data
+
+class WardSerializer(serializers.ModelSerializer):
+    admissions = PatientAdmissionSerializer(many=True, read_only=True)
+    class Meta:
+        model = Ward
+        fields = ['id', 'name', 'capacity', 'ward_type', 'gender', 'created_at', 'admissions']
+
+        read_only_fields = ['created_at', 'id']
+
+class BedSerializer(serializers.ModelSerializer):
+    ward = WardSerializer(read_only=True)
+    class Meta:
+        model = Bed
+        fields = ['id', 'ward', 'bed_number', 'status']
 
 class WardNurseAssignmentSerializer(serializers.ModelSerializer):
     ward = serializers.PrimaryKeyRelatedField(queryset=Ward.objects.all())
