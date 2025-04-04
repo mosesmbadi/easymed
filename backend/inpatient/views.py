@@ -3,9 +3,13 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.db import transaction
+from django_filters.rest_framework import DjangoFilterBackend
+
 from .models import PatientAdmission, Ward, Bed, WardNurseAssignment
 from .serializers import PatientAdmissionSerializer, WardSerializer, BedSerializer, WardNurseAssignmentSerializer
 from authperms.permissions import IsDoctorUser, IsNurseUser
+from .filters import WardFilter
+
 
 # Create your views here.
 class PatientAdmissionViewSet(viewsets.ModelViewSet):
@@ -35,6 +39,8 @@ class WardViewSet(viewsets.ModelViewSet):
     queryset = Ward.objects.all()
     serializer_class = WardSerializer
     permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = WardFilter
 
 class BedViewSet(viewsets.ModelViewSet):
     queryset = Bed.objects.all()

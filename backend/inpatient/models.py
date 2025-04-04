@@ -47,15 +47,14 @@ class Bed(models.Model):
 
 class PatientAdmission(models.Model):
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE, 
-                               related_name='admissions', 
-                               limit_choices_to={'role': 'patient'})
+                               related_name='admissions'
+                               )
     admission_id = models.CharField(max_length=20, unique=True, editable=False)  
     ward = models.ForeignKey(Ward, on_delete=models.SET_NULL, null=True, related_name='admissions')
     bed = models.OneToOneField(Bed, on_delete=models.SET_NULL, null=True, related_name='current_patient')
     reason_for_admission = models.TextField()  
     admitted_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, 
-                                   null=True, related_name='admissions_made', 
-                                   limit_choices_to={'role': 'doctor'})
+                                   null=True, related_name='admissions_made')
     admitted_at = models.DateTimeField(default=timezone.now)
     discharged_at = models.DateTimeField(null=True, blank=True)
 
