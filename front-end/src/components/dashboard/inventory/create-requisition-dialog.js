@@ -65,12 +65,13 @@ const AddRequisitionItemModal = () => {
     }
   };
 
-  useEffect(() => {
-    dispatch(getAllItems(auth));
-    dispatch(getItems(auth))
-    dispatch(getAllSuppliers(auth));
-    
-  }, []);
+  // useEffect(() => {
+  //   if(auth.token){
+  //     dispatch(getAllItems(auth));
+  //     dispatch(getItems(auth))
+  //     dispatch(getAllSuppliers(auth));
+  //   }    
+  // }, [auth]);
 
   return (
     <section>
