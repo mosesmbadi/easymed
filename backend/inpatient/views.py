@@ -5,17 +5,28 @@ from rest_framework.permissions import IsAuthenticated
 from django.db import transaction
 from django_filters.rest_framework import DjangoFilterBackend
 
-from .models import PatientAdmission, Ward, Bed, WardNurseAssignment
-from .serializers import PatientAdmissionSerializer, WardSerializer, BedSerializer, WardNurseAssignmentSerializer
-from authperms.permissions import IsDoctorUser, IsNurseUser
+from .models import (
+    PatientAdmission, 
+    PatientDischarge,
+    Ward, 
+    Bed,
+    WardNurseAssignment
+)
+from .serializers import (
+    PatientAdmissionSerializer,
+    WardSerializer,
+    BedSerializer,
+    WardNurseAssignmentSerializer,
+    PatientDischargeSerializer
+)
+from authperms.permissions import IsDoctorUser
 from .filters import WardFilter
 
 
-# Create your views here.
 class PatientAdmissionViewSet(viewsets.ModelViewSet):
     queryset = PatientAdmission.objects.all()
     serializer_class = PatientAdmissionSerializer
-    permission_classes = [IsAuthenticated, IsDoctorUser]  # Restrict to authenticated doctors
+    permission_classes = [IsAuthenticated, IsDoctorUser]  
 
     def get_queryset(self):
         # Optional: Restrict nurses to see only patients in their wards (later enhancement)
@@ -26,12 +37,10 @@ class PatientAdmissionViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        # Validation is now handled in the serializer, so we proceed directly
         bed = serializer.validated_data['bed']
         bed.status = 'occupied'
         bed.save()
 
-        # Save admission with the doctor as admitted_by
         serializer.save(admitted_by=request.user)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -46,6 +55,57 @@ class BedViewSet(viewsets.ModelViewSet):
     queryset = Bed.objects.all()
     serializer_class = BedSerializer
     permission_classes = [IsAuthenticated]
+
+class PatientDischargeViewset(viewsets.ModelViewSet):
+    queryset = PatientDischarge.objects.all()
+    serializer_class = PatientDischargeSerializer
+    permission_classes = [IsAuthenticated, IsDoctorUser]
+
+    @transaction.atomic
+    def create(self, request, *args, **kwargs):
+        """
+        Create a discharge record for a patient admission.
+        Expects the admission ID in the URL (via pk).
+        """
+        admission_id = kwargs.get('admission_pk')  
+        if not admission_id:
+            return Response(
+                {"error": "Admission ID is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            admission = PatientAdmission.objects.get(id=admission_id)
+        except PatientAdmission.DoesNotExist:
+            return Response(
+                {"error": "Admission not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        if admission.discharged_at:
+            return Response(
+                {"error": "Patient is already discharged."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = self.get_serializer(data={
+            'admission': admission.id,
+            'discharge_notes': request.data.get('discharge_notes', '')
+        })
+        serializer.is_valid(raise_exception=True)
+        discharge = serializer.save(discharged_by=request.user)
+
+        admission.discharged_at = discharge.discharged_at
+        admission.save()
+
+        bed = admission.bed
+        if bed:
+            bed.status = 'available'
+            bed.save()
+
+        response_data = serializer.data
+        response_data['message'] = 'Patient discharged successfully'
+        return Response(response_data, status=status.HTTP_201_CREATED)
 
 class WardNurseAssignmentViewSet(viewsets.ModelViewSet):
     queryset = WardNurseAssignment.objects.all()

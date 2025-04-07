@@ -71,7 +71,15 @@ class PatientAdmission(models.Model):
     def __str__(self):
         return f"{self.admission_id} - {self.patient.first_name} {self.patient.second_name}"
 
-    
+class PatientDischarge(models.Model):
+    admission = models.OneToOneField(PatientAdmission, on_delete=models.CASCADE, related_name='discharge')
+    discharged_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='discharges')
+    discharged_at = models.DateTimeField(auto_now_add=True)
+    discharge_notes = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return f"Discharge for {self.admission.admission_id} on {self.discharged_at}"
+
 class WardNurseAssignment(models.Model):
     ward = models.ForeignKey(Ward, on_delete=models.CASCADE, related_name='nurse_assignments')
     nurse = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, 

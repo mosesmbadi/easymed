@@ -2,8 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 
 
-from .models import Ward, Bed, PatientAdmission, WardNurseAssignment
-from patient.models import Patient
+from .models import Ward, Bed, PatientAdmission, WardNurseAssignment, PatientDischarge
 from customuser.models import NurseProfile, DoctorProfile
 
 User = get_user_model()
@@ -18,7 +17,7 @@ class PatientAdmissionSerializer(serializers.ModelSerializer):
     patient_age = serializers.IntegerField(source='patient.age', read_only=True)
     patient_gender = serializers.CharField(source='patient.gender', read_only=True)
     admission_id = serializers.CharField(read_only=True)
-    admitted_by_name = serializers.CharField(source='admitted_by.get_fullname', read_only=True)  # Add this field
+    admitted_by_name = serializers.CharField(source='admitted_by.get_fullname', read_only=True) 
 
     class Meta:
         model = PatientAdmission
@@ -53,11 +52,23 @@ class WardSerializer(serializers.ModelSerializer):
 
         read_only_fields = ['created_at', 'id']
 
+
 class BedSerializer(serializers.ModelSerializer):
     ward = WardSerializer(read_only=True)
     class Meta:
         model = Bed
         fields = ['id', 'ward', 'bed_number', 'status']
+
+class PatientDischargeSerializer(serializers.ModelSerializer):
+    discharged_by_name = serializers.CharField(source='discharged_by.get_fullname', read_only=True)
+    admission = serializers.PrimaryKeyRelatedField(queryset=PatientAdmission.objects.all(), write_only=True)
+    admission_id = serializers.CharField(source='admission.admission_id', read_only=True)
+
+    class Meta:
+        model = PatientDischarge
+        fields = ['id',  'admission', 'admission_id', 'discharged_by_name', 'discharged_at', 'discharge_notes']
+        read_only_fields = ['discharged_at']
+
 
 class WardNurseAssignmentSerializer(serializers.ModelSerializer):
     ward = serializers.PrimaryKeyRelatedField(queryset=Ward.objects.all())
