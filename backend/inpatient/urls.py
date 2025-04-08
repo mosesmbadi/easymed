@@ -10,9 +10,10 @@ router.register(r'beds', BedViewSet, basename='bed')
 router.register(r'ward-nurse-assignments', WardNurseAssignmentViewSet, basename='ward-nurse-assignment')
 
 admissions_url = NestedDefaultRouter(router, 'patient-admissions', lookup='admission')
-admissions_url.register(r'discharge', PatientDischargeViewset, basename='discharge')
+admissions_url.register(r'discharge', PatientDischargeViewset, basename='patient-admission-discharge')
 
 urlpatterns = [
     path('', include(router.urls)),
     path('', include(admissions_url.urls)),
 ]
+
