@@ -172,6 +172,7 @@ cover/
 *.mo
 
 # Django stuff:
+.pre-commit-config.yaml
 
 # Flask stuff:
 instance/
