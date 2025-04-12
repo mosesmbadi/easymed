@@ -173,6 +173,9 @@ cover/
 
 # Django stuff:
 .pre-commit-config.yaml
+**/migrations/*.py
+!**/migrations/__init__.py
+
 
 # Flask stuff:
 instance/
