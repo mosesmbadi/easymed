@@ -1,11 +1,14 @@
+from django.shortcuts import get_object_or_404
+from django.db.models import Prefetch
 from django.db import transaction
 from django_filters.rest_framework import DjangoFilterBackend
+from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.response import Response
 
-from authperms.permissions import IsDoctorUser, IsNurseUser
+from authperms.permissions import IsDoctorUser
 
-from .filters import WardFilter
+from .filters import WardFilter, PatientAdmissionFilter
 from .models import (Bed, PatientAdmission, PatientDischarge, Ward,
                      WardNurseAssignment)
 from .serializers import (BedSerializer, PatientAdmissionSerializer,
@@ -17,10 +20,12 @@ class PatientAdmissionViewSet(viewsets.ModelViewSet):
     queryset = PatientAdmission.objects.all()
     serializer_class = PatientAdmissionSerializer
     permission_classes = [IsDoctorUser]
+    filter_backends = [DjangoFilterBackend] 
+    filterset_class = PatientAdmissionFilter
 
+   
     def get_queryset(self):
-        # Optional: Restrict nurses to see only patients in their wards (later enhancement)
-        return super().get_queryset()
+        return PatientAdmission.objects.filter(is_discharged=False)
 
     @transaction.atomic
     def create(self, request, *args, **kwargs):
@@ -34,7 +39,7 @@ class PatientAdmissionViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response(
-                {"Cannot admitt patient": str(e)}, status=status.HTTP_400_BAD_REQUEST
+                {"Cannot admit patient": str(e)}, status=status.HTTP_400_BAD_REQUEST
             )
 
 
@@ -44,11 +49,50 @@ class WardViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_class = WardFilter
 
-
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object() 
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        try:
+            self.perform_update(serializer)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+   
 class BedViewSet(viewsets.ModelViewSet):
-    queryset = Bed.objects.all()
     serializer_class = BedSerializer
 
+    def get_queryset(self):
+        ward_id = self.kwargs.get('ward_pk')
+        queryset = Bed.objects.select_related('ward').prefetch_related(
+            Prefetch(
+                'current_patient',
+                queryset=PatientAdmission.objects.filter(is_discharged=False).select_related('patient', 'admitted_by')
+            )
+        )
+        if ward_id:
+            return queryset.filter(ward_id=ward_id)
+        return queryset
+
+    @transaction.atomic
+    def create(self, request, *args, **kwargs):
+        ward = get_object_or_404(Ward, pk=kwargs.get("ward_pk"))
+        existing_beds_count = Bed.objects.filter(ward=ward).count()
+        if existing_beds_count >= ward.capacity:
+            return Response(
+                {"error": f"Ward {ward.name} has reached its capacity of {ward.capacity} beds."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            serializer.save(ward=ward)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response(
+                {"Cannot create bed": str(e)}, status=status.HTTP_400_BAD_REQUEST
+            )
 
 class PatientDischargeViewset(viewsets.ModelViewSet):
     queryset = PatientDischarge.objects.all()
@@ -60,22 +104,15 @@ class PatientDischargeViewset(viewsets.ModelViewSet):
         """
         Create a discharge record for a patient admission.
         """
-        admission_id = kwargs.get("admission_pk")
-        if not admission_id:
+        admission = get_object_or_404(PatientAdmission, pk=kwargs.get("admission_pk"))
+
+        if admission.discharged_at:
             return Response(
-                {"error": "Admission ID is required."},
+                {"error": "Patient is already discharged."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         try:
-            admission = PatientAdmission.objects.get(id=admission_id)
-
-            if admission.discharged_at:
-                return Response(
-                    {"error": "Patient is already discharged."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
             serializer = self.get_serializer(
                 data={
                     "admission": admission.id,
@@ -86,26 +123,19 @@ class PatientDischargeViewset(viewsets.ModelViewSet):
             discharge = serializer.save(discharged_by=request.user)
 
             admission.discharged_at = discharge.discharged_at
+            admission.is_discharged = True
             admission.save()
 
-            bed = admission.bed
-            if bed:
-                bed.status = "available"
-                bed.save()
+            if admission.bed:
+                admission.bed.status = "available"
+                admission.bed.save()
 
-            response_data = serializer.data
-            response_data["message"] = "Patient discharged successfully"
-            return Response(response_data, status=status.HTTP_201_CREATED)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-        except PatientAdmission.DoesNotExist:
-            return Response(
-                {"error": "Admission not found."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
         except Exception as e:
             return Response(
-                {"error": f"An error occurred: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                {"error": f"Failed to discharge patient: {str(e)}"},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
 
@@ -126,11 +156,19 @@ class WardNurseAssignmentViewSet(viewsets.ModelViewSet):
         try:
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)
-            return Response(
-                serializer.data, status=status.HTTP_201_CREATED, headers=headers
-            )
+            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
         except Exception as e:
-            return Response(
-                {"error": f"cannot assign nurse to ward: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object() 
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        try:
+            instance.assigned_by = request.user  
+            instance.assigned_at = timezone.now()
+            instance.save()
+            self.perform_update(serializer)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)

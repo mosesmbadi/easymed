@@ -43,6 +43,7 @@ class PatientAdmissionSerializer(serializers.ModelSerializer):
             "reason_for_admission",
             "admitted_by_name",
             "admitted_at",
+            "is_discharged",
             "discharged_at",
         ]
 
@@ -67,8 +68,6 @@ class PatientAdmissionSerializer(serializers.ModelSerializer):
 
 
 class WardSerializer(serializers.ModelSerializer):
-    admissions = PatientAdmissionSerializer(many=True, read_only=True)
-
     class Meta:
         model = Ward
         fields = [
@@ -82,15 +81,27 @@ class WardSerializer(serializers.ModelSerializer):
         ]
 
         read_only_fields = ["created_at", "id"]
-
-
+   
+    
 class BedSerializer(serializers.ModelSerializer):
-    ward = WardSerializer(read_only=True)
+    ward = serializers.SerializerMethodField()
+    current_occupant = serializers.SerializerMethodField()
 
     class Meta:
         model = Bed
-        fields = ["id", "ward", "bed_number", "status"]
+        fields = ['id', 'bed_number', 'status', 'bed_type', 'ward', 'current_occupant']
 
+    def get_ward(self, instance):
+        return {
+            'id': instance.ward.id,
+            'name': instance.ward.name
+        }
+
+    def get_current_occupant(self, instance):
+        admission = PatientAdmission.objects.filter(bed=instance, is_discharged=False).first()
+        if admission:
+            return PatientAdmissionSerializer(admission).data
+        return None
 
 class PatientDischargeSerializer(serializers.ModelSerializer):
     discharged_by_name = serializers.CharField(
@@ -138,11 +149,26 @@ class WardNurseAssignmentSerializer(serializers.ModelSerializer):
         data["assigned_by"] = instance.assigned_by.get_fullname()
         return data
 
-    def validate(self, data):
-        """Ensure the assigned_by matches the requesting doctor."""
-        assigned_by = data.get("assigned_by")
-        if self.context["request"].user != assigned_by:
-            raise serializers.ValidationError(
-                {"assigned_by": "You can only assign as yourself."}
-            )
-        return data
+class WardSerializer(serializers.ModelSerializer):
+    admissions = serializers.SerializerMethodField()
+    nurse_assignments = WardNurseAssignmentSerializer(many=True, read_only=True)
+    class Meta:
+        model = Ward
+        fields = [
+            'id', 
+            'name', 
+            'capacity', 
+            'ward_type', 
+            'gender',
+            'created_at', 
+            'admissions', 
+            'nurse_assignments'
+        ]
+
+        read_only_fields = ['created_at', 'id']
+
+    def get_admissions(self, instance):
+        active_admissions = instance.admissions.filter(is_discharged=False)
+        return PatientAdmissionSerializer(active_admissions, many=True).data
+
+

@@ -22,8 +22,13 @@ admissions_url = NestedDefaultRouter(router, "patient-admissions", lookup="admis
 admissions_url.register(
     r"discharge", PatientDischargeViewset, basename="patient-admission-discharge"
 )
+wards_url = NestedDefaultRouter(router, "wards", lookup="ward")
+wards_url.register(
+    r"beds", BedViewSet, basename="ward-bed"
+)
 
 urlpatterns = [
     path("", include(router.urls)),
     path("", include(admissions_url.urls)),
+    path("", include(wards_url.urls)),
 ]
