@@ -6,7 +6,7 @@ from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.response import Response
 
-from authperms.permissions import IsDoctorUser
+from authperms.permissions import IsDoctorUser, IsSeniorNurseUser
 
 from .filters import WardFilter, PatientAdmissionFilter
 from .models import (Bed, PatientAdmission, PatientDischarge, Ward,
@@ -142,7 +142,7 @@ class PatientDischargeViewset(viewsets.ModelViewSet):
 class WardNurseAssignmentViewSet(viewsets.ModelViewSet):
     queryset = WardNurseAssignment.objects.all()
     serializer_class = WardNurseAssignmentSerializer
-    permission_classes = [IsDoctorUser]
+    permission_classes = [IsSeniorNurseUser]
 
     def get_queryset(self):
         user = self.request.user

@@ -133,7 +133,7 @@ class WardNurseAssignmentSerializer(serializers.ModelSerializer):
         queryset=User.objects.filter(role="nurse")
     )
     assigned_by = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.filter(role="doctor"),
+        queryset=User.objects.filter(role="senior_nurse"),
         default=serializers.CurrentUserDefault(),
     )
 

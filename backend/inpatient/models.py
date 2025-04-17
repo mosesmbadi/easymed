@@ -129,7 +129,7 @@ class WardNurseAssignment(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         related_name="nurse_assignments_made",
-        limit_choices_to={"role": "doctor"},
+        limit_choices_to={"role": "senior_nurse"},
     )
     assigned_at = models.DateTimeField(default=timezone.now)
 
