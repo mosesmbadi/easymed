@@ -12,24 +12,34 @@ from .models import (
 
 
 class PatientFilter(django_filters.FilterSet):
-    first_name = django_filters.CharFilter(lookup_expr='icontains')
-    second_name = django_filters.CharFilter(lookup_expr='icontains')
-    user_id__id = django_filters.NumberFilter(lookup_expr='exact', label='user_id')
+    first_name = django_filters.CharFilter(lookup_expr="icontains")
+    second_name = django_filters.CharFilter(lookup_expr="icontains")
+    user_id__id = django_filters.NumberFilter(lookup_expr="exact", label="user_id")
+
     class Meta:
         model = Patient
         fields = ("user_id__id", "first_name", "second_name", "gender")
 
 
 class ConsultationFilter(django_filters.FilterSet):
-    doctor_ID__id = django_filters.NumberFilter(lookup_expr='exact', label='doctor_id')
-    patient_id__id = django_filters.NumberFilter(lookup_expr='exact', label='patient_id')
+    doctor_ID__id = django_filters.NumberFilter(lookup_expr="exact", label="doctor_id")
+    patient_id__id = django_filters.NumberFilter(
+        lookup_expr="exact", label="patient_id"
+    )
+
     class Meta:
         model = Consultation
-        fields = ("doctor_ID__id", "patient_id__id",)
+        fields = (
+            "doctor_ID__id",
+            "patient_id__id",
+        )
 
 
 class TriageFilter(django_filters.FilterSet):
-    patient_id__id = django_filters.NumberFilter(lookup_expr='exact', label='patient_id')
+    patient_id__id = django_filters.NumberFilter(
+        lookup_expr="exact", label="patient_id"
+    )
+
     class Meta:
         model = Triage
         fields = ("patient_id__id", )
