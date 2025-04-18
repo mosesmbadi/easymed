@@ -46,6 +46,7 @@ class Bed(models.Model):
     status = models.CharField(
         max_length=10, choices=STATUS_CHOICES, default="available"
     )
+   
 
     class Meta:
         unique_together = ("ward", "bed_number")
@@ -73,8 +74,15 @@ class PatientAdmission(models.Model):
         related_name="admissions_made",
     )
     admitted_at = models.DateTimeField(default=timezone.now)
+    is_discharged = models.BooleanField(default=False)
     discharged_at = models.DateTimeField(null=True, blank=True)
 
+    class Meta:
+        ordering = ['-admitted_at']
+        indexes = [
+            models.Index(fields=['is_discharged']),
+            models.Index(fields=['discharged_at']),
+        ]
     def generate_admission_id(self):
         return f"IP{self.patient.unique_id}"
 
@@ -121,7 +129,7 @@ class WardNurseAssignment(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         related_name="nurse_assignments_made",
-        limit_choices_to={"role": "doctor"},
+        limit_choices_to={"role": "senior_nurse"},
     )
     assigned_at = models.DateTimeField(default=timezone.now)
 

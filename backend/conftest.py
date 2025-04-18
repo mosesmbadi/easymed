@@ -141,6 +141,42 @@ def authenticated_doctor_client(client, doctor):
     refresh = RefreshToken.for_user(doctor)
     client.defaults['HTTP_AUTHORIZATION'] = f'Bearer {refresh.access_token}'
     return client
+    
+@pytest.fixture
+def nurse(db):
+    user = User.objects.create_user(
+        email="nurseuser@example.com",
+        password="password123",
+        first_name="Regular",
+        last_name="Nurse",
+        role=CustomUser.NURSE,
+        is_staff=True
+    )
+    return user
+
+@pytest.fixture
+def authenticated_nurse_client(client, nurse):
+    refresh = RefreshToken.for_user(nurse)
+    client.defaults['HTTP_AUTHORIZATION'] = f'Bearer {refresh.access_token}'
+    return client
+
+@pytest.fixture
+def senior_nurse(db):
+    user = User.objects.create_user(
+        email="seniornurseuser@example.com",
+        password="password123",
+        first_name="Senior",
+        last_name="Nurse",
+        role=CustomUser.SENIOR_NURSE,
+        is_staff=True
+    )
+    return user
+
+@pytest.fixture
+def authenticated_senior_nurse_client(client, senior_nurse):
+    refresh = RefreshToken.for_user(senior_nurse)
+    client.defaults['HTTP_AUTHORIZATION'] = f'Bearer {refresh.access_token}'
+    return client
 
 @pytest.fixture
 def department():
