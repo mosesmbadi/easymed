@@ -35,14 +35,14 @@ export default async function handler(req, res) {
     }
     else if (req.method === API_METHODS.POST) {
         try {
-            // if (!req.headers?.authorization){
-            //     res.status(401).send('Unauthorized');
-            // }
-            // const config = {
-            //     headers: {
-            //         'Authorization': req.headers.authorization,
-            //     }
-            // };
+            if (!req.headers?.authorization){
+                res.status(401).send('Unauthorized');
+            }
+            const config = {
+                headers: {
+                    'Authorization': req.headers.authorization,
+                }
+            };
             const body = req.body;
 
             await backendAxiosInstance.post(`${API_URL.ADD_INVENTORY}`,body)
