@@ -53,7 +53,9 @@ const AddPatientModal = () => {
     second_name: Yup.string().required("Second Name is required!"),
     // kin_first_name: Yup.string().required("Next Kin First Name is required!"),
     // kin_second_name: Yup.string().required("Next Kin Second Name is required!"),
-    date_of_birth: Yup.string().required("Date is required!"),
+    date_of_birth: Yup.date()
+    .required("Date is required!")
+    .max(new Date(), "Date of birth cannot be in the future"),
     gender: Yup.string().required("Select gender!"),
     phone: Yup.number().required("Phone Number is required!"),
     unique_id: Yup.number().required("Id Number is required!"),
