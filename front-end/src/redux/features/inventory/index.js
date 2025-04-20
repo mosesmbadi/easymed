@@ -136,6 +136,9 @@ const InventorySlice = createSlice({
     },
     setInvoice: (state, action) => {
       state.invoice = action.payload;
+    },
+    setGoods: (state, action) => {
+      state.goods = action.payload;
     }
   },
 });

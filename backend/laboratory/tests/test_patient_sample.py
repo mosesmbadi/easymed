@@ -15,7 +15,7 @@ def test_generate_sample_code_first_sample(patient_sample):
         is_sample_collected=True
     )
     current_year = timezone.now().year
-    assert new_sample.patient_sample_code == f"DDLR00001/{current_year}"
+    assert new_sample.patient_sample_code == f"DDLR00001-{current_year}"
 
 
 @pytest.mark.django_db
@@ -27,7 +27,7 @@ def test_generate_sample_code_new_year_reset(patient_sample):
         specimen=patient_sample.specimen,
         process=patient_sample.process,
         is_sample_collected=True,
-        patient_sample_code=f"DDLR99999/{current_year - 1}"  
+        patient_sample_code=f"DDLR99999-{current_year - 1}"  
     )
 
     new_sample = PatientSample.objects.create(
@@ -37,4 +37,4 @@ def test_generate_sample_code_new_year_reset(patient_sample):
         is_sample_collected=True
     )
 
-    assert new_sample.patient_sample_code == f"DDLR00001/{current_year}"  
+    assert new_sample.patient_sample_code == f"DDLR00001-{current_year}"  

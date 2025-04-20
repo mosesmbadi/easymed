@@ -421,3 +421,24 @@ export const fetchInvoice = async (auth, supplier_id) => {
         throw error;
     }
 };
+
+export const fetchGoods = async (auth, purchase_order_id) => {
+    if (!auth?.token) {
+        console.error("Auth token is missing");
+        throw new Error("Authentication token is required");
+     }
+ 
+     const url = `${APP_API_URL.FETCH_GOODS_RECEIPT_NOTE}?purchase_order_id=${purchase_order_id}`;
+     try {
+        const response = await axios.get(url, {
+            headers: {
+                Authorization: `Bearer ${auth.token}`,
+            },
+            responseType: "arraybuffer",
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching receipt", error.response?.status, error.response?.data);
+        throw error;
+    }
+};

@@ -38,6 +38,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     PATIENT = 'patient'
     DOCTOR = 'doctor'
     NURSE = 'nurse'
+    SENIOR_NURSE = 'senior_nurse'
     LAB_TECH = 'labtech'
     RECEPTIONIST = 'receptionist'
     SYS_ADMIN = 'sysadmin'
@@ -48,6 +49,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         (PATIENT, 'Patient'),
         (DOCTOR, 'Doctor'),
         (NURSE, 'Nurse'),
+        (SENIOR_NURSE, 'Senior Nurse'),
         (LAB_TECH, 'Lab Technician'),
         (RECEPTIONIST, 'Receptionist'),
         (SYS_ADMIN, 'Sysadmin'),

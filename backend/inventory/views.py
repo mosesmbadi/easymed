@@ -233,9 +233,9 @@ class InsuranceItemSalePriceViewSet(viewsets.ModelViewSet):
 
 class InventoryFilterView(ListAPIView):
     '''
-    To get Low Quantity Drugs, use: GET /inventory/filter/?category=Drug&filter_type=low_quantity
-    To get near expiry drugs, use: GET /inventory/filter/?category=Drug&filter_type=near_expiry
-    To get near-expiry Lab Reagents, use: GET /inventory/filter/?category=LabReagent&filter_type=near_expiry
+    To get Low Quantity Drugs, use: GET /inventory_filter/?category=Drug&filter_type=low_quantity
+    To get near expiry drugs, use: GET /inventory_filter/?category=Drug&filter_type=near_expiry
+    To get near-expiry Lab Reagents, use: GET /inventory_filter/?category=LabReagent&filter_type=near_expiry
 
     ...get it?
     '''
