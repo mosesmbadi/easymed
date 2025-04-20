@@ -30,7 +30,7 @@ import { API_URL, API_METHODS } from "@/assets/api-endpoints";
               responseType: "arraybuffer",
           };
   
-          const url = `${API_URL.FETCH_LOW_DRUGS}/?category=Drug&filter_type=low_quantity`;
+          const url = `${API_URL.FETCH_LOW_QUANTITY}?category=Drug&filter_type=low_quantity`;
           console.log(`Requesting: ${url}`);
   
           const response = await backendAxiosInstance.get(url, config);

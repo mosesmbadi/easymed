@@ -90,7 +90,7 @@ export const API_URL = {
   FETCH_INVOICE:"/inventory/supplier_invoice_pdf/",
   FETCH_GOODS_RECEIPT_NOTE: "/inventory/receipt_note_pdf/",
   FETCH_DEPARTMENTS: "/inventory/departments/",
-  FETCH_LOW_QUANTITY: "/inventory/filter/",
+  FETCH_LOW_QUANTITY: "/inventory/inventory_filter/",
 
   /***************** NURSING APIS **********************/
   ADD_TRIAGE: "/patients/triage/",
@@ -242,9 +242,8 @@ export const APP_API_URL = {
   FETCH_SUPPLIER_INVOICE: "/api/inventory/supplier-invoice/",
   FETCH_INVOICE: "/api/inventory/fetch-invoice/",
   FETCH_GOODS_RECEIPT_NOTE: "/api/inventory/goods-receipt-note/",
+  FETCH_LOW_QUANTITY: "/api/inventory/low-drugs",
   FETCH_DEPARTMENTS: "/api/groups/department/",
-
-
 
   /***************** NURSING APIS **********************/
   ADD_TRIAGE: "/api/nursing/add-triage",

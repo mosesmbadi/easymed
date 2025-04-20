@@ -372,7 +372,7 @@ export const createGRNote = (payload, auth) =>{
 export const fetchLowDrugs = (auth) => {
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve, reject) => {
-        axiosInstance.get(`${APP_API_URL.FETCH_LOW_DRUGS}`, {
+        axiosInstance.get(`${APP_API_URL.FETCH_LOW_QUANTITY}`, {
             headers: {
                 Authorization: `Bearer ${auth.token}` 
             }
