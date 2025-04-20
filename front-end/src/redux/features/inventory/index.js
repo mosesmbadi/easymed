@@ -1,6 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { fetchItem, fetchItems, fetchOrderBills, fetchSuppliers, fetchInventories, fetchRequisitions,
-   fetchPurchaseOrders, fetchIncomingItems, fetchAllRequisitionItems,fetchSupplierInvoice, fetchInvoice, fetchGoods } from "@/redux/service/inventory";
+   fetchPurchaseOrders, fetchIncomingItems, fetchAllRequisitionItems,fetchSupplierInvoice, fetchInvoice, fetchLowDrugs, } from "@/redux/service/inventory";
 
 
 const initialState = {
@@ -17,7 +17,7 @@ const initialState = {
   incomingItems: [],
   supplierInvoice: [],
   invoice: [],
-  goods: [],
+  drugs:[],
 };
 
 const InventorySlice = createSlice({
@@ -131,6 +131,9 @@ const InventorySlice = createSlice({
     setSupplierInvoice: (state, action) => {
       state.supplierInvoice = action.payload;
     },
+    setDrugs:(state, action) => {
+      state.drugs = action.payload;
+    },
     setInvoice: (state, action) => {
       state.invoice = action.payload;
     },
@@ -143,7 +146,7 @@ const InventorySlice = createSlice({
 export const { updateItem, setItems,setSuppliers,setOrderBills,setItem, setInventories, setRequisitions, 
   setPurchaseOrders, setInventoryItems, setInventoryItemsPdf, clearInventoryItemsPdf, 
   setPurchaseOrderItems, setPurchaseOrderItemsPdf, setRequisitionsAfterPoGenerate, setPoAfterDispatch,
-  clearPurchaseOrderItemsPdf, setIncoming, setRequisitionsItems,setSupplierInvoice, setInvoice, setGoods } = InventorySlice.actions;
+  clearPurchaseOrderItemsPdf, setIncoming, setRequisitionsItems,setSupplierInvoice, setInvoice, setDrugs } = InventorySlice.actions;
 
 
 export const getAllItems = (auth) => async (dispatch) => {
@@ -289,18 +292,12 @@ export const getInvoice = (supplier_id, auth) => async (dispatch) => {
    }
   };
 
-  export const getGoods = (purchase_order_id, auth) => async (dispatch) =>{
-    try{
-      if (!auth?.token){
-        return;
-      }
-      const response = await fetchGoods(auth, purchase_order_id);
-      const fileBlob = new Blob ([response], {type: "application/pdf"});
-      const fileURL = window.URL.createObjectURL(fileBlob);
-      dispatch(setGoods(response));
-      window.open(fileURL, "_blank");
-    } catch (error){
-      console.log("GOODS_ERROR", error)
+  export const getLowDrugs = (auth) => async (dispatch) => {
+    try {
+      const response = await fetchLowDrugs(auth);
+      dispatch(setDrugs(response));
+    } catch (error) {
+      console.log("DRUGS_ERROR ", error);
     }
   };
 
