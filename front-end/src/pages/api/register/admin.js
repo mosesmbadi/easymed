@@ -19,7 +19,7 @@ export default async function handler(req, res) {
                     'Authorization': req.headers.authorization,
                 }
             };
-            const {id} = req.body;
+            const {id} = req.query;
 
           
 
