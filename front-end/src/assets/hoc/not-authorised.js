@@ -23,6 +23,10 @@ const NotAuthorized = () => {
   const backHref = auth?.role === "patient" ? "/patient-overview" : "/dashboard";
   const backLabel = auth?.role === "patient" ? "Back to Patient Overview" : "Back to Dashboard";
 
+
+  const backHref = auth?.role === "patient" ? "/patient-overview" : "/dashboard";
+  const backLabel = auth?.role === "patient" ? "Back to Patient Overview" : "Back to Dashboard";
+
   return (
     <section className="p-12 flex items-center justify-center h-screen">
       <div className="p-8 space-y-4 rounded md:w-5/12 mx-auto text-center">
@@ -44,3 +48,4 @@ const NotAuthorized = () => {
 };
 
 export default NotAuthorized;
+
