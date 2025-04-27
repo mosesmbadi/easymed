@@ -33,6 +33,31 @@ export const getAllUsers = (auth) =>{
     })
 }
 
+export const resetPassword = (userData, auth) => {
+    console.log("User ID being passed:", userData.id); 
+    
+    const payload = {
+        new_password: userData.new_password,
+        confirm_password: userData.confirm_password
+    }
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+      axiosInstance.post(`${APP_API_URL.ADMIN_CHANGE_PASSWORD}`,payload, {
+        params: {
+          id: userData.id
+        }
+      })
+        .then((res) => {
+          resolve(res.data);
+        })
+        .catch((err) => {
+          reject(err.message);
+        });
+    });
+  };
+  
+
+
 export const getUserById = (auth) =>{
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve,reject) =>{
