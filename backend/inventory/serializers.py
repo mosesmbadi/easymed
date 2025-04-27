@@ -293,18 +293,26 @@ class PurchaseOrderSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         requisition_item_ids = validated_data.pop('requisition_items', [])
         with transaction.atomic():
-            purchase_order = PurchaseOrder.objects.create(**validated_data)
             if requisition_item_ids:
                 requisition_items = RequisitionItem.objects.filter(id__in=requisition_item_ids, ordered=False,
                                                                   quantity_approved__gt=0)
                 if not requisition_items.exists():
                     raise serializers.ValidationError("No valid requisition items found.")
+
+                purchase_order = PurchaseOrder.objects.create(**validated_data)
+
+                requisition = requisition_items.first().requisition
+                purchase_order.requisition = requisition
+                purchase_order.save()
+
                 for req_item in requisition_items:
                     PurchaseOrderItem.objects.create(purchase_order=purchase_order, requisition_item=req_item,
                                                     quantity_ordered=req_item.quantity_approved)
                     req_item.ordered = True
                     req_item.save()
-            return purchase_order
+                return purchase_order
+            else:
+                return PurchaseOrder.objects.create(**validated_data) 
 
     def get_total_items_ordered(self, obj):
         return PurchaseOrderItem.objects.filter(purchase_order=obj).count()

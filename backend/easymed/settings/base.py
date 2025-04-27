@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     'receptions.apps.ReceptionsConfig',
     'billing.apps.BillingConfig',
     'announcement.apps.AnnouncementConfig',
+    'inpatient.apps.InpatientConfig',
     'company',
     'reports'
 ]
