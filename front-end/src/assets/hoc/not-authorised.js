@@ -11,18 +11,9 @@ const NotAuthorized = () => {
   const dispatch = useDispatch();
   const auth = useAuth();
 
-  useEffect(() => {
-    if (!auth?.token) {
-      router.push('/auth/login');
-      return;
-    }
-
-    dispatch(getAllPatients(auth));
-  }, [auth?.token, dispatch, router]);
-
-  const backHref = auth?.role === "patient" ? "/patient-overview" : "/dashboard";
-  const backLabel = auth?.role === "patient" ? "Back to Patient Overview" : "Back to Dashboard";
-
+  useEffect(()=>{
+    dispatch(getAllPatients(auth));      
+  }, [auth]);
 
   const backHref = auth?.role === "patient" ? "/patient-overview" : "/dashboard";
   const backLabel = auth?.role === "patient" ? "Back to Patient Overview" : "Back to Dashboard";
