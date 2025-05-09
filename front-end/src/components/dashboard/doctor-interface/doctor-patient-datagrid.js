@@ -10,6 +10,7 @@ import ReferPatientModal from "../patient/refer-patient-modal";
 import ConsultPatientModal from "./consult-modal";
 import PrescribePatientModal from "./prescribe-patient-modal";
 import { BiTransferAlt } from "react-icons/bi";
+import { FaBed } from "react-icons/fa";
 import { MdOutlineContactSupport } from "react-icons/md";
 import { useDispatch, useSelector } from "react-redux";
 import { getAllPatients, getAllProcesses } from "@/redux/features/patients";
@@ -39,6 +40,11 @@ const getActions = () => {
       action: "consult",
       label: "Consult",
       icon: <BiSupport className="text-card text-xl mx-2" />,
+    },
+    {
+      action: "admit",
+      label:"Admit",
+      icon:<FaBed className="text-card text-xl mx-2"/>,
     },
     {
       action: "prescribe",
