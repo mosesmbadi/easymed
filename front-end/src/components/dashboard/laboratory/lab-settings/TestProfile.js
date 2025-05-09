@@ -111,7 +111,7 @@ const TestProfile = () => {
                         <Field
                             className="block border border-gray py-3 px-4 focus:outline-none w-full"
                             type="text"
-                            placeholder="New Group Name"
+                            placeholder="New Test Profile"
                             name="name"
                         />
                         <ErrorMessage

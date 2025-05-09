@@ -61,7 +61,7 @@ const Insurance = () => {
             dispatch(createAInsuranceToStore(response))
             setLoading(false)
             helpers.resetForm();
-            toast.success('Specimen created succesfully')
+            toast.success('Insurance created succesfully')
         }catch(error){
             setLoading(false)
             toast.error('Error Creating Specimen')
