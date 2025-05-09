@@ -6,6 +6,7 @@ import { RiMessage2Fill } from "react-icons/ri";
 import { BsCalendarEvent } from "react-icons/bs";
 import { MdLocalPharmacy } from "react-icons/md";
 import { FaWheelchair } from "react-icons/fa";
+import { FaBed } from "react-icons/fa";
 import { FaClockRotateLeft, FaCodePullRequest } from "react-icons/fa6";
 import { GrAdd } from 'react-icons/gr'
 import { MdInventory2 } from 'react-icons/md'
@@ -74,6 +75,11 @@ export const menus = [
     label: "Doctor",
     href: "/dashboard/doctor-interface",
     icon: <FaUserDoctor className="text-xl" />,
+  },
+  {
+    label: "In-patient",
+    href: "/dashboard/admit",
+    icon: <FaBed className="text-xl" />,
   },
   {
     label: "Laboratory",
