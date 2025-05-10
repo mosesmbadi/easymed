@@ -1,6 +1,5 @@
 #!/bin/sh
 python manage.py collectstatic --no-input
-python manage.py makemigrations authperms customuser patient pharmacy inventory laboratory receptions billing announcement company reports
 python manage.py migrate
 
 
@@ -47,12 +46,6 @@ sys_admin_group = Group.objects.get(name='SYS_ADMIN')
 all_permissions = Permission.objects.all()
 sys_admin_group.permissions.set(all_permissions)
 EOF
-
-# Capture the exit code from the Python shell and stop if non-zero
-# if [ $? -ne 0 ]; then
-#   echo "Script aborted due to existing groups."
-#   exit 1
-# fi
 
 
 exec "$@"
