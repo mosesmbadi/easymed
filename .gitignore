@@ -8,6 +8,8 @@
 /deployment/.terraform.lock.hcl
 *.terraform.lock.hcl
 
+.$easymed-lab.drawio.bkp
+
 
 # static
 static/
