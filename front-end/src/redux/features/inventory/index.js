@@ -1,6 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { fetchItem, fetchItems, fetchOrderBills, fetchSuppliers, fetchInventories, fetchRequisitions,
-   fetchPurchaseOrders, fetchIncomingItems, fetchAllRequisitionItems } from "@/redux/service/inventory";
+   fetchPurchaseOrders, fetchIncomingItems, fetchAllRequisitionItems,fetchSupplierInvoice, fetchInvoice, fetchLowDrugs, } from "@/redux/service/inventory";
 
 
 const initialState = {
@@ -15,6 +15,9 @@ const initialState = {
   orderBills: [],
   item: [],
   incomingItems: [],
+  supplierInvoice: [],
+  invoice: [],
+  drugs:[],
 };
 
 const InventorySlice = createSlice({
@@ -125,13 +128,25 @@ const InventorySlice = createSlice({
         state.purchaseOrderItems = [...state.purchaseOrderItems, action.payload];
       }
     },
+    setSupplierInvoice: (state, action) => {
+      state.supplierInvoice = action.payload;
+    },
+    setDrugs:(state, action) => {
+      state.drugs = action.payload;
+    },
+    setInvoice: (state, action) => {
+      state.invoice = action.payload;
+    },
+    setGoods: (state, action) => {
+      state.goods = action.payload;
+    }
   },
 });
 
 export const { updateItem, setItems,setSuppliers,setOrderBills,setItem, setInventories, setRequisitions, 
   setPurchaseOrders, setInventoryItems, setInventoryItemsPdf, clearInventoryItemsPdf, 
   setPurchaseOrderItems, setPurchaseOrderItemsPdf, setRequisitionsAfterPoGenerate, setPoAfterDispatch,
-  clearPurchaseOrderItemsPdf, setIncoming, setRequisitionsItems } = InventorySlice.actions;
+  clearPurchaseOrderItemsPdf, setIncoming, setRequisitionsItems,setSupplierInvoice, setInvoice, setDrugs } = InventorySlice.actions;
 
 
 export const getAllItems = (auth) => async (dispatch) => {
@@ -251,5 +266,39 @@ export const updatePOAfterDispatch = (po) => (dispatch) => {
   dispatch(setPoAfterDispatch(po));
 };
 
+export const getAllSupplierInvoice = (auth) => async (dispatch) => {
+  try {
+    console.log("Fetching supplier invoices with token:", auth?.token);
+    const response = await fetchSupplierInvoice(auth);
+    dispatch(setSupplierInvoice(response));
+  } catch (error) {
+    console.error("SUPPLIERS_ERROR:", error);
+    toast.error("Failed to fetch supplier invoices");
+  }
+};
+
+export const getInvoice = (supplier_id, auth) => async (dispatch) => {
+  try {
+    if (!auth?.token) {
+      return;
+  }
+  const response = await fetchInvoice(auth, supplier_id);
+       const fileBlob = new Blob([response], { type: "application/pdf" });
+       const fileURL = window.URL.createObjectURL(fileBlob);
+       dispatch(setInvoice(response));
+       window.open(fileURL, "_blank");
+   } catch (error) {
+     console.log("INVOICE_ERROR ", error);
+   }
+  };
+
+  export const getLowDrugs = (auth) => async (dispatch) => {
+    try {
+      const response = await fetchLowDrugs(auth);
+      dispatch(setDrugs(response));
+    } catch (error) {
+      console.log("DRUGS_ERROR ", error);
+    }
+  };
 
 export default InventorySlice.reducer;

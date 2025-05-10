@@ -33,6 +33,13 @@ from inventory.models import (
     InsuranceItemSalePrice,
 )
 
+from inpatient.models import (
+    Ward,
+    Bed, 
+    PatientAdmission,
+    PatientDischarge
+  )
+
 User = get_user_model()
 
 @pytest.fixture
@@ -129,6 +136,47 @@ def doctor(db):
     doctor_profile = DoctorProfile.objects.create(user=user)
     return user
 
+@pytest.fixture
+def authenticated_doctor_client(client, doctor):
+    refresh = RefreshToken.for_user(doctor)
+    client.defaults['HTTP_AUTHORIZATION'] = f'Bearer {refresh.access_token}'
+    return client
+    
+@pytest.fixture
+def nurse(db):
+    user = User.objects.create_user(
+        email="nurseuser@example.com",
+        password="password123",
+        first_name="Regular",
+        last_name="Nurse",
+        role=CustomUser.NURSE,
+        is_staff=True
+    )
+    return user
+
+@pytest.fixture
+def authenticated_nurse_client(client, nurse):
+    refresh = RefreshToken.for_user(nurse)
+    client.defaults['HTTP_AUTHORIZATION'] = f'Bearer {refresh.access_token}'
+    return client
+
+@pytest.fixture
+def senior_nurse(db):
+    user = User.objects.create_user(
+        email="seniornurseuser@example.com",
+        password="password123",
+        first_name="Senior",
+        last_name="Nurse",
+        role=CustomUser.SENIOR_NURSE,
+        is_staff=True
+    )
+    return user
+
+@pytest.fixture
+def authenticated_senior_nurse_client(client, senior_nurse):
+    refresh = RefreshToken.for_user(senior_nurse)
+    client.defaults['HTTP_AUTHORIZATION'] = f'Bearer {refresh.access_token}'
+    return client
 
 @pytest.fixture
 def department():
@@ -269,3 +317,55 @@ def patient_sample(lab_test_request, process_test_request, specimen):
         is_sample_collected=True
     )
 
+@pytest.fixture
+def ward():
+    return Ward.objects.create(
+        name='Ward A',
+        ward_type='general',
+        gender='female',
+        capacity=10
+    )
+
+@pytest.fixture
+def bed(ward):
+    return Bed.objects.create(
+        ward=ward,
+        bed_number='A1',
+        status='available'
+    )
+
+@pytest.fixture
+def occupied_bed(ward):
+    bed = Bed.objects.create(
+        ward=ward,
+        bed_number='A2',
+        status='occupied'
+    )
+    return bed
+
+@pytest.fixture
+def patient_admission(doctor, patient, ward, bed):
+    admission = PatientAdmission.objects.create(
+        patient=patient,
+        ward=ward,
+        bed=bed,
+        reason_for_admission='Fever',
+        admitted_by=doctor
+    )
+    bed.status = 'occupied'
+    bed.save()
+    return admission
+
+@pytest.fixture
+def patient_discharge(patient_admission, doctor):
+    discharge = PatientDischarge.objects.create(
+        admission=patient_admission,
+        discharged_by=doctor,
+        discharge_notes='Patient recovered successfully'
+    )
+    patient_admission.discharged_at = discharge.discharged_at
+    patient_admission.save()
+    bed = patient_admission.bed
+    bed.status = 'available'
+    bed.save()
+    return discharge

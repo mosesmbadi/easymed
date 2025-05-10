@@ -49,7 +49,7 @@ const AddProductPurchase = () => {
   const [showNavButtons, setShowNavButtons] = useState(true);
 
   useEffect(() => {
-    if (auth) {
+    if (auth.token) {
       dispatch(getAllRequisitions(auth));
     }
   }, [auth]);

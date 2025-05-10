@@ -161,7 +161,7 @@ class LabTestRequest(models.Model):
 class PatientSample(models.Model):
     specimen = models.ForeignKey(Specimen, on_delete=models.CASCADE)
     lab_test_request = models.ForeignKey(LabTestRequest, null=True, on_delete=models.CASCADE)
-    patient_sample_code = models.CharField(max_length=100)
+    patient_sample_code = models.CharField(max_length=100, unique=True)
     process = models.ForeignKey(ProcessTestRequest, on_delete=models.CASCADE, null=True, blank=True) # from patient app
     is_sample_collected = models.BooleanField(default=False)
 

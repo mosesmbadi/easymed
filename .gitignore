@@ -8,6 +8,8 @@
 /deployment/.terraform.lock.hcl
 *.terraform.lock.hcl
 
+.$easymed-lab.drawio.bkp
+
 
 # static
 static/
@@ -172,6 +174,10 @@ cover/
 *.mo
 
 # Django stuff:
+.pre-commit-config.yaml
+**/migrations/*.py
+!**/migrations/__init__.py
+
 
 # Flask stuff:
 instance/

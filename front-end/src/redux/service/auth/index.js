@@ -29,6 +29,37 @@ export const createUser = (payload,auth) =>{
     })
 }
 
+export const createGroup = (payload, auth) => {
+    const axiosInstance = UseAxios(auth); 
+
+    return new Promise((resolve, reject) => {
+        axiosInstance.post(`${APP_API_URL.CREATE_GROUP}`, payload, { 
+            headers: { 
+                Authorization: `Bearer ${auth?.token}` 
+            } 
+        })
+        .then(res => resolve(res.data))
+        .catch(err => reject(err.message));
+    });
+};
+
+export const addPermission = (group_id, payload, auth) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+        axiosInstance.put(`${APP_API_URL.ADD_PERMISSION}/${group_id}/`, payload,{
+            headers: {
+                Authorization: `Bearer ${auth?.token}`
+            }
+        })
+            .then((res) => {
+                resolve(res.data);
+            })
+            .catch((err) => {
+                reject(err.message);
+            });
+    });
+};
+
 export const fetchUserPermissions = (user_id) =>{
     return new Promise((resolve,reject) =>{
         axios.get(`${APP_API_URL.GET_USER_PERMISSIONS}`,{
@@ -117,3 +148,31 @@ export const fetchDepartments = (auth) =>{
             })
     })
 }
+
+export const resetPassword = async (email) => {
+    try {
+        const response = await axios.post(`${APP_API_URL.PASSWORD_RESET}`, { email });
+        return response.data; 
+
+    } catch (error) {
+        throw new Error(error.response?.data?.message || "Failed to reset password");
+    }
+};
+
+export const updatePassword = async (uidb64, token, new_password, confirm_password) => {
+    try {
+        if (!uidb64 || !token) {
+            throw new Error("Missing UID or token");
+        }
+
+        const response = await axios.post(
+            `${APP_API_URL.CHANGE_PASSWORD}/${uidb64}/${token}/`,
+            { new_password, confirm_password }
+        );
+
+        return response.data;
+    } catch (error) {
+        throw new Error(error.response?.data?.message || "Failed to update password");
+    }
+};
+

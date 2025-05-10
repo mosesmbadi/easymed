@@ -47,7 +47,7 @@ const ItemsGrid = () => {
   const SearchedItems = item.filter((item)=> item.name.toLowerCase().includes(searchQuery.toLowerCase()))
 
   useEffect(()=>{
-    if (auth){
+    if (auth.token){
       dispatch(getItems(auth))
     }
 
@@ -137,7 +137,13 @@ const ItemsGrid = () => {
           cellRender={actionsFunc}
         />
       </DataGrid>
-      <EditItemModal open={editOpen} setOpen={setEditOpen} selectedRowData={selectedRowData}  />
+      {editOpen && (
+        <EditItemModal 
+          open={editOpen} 
+          setOpen={setEditOpen} 
+          selectedRowData={selectedRowData}  
+        />
+      )}
     </section>
 
   )

@@ -28,8 +28,11 @@ whenever quantity is referred, we're referring to subpacked.
 
 class AbstractBaseModel(models.Model):
     date_created = models.DateTimeField(auto_now_add=True)
+
     class Meta:
         abstract = True
+
+
 class Department(AbstractBaseModel):
     '''
     Strict naming should be employed as frontend Inventory query
@@ -44,12 +47,14 @@ class Department(AbstractBaseModel):
     def __str__(self):
         return f"{self.id} - {self.name}"
     
+
 class Supplier(AbstractBaseModel):
     official_name = models.CharField(max_length=255)  
     common_name = models.CharField(max_length=30) 
 
     def __str__(self):
         return f"{self.id} - {self.official_name} ({self.common_name})"
+
 
 class Item(AbstractBaseModel):
     '''
@@ -81,7 +86,7 @@ class Item(AbstractBaseModel):
     vat_rate= models.DecimalField(max_digits=5, decimal_places=2, default=16.0) 
     packed = models.CharField(max_length=255, default=1)
     subpacked = models.CharField(max_length=255, default=1)
-    slow_moving_period = models.IntegerField(null=True, blank=True)
+    slow_moving_period = models.IntegerField(default=90)
 
     @property
     def buying_price(self):
@@ -133,7 +138,7 @@ class Requisition(AbstractBaseModel):
 
     def __str__(self):
         return self.requisition_number
-      
+
         
 class RequisitionItem(AbstractBaseModel):
     quantity_requested = models.IntegerField()
@@ -153,7 +158,7 @@ class PurchaseOrder(AbstractBaseModel):
         PENDING = 'PENDING', 'Pending'
         PARTIAL = 'PARTIAL', 'Partial'
         COMPLETED = 'COMPLETED', 'Completed'
-
+        
     PO_number = models.CharField(unique=True, max_length=255, editable=False)
     file = models.FileField(upload_to='purchase-orders', null=True, blank=True)
     is_dispatched = models.BooleanField(default=False)

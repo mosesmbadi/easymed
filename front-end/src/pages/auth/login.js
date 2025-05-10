@@ -126,6 +126,10 @@ const Login = () => {
                 )}
                 Login
               </button>
+              <div className="flex items-center gap-4">
+              <p>Forgot Password ? </p>
+              <span className="text-primary_light"><Link href="/auth/forgot-password"> Reset </Link></span>
+              </div>
               <div className="flex gap-4">
                 <p>Do you have an account ? </p>
                 <span className="text-primary_light"><Link href="/auth/register"> SignUp </Link></span>
@@ -140,7 +144,7 @@ const Login = () => {
             <div className="space-y-4">
               <h1 className="text-2xl text-white uppercase">Welcome to</h1>
               <h1 className="uppercase text-white text-2xl border-b py-4 border-white">
-                Make - Easy HMIS
+                EaSyMed HMIS
               </h1>
               <p className="text-sm text-white">
                 If you forgot your password, please contact your system

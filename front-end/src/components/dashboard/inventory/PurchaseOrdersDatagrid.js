@@ -7,7 +7,7 @@ import { Column, Pager, Paging, Scrolling } from "devextreme-react/data-grid";
 import Link from 'next/link'
 import { Grid } from "@mui/material";
 import { months } from "@/assets/dummy-data/laboratory";
-import { getAllPurchaseOrders } from "@/redux/features/inventory";
+import { getAllPurchaseOrders, getGoods } from "@/redux/features/inventory";
 import { getAllDoctors } from "@/redux/features/doctors";
 import { useAuth } from "@/assets/hooks/use-auth";
 import { getAllTheUsers } from "@/redux/features/users";
@@ -81,27 +81,25 @@ const PurchaseOrdersDatagrid = () => {
   };
 
   const handlePrintGRN = async (data) => {
-    if (isDownloading) return;
-    
-    setIsDownloading(true);
+    if (!auth?.token) {
+      console.error("Missing auth token");
+      return;
+    }
+  
+    if (!data?.id) {
+      console.error("Missing data or data.id");
+      return;
+    }
+  
     try {
-      const response = await downloadPDF(data.id, "_receipt_note_pdf", auth);
-      const link = document.createElement('a');
-      link.href = response.link;
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      toast.success("PDF downloaded successfully");
+      await dispatch(getGoods(data.id, auth));
+      console.log("Goods receipt note fetched successfully.");
     } catch (error) {
-      console.error("Error downloading GRN:", error);
-      toast.error(error.message || "Failed to download PDF");
-    } finally {
-      setIsDownloading(false);
+      console.error("Error fetching GRN:", error);
     }
   };
+  
+  
 
   const onMenuClick = async (menu, data) => {
     switch (menu.action) {
@@ -132,10 +130,8 @@ const PurchaseOrdersDatagrid = () => {
   );
 
   useEffect(() => {
-    if (auth) {
+    if (auth.token) {
       dispatch(getAllPurchaseOrders(auth));
-      dispatch(getAllDoctors(auth));
-      dispatch(getAllTheUsers(auth));
     }
   }, [auth, dispatch]);
 
@@ -199,13 +195,15 @@ const PurchaseOrdersDatagrid = () => {
         <Column dataField="date_created" caption="Requested Date" />
         <Column dataField="" caption="" cellRender={actionsFunc} />
       </DataGrid>
-      
-      <ViewPurchaseOrderItemsModal 
-        open={open} 
-        setOpen={setOpen} 
-        selectedRowData={selectedRowData} 
-        setSelectedRowData={setSelectedRowData}
-      />
+
+      {open && (
+        <ViewPurchaseOrderItemsModal 
+          open={open} 
+          setOpen={setOpen} 
+          selectedRowData={selectedRowData} 
+          setSelectedRowData={setSelectedRowData}
+        />
+      )}
     </section>
   );
 };

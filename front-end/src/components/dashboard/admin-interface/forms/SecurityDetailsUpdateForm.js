@@ -4,58 +4,53 @@ import { ErrorMessage, Field, Form, Formik } from 'formik'
 import React from 'react'
 import { toast } from "react-toastify"
 import * as Yup from "yup";
-import { updateUser } from '@/redux/service/user';
+import { resetPassword } from '@/redux/service/user';
 import { getAllTheUsers } from "@/redux/features/users";
 
 const SecurityDetailsUpdateForm = ({auth, loading, setLoading, handleClose, selectedRowData}) => {
     const dispatch = useDispatch()
     
       const initialValues = {
-        password: "",
-        conf_new_password: "",
+        new_password: "",
+        confirm_password: "",
       }
     
       const validationSchema = Yup.object().shape({
-        password: Yup.string().required("This field is required"),
-        conf_new_password: Yup
+        new_password: Yup.string().required("This field is required"),
+        confirm_password: Yup
         .string()
         .required('Please confirm your password.')
-        .oneOf([Yup.ref('password')], 'Your passwords do not match.')
+        .oneOf([Yup.ref('new_password')], 'Your passwords do not match.')
     
       })
-    
-    const updateUserDetails = async (formValue) => { 
-
+      const handleResetUserPassword = async (formValue) => {
         const payloadData = {
-          password: formValue.password,
-          detail: "password change",
+          new_password: formValue.new_password,
+          confirm_password: formValue.confirm_password,
           id: selectedRowData?.id
-        }
-        
-        console.log("USER UPDATE ACTION", payloadData)
-    
+        };
+        console.log ("USER_id")
+        console.log("USER UPDATE ACTION", payloadData);
+      
         try {
-          setLoading(true)
-          await updateUser(payloadData, auth)
+          setLoading(true);
+          await resetPassword(payloadData, auth); 
           dispatch(getAllTheUsers(auth));
-          toast.success("User successfully updated")
+          toast.success("User successfully updated");
           setLoading(false);
           handleClose();
-    
-    
-        }catch(error){
-          toast.error(error)
+        } catch (error) {
+          toast.error(error.message || "Something went wrong");
           setLoading(false);
         }
-    
-     }
+      }      
     
 
   return (
     <Formik
         initialValues={initialValues}
         validationSchema={validationSchema}
-        onSubmit={updateUserDetails}
+        onSubmit={handleResetUserPassword}
     >
 
     <Form>
@@ -68,10 +63,10 @@ const SecurityDetailsUpdateForm = ({auth, loading, setLoading, handleClose, sele
                     className="border border-gray focus:outline-none p-4 rounded-lg w-full"
                     type="text"
                     placeholder="new password"
-                    name="password"
+                    name="new_password"
                 />
                 <ErrorMessage
-                    name="password"
+                    name="new_password"
                     component="div"
                     className="text-warning text-xs"
                 />
@@ -82,7 +77,7 @@ const SecurityDetailsUpdateForm = ({auth, loading, setLoading, handleClose, sele
                     className="border border-gray focus:outline-none p-4 rounded-lg w-full"
                     type="text"
                     placeholder="confirm new password"
-                    name="conf_new_password"
+                    name="confirm_password"
                 />
                 <ErrorMessage
                     name="conf_new_password"

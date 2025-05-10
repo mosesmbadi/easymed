@@ -1,9 +1,6 @@
-import React, { useState, ReactNode } from "react";
+import React from "react";
 import Sidebar from "./sidebar";
 import RightBar from "./rightbar";
-import Header from "./header";
-import CustomizedHeader from "./customized-header";
-
 
 const DashboardLayout = ({ children }) => {
   return (
@@ -13,7 +10,6 @@ const DashboardLayout = ({ children }) => {
       </div>
 
       <div className="flex-1 overflow-y-auto hideMiddleSectionScrollbar">
-        {/* <Header /> */}
         <div className="">{children}</div>
       </div>
       <div className="w-72 md:block hidden">

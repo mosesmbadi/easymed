@@ -6,10 +6,12 @@ import { Grid } from "@mui/material";
 import * as Yup from "yup";
 import { addInventory } from "@/redux/service/inventory";
 import { useSelector, useDispatch } from "react-redux";
-import { getAllItems, getAllSuppliers } from "@/redux/features/inventory";
+import { getAllItems } from "@/redux/features/inventory";
+import { getAllTheDepartments } from "@/redux/features/auth";
 import { toast } from "react-toastify";
 import SeachableSelect from "@/components/select/Searchable";
 import { useAuth } from "@/assets/hooks/use-auth";
+import DayTotalsPerPayMode from "../billing/DayTotalsPerPayMode";
 
 const AddInventory = () => {
 
@@ -18,28 +20,30 @@ const AddInventory = () => {
   const auth = useAuth()
   const router = useRouter()
   const { item } = useSelector((store) => store.inventory);
-
+  const { departments = [] } = useSelector((store) => store.auth);
 
   const initialValues = {
-    quantity_in_stock: "",
-    packed: "",
-    subpacked: "",
+    quantity_at_hand: "",
+    lot_number: "",
+    department: "",
     purchase_price: "",
     sale_price: "",
     item: "",
     category_one:null,
-    // supplier_ID: null,
+    total_quantity: "",
+    expiry_date: "",
   };
 
   const validationSchema = Yup.object().shape({
-    quantity_in_stock: Yup.string().required("This field is required!"),
-    packed: Yup.string().required("This field is required!"),
-    subpacked: Yup.string().required("This field is required!"),
+    quantity_at_hand: Yup.string().required("This field is required!"),
+    lot_number: Yup.string().required("This field is required!"),
+    department: Yup.object().required("This field is required!"),
     purchase_price: Yup.string().required("This field is required!"),
     sale_price: Yup.string().required("This field is required!"),
     item: Yup.object().required("This field is required!"),
     category_one: Yup.string().required("This field is required"),
-    // supplier_ID: Yup.string().required("This field is required!"),
+    total_quantity: Yup.string().required("This field is required!"),
+    expiry_date: Yup.string().required("This field is required!"),
   });
 
   const handleAddInventory = async (formValue, helpers) => {
@@ -63,7 +67,7 @@ const AddInventory = () => {
   };
 
   useEffect(() => {
-    dispatch(getAllSuppliers(auth));
+    dispatch(getAllTheDepartments(auth));
     dispatch(getAllItems(auth));
   }, []);
 
@@ -112,14 +116,25 @@ const AddInventory = () => {
                 className="text-warning text-xs"
               />
             </Grid>
-
+            <Grid className='my-2' item md={6} xs={12}>
+          <SeachableSelect
+            label="Select Department"
+            name="department"
+            options={departments.map((department) => ({ value: department.id, label: `${department?.name}` }))}
+          />
+          <ErrorMessage
+            name="department"
+            component="div"
+            className="text-warning text-xs"
+          />
+        </Grid>
             <Grid className='my-2' item md={6} xs={12}>
             <label htmlFor="quantity">Quantity</label>
               <Field
                 className="block border rounded-md text-sm border-gray py-2.5 px-4 focus:outline-card w-full"
                 maxWidth="sm"
                 placeholder="Quantity"
-                name="quantity_in_stock"
+                name="quantity_at_hand"
                 type="number"
               />
               <ErrorMessage
@@ -157,12 +172,12 @@ const AddInventory = () => {
               />
             </Grid>
             <Grid className='my-2' item md={6} xs={12}>
-            <label htmlFor="packed">Packed</label>
+            <label htmlFor="lot_number">Lot Number</label>
               <Field
                 className="block border rounded-md text-sm border-gray py-2.5 px-4 focus:outline-card w-full"
                 maxWidth="sm"
-                placeholder="packed"
-                name="packed"
+                placeholder="Lot Number"
+                name="lot_number"
               />
               <ErrorMessage
                 name="packed"
@@ -171,12 +186,27 @@ const AddInventory = () => {
               />
             </Grid>
             <Grid className='my-2' item md={6} xs={12}>
-            <label htmlFor="subpacked">Subpacked</label>
+            <label htmlFor="total_quantity">Total</label>
               <Field
                 className="block border rounded-md text-sm border-gray py-2.5 px-4 focus:outline-card w-full"
                 maxWidth="sm"
-                placeholder="subpacked"
+                placeholder="total quantity"
+                name="total_quantity"
+              />
+              <ErrorMessage
                 name="subpacked"
+                component="div"
+                className="text-warning text-xs"
+              />
+            </Grid>
+            <Grid className='my-2' item md={6} xs={12}>
+            <label htmlFor="expiry_date">Expiry Date</label>
+              <Field
+                className="block border rounded-md text-sm border-gray py-2.5 px-4 focus:outline-card w-full"
+                maxWidth="sm"
+                type="date"
+                placeholder="expiry date"
+                name="expiry_date"
               />
               <ErrorMessage
                 name="subpacked"

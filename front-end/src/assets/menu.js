@@ -6,6 +6,7 @@ import { RiMessage2Fill } from "react-icons/ri";
 import { BsCalendarEvent } from "react-icons/bs";
 import { MdLocalPharmacy } from "react-icons/md";
 import { FaWheelchair } from "react-icons/fa";
+import { FaBed } from "react-icons/fa";
 import { FaClockRotateLeft, FaCodePullRequest } from "react-icons/fa6";
 import { GrAdd } from 'react-icons/gr'
 import { MdInventory2 } from 'react-icons/md'
@@ -76,49 +77,31 @@ export const menus = [
     icon: <FaUserDoctor className="text-xl" />,
   },
   {
+    label: "In-patient",
+    href: "/dashboard/admit",
+    icon: <FaBed className="text-xl" />,
+  },
+  {
     label: "Laboratory",
     href: "/dashboard/laboratory",
     icon: <GiMicroscope className="text-xl" />,
-    // children: [
-    //   {
-    //     label: "Lab Results",
-    //     href: "/dashboard/laboratory/lab-results",
-    //     icon: <GrAdd className="" />,
-    //   },
-    //   {
-    //     label: "Lab Requests",
-    //     href: "/dashboard/laboratory/lab-requests",
-    //     icon: <GrAdd className="" />,
-    //   },
-    // ],
   },
   {
     label: "Billing",
     href: "/dashboard/billing",
     icon: <FaMoneyBillWave className="text-xl" />,
-    // children: [
-    //   {
-    //     label: "New Invoice",
-    //     href: "/dashboard/billing/new-invoice",
-    //     icon: <GrAdd className="" />,
-    //   },
-    //   {
-    //     label: "Invoices",
-    //     href: "/dashboard/billing/invoices-datagrid",
-    //     icon: <GrAdd className="" />,
-    //   },
-    // ],
   },
-  {
-    label: "AI Assistant",
-    href: "/dashboard/ai-assistant",
-    icon: <RiMessage2Fill className="text-xl" />,
-  },
-  {
-    label: "Announcements",
-    href: "/dashboard/announcements",
-    icon: <BsCalendarEvent className="text-xl" />,
-  },
+  // {
+  //   label: "AI Assistant",
+  //   href: "/dashboard/ai-assistant",
+  //   icon: <RiMessage2Fill className="text-xl" />,
+  // },
+  
+  // {
+  //   label: "Announcements",
+  //   href: "/dashboard/announcements",
+  //   icon: <BsCalendarEvent className="text-xl" />,
+  // },
   {
     label: "Phamarcy",
     href: "/dashboard/phamarcy",

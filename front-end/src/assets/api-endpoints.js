@@ -5,7 +5,12 @@ export const API_URL = {
   CREATE_USER: "/users/register/",
   LOGIN: "/users/login/",
   REFRESH_TOKEN: "/api/token/refresh/",
+  PASSWORD_RESET: "/customuser/password-reset/request/",
+  CHANGE_PASSWORD: "/customuser/password-reset/confirm/",
+  ADMIN_CHANGE_PASSWORD: "/customuser/users/",
   GET_USER_PERMISSIONS: "/authperms/permissions/user",
+  CREATE_GROUP: "/authperms/groups/add",
+  ADD_PERMISSION: "/authperms/groups/permissions/add",
   FETCH_GROUP: "/authperms/groups",
   FETCH_ALL_PERMISSIONS: "/authperms/permissions",
   FETCH_GROUP_PERMISSIONS: "/authperms/groups/",
@@ -81,15 +86,14 @@ export const API_URL = {
   FETCH_ORDER_BILL: "/inventory/orderbill/",
   REQUISITION: "/inventory/requisition/",
   REQUISITION_ITEM: "/inventory/requisition/",
-  FETCH_ALL_REQUISITION_ITEMS: "/inventory/requisitionitems/all_items/",
   PURCHASE_ORDER: "/inventory/",
   PURCHASE_ORDER_ITEM: "/inventory/purchase-order-item/",
   FETCH_INCOMING_ITEMS: "/inventory/incoming-item/",
   FETCH_SUPPLIER_INVOICE: "/inventory/supplier-invoice/",
-  FETCH_GOODS_RECEIPT_NOTE: "/inventory/goods-receipt-note/",
+  FETCH_INVOICE:"/inventory/supplier_invoice_pdf/",
+  FETCH_GOODS_RECEIPT_NOTE: "/inventory/receipt_note_pdf/",
   FETCH_DEPARTMENTS: "/inventory/departments/",
-
-
+  FETCH_LOW_QUANTITY: "/inventory/inventory_filter/",
 
   /***************** NURSING APIS **********************/
   ADD_TRIAGE: "/patients/triage/",
@@ -153,7 +157,12 @@ export const APP_API_URL = {
   CREATE_USER: "/api/auth/create-user",
   LOGIN: "/api/register/login",
   REFRESH_TOKEN: "/api/auth/refresh",
+  PASSWORD_RESET: "/api/register/reset-password",
+  CHANGE_PASSWORD: "/api/register/change-password",
+  ADMIN_CHANGE_PASSWORD: "/api/register/admin",
   GET_USER_PERMISSIONS: "/api/auth/user-permissions",
+  CREATE_GROUP:"/api/groups/create-group",
+  ADD_PERMISSION: "/api/groups/add-permission/",
   FETCH_GROUP: "/api/groups",
   FETCH_PATIENT_GROUP: "/api/auth/get-group",
   FETCH_ALL_PERMISSIONS: "/api/groups/fetchPermissions",
@@ -237,10 +246,10 @@ export const APP_API_URL = {
   PURCHASE_ORDER_ITEM: "/api/inventory/purchase-order-item",
   FETCH_INCOMING_ITEMS: "/api/inventory/incomingItem",
   FETCH_SUPPLIER_INVOICE: "/api/inventory/supplier-invoice/",
+  FETCH_INVOICE: "/api/inventory/fetch-invoice/",
   FETCH_GOODS_RECEIPT_NOTE: "/api/inventory/goods-receipt-note/",
+  FETCH_LOW_QUANTITY: "/api/inventory/low-drugs",
   FETCH_DEPARTMENTS: "/api/groups/department/",
-
-
 
   /***************** NURSING APIS **********************/
   ADD_TRIAGE: "/api/nursing/add-triage",

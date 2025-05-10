@@ -13,16 +13,16 @@ RUN npm install
 COPY . .
 
 # Build the Next.js application
-RUN npm run build
+# Comment out if you want dev mode
+RUN npm run build 
 
-# Optional: Debugging step to inspect the build directory
-RUN ls -la /app/.next
 
-# Expose the port the app runs on
+# Expose the port Next.js runs on
 EXPOSE 3000
+
+# Run Next.js in development mode
+# Use this if you want dev mode
+# CMD ["npm", "run", "dev"]
 
 # Start the Next.js application
 CMD ["npm", "run", "start"]
-
-# Uncomment the below line if you are in development mode
-# CMD ["npm", "run", "dev"]

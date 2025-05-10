@@ -20,8 +20,8 @@ urlpatterns = [
     path('login/', LoginAPIView.as_view(), name='login'),
     path('token/refresh/', TokenRefreshView.as_view(), name='refresh-token'),
     path('password-reset/request/', PasswordResetRequestView.as_view(), name='password_reset_request'),
-    path('password-reset/confirm/<uidb64>/<token>/', PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
-    path('users/admin-reset-password/', AdminInitiatePasswordResetView.as_view(), name='admin_reset_password'), # Correct URL
+    path('password-reset/confirm/<str:uidb64>/<str:token>/', PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
+    path('users/<int:user_id>/admin-change-password/', AdminInitiatePasswordResetView.as_view(), name='admin_change_password'),
 
 
     path('', include(router.urls)),

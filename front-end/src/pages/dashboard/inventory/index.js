@@ -17,7 +17,7 @@ const Inventory = () => {
 
 
   useEffect(() => {
-    if (auth) {
+    if (auth.token) {
       dispatch(getAllInventories(auth));
       dispatch(getItems(auth))
     }
