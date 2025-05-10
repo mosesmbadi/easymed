@@ -132,6 +132,10 @@ def download_invoice_pdf(request, invoice_id,):
     invoice_items = InvoiceItem.objects.filter(invoice=invoice)
     company = Company.objects.first()
 
+    # Construct full logo URL for template
+    company_logo_url = request.build_absolute_uri(company.logo.url) if company.logo else None
+
+
     # Fetch the sale price for each InvoiceItem
     for item in invoice_items:
         incoming_item = IncomingItem.objects.filter(item=item.item).first()
@@ -139,6 +143,7 @@ def download_invoice_pdf(request, invoice_id,):
             item.sale_price = incoming_item.sale_price
 
     html_template = get_template('invoice.html').render({
+        'company_logo_url': company_logo_url,
         'invoice': invoice,
         'invoice_items': invoice_items,
         'company': company

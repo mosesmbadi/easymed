@@ -2,11 +2,8 @@ services:
     postgres:
         image: postgres:15
         container_name: postgres
-        environment:
-            - POSTGRES_USER=${POSTGRES_USER}
-            - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-            - POSTGRES_DB=${POSTGRES_DB}
-            - POSTGRES_HOST=${POSTGRES_HOST}
+        env_file:
+            - ./.env
         ports:
         - "5433:5432"
         volumes:
@@ -31,7 +28,6 @@ services:
             dockerfile: ./Dockerfile.local
         container_name: api
         command: uvicorn --host 0.0.0.0 --port 8080 easymed.asgi:application
-        # command: python manage.py runserver 0.0.0.0:8080
         volumes:
             - ./backend:/app
         ports:
