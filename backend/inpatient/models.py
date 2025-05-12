@@ -6,7 +6,6 @@ from django.utils import timezone
 from patient.models import Patient
 
 
-# Create your models here.
 class Ward(models.Model):
     GENDER_CHOICES = (
         ("male", "Male"),
@@ -43,11 +42,11 @@ class Bed(models.Model):
 
     ward = models.ForeignKey(Ward, on_delete=models.CASCADE, related_name="beds")
     bed_type = models.CharField(max_length=15, choices=BED_TYPES, default="manual")
+    # i.e B-A12: Berd A12 in Ward B
     bed_number = models.CharField(max_length=20)
     status = models.CharField(
         max_length=10, choices=STATUS_CHOICES, default="available"
     )
-   
 
     class Meta:
         unique_together = ("ward", "bed_number")
@@ -78,7 +77,7 @@ class PatientAdmission(models.Model):
 
     class Meta:
         ordering = ['-admitted_at']
-
+        
     def generate_admission_id(self):
         uuid = str(uuid4()).replace("-", "")[:8]
         return f"IP-{self.patient.unique_id}-{uuid}"[:20]

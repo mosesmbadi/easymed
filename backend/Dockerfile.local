@@ -24,5 +24,6 @@ COPY . /app
 EXPOSE 8080
 
 RUN chmod +x ./entrypointdev.sh
-ENTRYPOINT [ "./entrypointdev.sh" ]
+
+ENTRYPOINT [ "./entrypointdev.sh"]
 

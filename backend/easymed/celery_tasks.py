@@ -32,8 +32,11 @@ logger = logging.getLogger(__name__)
 
 
 def get_inventory_or_error(item):
+    inventory_item=  Inventory.objects.get(item=item)
+    print("Inventory found:", inventory_item)
     try:
         return Inventory.objects.get(item=item)
+        
     except Inventory.DoesNotExist:
         raise ValidationError(f"No inventory record found for item: {item.name}.")
 

@@ -58,7 +58,9 @@
 </head>
 <body>
     <div class="header">
-        <img src="https://static.vecteezy.com/system/resources/thumbnails/021/809/795/small/doctors-day-illustration-png.png" alt="Company Logo" class="logo">
+        <div class="logo-column">
+            <img src="{{ company_logo_url }}" alt="Company Logo" class="logo">
+        </div>
         <h2>{{ company.name }} </h2>
         <p>{{ company.address1 }}</p>
         <p>{{ company.phone1 }} | {{ company.email1 }}</p>
