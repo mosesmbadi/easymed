@@ -1,6 +1,7 @@
+from uuid import uuid4
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
 from patient.models import Patient
 
@@ -74,17 +75,13 @@ class PatientAdmission(models.Model):
         related_name="admissions_made",
     )
     admitted_at = models.DateTimeField(default=timezone.now)
-    is_discharged = models.BooleanField(default=False)
-    discharged_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ['-admitted_at']
-        indexes = [
-            models.Index(fields=['is_discharged']),
-            models.Index(fields=['discharged_at']),
-        ]
+
     def generate_admission_id(self):
-        return f"IP{self.patient.unique_id}"
+        uuid = str(uuid4()).replace("-", "")[:8]
+        return f"IP-{self.patient.unique_id}-{uuid}"[:20]
 
     def save(self, *args, **kwargs):
         if not self.admission_id:
@@ -109,6 +106,15 @@ class PatientDischarge(models.Model):
     )
     discharged_at = models.DateTimeField(auto_now_add=True)
     discharge_notes = models.TextField(blank=True, null=True)
+
+    def save(self, *args, **kwargs):
+        with transaction.atomic():
+            if self.admission.bed:
+                self.admission.bed.status = "available"
+                self.admission.bed.save()
+                self.admission.bed = None
+                self.admission.save()
+            super().save(*args, **kwargs)
 
     def __str__(self):
         return f"Discharge for {self.admission.admission_id} on {self.discharged_at}"

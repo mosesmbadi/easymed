@@ -1,6 +1,5 @@
 from django.shortcuts import get_object_or_404
 from django.db.models import Prefetch
-from django.db import transaction
 from django_filters.rest_framework import DjangoFilterBackend
 from django.utils import timezone
 from rest_framework import status, viewsets
@@ -25,9 +24,8 @@ class PatientAdmissionViewSet(viewsets.ModelViewSet):
 
    
     def get_queryset(self):
-        return PatientAdmission.objects.filter(is_discharged=False)
+        return PatientAdmission.objects.filter(discharge__isnull=True)
 
-    @transaction.atomic
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -67,14 +65,13 @@ class BedViewSet(viewsets.ModelViewSet):
         queryset = Bed.objects.select_related('ward').prefetch_related(
             Prefetch(
                 'current_patient',
-                queryset=PatientAdmission.objects.filter(is_discharged=False).select_related('patient', 'admitted_by')
+                queryset=PatientAdmission.objects.filter(discharge__isnull=True).select_related('patient', 'admitted_by')
             )
         )
         if ward_id:
             return queryset.filter(ward_id=ward_id)
         return queryset
 
-    @transaction.atomic
     def create(self, request, *args, **kwargs):
         ward = get_object_or_404(Ward, pk=kwargs.get("ward_pk"))
         existing_beds_count = Bed.objects.filter(ward=ward).count()
@@ -82,7 +79,7 @@ class BedViewSet(viewsets.ModelViewSet):
             return Response(
                 {"error": f"Ward {ward.name} has reached its capacity of {ward.capacity} beds."},
                 status=status.HTTP_400_BAD_REQUEST,
-            )
+                )
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -92,46 +89,32 @@ class BedViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response(
                 {"Cannot create bed": str(e)}, status=status.HTTP_400_BAD_REQUEST
-            )
+                )
+
 
 class PatientDischargeViewset(viewsets.ModelViewSet):
     queryset = PatientDischarge.objects.all()
     serializer_class = PatientDischargeSerializer
     permission_classes = [IsDoctorUser]
 
-    @transaction.atomic
     def create(self, request, *args, **kwargs):
         """
         Create a discharge record for a patient admission.
         """
         admission = get_object_or_404(PatientAdmission, pk=kwargs.get("admission_pk"))
 
-        if admission.discharged_at:
-            return Response(
-                {"error": "Patient is already discharged."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
+        if hasattr(admission, 'discharge'): 
+            return Response({"error": "Patient is already discharged"}, status=status.HTTP_400_BAD_REQUEST)
         try:
             serializer = self.get_serializer(
                 data={
                     "admission": admission.id,
                     "discharge_notes": request.data.get("discharge_notes", ""),
                 }
-            )
+                )
             serializer.is_valid(raise_exception=True)
-            discharge = serializer.save(discharged_by=request.user)
-
-            admission.discharged_at = discharge.discharged_at
-            admission.is_discharged = True
-            admission.save()
-
-            if admission.bed:
-                admission.bed.status = "available"
-                admission.bed.save()
-
+            serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-
         except Exception as e:
             return Response(
                 {"error": f"Failed to discharge patient: {str(e)}"},
