@@ -1,0 +1,75 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  DOCKER_USER: ${{ secrets.DOCKER_USERNAME }}
+  DOCKER_TOKEN: ${{ secrets.DOCKER_PASSWORD }}
+  PROD_SERVER_SSH_PRIVATE_KEY: ${{ secrets.DDL_HMIS_SERVER_PRIVATE_KEY }}
+  PROD_SERVER_IP: ${{ secrets.DDL_HMIS_SERVER_IP }}
+  PROD_SERVER_USERNAME: ${{ secrets.DDL_HMIS_SERVER_USER }}
+
+jobs:
+  cleanup:
+    if: github.ref == 'refs/heads/appraisals' || github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Docker system prune
+        run: docker system prune -af
+
+  build-backend:
+    if: github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Docker Login
+        run: echo $DOCKER_TOKEN | docker login -u $DOCKER_USER --password-stdin
+      - name: Build & Push Backend Image
+        run: |
+          cd backend
+          docker build . -t mosesmbadi/easymedbackend:latest
+          docker push mosesmbadi/easymedbackend:latest
+
+  build-frontend:
+    if: github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Docker Login
+        run: echo $DOCKER_TOKEN | docker login -u $DOCKER_USER --password-stdin
+      - name: Build & Push Frontend Image
+        run: |
+          cd frontend
+          docker build . -t mosesmbadi/easymedbackend:latest
+          docker push mosesmbadi/easymedbackend:latest
+
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${PROD_SERVER_SSH_PRIVATE_KEY}" | tr -d '\r' > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H $PROD_SERVER_IP >> ~/.ssh/known_hosts
+
+      - name: Deploy using remote Docker Compose
+        run: |
+          ssh -o StrictHostKeyChecking=no $PROD_SERVER_USERNAME@$PROD_SERVER_IP << 'EOF'
+            echo "Stopping and removing old containers..."
+            docker-compose down --remove-orphans
+
+            echo "Pulling new images..."
+            docker-compose pull
+
+            echo "Starting containers..."
+            docker-compose up --build -d
+          EOF
