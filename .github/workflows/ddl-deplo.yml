@@ -65,11 +65,11 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no $PROD_SERVER_USERNAME@$PROD_SERVER_IP << 'EOF'
             echo "Stopping and removing old containers..."
-            docker-compose down --remove-orphans
+            docker compose down --remove-orphans
 
             echo "Pulling new images..."
-            docker-compose pull
+            docker compose pull
 
             echo "Starting containers..."
-            docker-compose up --build -d
+            docker compose up --build -d
           EOF
