@@ -23,7 +23,6 @@ class PatientAdmissionViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend] 
     filterset_class = PatientAdmissionFilter
 
-   
     def get_queryset(self):
         return PatientAdmission.objects.filter(is_discharged=False)
 
@@ -58,7 +57,8 @@ class WardViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-   
+
+
 class BedViewSet(viewsets.ModelViewSet):
     serializer_class = BedSerializer
 

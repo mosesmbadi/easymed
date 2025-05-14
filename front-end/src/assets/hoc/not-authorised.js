@@ -8,8 +8,8 @@ import { getAllPatients } from "@/redux/features/patients";
 
 const NotAuthorized = () => {
   const router = useRouter();
-  const auth = useAuth();
   const dispatch = useDispatch();
+  const auth = useAuth();
 
   useEffect(() => {
     if (auth?.token) {
@@ -19,6 +19,9 @@ const NotAuthorized = () => {
 
   const backUrl = auth?.role === "patient" ? "/patient-overview" : "/dashboard";
   const backText = auth?.role === "patient" ? "Back to Patient Overview" : "Back to Dashboard";
+
+  const backHref = auth?.role === "patient" ? "/patient-overview" : "/dashboard";
+  const backLabel = auth?.role === "patient" ? "Back to Patient Overview" : "Back to Dashboard";
 
   return (
     <section className="p-12 flex items-center justify-center h-screen">
@@ -32,9 +35,11 @@ const NotAuthorized = () => {
             {backText}
           </a>
         </Link>
+
       </div>
     </section>
   );
 };
 
 export default NotAuthorized;
+

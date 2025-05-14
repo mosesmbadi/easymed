@@ -85,46 +85,23 @@ export const menus = [
     label: "Laboratory",
     href: "/dashboard/laboratory",
     icon: <GiMicroscope className="text-xl" />,
-    // children: [
-    //   {
-    //     label: "Lab Results",
-    //     href: "/dashboard/laboratory/lab-results",
-    //     icon: <GrAdd className="" />,
-    //   },
-    //   {
-    //     label: "Lab Requests",
-    //     href: "/dashboard/laboratory/lab-requests",
-    //     icon: <GrAdd className="" />,
-    //   },
-    // ],
   },
   {
     label: "Billing",
     href: "/dashboard/billing",
     icon: <FaMoneyBillWave className="text-xl" />,
-    // children: [
-    //   {
-    //     label: "New Invoice",
-    //     href: "/dashboard/billing/new-invoice",
-    //     icon: <GrAdd className="" />,
-    //   },
-    //   {
-    //     label: "Invoices",
-    //     href: "/dashboard/billing/invoices-datagrid",
-    //     icon: <GrAdd className="" />,
-    //   },
-    // ],
   },
-  {
-    label: "AI Assistant",
-    href: "/dashboard/ai-assistant",
-    icon: <RiMessage2Fill className="text-xl" />,
-  },
-  {
-    label: "Announcements",
-    href: "/dashboard/announcements",
-    icon: <BsCalendarEvent className="text-xl" />,
-  },
+  // {
+  //   label: "AI Assistant",
+  //   href: "/dashboard/ai-assistant",
+  //   icon: <RiMessage2Fill className="text-xl" />,
+  // },
+  
+  // {
+  //   label: "Announcements",
+  //   href: "/dashboard/announcements",
+  //   icon: <BsCalendarEvent className="text-xl" />,
+  // },
   {
     label: "Phamarcy",
     href: "/dashboard/phamarcy",

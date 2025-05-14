@@ -144,7 +144,7 @@ const Login = () => {
             <div className="space-y-4">
               <h1 className="text-2xl text-white uppercase">Welcome to</h1>
               <h1 className="uppercase text-white text-2xl border-b py-4 border-white">
-                Make - Easy HMIS
+                EaSyMed HMIS
               </h1>
               <p className="text-sm text-white">
                 If you forgot your password, please contact your system

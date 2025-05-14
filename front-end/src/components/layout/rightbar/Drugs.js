@@ -1,51 +1,32 @@
-import React from 'react'
+import React, { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useAuth } from "@/assets/hooks/use-auth";
+import { getLowDrugs } from "@/redux/features/inventory";
 
-const DrugsInfo = ({displayNUmber}) => {
-    const drugs = [
-        {
-            name:"Cold Seas",
-            quantity:"120 ltrs"
-        },
-        {
-            name:"Ibuprofens",
-            quantity:"10 ltrs"
-        },
-        {
-            name:"Paracetamol",
-            quantity:"32 pkts"
-        },
-        {
-            name:"Omeprazol",
-            quantity:"23 Boxes"
-        },
-        {
-            name:"Bandage",
-            quantity:"20 boxes"
-        },
-        {
-            name:"Flagyl",
-            quantity:"21 pkts"
-        },
-        {
-            name:"Trenidazole",
-            quantity:"12 Pcs"
-        },
-    ]
+const DrugsInfo = () => {
+  const dispatch = useDispatch();
+  const auth = useAuth();
+  console.log("AUTH OBJECT:", auth); // check if token is there
 
-    const drugsInfo = drugs.slice(0,displayNUmber).map((item, index)=>{
-        return (
-            <li key={`dugs-info-${index}`} className='flex justify-between px-4 text-xs my-2 rounded'>
-                <p className='w-full'>{item.name}</p>
-                <p className='text-end w-full'>{item.quantity}</p>
-            </li>
-        );
 
-    })
-  return (
-    <ul>
-        {drugsInfo}
-    </ul>
-  )
-}
+  const { drugs } = useSelector((state) => state.inventory);
 
-export default DrugsInfo
+  useEffect(() => {
+    dispatch(getLowDrugs(auth));
+  }, [dispatch, auth]);
+
+  const drugsInfo = drugs?.slice().map((item, index) => (
+    <li
+      key={`drugs-info-${index}`}
+      className="flex justify-between px-4 text-xs my-2 rounded"
+    >
+      <p className="w-full">{item.item_name}</p>
+      <p className="text-end w-full">{item.quantity_at_hand}</p>
+    </li>
+  ));
+  
+
+  return <ul>{drugsInfo}</ul>;
+};
+
+export default DrugsInfo;
