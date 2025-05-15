@@ -61,7 +61,7 @@ const CreateInsurancePriceModal = () => {
       const response = await createInventoryInsurancePrices( auth, formData )
       dispatch(createAInsurancePriceStore(response))
       setLoading(false);
-      toast.success("Equipment Created Successfully!");
+      toast.success("Insuarance Price Created Successfully!");
       handleClose();
 
     } catch (err) {
