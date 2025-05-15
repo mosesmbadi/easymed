@@ -46,7 +46,7 @@ def update_service_billed_status(instance):
 
 
 def get_available_stock(instance):
-    inventory_items = Inventory.objects.filter(item=instance.item)
+    inventory_items = Inventory.objects.filter(item=instance.item).exclude(item__item_code="99999-NA")
     if not inventory_items.exists():
         return 0
 

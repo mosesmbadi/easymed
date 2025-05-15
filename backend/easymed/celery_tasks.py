@@ -1,24 +1,19 @@
 # import os
 import logging
 from celery import shared_task
-from django.db.models.signals import post_save
 from django.conf import settings
-from django.template.loader import get_template
-from django.core.mail import EmailMultiAlternatives
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.core.mail import send_mail
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.db.models import F
-from django.core.exceptions import ObjectDoesNotExist, ValidationError
+from django.core.exceptions import ValidationError
 
 
 from inventory.models import (
     Inventory, InventoryArchive
 )
-from billing.models import Invoice
-from patient.models import AttendanceProcess
 from authperms.models import Group
 from celery import shared_task
 from laboratory.models import TestKitCounter, TestKit, LabTestRequestPanel
@@ -45,9 +40,13 @@ def update_stock_quantity_if_stock_is_available(instance, deductions):
     """
     try:
         # Get inventory records for the item, ordered by expiry date (nearest first)
+        # TODO: WHat the hell is this? expiry_date__isnull=True??
+        # inventory_records = Inventory.objects.filter(
+        #     item=instance.item
+        # ).exclude(expiry_date__isnull=True, item__item_code="99999-NA").order_by('expiry_date')
         inventory_records = Inventory.objects.filter(
             item=instance.item
-        ).exclude(expiry_date__isnull=True).order_by('expiry_date')
+        ).exclude(item__item_code="99999-NA").order_by('expiry_date')
 
         if not inventory_records.exists():
             raise ValidationError(f"No inventory record found for item: {instance.item.name}.")
@@ -98,7 +97,7 @@ def check_inventory_reorder_levels():
     """
     Periodically checks all inventory items for reorder levels and sends notifications if needed.
     """
-    items = Inventory.objects.filter(quantity_at_hand__lte=F('re_order_level'))
+    items = Inventory.objects.filter(quantity_at_hand__lte=F('re_order_level')).exclude(item__item_code="99999-NA")
     if not items.exists():
         logger.info("No items found below reorder levels.")
         return
