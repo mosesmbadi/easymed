@@ -14,7 +14,7 @@ from django.core.exceptions import ValidationError
 
 User = get_user_model()
 
-from .helpers import ( 
+from pharmacy.helpers import ( 
  get_active_prescriptions,
  get_due_doses,
  )

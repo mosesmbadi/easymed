@@ -79,8 +79,8 @@ class PatientAdmission(models.Model):
         ordering = ['-admitted_at']
         
     def generate_admission_id(self):
-        uuid = str(uuid4()).replace("-", "")[:8]
-        return f"IP-{self.patient.unique_id}-{uuid}"[:20]
+        ts = timezone.now().strftime('%Y%m%d%H%M%S%f')  
+        return f"IP-{self.patient.unique_id}-{ts}"
 
     def save(self, *args, **kwargs):
         if not self.admission_id:
