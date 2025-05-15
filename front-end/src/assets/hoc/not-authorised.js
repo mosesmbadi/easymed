@@ -11,9 +11,14 @@ const NotAuthorized = () => {
   const dispatch = useDispatch();
   const auth = useAuth();
 
-  useEffect(()=>{
-    dispatch(getAllPatients(auth));      
-  }, [auth]);
+  useEffect(() => {
+    if (auth?.token) {
+      dispatch(getAllPatients(auth.token)); 
+    }
+  }, [auth?.token, dispatch]);
+
+  const backUrl = auth?.role === "patient" ? "/patient-overview" : "/dashboard";
+  const backText = auth?.role === "patient" ? "Back to Patient Overview" : "Back to Dashboard";
 
   const backHref = auth?.role === "patient" ? "/patient-overview" : "/dashboard";
   const backLabel = auth?.role === "patient" ? "Back to Patient Overview" : "Back to Dashboard";
@@ -23,16 +28,14 @@ const NotAuthorized = () => {
       <div className="p-8 space-y-4 rounded md:w-5/12 mx-auto text-center">
         <h1 className="text-7xl font-bold">403</h1>
         <p className="font-semibold">Restricted Access</p>
-        <p>You lack permission to access this page</p>
+        <p>You lack permission to access this page.</p>
+        <Link href={backUrl} passHref legacyBehavior>
+          <a className="inline-flex items-center gap-4 rounded text-white text-sm bg-primary px-4 py-2 my-2">
+            <BiArrowBack />
+            {backText}
+          </a>
+        </Link>
 
-        <div className="mt-6 flex justify-center">
-          <Link href={backHref}>
-            <a className="flex items-center gap-2 bg-primary text-white text-xs px-5 py-3 rounded">
-              <BiArrowBack />
-              {backLabel}
-            </a>
-          </Link>
-        </div>
       </div>
     </section>
   );
