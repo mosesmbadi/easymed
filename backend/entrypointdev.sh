@@ -6,7 +6,16 @@ python manage.py migrate
 # We popiulate the authperms table with the groups and permissions
 python manage.py shell <<EOF
 from authperms.models import Group, Permission
+from customuser.models import CustomUser
 import sys
+
+# Create the admin user
+if not CustomUser.objects.filter(email='admin@mail.com').exists():
+    print("Creating superuser...")
+    CustomUser.objects.create_superuser(email='admin@mail.com', password='d1@gn3t', role=CustomUser.SYS_ADMIN)
+else:
+    print("Superuser already exists. Skipping.")
+
 
 # Groups to create
 groups = ['SYS_ADMIN', 'PATIENT', 'DOCTOR', 'PHARMACIST', 'RECEPTIONIST', 'LAB_TECH', 'NURSE']
@@ -45,6 +54,7 @@ for permission_name in permissions:
 sys_admin_group = Group.objects.get(name='SYS_ADMIN')
 all_permissions = Permission.objects.all()
 sys_admin_group.permissions.set(all_permissions)
+    
 EOF
 
 

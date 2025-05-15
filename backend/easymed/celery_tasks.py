@@ -47,9 +47,14 @@ def update_stock_quantity_if_stock_is_available(instance, deductions):
     Prioritizes inventory records with the nearest expiry date.
     """
     try:
+        # Get inventory records for the item, ordered by expiry date (nearest first)
+        # TODO: WHat the hell is this? expiry_date__isnull=True??
+        # inventory_records = Inventory.objects.filter(
+        #     item=instance.item
+        # ).exclude(expiry_date__isnull=True, item__item_code="99999-NA").order_by('expiry_date')
         inventory_records = Inventory.objects.filter(
             item=instance.item
-        ).exclude(expiry_date__isnull=True).order_by('expiry_date')
+        ).exclude(item__item_code="99999-NA").order_by('expiry_date')
 
         if not inventory_records.exists():
             raise ValidationError(f"No inventory record found for item: {instance.item.name}.")
@@ -97,7 +102,7 @@ def check_inventory_reorder_levels():
     """
     Periodically checks all inventory items for reorder levels and sends notifications if needed.
     """
-    items = Inventory.objects.filter(quantity_at_hand__lte=F('re_order_level'))
+    items = Inventory.objects.filter(quantity_at_hand__lte=F('re_order_level')).exclude(item__item_code="99999-NA")
     if not items.exists():
         logger.info("No items found below reorder levels.")
         return

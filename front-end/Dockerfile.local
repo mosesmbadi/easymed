@@ -1,28 +1,8 @@
 FROM node:18-alpine
-
-# Set the working directory
 WORKDIR /app
-
-# Copy package.json and package-lock.json
 COPY package*.json ./
-
-# Install dependencies
 RUN npm install
-
-# Copy the rest of the application code
 COPY . .
-
-# Build the Next.js application
-# Comment out if you want dev mode
 RUN npm run build 
-
-
-# Expose the port Next.js runs on
 EXPOSE 3000
-
-# Run Next.js in development mode
-# Use this if you want dev mode
-# CMD ["npm", "run", "dev"]
-
-# Start the Next.js application
 CMD ["npm", "run", "start"]

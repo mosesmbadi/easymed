@@ -74,6 +74,7 @@ const AdminCreateNurseModal = () => {
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
       >
+        
         <DialogContent>
           <section className="flex items-center justify-center gap-8 overflow-hidden">
             <div className="w-full space-y-8 px-4">

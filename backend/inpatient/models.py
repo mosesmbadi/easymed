@@ -42,7 +42,7 @@ class Bed(models.Model):
 
     ward = models.ForeignKey(Ward, on_delete=models.CASCADE, related_name="beds")
     bed_type = models.CharField(max_length=15, choices=BED_TYPES, default="manual")
-    # i.e B-A12: Berd A12 in Ward B
+    # i.e B-A12: Bed A12 in Ward B
     bed_number = models.CharField(max_length=20)
     status = models.CharField(
         max_length=10, choices=STATUS_CHOICES, default="available"
