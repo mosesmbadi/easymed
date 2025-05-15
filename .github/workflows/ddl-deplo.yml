@@ -3,7 +3,8 @@ name: CI/CD Pipeline
 on:
   push:
     branches:
-      - dev-moses
+      - main
+    
 
 env:
   DOCKER_USER: ${{ secrets.DOCKER_USERNAME }}
