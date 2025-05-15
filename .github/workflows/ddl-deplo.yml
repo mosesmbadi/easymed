@@ -1,9 +1,11 @@
+# Deployment file for Dounebain Diagnostics
 name: CI/CD Pipeline
 
 on:
   push:
     branches:
       - main
+    
 
 env:
   DOCKER_USER: ${{ secrets.DOCKER_USERNAME }}
@@ -21,7 +23,7 @@ jobs:
         run: docker system prune -af
 
   build-backend:
-    if: github.ref == 'refs/heads/develop'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -34,7 +36,7 @@ jobs:
           docker push mosesmbadi/easymedbackend:latest
 
   build-frontend:
-    if: github.ref == 'refs/heads/develop'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -42,7 +44,7 @@ jobs:
         run: echo $DOCKER_TOKEN | docker login -u $DOCKER_USER --password-stdin
       - name: Build & Push Frontend Image
         run: |
-          cd frontend
+          cd front-end
           docker build . -t mosesmbadi/easymedbackend:latest
           docker push mosesmbadi/easymedbackend:latest
 
@@ -61,15 +63,20 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H $PROD_SERVER_IP >> ~/.ssh/known_hosts
 
+      - name: Transfer docker-compose.yml
+        run: |
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa docker-compose.yml $PROD_SERVER_USERNAME@$PROD_SERVER_IP:/home/$PROD_SERVER_USERNAME/docker-compose.yml    
+
       - name: Deploy using remote Docker Compose
         run: |
           ssh -o StrictHostKeyChecking=no $PROD_SERVER_USERNAME@$PROD_SERVER_IP << 'EOF'
+            pwd && ls -la
             echo "Stopping and removing old containers..."
-            docker-compose down --remove-orphans
+            docker compose down --remove-orphans
 
             echo "Pulling new images..."
-            docker-compose pull
+            docker compose pull
 
             echo "Starting containers..."
-            docker-compose up --build -d
+            docker compose up --build -d
           EOF
