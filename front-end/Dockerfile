@@ -15,8 +15,6 @@ COPY . .
 # Build the Next.js application
 RUN npm run build
 
-# Optional: Debugging step to inspect the build directory
-RUN ls -la /app/.next
 
 # Expose the port the app runs on
 EXPOSE 3000
