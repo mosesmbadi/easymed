@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+    
 
 env:
   DOCKER_USER: ${{ secrets.DOCKER_USERNAME }}
@@ -61,9 +62,14 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H $PROD_SERVER_IP >> ~/.ssh/known_hosts
 
+      - name: Transfer docker-compose.yml
+        run: |
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa docker-compose.yml $PROD_SERVER_USERNAME@$PROD_SERVER_IP:/home/$PROD_SERVER_USERNAME/docker-compose.yml    
+
       - name: Deploy using remote Docker Compose
         run: |
           ssh -o StrictHostKeyChecking=no $PROD_SERVER_USERNAME@$PROD_SERVER_IP << 'EOF'
+            pwd && ls -la
             echo "Stopping and removing old containers..."
             docker compose down --remove-orphans
 
