@@ -64,7 +64,7 @@ const EditPaymodeModal = ({ open, setOpen, selectedRowData }) => {
       const response = await updatePaymentModes(auth, formData, parseInt(selectedRowData?.id))
       dispatch(updatePaymentModeStore(response))
       setLoading(false);
-      toast.success("<ode Updated Successfully!");
+      toast.success(" Updated Successfully!");
       handleClose();
 
     } catch (err) {
