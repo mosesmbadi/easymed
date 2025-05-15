@@ -1,5 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import dynamic from "next/dynamic";
+import { Grid } from '@mui/material';
+import Link from "next/link";
 import { Column, Paging, Pager, HeaderFilter, Scrolling } from "devextreme-react/data-grid";
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
@@ -9,22 +11,27 @@ const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
 const allowedPageSizes = [5, 10, 'all'];
 
 const Ward = () => {
+    const [searchQuery, setSearchQuery] = useState("");
+
     return (
         <section>
             <h3 className="text-xl mt-8">Wards</h3>
-            <div className="my-2 flex justify-between gap-4">
-                <div className="w-full bg-white px-2 flex items-center rounded-lg">
-                    <img className="h-4 w-4" src="/images/svgs/search.svg" alt="search icon" />
+            <Grid className="my-2 flex justify-between gap-4">
+                <Grid className="w-full bg-white px-2 flex items-center rounded-lg" item md={4} xs={4}>
+                    <img className="h-4 w-4" src='/images/svgs/search.svg' />
                     <input
                         className="py-2 w-full px-4 bg-transparent rounded-lg focus:outline-none placeholder-font font-thin text-sm"
-                        placeholder="Search Ward"
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        value={searchQuery}
+                        placeholder="Search item"
                     />
-                </div>
-                <div className="w-full bg-primary rounded-md flex items-center text-white justify-center cursor-pointer">
-                    Add New Ward
-                </div>
-            </div>
-
+                </Grid>
+                <Grid className="w-full bg-primary rounded-md flex items-center text-white" item md={4} xs={4}>
+                    <Link className="mx-4 w-full text-center" href="/dashboard/admit/new">
+                        Add New Ward
+                    </Link>
+                </Grid>
+            </Grid>
             <DataGrid
                 dataSource={[]} // empty data
                 allowColumnReordering={true}
@@ -48,25 +55,25 @@ const Ward = () => {
                     showNavigationButtons={true}
                 />
                 <Column
-                    dataField="patient_number"
+                    dataField="ward_name"
                     caption="Ward Name"
                     allowFiltering={true}
                     allowSearch={true}
                 />
                 <Column
-                    dataField="patient"
+                    dataField="capacity"
                     caption="Capacity"
                     allowFiltering={true}
                     allowSearch={true}
                 />
                 <Column
-                    dataField="patient"
+                    dataField="nurse"
                     caption="Nurse"
                     allowFiltering={true}
                     allowSearch={true}
                 />
-                <Column dataField="reason" caption="Ward Type" width={200} />
-                <Column dataField="actions" caption="Gender" />
+                <Column dataField="ward_type" caption="Ward Type" width={200} />
+                <Column dataField="gender" caption="Gender" />
             </DataGrid>
         </section>
     );
