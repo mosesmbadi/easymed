@@ -1,24 +1,23 @@
+
+# --- Builder Stage ---
+FROM python:3.11-alpine AS builder
+
+WORKDIR /app
+
+COPY ./requirements.txt /app/
+RUN pip install --no-cache-dir -r requirements.txt
+
+# --- Final Stage ---
 FROM python:3.11-alpine
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-RUN apk update && apk add --no-cache \
-    python3-dev \
-    gcc \
-    libc-dev \
-    weasyprint \
-    ttf-dejavu \
-    fontconfig
+RUN apk update && apk add --no-cache libstdc++
 
 WORKDIR /app
 
-RUN pip install --upgrade pip
-RUN pip install uvicorn
-ADD ./requirements.txt /app/
-RUN pip install -r requirements.txt
-
-
+COPY --from=builder /app /app
 COPY . /app
 
 EXPOSE 8080
@@ -26,4 +25,41 @@ EXPOSE 8080
 RUN chmod +x ./entrypointdev.sh
 
 ENTRYPOINT [ "./entrypointdev.sh"]
+
+
+
+# FROM python:3.11-alpine
+
+# ENV PYTHONDONTWRITEBYTECODE=1 \
+#     PYTHONUNBUFFERED=1 \
+#     PIP_NO_CACHE_DIR=1
+
+# # Install build dependencies only when needed, then remove them
+# RUN apk update && apk add --no-cache \
+#     build-base \
+#     weasyprint \
+#     ttf-dejavu \
+#     fontconfig \
+#     && rm -rf /var/cache/apk/*
+
+# # Set work directory
+# WORKDIR /app
+
+# # Pre-copy only what is needed for dependency install
+# COPY ./requirements.txt /app/
+
+# # Install Python packages
+# RUN pip install --upgrade pip && \
+#     pip install -r requirements.txt
+
+# # Copy project files
+# COPY . /app
+
+# # Make entrypoint script executable
+# RUN chmod +x ./entrypointdev.sh
+
+# EXPOSE 8080
+
+# ENTRYPOINT [ "./entrypointdev.sh" ]
+
 
