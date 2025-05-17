@@ -8,9 +8,9 @@ import Link from 'next/link'
 import { Grid } from "@mui/material";
 import { months } from "@/assets/dummy-data/laboratory";
 import { getAllPurchaseOrders, getGoods } from "@/redux/features/inventory";
-import { getAllDoctors } from "@/redux/features/doctors";
+// import { getAllDoctors } from "@/redux/features/doctors";
 import { useAuth } from "@/assets/hooks/use-auth";
-import { getAllTheUsers } from "@/redux/features/users";
+// import { getAllTheUsers } from "@/redux/features/users";
 import { downloadPDF } from '@/redux/service/pdfs';
 import CmtDropdownMenu from "@/assets/DropdownMenu";
 import { LuMoreHorizontal } from "react-icons/lu";

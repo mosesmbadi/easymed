@@ -177,6 +177,15 @@ export const getAllRequisitions = (auth) => async (dispatch) => {
   }
 };
 
+export const getGoods = (id, auth) => async (dispatch) => {
+  try {
+    const response = await fetchRequisitions(auth, id);
+    dispatch(setGoods(response));
+  } catch (error) {
+    console.log("REQUISITIONS_ERROR ", error);
+  }
+};
+
 export const getAllRequisitionItems = (auth) => async (dispatch) => {
   try {
     const response = await fetchAllRequisitionItems(auth);
