@@ -78,7 +78,7 @@ class Item(AbstractBaseModel):
         ('Specialized Appointment', 'Specialized Appointment'),
         ('general', 'General'),
     ]
-    item_code=models.CharField(max_length=255, unique=True, editable=False)
+    item_code=models.CharField(max_length=255, default="99999-NA")
     name = models.CharField(max_length=255)
     desc = models.CharField(max_length=255)
     category = models.CharField(max_length=255, choices=CATEGORY_CHOICES)
@@ -97,17 +97,6 @@ class Item(AbstractBaseModel):
     def selling_price(self):
         inventory = self.active_inventory_items.first()
         return inventory.sale_price if inventory else 0
-
-    def save(self, *args, **kwargs):
-        ''' Generate unique item code'''
-        name_abbr = ''.join([part[:3].upper() for part in self.name.split()[:2]])
-        category_abbr = ''.join([part[:3].upper() for part in self.category.split()[:1]])
-        unique_id = str(uuid.uuid4().hex[:4].upper())
-
-        item_code = f"{name_abbr}-{category_abbr}-{unique_id}"
-        self.item_code = item_code
-
-        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.id} - {self.name}"
