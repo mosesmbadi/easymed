@@ -28,7 +28,7 @@ services:
 
     backend:
         image: mosesmbadi/easymedbackend
-        container_name: backend
+        container_name: api
         command: uvicorn --host 0.0.0.0 --port 8080 easymed.asgi:application
         ports:
             - 8080:8080
