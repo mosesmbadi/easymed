@@ -76,25 +76,6 @@ services:
             - mks    
 
 
-
-    db_backup:
-        image: amazonlinux:2
-        container_name: db_backup
-        depends_on:
-        - postgres
-        volumes:
-        - ./backup:/app
-        - ./backup/aws:/root/.aws
-        environment:
-        - POSTGRES_USER=${POSTGRES_USER}
-        - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-        - POSTGRES_DB=${POSTGRES_DB}
-        - S3_BUCKET_NAME=${S3_BUCKET_NAME}
-        working_dir: /app
-        entrypoint: ["/bin/sh", "-c", "yum install -y postgresql aws-cli cronie && chmod +x /app/backup.sh && crontab /app/crontab && crond -f"]
-        networks:
-        - mks
-
 volumes:
     postgres_data:
 
