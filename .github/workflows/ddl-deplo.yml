@@ -45,8 +45,8 @@ jobs:
       - name: Build & Push Frontend Image
         run: |
           cd front-end
-          docker build . -t mosesmbadi/easymedbackend:latest
-          docker push mosesmbadi/easymedbackend:latest
+          docker build . -t mosesmbadi/easymedfrontend:latest
+          docker push mosesmbadi/easymedfrontend:latest
 
   deploy:
     if: github.ref == 'refs/heads/main'
