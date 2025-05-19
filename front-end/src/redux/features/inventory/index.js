@@ -301,4 +301,8 @@ export const getInvoice = (supplier_id, auth) => async (dispatch) => {
     }
   };
 
+  export const getGoods = (auth) => async (dispatch) => {
+    return '';
+  }
+
 export default InventorySlice.reducer;

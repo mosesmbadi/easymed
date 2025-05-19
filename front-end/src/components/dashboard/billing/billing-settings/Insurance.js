@@ -49,26 +49,6 @@ const Insurance = () => {
   const initialValues = {
     name: ""
   }
-
-  const validationSchema = Yup.object().shape({
-    name: Yup.string().required("Fiels is required!"),
-  });
-
-  const addNewInsurance = async (values, helpers) => {
-    setLoading(true)
-    try {
-      const response = await createInsurance(values, auth)
-      dispatch(createAInsuranceToStore(response))
-      setLoading(false)
-      helpers.resetForm();
-      toast.success('Insurance created succesfully')
-    } catch (error) {
-      setLoading(false)
-      toast.error('Error Creating Specimen')
-      console.log("ERR", error)
-    }
-  }
-
   useEffect(() => {
     dispatch(getAllInsurance(auth))
   }, [])
@@ -91,6 +71,7 @@ const Insurance = () => {
             toast.error('Error Creating Specimen')
             console.log("ERR", error)
         }
+    }
 
   const onMenuClick = async (menu, data) => {
     if (menu.action === "update") {
