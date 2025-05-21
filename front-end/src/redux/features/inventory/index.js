@@ -1,6 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { fetchItem, fetchItems, fetchOrderBills, fetchSuppliers, fetchInventories, fetchRequisitions,
-   fetchPurchaseOrders, fetchIncomingItems, fetchAllRequisitionItems,fetchSupplierInvoice, fetchInvoice, fetchLowDrugs, } from "@/redux/service/inventory";
+   fetchPurchaseOrders, fetchIncomingItems, fetchAllRequisitionItems,fetchSupplierInvoice, fetchInvoice, fetchLowDrugs,fetchGoods } from "@/redux/service/inventory";
 
 
 const initialState = {
@@ -18,6 +18,7 @@ const initialState = {
   supplierInvoice: [],
   invoice: [],
   drugs:[],
+  goods:[]
 };
 
 const InventorySlice = createSlice({
@@ -146,7 +147,7 @@ const InventorySlice = createSlice({
 export const { updateItem, setItems,setSuppliers,setOrderBills,setItem, setInventories, setRequisitions, 
   setPurchaseOrders, setInventoryItems, setInventoryItemsPdf, clearInventoryItemsPdf, 
   setPurchaseOrderItems, setPurchaseOrderItemsPdf, setRequisitionsAfterPoGenerate, setPoAfterDispatch,
-  clearPurchaseOrderItemsPdf, setIncoming, setRequisitionsItems,setSupplierInvoice, setInvoice, setDrugs } = InventorySlice.actions;
+  clearPurchaseOrderItemsPdf, setIncoming, setRequisitionsItems,setSupplierInvoice, setInvoice, setDrugs, setGoods } = InventorySlice.actions;
 
 
 export const getAllItems = (auth) => async (dispatch) => {
@@ -179,7 +180,7 @@ export const getAllRequisitions = (auth) => async (dispatch) => {
 
 export const getGoods = (id, auth) => async (dispatch) => {
   try {
-    const response = await fetchRequisitions(auth, id);
+    const response = await fetchGoods(auth, id);
     dispatch(setGoods(response));
   } catch (error) {
     console.log("REQUISITIONS_ERROR ", error);

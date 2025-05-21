@@ -1,6 +1,8 @@
 import React from "react";
 import { Formik, Field, Form, ErrorMessage } from "formik";
 import { Grid } from "@mui/material";
+import {createWard} from "@/redux/service/inpatient";
+import { useAuth } from "@/assets/hooks/use-auth";
 import * as Yup from "yup";
 
 const NewWard = () => {
@@ -10,6 +12,8 @@ const NewWard = () => {
     ward_type: "",
     gender: "",
   };
+  const auth = useAuth();
+  
 
   const validationSchema = Yup.object().shape({
     name: Yup.string().required("This field is required!"),
@@ -18,11 +22,25 @@ const NewWard = () => {
     gender: Yup.string().required("This field is required!"),
   });
 
-  const handleSubmit = (values, helpers) => {
-    // No real logic, just a placeholder
-    console.log("Submitted:", values);
-    helpers.resetForm();
+  const handleSubmit = async (formValue, helpers) => {
+    try {
+      const payload = {
+        name: formValue.name,
+        capacity: formValue.capacity,
+        ward_type: formValue.ward_type,
+        gender: formValue.gender
+      };
+      await createWard(payload,auth).then((res) => {
+        console.log("WARD_RESPONSE ", res);
+        helpers.resetForm();
+        toast.success("Ward Added Successfully!");
+        router.push('/dashboard/admit/wards');
+      });
+    } catch (err) {
+      console.log("WARD_ERROR ", err);
+    }
   };
+  
 
   return (
     <section>
@@ -42,7 +60,7 @@ const NewWard = () => {
       >
         <Form>
           <Grid container spacing={2}>
-            <Grid className="my-2" item md={12} xs={12}>
+            <Grid className="my-2" item md={6} xs={12}>
               <label htmlFor="name">Ward Name</label>
               <Field
                 className="block border rounded-md text-sm border-gray py-2.5 px-4 w-full"
@@ -84,11 +102,9 @@ const NewWard = () => {
               />
             </Grid>
 
-            <Grid className="my-2" item md={12} xs={12}>
+            <Grid className="my-2" item md={6} xs={12}>
               <label htmlFor="gender">Gender</label>
               <Field
-                as="textarea"
-                rows={4}
                 className="block border rounded-md text-sm border-gray py-2.5 px-4 w-full"
                 placeholder="Gender"
                 name="gender"
