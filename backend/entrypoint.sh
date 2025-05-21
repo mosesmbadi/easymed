@@ -10,11 +10,11 @@ from customuser.models import CustomUser
 import sys
 
 # Create the admin user
-if not CustomUser.objects.filter(email='admin2@mail.com').exists():
-    print("Creating superuser...")
-    CustomUser.objects.create_superuser(email='admin2@mail.com', password='d1@gn3t', role=CustomUser.SYS_ADMIN)
-else:
-    print("Superuser already exists. Skipping.")
+# if not CustomUser.objects.filter(email='admin2@mail.com').exists():
+#     print("Creating superuser...")
+#     CustomUser.objects.create_superuser(email='admin2@mail.com', password='d1@gn3t', role=CustomUser.SYS_ADMIN)
+# else:
+#     print("Superuser already exists. Skipping.")
 
 
 # Groups to create
