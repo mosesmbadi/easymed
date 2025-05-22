@@ -234,6 +234,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "easymed.celery_tasks.inventory_garbage_collection",            
         "schedule": crontab(minute='*/45'),  
     },
+    "check-medication-notifications": {
+        "task": "easymed.celery_tasks.check_medication_notifications",
+        'schedule': crontab(minute='*/60'),
+    },
 }
 
 

@@ -159,6 +159,8 @@ class PrescribedDrug(models.Model):
     quantity = models.PositiveIntegerField(default=1)
     is_billed = models.BooleanField(default=False)
     created_on = models.DateField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
 
     def __str__(self):
         return f"Prescribed Drug #{self.item.name} - {self.created_on}"    
@@ -206,7 +208,7 @@ class AttendanceProcess(models.Model):
         ('lab', 'Lab'),
         ('awaiting result', 'Result'),
         ('added result', 'Resulted'),
-        ('impatient', 'Impatient'),
+        ('inpatient', 'Inpatient'),
         ('billing', 'Billing'),
         ('complete', 'Complete'),
     )
