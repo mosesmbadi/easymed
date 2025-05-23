@@ -11,29 +11,28 @@ export const config = {
 
 export default async function handler(req, res) {
     if (req.method === API_METHODS.POST) {
-
-        try {
-            if (!req.headers?.authorization){
-                res.status(401).send('Unauthorized');
-            }
-            const config = {
-                headers: {
-                    'Authorization': req.headers.authorization,
+            try {
+                if (!req.headers?.authorization){
+                    res.status(401).send('Unauthorized');
                 }
-            };
-            const body = req.body;
-
-            await backendAxiosInstance.post(`${API_URL.ADD_WARD}`,body)
-                .then(response => {
-                    res.status(200).json(response.data);
-                })
-                .catch(e => {
-                        res.status(e.response?.status ?? 500).json(e.response?.data)
+                const config = {
+                    headers: {
+                        'Authorization': req.headers.authorization,
                     }
-                )
-
-        } catch (e) {
-            res.status(500).json(e.message);
+                };
+                const body = req.body;
+    
+                await backendAxiosInstance.post(`${API_URL.ADD_WARD}`, body, config)
+                    .then(response => {
+                        res.status(200).json(response.data);
+                    })
+                    .catch(e => {
+                            res.status(e.response?.status ?? 500).json(e.response?.data)
+                        }
+                    )
+    
+            } catch (e) {
+                res.status(500).json(e.message);
+            }
         }
-    }
 }
