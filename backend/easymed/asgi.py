@@ -19,10 +19,11 @@ application = get_asgi_application()
 django_asgi_app = get_asgi_application()
 
 from channels.routing import ProtocolTypeRouter, URLRouter
-from django.urls import path
+from django.urls import path, re_path
 from channels.auth import AuthMiddlewareStack
 from patient.consumers import DoctorAppointmentNotificationConsumer
 from inventory.consumers import InventoryNotificationConsumer
+from pharmacy.consumers import MedicationNotificationConsumer
 
 application = ProtocolTypeRouter({
     "http": django_asgi_app,
@@ -30,6 +31,7 @@ application = ProtocolTypeRouter({
         URLRouter([
             path("ws/doctor_notifications/", DoctorAppointmentNotificationConsumer.as_asgi()),
             path("ws/inventory_notifications/", InventoryNotificationConsumer.as_asgi()),
+            re_path(r"ws/pharmacy_notifications/(?P<ward_id>\d+)/$", MedicationNotificationConsumer.as_asgi()),
         ])
     ),
 })
