@@ -43,8 +43,6 @@ class PatientAdmissionSerializer(serializers.ModelSerializer):
             "reason_for_admission",
             "admitted_by_name",
             "admitted_at",
-            "is_discharged",
-            "discharged_at",
         ]
 
     def to_representation(self, instance):
@@ -98,7 +96,7 @@ class BedSerializer(serializers.ModelSerializer):
         }
 
     def get_current_occupant(self, instance):
-        admission = PatientAdmission.objects.filter(bed=instance, is_discharged=False).first()
+        admission = PatientAdmission.objects.filter(bed=instance, discharge__isnull=True).first()
         if admission:
             return PatientAdmissionSerializer(admission).data
         return None
@@ -168,7 +166,7 @@ class WardSerializer(serializers.ModelSerializer):
         read_only_fields = ['created_at', 'id']
 
     def get_admissions(self, instance):
-        active_admissions = instance.admissions.filter(is_discharged=False)
+        active_admissions = instance.admissions.filter(discharge__isnull=True)
         return PatientAdmissionSerializer(active_admissions, many=True).data
 
 
