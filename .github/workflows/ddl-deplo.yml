@@ -69,6 +69,7 @@ jobs:
       - name: Deploy using remote Docker Compose
         run: |
           ssh -o StrictHostKeyChecking=no $PROD_SERVER_USERNAME@$PROD_SERVER_IP << 'EOF'
+            cd /home/$PROD_SERVER_USERNAME
             pwd && ls -la
             echo "Stopping and removing old containers..."
             docker compose down --remove-orphans

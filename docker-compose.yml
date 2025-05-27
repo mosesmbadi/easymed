@@ -18,7 +18,7 @@ services:
         container_name: redis2
         command: redis-server --appendonly yes --replica-read-only no
         volumes:
-            - ./volumes/redis/:/etc/redis/
+            - redis:/etc/redis/
         ports:
             - 6379:6379
         networks:
@@ -99,6 +99,7 @@ services:
 volumes:
     pg_data:
     grafana_data:
+    redis:
     
 networks:
     mks:
