@@ -1,3 +1,4 @@
+# Deployment file for Dounebain Diagnostics
 name: CI/CD Pipeline
 
 on:
@@ -15,14 +16,14 @@ env:
 
 jobs:
   cleanup:
-    if: github.ref == 'refs/heads/appraisals' || github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: Docker system prune
         run: docker system prune -af
 
   build-backend:
-    if: github.ref == 'refs/heads/develop'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -35,7 +36,7 @@ jobs:
           docker push mosesmbadi/easymedbackend:latest
 
   build-frontend:
-    if: github.ref == 'refs/heads/develop'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -43,9 +44,9 @@ jobs:
         run: echo $DOCKER_TOKEN | docker login -u $DOCKER_USER --password-stdin
       - name: Build & Push Frontend Image
         run: |
-          cd frontend
-          docker build . -t mosesmbadi/easymedbackend:latest
-          docker push mosesmbadi/easymedbackend:latest
+          cd front-end
+          docker build . -t mosesmbadi/easymedfrontend:latest
+          docker push mosesmbadi/easymedfrontend:latest
 
   deploy:
     if: github.ref == 'refs/heads/main'

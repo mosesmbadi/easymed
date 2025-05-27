@@ -1,28 +1,40 @@
-FROM node:18-alpine
+FROM node:22.11.0-alpine AS base
 
-# Set the working directory
+# setup docker image to install all node packages
+FROM base AS dependencies
+
 WORKDIR /app
 
-# Copy package.json and package-lock.json
 COPY package*.json ./
 
-# Install dependencies
 RUN npm install
 
-# Copy the rest of the application code
+
+# setup docker image for next.js build
+FROM base AS build
+WORKDIR /app
+COPY --from=dependencies /app/node_modules ./node_modules
 COPY . .
 
-# Build the Next.js application
-# Comment out if you want dev mode
-RUN npm run build 
+ENV NEXT_TELEMETRY_DISABLED=1
+
+RUN npm run build
+
+# setup docker image to hold build, static and run the app
+FROM base AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1 \
+    HOSTNAME="0.0.0.0"
+
+COPY --from=build /app/public ./public
+
+RUN mkdir .next
+COPY --from=build /app/.next/standalone ./
+COPY --from=build /app/.next/static ./.next/static
+
+CMD ["node", "server.js"]
 
 
-# Expose the port Next.js runs on
-EXPOSE 3000
 
-# Run Next.js in development mode
-# Use this if you want dev mode
-# CMD ["npm", "run", "dev"]
-
-# Start the Next.js application
-CMD ["npm", "run", "start"]
