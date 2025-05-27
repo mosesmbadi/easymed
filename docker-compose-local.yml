@@ -25,7 +25,7 @@ services:
     backend:
         build:
             context: ./backend
-            dockerfile: ./Dockerfile
+            dockerfile: ./Dockerfile.local
         container_name: api
         command: uvicorn --host 0.0.0.0 --port 8080 easymed.asgi:application
         volumes:
@@ -65,7 +65,7 @@ services:
     frontend:
         build:
             context: ./front-end
-            dockerfile: ./Dockerfile
+            dockerfile: ./Dockerfile.local
         container_name: easymed-frontend
         restart: unless-stopped
         ports:
