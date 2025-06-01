@@ -210,6 +210,8 @@ CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'Africa/Nairobi'
+# If true == sync mode, if False == async mode
+CELERY_TASK_ALWAYS_EAGER = False
 
 CHANNELS_ROUTING = 'easymed.asgi.application'
 CHANNEL_LAYERS = {
