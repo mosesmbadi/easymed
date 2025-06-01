@@ -3,7 +3,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.utils import timezone
-from patient.models import Patient
+from patient.models import Patient, Referral
 
 
 class Ward(models.Model):
@@ -94,15 +94,15 @@ class PatientAdmission(models.Model):
 
 
 class PatientDischarge(models.Model):
-    admission = models.OneToOneField(
-        PatientAdmission, on_delete=models.CASCADE, related_name="discharge"
+    DISCHARGE_TYPES = (
+        ('normal', 'Normal'),
+        ('referral', 'External Referral'),
+        ('deceased', 'Deceased'),
     )
-    discharged_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
-        related_name="discharges",
-    )
+    admission = models.OneToOneField(PatientAdmission, on_delete=models.CASCADE, related_name="discharge")
+    discharged_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,related_name="discharges")
+    discharge_types = models.CharField(choices=DISCHARGE_TYPES, default="normal")
+    referral = models.ForeignKey(Referral, on_delete=models.SET_NULL, null=True, blank=True, related_name="discharges")
     discharged_at = models.DateTimeField(auto_now_add=True)
     discharge_notes = models.TextField(blank=True, null=True)
 
@@ -115,8 +115,15 @@ class PatientDischarge(models.Model):
                 self.admission.save()
             super().save(*args, **kwargs)
 
+
+    def clean(self):
+        if self.discharge_types == 'referral' and not self.referral:
+            raise ValidationError("Referral is required for external referral discharge.")
+        if self.discharge_types != 'referral' and self.referral:
+            raise ValidationError("Referral should only be set for referral discharge.")
+        
     def __str__(self):
-        return f"Discharge for {self.admission.admission_id} on {self.discharged_at}"
+        return f"Discharge for {self.admission.admission_id} on {self.get_discharge_types_display()}"
 
 
 class WardNurseAssignment(models.Model):

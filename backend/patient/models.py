@@ -187,7 +187,7 @@ class Referral(models.Model):
     email = models.EmailField()
 
     def __str__(self):
-        return f"Referral #{self.patient_id}"
+        return f"Referral #{self.id}"
     
     def set_referred_by(self, CustomUser):
         self.referred_by = CustomUser
