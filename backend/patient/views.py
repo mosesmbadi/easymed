@@ -154,8 +154,6 @@ class PrescribedDrugByPatientIdAPIView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-
-
 class PrescribedDrugByPrescriptionViewSet(viewsets.ModelViewSet):
     '''
     Get prescribed drugs by prescription ID
