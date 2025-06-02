@@ -1,8 +1,9 @@
+from uuid import uuid4
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
-from patient.models import Patient
+from patient.models import Patient, Referral
 
 
 class Ward(models.Model):
@@ -73,19 +74,14 @@ class PatientAdmission(models.Model):
         related_name="admissions_made",
     )
     admitted_at = models.DateTimeField(default=timezone.now)
-    is_discharged = models.BooleanField(default=False)
-    discharged_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ['-admitted_at']
-        indexes = [
-            models.Index(fields=['is_discharged']),
-            models.Index(fields=['discharged_at']),
-        ]
-    # TODO: Add timestamp for double admission within say a week 
+        
     def generate_admission_id(self):
         return f"IP{self.patient.unique_id}"
-
+        uuid = str(uuid4()).replace("-", "")[:8]
+        return f"IP-{self.patient.unique_id}-{uuid}"[:20]
     def save(self, *args, **kwargs):
         if not self.admission_id:
             self.admission_id = self.generate_admission_id()
@@ -98,20 +94,36 @@ class PatientAdmission(models.Model):
 
 
 class PatientDischarge(models.Model):
-    admission = models.OneToOneField(
-        PatientAdmission, on_delete=models.CASCADE, related_name="discharge"
+    DISCHARGE_TYPES = (
+        ('normal', 'Normal'),
+        ('referral', 'External Referral'),
+        ('deceased', 'Deceased'),
     )
-    discharged_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
-        related_name="discharges",
-    )
+    admission = models.OneToOneField(PatientAdmission, on_delete=models.CASCADE, related_name="discharge")
+    discharged_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,related_name="discharges")
+    discharge_types = models.CharField(choices=DISCHARGE_TYPES, default="normal")
+    referral = models.ForeignKey(Referral, on_delete=models.SET_NULL, null=True, blank=True, related_name="discharges")
     discharged_at = models.DateTimeField(auto_now_add=True)
     discharge_notes = models.TextField(blank=True, null=True)
 
+    def save(self, *args, **kwargs):
+        with transaction.atomic():
+            if self.admission.bed:
+                self.admission.bed.status = "available"
+                self.admission.bed.save()
+                self.admission.bed = None
+                self.admission.save()
+            super().save(*args, **kwargs)
+
+
+    def clean(self):
+        if self.discharge_types == 'referral' and not self.referral:
+            raise ValidationError("Referral is required for external referral discharge.")
+        if self.discharge_types != 'referral' and self.referral:
+            raise ValidationError("Referral should only be set for referral discharge.")
+        
     def __str__(self):
-        return f"Discharge for {self.admission.admission_id} on {self.discharged_at}"
+        return f"Discharge for {self.admission.admission_id} on {self.get_discharge_types_display()}"
 
 
 class WardNurseAssignment(models.Model):
