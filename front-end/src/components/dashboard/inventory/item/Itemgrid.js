@@ -78,23 +78,7 @@ const ItemsGrid = () => {
   return (
     <section className=" my-8">
       <h3 className="text-xl mt-8"> Items </h3>
-      <Grid className="my-2 flex justify-between gap-4">
-        <Grid className="w-full bg-white px-2 flex items-center rounded-lg" item md={4} xs={4}>
-          <img className="h-4 w-4" src='/images/svgs/search.svg'/>
-          <input
-            className="py-2 w-full px-4 bg-transparent rounded-lg focus:outline-none placeholder-font font-thin text-sm"
-            onChange={(e) => setSearchQuery(e.target.value)}
-            value={searchQuery}
-            fullWidth
-            placeholder="Search item"
-          />
-        </Grid>
-        <Grid className="w-full bg-primary rounded-md flex items-center text-white" item md={4} xs={4}>
-          <Link className="mx-4 w-full text-center" href="/dashboard/inventory/items/new">
-            add New Item
-          </Link>
-        </Grid>
-      </Grid>
+      
       <DataGrid
         dataSource={SearchedItems}
         allowColumnReordering={true}

@@ -98,6 +98,8 @@ export const API_URL = {
   /***************** NURSING APIS **********************/
   ADD_TRIAGE: "/patients/triage/",
 
+  /***************** INPATIENT APIS **********************/
+  FETCH_WARDS:"/inpatients/wards/",
 
   /***************** BILLING APIS **********************/
   FETCH_PATIENT_BILLING_APPOINTMENTS: "/patients/appointments",
@@ -253,6 +255,9 @@ export const APP_API_URL = {
 
   /***************** NURSING APIS **********************/
   ADD_TRIAGE: "/api/nursing/add-triage",
+
+  /***************** INPATIENT APIS **********************/
+  FETCH_WARDS:"/api/inpatients/fetch-wards/",
 
   /***************** BILLING APIS **********************/
   FETCH_PATIENT_BILLING_APPOINTMENTS: "/api/billing/patient-appointments",
