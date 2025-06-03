@@ -18,7 +18,9 @@ const EditPatientDetails = ({ open, setOpen, selectedRowData }) => {
   const auth = useAuth()
 
   useEffect(() =>{
-    dispatch(getAllInsurance(auth));
+    if(auth.token){
+      dispatch(getAllInsurance(auth));
+    }
   },[])
 
   const handleClose = () => {

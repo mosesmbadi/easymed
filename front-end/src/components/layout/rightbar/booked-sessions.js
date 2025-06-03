@@ -7,11 +7,6 @@ const BookedSessions = () => {
   const { appointments } = useSelector((store) => store.appointment);
   const dispatch = useDispatch();
 
-
-  useEffect(() => {
-    dispatch(getAllAppointments());
-  }, []);
-
   return (
     <>
       <section className="space-y-1">
