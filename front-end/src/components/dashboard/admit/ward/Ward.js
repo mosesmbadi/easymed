@@ -3,6 +3,8 @@ import { Formik, Field, Form, ErrorMessage } from "formik";
 import { Grid } from "@mui/material";
 import {createWard} from "@/redux/service/inpatient";
 import { useAuth } from "@/assets/hooks/use-auth";
+import { toast } from "react-toastify"; 
+import { useRouter } from "next/router"; 
 import * as Yup from "yup";
 
 const NewWard = () => {
@@ -13,7 +15,7 @@ const NewWard = () => {
     gender: "",
   };
   const auth = useAuth();
-  
+  const router = useRouter();
 
   const validationSchema = Yup.object().shape({
     name: Yup.string().required("This field is required!"),
@@ -30,18 +32,25 @@ const NewWard = () => {
         ward_type: formValue.ward_type,
         gender: formValue.gender
       };
-      await createWard(payload,auth).then((res) => {
-        console.log("WARD_RESPONSE ", res);
-        helpers.resetForm();
-        toast.success("Ward Added Successfully!");
-        router.push('/dashboard/admit/wards');
-      });
+  
+      const res = await createWard(payload, auth);
+  
+      if (res?.error) {
+        toast.error("Something went wrong: " + res.error);
+        return;
+      }
+  
+      console.log("WARD_RESPONSE ", res);
+      helpers.resetForm();
+      toast.success("Ward Added Successfully!");
+      router.push("/dashboard/admit/wards");
+  
     } catch (err) {
       console.log("WARD_ERROR ", err);
+      toast.error("Failed to add ward.");
     }
   };
-  
-
+      
   return (
     <section>
       <div className="flex items-center gap-4 mb-8">

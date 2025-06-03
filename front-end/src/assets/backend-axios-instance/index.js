@@ -1,7 +1,7 @@
 import axios from "axios";
 
 export const backendAxiosInstance = axios.create({
-    baseURL: "http://192.168.100.163:8000/"
+    baseURL: "http://api:8080/",
 
 });
 
