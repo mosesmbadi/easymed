@@ -117,7 +117,8 @@ class PrescribedDrugSerializer(serializers.ModelSerializer):
 class ReferralSerializer(serializers.ModelSerializer):
     class Meta:
         model = Referral
-        fields = '__all__'
+        fields = ['note', 'service', 'email', 'referred_by']
+        read_only_fields = ['referred_by']
 
 
 class TriageSerializer(serializers.ModelSerializer):

@@ -30,7 +30,7 @@ urlpatterns = [
     path('reports/', include('reports.urls')),
     path('pharmacy/', include('pharmacy.urls')),
     path('company/', include('company.urls')),
-    path('inpatient/', include('inpatient.urls')),
+    path('inpatient/', include('inpatient.urls', namespace='inpatient')),
 
     # For prometheus metrics
     path('', include('django_prometheus.urls')),

@@ -1,11 +1,10 @@
 import pytest
 from datetime import date
 from django.utils import timezone
-
 from django.contrib.auth import get_user_model
 
+from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
-
 
 from customuser.models import CustomUser, Doctor, DoctorProfile, PatientUser
 from company.models import InsuranceCompany
@@ -29,7 +28,6 @@ from inventory.models import (
     IncomingItem,
     Inventory,
     SupplierInvoice,
-    DepartmentInventory,
     InsuranceItemSalePrice,
 )
 
@@ -137,9 +135,10 @@ def doctor(db):
     return user
 
 @pytest.fixture
-def authenticated_doctor_client(client, doctor):
-    refresh = RefreshToken.for_user(doctor)
-    client.defaults['HTTP_AUTHORIZATION'] = f'Bearer {refresh.access_token}'
+def authenticated_doctor_client(doctor):
+    client = APIClient()
+    token = RefreshToken.for_user(doctor).access_token
+    client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
     return client
     
 @pytest.fixture
@@ -357,15 +356,58 @@ def patient_admission(doctor, patient, ward, bed):
     return admission
 
 @pytest.fixture
-def patient_discharge(patient_admission, doctor):
+def referral(doctor):
+    return Referral.objects.create(
+        service="cardiologist",
+        note="Urgent cardiac evaluation required.",
+        email="contact@cityhospital.com",
+        referred_by=doctor
+    )
+
+
+@pytest.fixture
+def patient_discharge_normal(patient_admission, doctor):
+    original_bed = patient_admission.bed
+    
     discharge = PatientDischarge.objects.create(
         admission=patient_admission,
         discharged_by=doctor,
-        discharge_notes='Patient recovered successfully'
+        discharge_types='normal',
+        discharge_notes='Patient recovered successfully',
+        referral=None,
     )
-    patient_admission.discharged_at = discharge.discharged_at
+    original_bed.status = 'available'
+    original_bed.save()
+    patient_admission.bed = None
     patient_admission.save()
-    bed = patient_admission.bed
-    bed.status = 'available'
-    bed.save()
+    return discharge
+
+
+def patient_discharge_referral(patient_admission, doctor, referral):
+    discharge = PatientDischarge.objects.create(
+        admission=patient_admission,
+        discharged_by=doctor,
+        discharge_types='referral',
+        discharge_notes='Transfer for cardiology care.',
+        referral=referral,
+    )
+    patient_admission.bed.status = 'available'
+    patient_admission.bed.save()
+    patient_admission.bed = None
+    patient_admission.save()
+    return discharge
+
+@pytest.fixture
+def patient_discharge_deceased(patient_admission, doctor):
+    discharge = PatientDischarge.objects.create(
+        admission=patient_admission,
+        discharged_by=doctor,
+        discharge_types='deceased',
+        discharge_notes='Patient passed away.',
+        referral=None,
+    )
+    patient_admission.bed.status = 'available'
+    patient_admission.bed.save()
+    patient_admission.bed = None
+    patient_admission.save()
     return discharge

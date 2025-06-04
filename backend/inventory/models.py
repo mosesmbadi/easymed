@@ -7,7 +7,6 @@ from rest_framework.exceptions import ValidationError, status
 
 from customuser.models import CustomUser
 from company.models import InsuranceCompany
-from customuser.models import CustomUser
 
 '''
 An item will have a packed and sub-packed properties

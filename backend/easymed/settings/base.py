@@ -210,6 +210,8 @@ CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'Africa/Nairobi'
+# If true == sync mode, if False == async mode
+CELERY_TASK_ALWAYS_EAGER = False
 
 CHANNELS_ROUTING = 'easymed.asgi.application'
 CHANNEL_LAYERS = {
@@ -233,6 +235,10 @@ CELERY_BEAT_SCHEDULE = {
     "inventory_garbage_collection": {
         "task": "easymed.celery_tasks.inventory_garbage_collection",            
         "schedule": crontab(minute='*/45'),  
+    },
+    "check-medication-notifications": {
+        "task": "easymed.celery_tasks.check_medication_notifications",
+        'schedule': crontab(minute='*/60'),
     },
 }
 

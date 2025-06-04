@@ -7,7 +7,6 @@ from django.utils import timezone
 from datetime import datetime
 
 from patient.models import Patient
-from laboratory.models import LabTestProfile
 
 
 class PublicPrescriptionRequest(models.Model):
