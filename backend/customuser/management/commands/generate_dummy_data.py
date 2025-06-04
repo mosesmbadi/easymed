@@ -5,10 +5,12 @@ from customuser.management.utils.data_generators import (
     create_dummy_insurance_companies,
     create_dummy_company_branches,
     create_dummy_items,
+    create_permissions_and_groups
 )
 from customuser.models import CustomUser
 from company.models import Company, CompanyBranch, InsuranceCompany
 from inventory.models import Item
+from authperms.models import Permission, Group 
 
 class Command(BaseCommand):
     help = "Generate all dummy data (users, companies, etc.)"
@@ -49,3 +51,25 @@ class Command(BaseCommand):
         else:
             items = create_dummy_items(count=DEFAULT_COUNT)
             self.stdout.write(self.style.SUCCESS(f"Created {len(items)} dummy inventory items."))
+
+        if Group.objects.filter(name__in=[
+                "SYS_ADMIN", "PATIENT", "DOCTOR", "PHARMACIST", "RECEPTIONIST", "LAB_TECH", "NURSE"
+            ]).count() == 7 and Permission.objects.filter(name__in=[
+                "CAN_ACCESS_DOCTOR_DASHBOARD",
+                "CAN_ACCESS_GENERAL_DASHBOARD",
+                "CAN_ACCESS_ADMIN_DASHBOARD",
+                "CAN_ACCESS_RECEPTION_DASHBOARD",
+                "CAN_ACCESS_NURSING_DASHBOARD",
+                "CAN_ACCESS_LABORATORY_DASHBOARD",
+                "CAN_ACCESS_PATIENTS_DASHBOARD",
+                "CAN_ACCESS_AI_ASSISTANT_DASHBOARD",
+                "CAN_ACCESS_ANNOUNCEMENT_DASHBOARD",
+                "CAN_ACCESS_PHARMACY_DASHBOARD",
+                "CAN_ACCESS_INVENTORY_DASHBOARD",
+                "CAN_ACCESS_BILLING_DASHBOARD",
+                "CAN_RECEIVE_INVENTORY_NOTIFICATIONS",
+            ]).count() == 13:
+                self.stdout.write(self.style.WARNING("Skipping groups/permissions: already set up."))
+        else:
+            create_permissions_and_groups()
+            self.stdout.write(self.style.SUCCESS("Created default groups and permissions."))

@@ -15,7 +15,7 @@ const PatientConfirmedProtect = ({ children }) => {
   useEffect(() => {
       const fetchData = () => {
           try {
-              if (auth.token) {
+              if (auth) {
                   dispatch(getCurrentUser(auth));
                   dispatch(getAllPatients(auth));
               }

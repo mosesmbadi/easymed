@@ -146,6 +146,12 @@ Create super user then navigate to localhost:8080/admin and add permissions;
 
 You will notice that we have a Role and a Group. A group is associated with permissions which determines which specific dashboards a user is allowed to access. A role helps differentiate staff from patients hence redirecting to patient profile if patient and to general dashboard if staff.
 
+If doing all these manually sounds like too much work, you can run the command below to create the groups and permissions automatically.
+```
+python manage.py generate_dummy_data
+```
+This will also generate dummy data for the database, including users, items, and insurance companies.
+
 # 3. Notifications
 
 ### i. Testing Socket connection for notifications

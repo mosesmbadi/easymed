@@ -4,6 +4,7 @@ from faker import Faker
 from inventory.models import Item
 from customuser.models import CustomUser
 from company.models import Company, CompanyBranch, InsuranceCompany
+from authperms.models import Permission, Group 
 
 fake = Faker()
 
@@ -36,6 +37,44 @@ MEDICAL_DESCRIPTIONS = [
     "Mobility aid for patients.",
     "Aid for walking support."
 ]
+
+DASHBOARD_PERMISSIONS = [
+    "CAN_ACCESS_DOCTOR_DASHBOARD",
+    "CAN_ACCESS_GENERAL_DASHBOARD",
+    "CAN_ACCESS_ADMIN_DASHBOARD",
+    "CAN_ACCESS_RECEPTION_DASHBOARD",
+    "CAN_ACCESS_NURSING_DASHBOARD",
+    "CAN_ACCESS_LABORATORY_DASHBOARD",
+    "CAN_ACCESS_PATIENTS_DASHBOARD",
+    "CAN_ACCESS_AI_ASSISTANT_DASHBOARD",
+    "CAN_ACCESS_ANNOUNCEMENT_DASHBOARD",
+    "CAN_ACCESS_PHARMACY_DASHBOARD",
+    "CAN_ACCESS_INVENTORY_DASHBOARD",
+    "CAN_ACCESS_BILLING_DASHBOARD",
+    "CAN_RECEIVE_INVENTORY_NOTIFICATIONS",
+]
+
+GROUPS_ORDER = [
+    "SYS_ADMIN",
+    "PATIENT",
+    "DOCTOR",
+    "PHARMACIST",
+    "RECEPTIONIST",
+    "LAB_TECH",
+    "NURSE",
+]
+
+
+# Map groups to permissions (customize as needed)
+GROUP_PERMISSIONS = {
+    "SYS_ADMIN": DASHBOARD_PERMISSIONS,
+    "PATIENT": ["CAN_ACCESS_PATIENTS_DASHBOARD"],
+    "DOCTOR": ["CAN_ACCESS_DOCTOR_DASHBOARD"],
+    "PHARMACIST": ["CAN_ACCESS_PHARMACY_DASHBOARD"],
+    "RECEPTIONIST": ["CAN_ACCESS_RECEPTION_DASHBOARD"],
+    "LAB_TECH": ["CAN_ACCESS_LABORATORY_DASHBOARD", "CAN_RECEIVE_INVENTORY_NOTIFICATIONS"],
+    "NURSE": ["CAN_ACCESS_NURSING_DASHBOARD"],
+}
 
 
 def create_dummy_users(count=10, role=CustomUser.PATIENT):
@@ -116,3 +155,38 @@ def create_dummy_items(count=50):
         )
         items.append(item)
     return items
+
+
+def create_dummy_permissions(count=20):
+    permissions = []
+    for _ in range(count):
+        name = fake.unique.job()[:255]  # Use job names as dummy permission names
+        perm = Permission.objects.create(name=name)
+        permissions.append(perm)
+    return permissions
+
+def create_dummy_groups(count=10, permissions_per_group=5):
+    groups = []
+    all_permissions = list(Permission.objects.all())
+    for _ in range(count):
+        name = fake.unique.company()[:150]
+        group = Group.objects.create(name=name)
+        perms = random.sample(all_permissions, min(permissions_per_group, len(all_permissions)))
+        group.permissions.set(perms)
+        groups.append(group)
+    return groups
+
+
+def create_permissions_and_groups():
+    perm_objs = {}
+    for perm_name in DASHBOARD_PERMISSIONS:
+        perm, _ = Permission.objects.get_or_create(name=perm_name)
+        perm_objs[perm_name] = perm
+
+    group_objs = []
+    for group_name in GROUPS_ORDER:
+        group, _ = Group.objects.get_or_create(name=group_name)
+        perms = [perm_objs[p] for p in GROUP_PERMISSIONS.get(group_name, []) if p in perm_objs]
+        group.permissions.set(perms)
+        group_objs.append(group)
+    return group_objs
