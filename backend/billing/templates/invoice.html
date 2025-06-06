@@ -41,8 +41,8 @@
             border: 1px solid black;
             border-collapse: collapse;
             width: 30%;
-            float: right; /* Aligns the table to the right side */
-            margin-top: -1px; /* Aligns the bottom edge with the main table */
+            float: right;
+            margin-top: -1px;
         }
         .summary-table th, .summary-table td {
             padding: 8px;
@@ -61,7 +61,7 @@
         <div class="logo-column">
             <img src="{{ company_logo_url }}" alt="Company Logo" class="logo">
         </div>
-        <h2>{{ company.name }} </h2>
+        <h2>{{ company.name }}</h2>
         <p>{{ company.address1 }}</p>
         <p>{{ company.phone1 }} | {{ company.email1 }}</p>
     </div>
@@ -69,13 +69,15 @@
     <h2>Invoice</h2>
     <p>Invoice Number: {{ invoice.invoice_number }}</p>
     <p>Invoice Date: {{ invoice.invoice_date }}</p>
-    <p>Invoiced to: {{ invoice.patient.first_name }}</p>
+    <p>Invoiced to: {{ invoice.patient.first_name }} {{ invoice.patient.second_name }}</p>
 
     <table>
         <thead>
             <tr>
                 <th>Item Name</th>
-                <th>Price</th>
+                <th>Total Amount</th>
+                <th>Insurance Sale Price</th>
+                <th>Co-Pay</th>
                 <th>MoP</th>
                 <th>Category</th>
             </tr>
@@ -84,24 +86,37 @@
             {% for invoice_item in invoice_items %}
             <tr>
                 <td>{{ invoice_item.item.name }}</td>
-                <td>{{ invoice_item.sale_price|floatformat:2 }}</td>
-                <td>{{ invoice_item.payment_mode }}</td>
+                <td>{{ invoice_item.total_amount|floatformat:2 }}</td>
+                <td>
+                    {% if invoice_item.insurance_sale_price %}
+                        {{ invoice_item.insurance_sale_price|floatformat:2 }}
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </td>
+                <td>
+                    {% if invoice_item.co_pay %}
+                        {{ invoice_item.co_pay|floatformat:2 }}
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </td>
+                <td>{{ invoice_item.payment_mode.paymet_mode }}</td>
                 <td>{{ invoice_item.item.category }}</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 
-    <!-- Small table for total amount, subtotal, and tax -->
     <table class="summary-table">
         <tbody>
             <tr>
                 <th>Subtotal:</th>
-                <td>{{ invoice.subtotal|floatformat:2 }}</td>
+                <td>{{ subtotal|floatformat:2 }}</td>
             </tr>
             <tr>
                 <th>Tax:</th>
-                <td>{{ invoice.tax|floatformat:2 }}</td>
+                <td>{{ tax|floatformat:2 }}</td>
             </tr>
             <tr>
                 <th>Total Amount:</th>
@@ -116,96 +131,3 @@
     </section>
 </body>
 </html>
-
-
-
-
-
-
-{% comment %} <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Invoice Report</title>
-    <style>
-        table {
-            border-collapse: collapse;
-            width: 100%;
-        }
-        th, td {
-            border: 1px solid black;
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .logo {
-            max-width: 150px;
-            max-height: 150px;
-        }
-        .footer{
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            text-align: center;
-            margin-top: 20px;
-            font-size: 12px;
-            font-style: italic;
-            color: gray;
-            font-weight: bold;
-
-        }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <img src="https://static.vecteezy.com/system/resources/thumbnails/021/809/795/small/doctors-day-illustration-png.png" alt="Company Logo" class="logo">
-        <h2>{{ company.name }} </h2>
-        <p>{{ company.address1 }}</p>
-        <p>{{ company.phone1 }} | {{ company.email1 }}</p>
-    </div>
-
-
-    <h2>Invoice</h2>
-    <p>Invoice Number: {{ invoice.invoice_number }}</p>
-    <p>Invoice Date: {{ invoice.invoice_date }}</p>
-    <p>Invoiced to: {{ invoice.patient.first_name }}</p>
-
-
-    <p>Total Amount: {{ invoice.invoice_amount }}</p>
-
-    <table>
-        <thead>
-            <tr>
-                <th>Item Name</th>
-                <th>Price</th>
-                <th>Category</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for invoice_item in invoice_items %}
-            <tr>
-                <td>{{ invoice_item.item.name }}</td>
-                <td>{{ invoice_item.sale_price|floatformat:2 }}</td>
-                <td>{{ invoice_item.item.category }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-
-    <p>Total Amount: {{ invoice.invoice_amount }}</p>
-
-    <section class="footer">
-        <span>Generated by: ME-HMIS</span>
-        <p>Email: hello@me-hmis.com</p>
-    </section>
-</body>
-</html>
- {% endcomment %}
