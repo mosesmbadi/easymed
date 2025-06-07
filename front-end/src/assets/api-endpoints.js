@@ -147,6 +147,11 @@ export const API_URL = {
   /***************** LABORATORY **********************/
   PATIENTLABTESTREQUEST: "/patientlabtestrequest",
 
+  /***************** INPATIENT ENDPOINTS **********************/
+  INPATIENT_BEDS: "/inpatient/beds/",
+  INPATIENT_WARDS: "/inpatient/wards/",
+  INPATIENT_NURSE_DUTIES: "/inpatient/ward-nurse-assignments/",
+
 
 };
 
@@ -303,6 +308,12 @@ export const APP_API_URL = {
 
   /***************** PRESCRIPTION **********************/
   PATIENTPRESCRIPTIONREQUEST: "/api/patient-profile/patientprescriptionrequest",
+
+
+  /***************** INPATIENT ENDPOINTS **********************/
+  INPATIENT_BEDS: "/api/inpatient/bed",
+  INPATIENT_WARDS: "/api/inpatient/wards",
+  INPATIENT_NURSE_DUTIES: "/api/inpatient/nurse-duties",
 
 };
 
