@@ -4,7 +4,6 @@ import { Container } from '@mui/material';
 import AuthGuard from '@/assets/hoc/auth-guard';
 import DashboardLayout from '@/components/layout/dashboard-layout';
 import AdmitNav from '@/components/dashboard/admit/AdmitNav';
-import WardBeds from '@/components/dashboard/admit/Beds';
 import NursesDuties from '@/components/dashboard/admit/Duties';
 
 const InpatientSettings = () => {
@@ -22,30 +21,6 @@ const InpatientSettings = () => {
               currentTab === 0
                 ? "cursor-pointer text-primary p-4 border-b-2 border-primary text-center"
                 : "cursor-pointer text-center p-4"
-            }`}
-            onClick={() => setCurrentTab(0)}
-          >
-            Wards
-          </p>
-        </div>
-        <div>
-          <p
-            className={`${
-              currentTab === 1
-                ? "cursor-pointer text-primary p-4 border-b-2 border-primary text-center"
-                : "cursor-pointer text-center p-4"
-            } `}
-            onClick={() => setCurrentTab(1)}
-          >
-            Beds
-          </p>
-        </div>
-        <div>
-          <p
-            className={`${
-              currentTab === 2
-                ? "cursor-pointer text-primary p-4 border-b-2 border-primary text-center"
-                : "cursor-pointer text-center p-4"
             } `}
             onClick={() => setCurrentTab(2)}
           >
@@ -55,9 +30,7 @@ const InpatientSettings = () => {
       </div>
     </section>
     <div className="mt-2">
-      {currentTab === 0 && <WardBeds />}
-      {currentTab === 1 && <WardBeds />}
-      {currentTab === 2 && <NursesDuties />}
+      {currentTab === 0 && <NursesDuties />}
     </div>
   </Container>
   )

@@ -80,7 +80,7 @@ const AddWard = () => {
           >
             <Form>
               <section className="space-y-1">
-                <h2 className="text-sm font-semibold text-primary">Bed Details</h2>
+                <h2 className="text-sm font-semibold text-primary">Ward Details</h2>
                 <Grid className="py-3 " container spacing={1}>
                   <Grid item md={12} xs={12}>
                     <label htmlFor="name">Ward Name</label>
