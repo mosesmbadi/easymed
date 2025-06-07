@@ -6,6 +6,10 @@ import { useAuth } from "@/assets/hooks/use-auth";
 import { fetchHospitalWards } from "@/redux/features/inpatient";
 import { useRouter } from 'next/navigation'
 import AddWard from "./modals/AddWard";
+import { BiEdit } from "react-icons/bi";
+import CmtDropdownMenu from "@/assets/DropdownMenu";
+import { LuMoreHorizontal } from "react-icons/lu";
+import EditWard from "./modals/EditWard";
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
     ssr: false,
@@ -13,15 +17,51 @@ const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
 
 const allowedPageSizes = [5, 10, 'all'];
 
+const getActions = () => {
+    let actions = [
+      {
+        action: "update",
+        label: "Update Ward",
+        icon: <BiEdit className="text-success text-xl mx-2" />,
+      },
+    ];
+  
+    return actions;
+  };
+
 const Ward = () => {
     const [showPageSizeSelector, setShowPageSizeSelector] = useState(true);
     const [showNavButtons, setShowNavButtons] = useState(true);
     const [showInfo, setShowInfo] = useState(true);
+    const [selectedRowData,setSelectedRowData] = useState({});
+    const [editOpen, setEditOpen] = useState(false);
     const { wards } = useSelector((store) => store.inpatient);
     const auth = useAuth()
     const dispatch = useDispatch()
     const router = useRouter();
+    const userActions = getActions();
 
+    const onMenuClick = async (menu, data) => {
+     if(menu.action === "update"){
+        setSelectedRowData(data);
+        setEditOpen(true);      
+      }
+    };
+  
+    const actionsFunc = ({ data }) => {
+      return (
+        <>
+          <CmtDropdownMenu
+            sx={{ cursor: "pointer" }}
+            items={userActions}
+            onItemClick={(menu) => onMenuClick(menu, data)}
+            TriggerComponent={
+              <LuMoreHorizontal className="cursor-pointer text-xl" />
+            }
+          />
+        </>
+      );
+    };
 
     const onRowClick = (e) => {
         const wardId = e.data.id;
@@ -100,7 +140,19 @@ const Ward = () => {
                 />
                 <Column dataField="ward_type" caption="Ward Type" width={200} />
                 <Column dataField="gender" caption="Gender" />
+                <Column
+                    dataField=""
+                    caption=""
+                    cellRender={actionsFunc}
+                />
             </DataGrid>
+            {editOpen && (
+                <EditWard
+                    open={editOpen}
+                    setOpen={setEditOpen}
+                    selectedRowData={selectedRowData}
+                />
+            )}
         </section>
     );
 };

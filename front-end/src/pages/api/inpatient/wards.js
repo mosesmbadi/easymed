@@ -58,19 +58,20 @@ export default async function handler(req, res) {
             res.status(500).json(e.message);
         }
     }
-    else if (req.method === API_METHODS.PUT) {
+    else if (req.method === API_METHODS.PATCH) {
         try {
-            if (!req.headers?.authorization){
-                res.status(401).send('Unauthorized');
-            }
+            // if (!req.headers?.authorization){
+            //     res.status(401).send('Unauthorized');
+            // }
             const config = {
                 headers: {
                     'Authorization': req.headers.authorization,
                 }
             };
             const body = req.body;
+            const query = req.query;
 
-            await backendAxiosInstance.post(`${API_URL.INPATIENT_WARDS}/${body.id}`, config).then(response => {
+            await backendAxiosInstance.patch(`${API_URL.INPATIENT_WARDS}${query.ward_id}/`, body, config).then(response => {
                 res.status(200).json(response.data);
 
             }).catch(e => {
