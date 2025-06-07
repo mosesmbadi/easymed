@@ -20,6 +20,8 @@ const PatientConfirmedProtect = ({ children }) => {
                   dispatch(getAllPatients(auth));
               }
           } catch (error) {
+            // TODO handle error properly
+              // Log the error or handle it as needed
               console.error("Error fetching data:", error);
               // Handle error (e.g., redirect to an error page)
           }

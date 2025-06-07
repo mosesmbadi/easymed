@@ -4,7 +4,8 @@ from faker import Faker
 from inventory.models import Item
 from customuser.models import CustomUser
 from company.models import Company, CompanyBranch, InsuranceCompany
-from authperms.models import Permission, Group 
+from authperms.models import Permission, Group
+from patient.models import Patient
 
 fake = Faker()
 
@@ -190,3 +191,37 @@ def create_permissions_and_groups():
         group.permissions.set(perms)
         group_objs.append(group)
     return group_objs
+
+
+def create_dummy_patients(count=20, insurances=None, users=None):
+    """
+    Generate dummy Patient records.
+    Optionally pass a list of InsuranceCompany and CustomUser objects to assign.
+    """
+    patients = []
+    fake_gender = lambda: random.choice(['M', 'F', 'O'])
+    insurances = insurances or list(InsuranceCompany.objects.all())
+    users = users or list(CustomUser.objects.filter(role=CustomUser.PATIENT))
+    used_emails = set(Patient.objects.values_list('email', flat=True))
+
+    for _ in range(count):
+        email = fake.unique.email()[:254]
+        # Ensure unique email
+        while email in used_emails:
+            email = fake.unique.email()[:254]
+        used_emails.add(email)
+
+        patient = Patient.objects.create(
+            first_name=fake.first_name()[:40],
+            second_name=fake.last_name()[:40],
+            email=email,
+            phone=fake.phone_number()[:30],
+            date_of_birth=fake.date_of_birth(minimum_age=18, maximum_age=90),
+            gender=fake_gender(),
+            user=users.pop() if users else None,
+        )
+        # Assign random insurances (0-2 per patient)
+        if insurances:
+            patient.insurances.set(random.sample(insurances, k=random.randint(0, min(2, len(insurances)))))
+        patients.append(patient)
+    return patients
