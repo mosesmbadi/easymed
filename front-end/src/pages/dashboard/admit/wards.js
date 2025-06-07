@@ -1,26 +1,28 @@
 import React from "react";
+import dynamic from "next/dynamic";
 import DashboardLayout from "@/components/layout/dashboard-layout";
 import { Container } from "@mui/material";
 import AdmitNav from "@/components/dashboard/admit/AdmitNav";
-import Ward from "@/components/dashboard/admit/wards";
 import AuthGuard from "@/assets/hoc/auth-guard";
-// import ProtectedRoute from "@/assets/hoc/protected-route";
+
+// Dynamically import Ward with SSR disabled
+const Ward = dynamic(() => import("@/components/dashboard/admit/wards"), {
+  ssr: false,
+});
 
 const Admit = () => {
-    return (
-        <Container maxWidth="xl" className="mt-8">
-            <AdmitNav />
-            <Ward/>
-        </Container>
-    );
+  return (
+    <Container maxWidth="xl" className="mt-8">
+      <AdmitNav />
+      <Ward />
+    </Container>
+  );
 };
 
 Admit.getLayout = (page) => (
-    <AuthGuard>
-        <DashboardLayout>{page}</DashboardLayout>
-    </AuthGuard>
-    //   <ProtectedRoute permission={'CAN_ACCESS_DOCTOR_DASHBOARD'}>
-    //   </ProtectedRoute>
+  <AuthGuard>
+    <DashboardLayout>{page}</DashboardLayout>
+  </AuthGuard>
 );
 
 export default Admit;

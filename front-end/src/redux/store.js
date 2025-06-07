@@ -12,6 +12,8 @@ import userReducer from './features/users'
 import AnnouncementReducer from './features/announcements'
 import MenuReducer from './features/menu'
 import CompanyReducer from './features/company'
+import inpatientReducer from "./features/inpatient";
+
 
 
 export const store = configureStore({
@@ -29,5 +31,6 @@ export const store = configureStore({
         announcement: AnnouncementReducer,
         menu: MenuReducer,
         company: CompanyReducer,
+        inpatient: inpatientReducer
     }
 })
