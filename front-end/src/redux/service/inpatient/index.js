@@ -3,9 +3,14 @@ import { APP_API_URL } from "@/assets/api-endpoints";
 import UseAxios from "@/assets/hooks/use-axios";
 
 
-export const createFacilityBed = (payload) =>{
+export const createFacilityBed = (auth, payload, ward_id) =>{
+    const axiosInstance = UseAxios(auth);
     return new Promise((resolve,reject) =>{
-        axios.post(`${APP_API_URL.INPATIENT_BEDS}`,payload)
+        axiosInstance.post(`${APP_API_URL.INPATIENT_BEDS}`, payload, {
+            params: {
+                ward_id: ward_id
+            }
+        })
             .then((res) =>{
                 resolve(res.data)
             })
@@ -16,10 +21,14 @@ export const createFacilityBed = (payload) =>{
 }
 
 
-export const fetchFacilityBeds = (auth) =>{
+export const fetchFacilityBeds = (auth, ward_id) =>{
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve,reject) =>{
-        axiosInstance.get(`${APP_API_URL.INPATIENT_BEDS}`)
+        axiosInstance.get(`${APP_API_URL.INPATIENT_BEDS}`, {
+            params: {
+                ward_id: ward_id
+            }
+        })
             .then((res) =>{
                 resolve(res.data)
             })

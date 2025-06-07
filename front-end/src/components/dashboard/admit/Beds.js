@@ -4,6 +4,8 @@ import { Column, Paging, Pager, HeaderFilter, Scrolling } from "devextreme-react
 import { useAuth } from '@/assets/hooks/use-auth'
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchHospitalBeds } from '@/redux/features/inpatient';
+import { useParams } from 'next/navigation';
+import AddWardBed from './modals/AddWardBed';
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
   ssr: false,
@@ -16,12 +18,13 @@ const WardBeds = () => {
   const [showNavButtons, setShowNavButtons] = useState(true);
   const [showInfo, setShowInfo] = useState(true);
   const { beds } = useSelector((store) => store.inpatient);
-  const auth = useAuth()
-  const dispatch = useDispatch()
+  const auth = useAuth();
+  const dispatch = useDispatch();
+  const params = useParams();
 
   const fetchTheBeds = async () => {
     try{
-      dispatch(fetchHospitalBeds(auth))
+      dispatch(fetchHospitalBeds(auth, params.ward_id));
     }catch(error){
       console.error("Error fetching beds:", error);
     }
@@ -39,6 +42,9 @@ const WardBeds = () => {
 
   return (
     <section className="mt-4">
+      <div className="flex items-center justify-between mb-2">
+        <AddWardBed />
+      </div>
       <DataGrid
         dataSource={beds}
         allowColumnReordering={true}

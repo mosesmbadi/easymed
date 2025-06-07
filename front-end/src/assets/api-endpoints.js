@@ -148,9 +148,9 @@ export const API_URL = {
   PATIENTLABTESTREQUEST: "/patientlabtestrequest",
 
   /***************** INPATIENT ENDPOINTS **********************/
-  INPATIENT_BEDS: "/inpatient/beds",
-  INPATIENT_WARDS: "/inpatient/wards",
-  INPATIENT_NURSE_DUTIES: "/inpatient/ward-nurse-assignments",
+  INPATIENT_BEDS: "/inpatient/beds/",
+  INPATIENT_WARDS: "/inpatient/wards/",
+  INPATIENT_NURSE_DUTIES: "/inpatient/ward-nurse-assignments/",
 
 
 };

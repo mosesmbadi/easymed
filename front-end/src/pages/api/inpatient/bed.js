@@ -19,9 +19,11 @@ export default async function handler(req, res) {
                     'Authorization': req.headers.authorization,
                 }
             };
-    
 
-            await backendAxiosInstance.get(`${API_URL.INPATIENT_BEDS}`, config).then(response => {
+
+            const query = req.query;
+
+            await backendAxiosInstance.get(`${API_URL.INPATIENT_WARDS}${query.ward_id}/beds/`, config).then(response => {
                 res.status(200).json(response.data);
 
             }).catch(e => {
@@ -44,8 +46,9 @@ export default async function handler(req, res) {
                 }
             };
             const body = req.body;
+            const query = req.query
 
-            await backendAxiosInstance.post(`${API_URL.INPATIENT_BEDS}`,body,config)
+            await backendAxiosInstance.post(`${API_URL.INPATIENT_WARDS}${query.ward_id}/beds/`,body,config)
                 .then(response => {
                     res.status(200).json(response.data);
                 })
