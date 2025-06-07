@@ -8,10 +8,10 @@ const AdmitNav = () => {
   return (
     <div className="flex items-center gap-8 my-4">
         <Link href="/dashboard/admit" className={`${ pathName === "/dashboard/admit"  ? 'bg-primary text-white' : 'bg-white shadow'}  text-sm rounded px-3 py-2 mb-1`}>
-            Admitted Patients
+            Admit Patients
         </Link>
         <Link href='/dashboard/admit/wards' className={`${ pathName === '/dashboard/admit/wards' || pathName === '/dashboard/admit/wards'  ? 'bg-primary text-white' : 'bg-white shadow'}  text-sm rounded px-3 py-2 mb-1`}>
-            ward
+            wards
         </Link>
         {/* <Link href="/dashboard/laboratory/lab-inventory" className={`${ pathName === "/dashboard/laboratory/lab-inventory"  ? 'bg-primary text-white' : 'bg-white shadow'}  text-sm rounded px-3 py-2 mb-1`}>
             Lab Inventory

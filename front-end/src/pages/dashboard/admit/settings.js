@@ -4,6 +4,8 @@ import { Container } from '@mui/material';
 import AuthGuard from '@/assets/hoc/auth-guard';
 import DashboardLayout from '@/components/layout/dashboard-layout';
 import AdmitNav from '@/components/dashboard/admit/AdmitNav';
+import WardBeds from '@/components/dashboard/admit/Beds';
+import NursesDuties from '@/components/dashboard/admit/Duties';
 
 const InpatientSettings = () => {
   const [currentTab, setCurrentTab] = useState(0)
@@ -53,9 +55,9 @@ const InpatientSettings = () => {
       </div>
     </section>
     <div className="mt-2">
-      {currentTab === 0 && <Wards />}
-      {currentTab === 1 && <Beds />}
-      {currentTab === 2 && <Duties />}
+      {currentTab === 0 && <WardBeds />}
+      {currentTab === 1 && <WardBeds />}
+      {currentTab === 2 && <NursesDuties />}
     </div>
   </Container>
   )
