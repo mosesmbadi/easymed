@@ -1,6 +1,7 @@
 import React from "react";
 import dynamic from "next/dynamic";
 import { Column, Paging, Pager, HeaderFilter, Scrolling } from "devextreme-react/data-grid";
+import { getAllWards } from "@/redux/features/wards";
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
     ssr: false,
