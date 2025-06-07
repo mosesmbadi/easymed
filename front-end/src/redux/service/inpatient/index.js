@@ -38,9 +38,10 @@ export const fetchFacilityBeds = (auth, ward_id) =>{
     })
 }
 
-export const createFacilityWards = (payload) => {
+export const createFacilityWards = (auth, payload) => {
+    const axiosInstance = UseAxios(auth);
     return new Promise((resolve,reject) =>{
-        axios.post(`${APP_API_URL.INPATIENT_WARDS}`,payload)
+        axiosInstance.post(`${APP_API_URL.INPATIENT_WARDS}`,payload)
             .then((res) =>{
                 resolve(res.data)
             })

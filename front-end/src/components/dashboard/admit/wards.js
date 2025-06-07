@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useAuth } from "@/assets/hooks/use-auth";
 import { fetchHospitalWards } from "@/redux/features/inpatient";
 import { useRouter } from 'next/navigation'
+import AddWard from "./modals/AddWard";
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
     ssr: false,
@@ -58,7 +59,7 @@ const Ward = () => {
                     />
                 </div>
                 <div className="w-full bg-primary rounded-md flex items-center text-white justify-center cursor-pointer">
-                    Add New Ward
+                    <AddWard/>
                 </div>
             </div>
 

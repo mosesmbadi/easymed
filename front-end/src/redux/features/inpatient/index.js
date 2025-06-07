@@ -18,11 +18,14 @@ const InpatientSlice = createSlice({
     },
     addBedToStore: (state, action) => {
       state.beds = [action.payload, ...state.beds];
-    }
+    },
+    addWardToStore: (state, action) => {
+      state.wards = [action.payload, ...state.wards];
+    },
   },
 });
 
-export const { fetchBeds, fetchWards, addBedToStore } = InpatientSlice.actions;
+export const { fetchBeds, fetchWards, addBedToStore, addWardToStore } = InpatientSlice.actions;
 
 export const fetchHospitalBeds = (auth, ward_id) => async (dispatch) => {
   try {
@@ -45,6 +48,10 @@ export const fetchHospitalWards = (auth) => async (dispatch) => {
 
 export const updateBedStoreAfterPost = (response) => async (dispatch) => {
   dispatch(addBedToStore(response))  
+}
+
+export const updateWardStoreAfterPost = (response) => async (dispatch) => {
+  dispatch(addWardToStore(response))  
 }
 
 export default InpatientSlice.reducer;
