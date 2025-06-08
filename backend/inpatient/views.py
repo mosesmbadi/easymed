@@ -38,7 +38,7 @@ class PatientAdmissionViewSet(viewsets.ModelViewSet):
     filterset_class = PatientAdmissionFilter
 
     def get_queryset(self):
-        return PatientAdmission.objects.filter(discharge__isnull=True)
+        return PatientAdmission.objects.all()
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)

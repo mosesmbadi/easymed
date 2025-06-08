@@ -48,9 +48,10 @@ class PatientAdmissionSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        data["ward"] = instance.ward.name
-        data["bed"] = instance.bed.bed_number
+        data["ward"] = instance.ward.name if instance.ward else None
+        data["bed"] = instance.bed.bed_number if instance.bed else None
         return data
+
 
     def validate(self, data):
         bed = data.get("bed")
@@ -122,7 +123,6 @@ class PatientDischargeSerializer(serializers.ModelSerializer):
         read_only_fields = ['discharged_by', 'discharged_at', 'referral', 'discharged_by_name', 'admission_id']
 
     def validate(self, data):
-        print(self.initial_data)
         discharge_types = data.get('discharge_types')
         referral_data = data.get('referral_data')
 
@@ -133,7 +133,6 @@ class PatientDischargeSerializer(serializers.ModelSerializer):
         return data
         
     def create(self, validated_data):
-        print(validated_data)
         referral_data = validated_data.pop('referral_data', None)
         discharge_types = validated_data.get('discharge_types')
 

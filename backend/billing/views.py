@@ -17,7 +17,7 @@ from rest_framework.views import APIView
 
 from .models import InvoiceItem, Invoice, InvoicePayment
 from company.models import Company
-from inventory.models import Inventory, Item
+from inventory.models import InsuranceItemSalePrice
 from authperms.permissions import (
     IsDoctorUser,
     IsLabTechUser,
@@ -123,35 +123,53 @@ class PaymentBreakdownView(APIView):
 
         return Response(breakdown, status=status.HTTP_200_OK)
 
-def download_invoice_pdf(request, invoice_id,):
+def download_invoice_pdf(request, invoice_id):
     '''
-    This view gets the geneated pdf and downloads it ocally
-    pdf accessed here http://127.0.0.1:8080/download_invoice_pdf/26/
+    This view gets the generated pdf and downloads it locally
+    pdf accessed here http://127.0.0.1:8080/billing/download_invoice_pdf/26/
     '''
     invoice = get_object_or_404(Invoice, pk=invoice_id)
     invoice_items = InvoiceItem.objects.filter(invoice=invoice)
     company = Company.objects.first()
 
-    # Construct full logo URL for template
     company_logo_url = request.build_absolute_uri(company.logo.url) if company.logo else None
 
-
-    # Fetch the sale price for each InvoiceItem
     for item in invoice_items:
-        incoming_item = IncomingItem.objects.filter(item=item.item).first()
-        if incoming_item:
-            item.sale_price = incoming_item.sale_price
+        regular_sale_price = item.sale_price  
+        if not regular_sale_price:
+            regular_sale_price = item.item_amount or 0  
+        if item.payment_mode and item.payment_mode.payment_category == 'insurance' and item.payment_mode.insurance:
+            insurance_price = InsuranceItemSalePrice.objects.filter(
+                item=item.item,
+                insurance_company=item.payment_mode.insurance
+            ).first()
+            if insurance_price:
+                item.insurance_sale_price = insurance_price.sale_price
+                item.co_pay = insurance_price.co_pay
+                item.total_amount = insurance_price.sale_price + insurance_price.co_pay
+            else:
+                item.insurance_sale_price = None
+                item.co_pay = None
+                item.total_amount = item.actual_total or item.item_amount or regular_sale_price
+        else:
+            item.insurance_sale_price = None
+            item.co_pay = None
+            item.total_amount = item.actual_total or item.item_amount or regular_sale_price
+
+    subtotal = sum(item.total_amount for item in invoice_items)
+    tax = sum((item.item.vat_rate or 0) * item.total_amount / 100 for item in invoice_items)
 
     html_template = get_template('invoice.html').render({
         'company_logo_url': company_logo_url,
         'invoice': invoice,
         'invoice_items': invoice_items,
-        'company': company
+        'company': company,
+        'subtotal': subtotal,
+        'tax': tax
     })
+
     pdf_file = HTML(string=html_template).write_pdf()
     response = HttpResponse(pdf_file, content_type='application/pdf')
     response['Content-Disposition'] = f'filename="invoice_report_{invoice_id}.pdf"'
 
     return response
-
-
