@@ -111,7 +111,7 @@ const AddWard = () => {
                     />
                   </Grid>
                   <Grid item md={12} xs={12}>
-                  <label htmlFor="ward_type">Bed Type</label>
+                  <label htmlFor="ward_type">Ward Type</label>
                     <Field
                       as="select"
                       className="block pr-9 border border-gray rounded-xl text-sm py-2 px-4 focus:outline-none w-full"

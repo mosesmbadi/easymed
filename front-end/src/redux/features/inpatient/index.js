@@ -1,9 +1,10 @@
-import { fetchFacilityBeds, fetchFacilityWards } from "@/redux/service/inpatient";
+import { fetchFacilityBeds, fetchFacilityWards, getNursesAssigned } from "@/redux/service/inpatient";
 import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
   beds: [],
   wards: [],
+  nurses: [],
 };
 
 const InpatientSlice = createSlice({
@@ -15,6 +16,9 @@ const InpatientSlice = createSlice({
     },
     fetchWards: (state, action) => {
       state.wards = action.payload;
+    },
+    fetchNurses: (state, action) => {
+      state.nurses = action.payload;
     },
     addBedToStore: (state, action) => {
       state.beds = [action.payload, ...state.beds];
@@ -40,7 +44,7 @@ const InpatientSlice = createSlice({
 export const { 
   fetchBeds, fetchWards, 
   addBedToStore, addWardToStore,
-  updateWardInStore, updateBedInStore
+  updateWardInStore, updateBedInStore, fetchNurses
  } = InpatientSlice.actions;
 
 export const fetchHospitalBeds = (auth, ward_id) => async (dispatch) => {
@@ -62,6 +66,14 @@ export const fetchHospitalWards = (auth) => async (dispatch) => {
   }
 };
 
+export const fetchNursesAssigned = (auth) => async (dispatch) => {
+  try {
+    const response = await getNursesAssigned(auth);
+    dispatch(fetchNurses(response));
+  } catch (error) {
+    console.log("NURSES_ERROR ", error);
+  }
+}
 export const updateBedStoreAfterPost = (response) => async (dispatch) => {
   dispatch(addBedToStore(response))  
 }

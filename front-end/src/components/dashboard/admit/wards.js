@@ -1,12 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { Column, Paging, Pager, HeaderFilter, Scrolling } from "devextreme-react/data-grid";
 import { useDispatch, useSelector } from "react-redux";
 import { useAuth } from "@/assets/hooks/use-auth";
-import { fetchHospitalWards } from "@/redux/features/inpatient";
+import { fetchHospitalWards, fetchNursesAssigned } from "@/redux/features/inpatient";
 import { useRouter } from 'next/navigation'
 import AddWard from "./modals/AddWard";
 import { BiEdit } from "react-icons/bi";
+import { LiaUserNurseSolid } from "react-icons/lia";
 import CmtDropdownMenu from "@/assets/DropdownMenu";
 import { LuMoreHorizontal } from "react-icons/lu";
 import EditWard from "./modals/EditWard";
@@ -19,48 +20,53 @@ const allowedPageSizes = [5, 10, 'all'];
 
 const getActions = () => {
     let actions = [
-      {
-        action: "update",
-        label: "Update Ward",
-        icon: <BiEdit className="text-success text-xl mx-2" />,
-      },
+        {
+            action: "update",
+            label: "Update Ward",
+            icon: <BiEdit className="text-success text-xl mx-2" />,
+        },
+        {
+            action: "Assign Nurse",
+            label: "Assign Nurse",
+            icon: <LiaUserNurseSolid className="text-success text-xl mx-2" />,
+        }
     ];
-  
+
     return actions;
-  };
+};
 
 const Ward = () => {
     const [showPageSizeSelector, setShowPageSizeSelector] = useState(true);
     const [showNavButtons, setShowNavButtons] = useState(true);
     const [showInfo, setShowInfo] = useState(true);
-    const [selectedRowData,setSelectedRowData] = useState({});
+    const [selectedRowData, setSelectedRowData] = useState({});
     const [editOpen, setEditOpen] = useState(false);
-    const { wards } = useSelector((store) => store.inpatient);
+    const { wards, nurses } = useSelector((store) => store.inpatient);
     const auth = useAuth()
     const dispatch = useDispatch()
     const router = useRouter();
     const userActions = getActions();
 
     const onMenuClick = async (menu, data) => {
-     if(menu.action === "update"){
-        setSelectedRowData(data);
-        setEditOpen(true);      
-      }
+        if (menu.action === "update") {
+            setSelectedRowData(data);
+            setEditOpen(true);
+        }
     };
-  
+
     const actionsFunc = ({ data }) => {
-      return (
-        <>
-          <CmtDropdownMenu
-            sx={{ cursor: "pointer" }}
-            items={userActions}
-            onItemClick={(menu) => onMenuClick(menu, data)}
-            TriggerComponent={
-              <LuMoreHorizontal className="cursor-pointer text-xl" />
-            }
-          />
-        </>
-      );
+        return (
+            <>
+                <CmtDropdownMenu
+                    sx={{ cursor: "pointer" }}
+                    items={userActions}
+                    onItemClick={(menu) => onMenuClick(menu, data)}
+                    TriggerComponent={
+                        <LuMoreHorizontal className="cursor-pointer text-xl" />
+                    }
+                />
+            </>
+        );
     };
 
     const onRowClick = (e) => {
@@ -69,6 +75,16 @@ const Ward = () => {
             router.push(`/dashboard/admit/wards/${wardId}`)
         }
     };
+
+    const wardsWithNurseNames = useMemo(() => {
+        return wards.map(ward => {
+            const assignedNurse = nurses.find(n => n.id === ward.nurse_assignments);
+            return {
+                ...ward,
+                nurse: assignedNurse ? assignedNurse.nurse : "Unassigned"
+            };
+        });
+    }, [wards, nurses]);
 
     useEffect(() => {
 
@@ -80,12 +96,29 @@ const Ward = () => {
             }
         };
 
-        if(auth.token){
-            fetchWards();            
+        if (auth.token) {
+            fetchWards();
         }
 
 
-    },[])
+    }, [])
+
+    useEffect(() => {
+
+        const fetchNurses = () => {
+            try {
+                dispatch(fetchNursesAssigned(auth));
+            } catch (error) {
+                console.error("Error fetching wards:", error);
+            }
+        };
+
+        if (auth.token) {
+            fetchNurses();
+        }
+
+
+    }, [])
 
     return (
         <section>
@@ -99,12 +132,12 @@ const Ward = () => {
                     />
                 </div>
                 <div className="w-full bg-primary rounded-md flex items-center text-white justify-center cursor-pointer">
-                    <AddWard/>
+                    <AddWard />
                 </div>
             </div>
 
             <DataGrid
-                dataSource={wards} // empty data
+                dataSource={wardsWithNurseNames} // empty data
                 allowColumnReordering={true}
                 rowAlternationEnabled={true}
                 showBorders={true}
@@ -138,6 +171,16 @@ const Ward = () => {
                     allowFiltering={true}
                     allowSearch={true}
                 />
+                <Column
+                    dataField="nurse_assignments"
+                    caption="Nurse assigned"
+                    cellRender={({ data }) => {
+                        const assignments = data.nurse_assignments || [];
+                        if (assignments.length === 0) return "—";
+                        return assignments.map((n) => n.nurse).join(", ");
+                    }}
+                />
+
                 <Column dataField="ward_type" caption="Ward Type" width={200} />
                 <Column dataField="gender" caption="Gender" />
                 <Column
