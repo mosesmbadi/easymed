@@ -4,7 +4,11 @@ from faker import Faker
 from inventory.models import Item
 from customuser.models import CustomUser
 from company.models import Company, CompanyBranch, InsuranceCompany
-from authperms.models import Permission, Group 
+from authperms.models import Permission, Group
+from patient.models import Patient
+
+from laboratory.models import LabTestProfile, Specimen, LabTestPanel
+
 
 fake = Faker()
 
@@ -190,3 +194,107 @@ def create_permissions_and_groups():
         group.permissions.set(perms)
         group_objs.append(group)
     return group_objs
+
+
+def create_dummy_patients(count=20, insurances=None, users=None):
+    """
+    Generate dummy Patient records.
+    Optionally pass a list of InsuranceCompany and CustomUser objects to assign.
+    """
+    patients = []
+    fake_gender = lambda: random.choice(['M', 'F', 'O'])
+    insurances = insurances or list(InsuranceCompany.objects.all())
+    users = users or list(CustomUser.objects.filter(role=CustomUser.PATIENT))
+    used_emails = set(Patient.objects.values_list('email', flat=True))
+
+    for _ in range(count):
+        email = fake.unique.email()[:254]
+        # Ensure unique email
+        while email in used_emails:
+            email = fake.unique.email()[:254]
+        used_emails.add(email)
+
+        patient = Patient.objects.create(
+            first_name=fake.first_name()[:40],
+            second_name=fake.last_name()[:40],
+            email=email,
+            phone=fake.phone_number()[:30],
+            date_of_birth=fake.date_of_birth(minimum_age=18, maximum_age=90),
+            gender=fake_gender(),
+            user=users.pop() if users else None,
+        )
+        # Assign random insurances (0-2 per patient)
+        if insurances:
+            patient.insurances.set(random.sample(insurances, k=random.randint(0, min(2, len(insurances)))))
+        patients.append(patient)
+    return patients
+
+
+
+
+def create_demo_lab_profiles_and_panels():
+    # Common specimens
+    specimen_names = ["Blood", "Urine", "Stool", "Sputum", "CSF", "Saliva", "Swab", "Serum", "Plasma"]
+    specimens = {}
+    for name in specimen_names:
+        specimens[name], _ = Specimen.objects.get_or_create(name=name)
+
+    # Example test profiles and their panels
+    profiles_and_panels = {
+        "Complete Blood Count (CBC)": [
+            {"name": "Hemoglobin", "specimen": "Blood", "unit": "g", "is_qualitative": False, "is_quantitative": True},
+            {"name": "White Blood Cell Count", "specimen": "Blood", "unit": "10^9/L", "is_qualitative": False, "is_quantitative": True},
+            {"name": "Platelet Count", "specimen": "Blood", "unit": "10^9/L", "is_qualitative": False, "is_quantitative": True},
+        ],
+        "Liver Function Test (LFT)": [
+            {"name": "ALT (SGPT)", "specimen": "Blood", "unit": "IU/L", "is_qualitative": False, "is_quantitative": True},
+            {"name": "AST (SGOT)", "specimen": "Blood", "unit": "IU/L", "is_qualitative": False, "is_quantitative": True},
+            {"name": "Bilirubin", "specimen": "Blood", "unit": "mg/dL", "is_qualitative": False, "is_quantitative": True},
+        ],
+        "Renal Function Test (RFT)": [
+            {"name": "Creatinine", "specimen": "Blood", "unit": "mg/dL", "is_qualitative": False, "is_quantitative": True},
+            {"name": "Urea", "specimen": "Blood", "unit": "mg/dL", "is_qualitative": False, "is_quantitative": True},
+        ],
+        "Urinalysis": [
+            {"name": "Urine Protein", "specimen": "Urine", "unit": "mg/dL", "is_qualitative": False, "is_quantitative": True},
+            {"name": "Urine Glucose", "specimen": "Urine", "unit": "mg/dL", "is_qualitative": False, "is_quantitative": True},
+            {"name": "Urine pH", "specimen": "Urine", "unit": "", "is_qualitative": False, "is_quantitative": True},
+        ],
+        "COVID-19 PCR": [
+            {"name": "SARS-CoV-2 RNA", "specimen": "Swab", "unit": "", "is_qualitative": True, "is_quantitative": False},
+        ],
+        "Malaria Test": [
+            {"name": "Malaria Parasite", "specimen": "Blood", "unit": "", "is_qualitative": True, "is_quantitative": False},
+        ],
+    }
+
+    created_profiles = []
+    created_panels = []
+    for profile_name, panels in profiles_and_panels.items():
+        profile, _ = LabTestProfile.objects.get_or_create(name=profile_name)
+        created_profiles.append(profile)
+        for panel in panels:
+            item, _ = Item.objects.get_or_create(
+                name=panel["name"],
+                defaults={
+                    "item_code": f"LAB-{profile_name[:3].upper()}-{panel['name'][:3].upper()}",
+                    "desc": f"{panel['name']} test for {profile_name}",
+                    "category": "Lab Test",
+                    "units_of_measure": panel.get("unit", "unit") or "unit",
+                    "vat_rate": 0.0,
+                    "packed": "1",
+                    "subpacked": "1",
+                    "slow_moving_period": 90,
+                }
+            )
+            lab_panel, _ = LabTestPanel.objects.get_or_create(
+                name=panel["name"],
+                specimen=specimens[panel["specimen"]],
+                test_profile=profile,
+                unit=panel.get("unit", "unit") or "unit",
+                item=item,
+                is_qualitative=panel["is_qualitative"],
+                is_quantitative=panel["is_quantitative"],
+            )
+            created_panels.append(lab_panel)
+    return created_profiles, created_panels

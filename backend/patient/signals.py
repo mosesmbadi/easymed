@@ -15,13 +15,6 @@ from inventory.models import Inventory
 logger = logging.getLogger(__name__)
 
 
-# '''signal to fire up celery task to  to generated pdf once Prescription tale gets a new entry'''
-# @receiver(post_save, sender=Prescription)
-# def generate_precription(sender, instance, created, **kwargs):
-#     if created:
-#         generate_prescription_pdf.delay(instance.pk)
-
-
 @receiver(pre_save, sender=AttendanceProcess)
 def doctor_assigned_signal(sender, instance, **kwargs):
     print("doctor_assigned_signal Signal fired")
@@ -62,12 +55,14 @@ def appointment_assign_notification(attendance_process_id):
 
 
 
-'''Signal to update Invetory when PrescribedDrug is_dispensed==True
-It retrieves the corresponding inventory item, checks if there is enough stock,
-subtracts the prescribed quantity from the inventory, and saves the updated inventory item.
-'''
+
 @receiver(post_save, sender=PrescribedDrug)
 def update_inventory(sender, instance, created, **kwargs):
+    '''
+    Signal to update Invetory when PrescribedDrug is_dispensed==True
+    It retrieves the corresponding inventory item, checks if there is enough stock,
+    subtracts the prescribed quantity from the inventory, and saves the updated inventory item.
+    '''
     if created and instance.is_dispensed:
         try:
             inventory_item = Inventory.objects.get(item=instance.item)

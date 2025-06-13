@@ -27,7 +27,8 @@ services:
             context: ./backend
             dockerfile: ./Dockerfile.local
         container_name: api
-        command: uvicorn --host 0.0.0.0 --port 8080 easymed.asgi:application
+        command: python manage.py runserver 0.0.0.0:8080
+        # command: uvicorn --host 0.0.0.0 --port 8080 easymed.asgi:application
         volumes:
             - ./backend:/app
         ports:
@@ -74,7 +75,47 @@ services:
             - backend 
         networks:
             - mks   
-            
+
+
+    flower:
+        image: mher/flower
+        container_name: flower
+        command: celery flower
+        environment:
+        - CELERY_BROKER_URL=redis://redis:6379/0
+        - FLOWER_PORT=8888
+        ports:
+        - 8888:8888
+        depends_on:
+            - redis
+        networks:
+            - mks  
+
+    lis_server:
+        image: mosesmbadi/hl7-astm-parser:latest
+        container_name: lis-server
+        ports:
+            - 9091:9091
+        env_file:
+            - ./.env
+        environment:
+            - PYTHONUNBUFFERED=1
+            - PYTHONPATH=/app/src
+        command:
+            [
+                "uvicorn",
+                "src.main:app",
+                "--host",
+                "0.0.0.0",
+                "--port",
+                "9091",
+                "--reload",
+            ]
+
+        restart: unless-stopped
+        networks:
+            - mks        
+
     # TODO: Configuration and testing needed for thi
     # db_backup:
     #     image: amazonlinux:2

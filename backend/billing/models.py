@@ -19,7 +19,7 @@ class PaymentMode(models.Model):
         ('insurance', 'Insurance'),
         ('mpesa', 'MPesa'),
     )
-    paymet_mode = models.CharField(max_length=20, blank=True, null=True, default='cash')
+    paymet_mode = models.CharField(max_length=100, blank=True, null=True, default='cash')
     insurance = models.ForeignKey(
             'company.InsuranceCompany',
             null=True,
