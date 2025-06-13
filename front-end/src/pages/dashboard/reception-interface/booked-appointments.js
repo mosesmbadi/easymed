@@ -10,11 +10,7 @@ import { getAllAppointments } from '@/redux/features/appointment'
 const ReceptionPatients = () => {
   const dispatch = useDispatch();
   const { appointments } = useSelector(( store ) => store.appointment)
-  console.log("APPOINTMENTS ",appointments);
 
-  useEffect(() =>{
-    dispatch(getAllAppointments());
-  },[]);
 
   return (
     <Container maxWidth="xl" className="mt-8">

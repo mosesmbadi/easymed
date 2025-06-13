@@ -74,6 +74,7 @@ class LabTestProfile(models.Model):
     def __str__(self):
         return self.name
 
+
 class Specimen(models.Model):
     name = models.CharField(max_length=255)
 
@@ -105,12 +106,8 @@ class LabTestPanel(models.Model):
     # turn around time
     tat = models.DurationField(null=True, blank=True)
 
-
     def __str__(self):
         return f"{self.name} {self.unit} - {self.test_profile.name}"
-
-    # def __str__(self):
-    #     return f"{self.name} - {self.specimen.name} - {self.unit} - {self.test_profile.name}"
 
 
 class ReferenceValue(models.Model):

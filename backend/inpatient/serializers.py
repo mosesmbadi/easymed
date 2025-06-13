@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
+from patient.serializers import ReferralSerializer
 from .models import (Bed, PatientAdmission, PatientDischarge, Ward,
                      WardNurseAssignment)
 
@@ -43,15 +44,14 @@ class PatientAdmissionSerializer(serializers.ModelSerializer):
             "reason_for_admission",
             "admitted_by_name",
             "admitted_at",
-            "is_discharged",
-            "discharged_at",
         ]
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        data["ward"] = instance.ward.name
-        data["bed"] = instance.bed.bed_number
+        data["ward"] = instance.ward.name if instance.ward else None
+        data["bed"] = instance.bed.bed_number if instance.bed else None
         return data
+
 
     def validate(self, data):
         bed = data.get("bed")
@@ -98,35 +98,62 @@ class BedSerializer(serializers.ModelSerializer):
         }
 
     def get_current_occupant(self, instance):
-        admission = PatientAdmission.objects.filter(bed=instance, is_discharged=False).first()
+        admission = PatientAdmission.objects.filter(bed=instance, discharge__isnull=True).first()
         if admission:
             return PatientAdmissionSerializer(admission).data
         return None
 
 class PatientDischargeSerializer(serializers.ModelSerializer):
-    discharged_by_name = serializers.CharField(
-        source="discharged_by.get_fullname", read_only=True
-    )
+    discharged_by_name = serializers.CharField(source="discharged_by.get_fullname", read_only=True)
     admission = serializers.PrimaryKeyRelatedField(
-        queryset=PatientAdmission.objects.all(), write_only=True
+        queryset=PatientAdmission.objects.all(),
+        write_only=True,
+        required=False  # Make optional since set via context
     )
-    admission_id = serializers.CharField(
-        source="admission.admission_id", read_only=True
-    )
+    admission_id = serializers.CharField(source="admission.admission_id", read_only=True)
+    referral_data = ReferralSerializer(required=False, allow_null=True)
 
     class Meta:
         model = PatientDischarge
         fields = [
-            "id",
-            "admission",
-            "admission_id",
-            "discharged_by_name",
-            "discharged_at",
-            "discharge_notes",
+            'id', 'admission', 'admission_id', 'discharge_types',
+            'discharged_by_name', 'discharge_notes', 'referral',
+            'referral_data', 'discharged_at'
         ]
-        read_only_fields = ["discharged_at"]
+        read_only_fields = ['discharged_by', 'discharged_at', 'referral', 'discharged_by_name', 'admission_id']
 
+    def validate(self, data):
+        discharge_types = data.get('discharge_types')
+        referral_data = data.get('referral_data')
 
+        if discharge_types == 'referral' and not referral_data:
+            raise serializers.ValidationError("Referral details are required for external referral discharge.")
+        if discharge_types != 'referral' and referral_data:
+            raise serializers.ValidationError("Referral details should only be set for referral discharge.")
+        return data
+        
+    def create(self, validated_data):
+        referral_data = validated_data.pop('referral_data', None)
+        discharge_types = validated_data.get('discharge_types')
+
+        # Set admission from context
+        admission = self.context.get('admission')
+        if not admission:
+            raise serializers.ValidationError("Admission is required.")
+        validated_data['admission'] = admission
+
+        # Set discharged_by to the requesting user
+        validated_data['discharged_by'] = self.context['request'].user
+
+        # Create Referral instance for referral discharge
+        if discharge_types == 'referral':
+            referral_serializer = ReferralSerializer(data=referral_data)
+            referral_serializer.is_valid(raise_exception=True)
+            referral = referral_serializer.save(referred_by_id=self.context['request'].user.id)
+            validated_data['referral'] = referral
+        return super().create(validated_data)
+
+        
 class WardNurseAssignmentSerializer(serializers.ModelSerializer):
     ward = serializers.PrimaryKeyRelatedField(queryset=Ward.objects.all())
     nurse = serializers.PrimaryKeyRelatedField(
@@ -168,7 +195,7 @@ class WardSerializer(serializers.ModelSerializer):
         read_only_fields = ['created_at', 'id']
 
     def get_admissions(self, instance):
-        active_admissions = instance.admissions.filter(is_discharged=False)
+        active_admissions = instance.admissions.filter(discharge__isnull=True)
         return PatientAdmissionSerializer(active_admissions, many=True).data
 
 

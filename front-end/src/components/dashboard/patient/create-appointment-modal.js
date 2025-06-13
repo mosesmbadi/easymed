@@ -37,10 +37,11 @@ const CreateAppointmentModal = ({ setOpen, open, selectedRowData }) => {
       const response = await initiateNewAttendanceProcesses(payload, auth)
       console.log(response)
       setLoading(false)
+      toast.success("New Visit Initiated Successfully!")
       handleClose()
 
     }catch(error){
-      console.log("ERROR INITIATING NEW VISIT",error)
+      toast.error("Error Initiating New Visit!")
       setLoading(false)
       handleClose()
     }

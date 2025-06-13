@@ -1,11 +1,12 @@
 from django.db import models
 from customuser.models import CustomUser
 
+
 class Channel(models.Model):
-     name = models.CharField(max_length=45)
-     photo = models.FileField(upload_to='announcements/channel/', null=True, blank=True)
+    name = models.CharField(max_length=45)
+    photo = models.FileField(upload_to='announcements/channel/', null=True, blank=True)
         
-     def __str__(self):
+    def __str__(self):
         return self.name
 
 class Announcement(models.Model):
@@ -16,10 +17,8 @@ class Announcement(models.Model):
     channel = models.ForeignKey(Channel, on_delete=models.CASCADE)
     file = models.FileField(upload_to='announcements/file/', null=True, blank=True)
 
-
     def __str__(self):
         return self.title
-
 
 
 class Comment(models.Model):
@@ -29,7 +28,6 @@ class Comment(models.Model):
     created_at = models.DateTimeField(auto_now_add=True) 
     announcement = models.ForeignKey(Announcement, on_delete=models.CASCADE)
     file = models.FileField(upload_to='announcements/comments/', null=True, blank=True)
-
 
     def __str__(self):
         return self.title
