@@ -7,7 +7,7 @@ COPY . .
 RUN npm run build
 RUN ls -la /app/.next
 EXPOSE 3000
-CMD ["npm", "run", "dev"]
+CMD ["npm", "run", "start"]
 
 
 # To test production build: in development

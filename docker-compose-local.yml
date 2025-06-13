@@ -91,6 +91,31 @@ services:
         networks:
             - mks  
 
+    lis_server:
+        image: mosesmbadi/hl7-astm-parser:latest
+        container_name: lis-server
+        ports:
+            - 9091:9091
+        env_file:
+            - ./.env
+        environment:
+            - PYTHONUNBUFFERED=1
+            - PYTHONPATH=/app/src
+        command:
+            [
+                "uvicorn",
+                "src.main:app",
+                "--host",
+                "0.0.0.0",
+                "--port",
+                "9091",
+                "--reload",
+            ]
+
+        restart: unless-stopped
+        networks:
+            - mks        
+
     # TODO: Configuration and testing needed for thi
     # db_backup:
     #     image: amazonlinux:2
