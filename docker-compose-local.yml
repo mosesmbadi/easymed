@@ -63,18 +63,22 @@ services:
         networks:
             - mks    
 
-    # frontend:
-    #     build:
-    #         context: ./front-end
-    #         dockerfile: ./Dockerfile.local
-    #     container_name: easymed-frontend
-    #     restart: unless-stopped
-    #     ports:
-    #         - 3000:3000
-    #     depends_on:
-    #         - backend 
-    #     networks:
-    #         - mks   
+    frontend:
+        build:
+            context: ./front-end
+            dockerfile: ./Dockerfile.local
+        container_name: easymed-frontend
+        restart: unless-stopped
+        ports:
+            - 3000:3000
+        env_file:
+            - ./.env
+        environment:
+            - NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL}
+        depends_on:
+            - backend 
+        networks:
+            - mks
 
 
     flower:
