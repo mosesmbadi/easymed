@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSelector, useDispatch } from 'react-redux'
 import { useAuth } from '../hooks/use-auth';
@@ -8,39 +8,37 @@ import { getCurrentUser } from "@/redux/features/users";
 const PatientConfirmedProtect = ({ children }) => {
   const dispatch = useDispatch()
   const auth = useAuth();
-  const router = useRouter();  // Ensure useRouter is used within a component
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
   const { patients } = useSelector((store) => store.patient);
-  const loggedInPatient = patients.find((patient) => patient.user === auth?.user_id)
+  const loggedInPatient = patients.find((patient) => patient.user === auth?.user_id);
+  const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
 
   useEffect(() => {
-      const fetchData = () => {
-          try {
-              if (auth) {
-                  dispatch(getCurrentUser(auth));
-                  dispatch(getAllPatients(auth));
-              }
-          } catch (error) {
-            // TODO handle error properly
-              // Log the error or handle it as needed
-              console.error("Error fetching data:", error);
-              // Handle error (e.g., redirect to an error page)
-          }
-      };
+    const fetchData = async () => {
+      try {
+        if (auth) {
+          await Promise.all([
+            dispatch(getCurrentUser(auth)),
+            dispatch(getAllPatients(auth))
+          ]);
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-      fetchData();
+    fetchData();
   }, [auth]);
 
   useEffect(() => {
-      if (!loggedInPatient) {
-        console.log("THIS HERE IS CALLED LOGGED IN PATIENT IS NOT FOUND")
-
-          // Redirect to the profile page if the patient is not logged in
-          router.push("/patient-overview/profile");
-      }else{
-        console.log("THIS HERE IS CALLED LOGGED IN PATIENT IS FOUND")
-        router.push("/patient-overview");
-      }
-  }, [loggedInPatient]);
+    if (!isLoading && !loggedInPatient) {
+      console.log("Patient not found");
+      // Instead of redirecting, we'll let the components handle their empty states
+    }
+  }, [isLoading, loggedInPatient]);
 
   return (
       <>{children}</>
