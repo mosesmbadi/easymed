@@ -98,3 +98,16 @@ export const fetchFacilityWards = (auth) =>{
             })
     })
 }
+
+export const admitPatient = (auth, payload) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve,reject) =>{
+        axiosInstance.post(`${APP_API_URL.ADMIT_PATIENT}`,payload)
+            .then((res) =>{
+                resolve(res.data)
+            })
+            .catch((err) =>{
+                reject(err.message)
+            })
+    })
+}
