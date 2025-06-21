@@ -23,6 +23,4 @@ urlpatterns = [
     path("", include(router.urls)),
     path("", include(admissions_url.urls)),
     path("", include(wards_url.urls)),
-    re_path(r"^discharge-summary/(?P<discharge_id>\d+)/?$", download_discharge_summary, name="download-discharge-summary"),
-
-]
+    re_path(r"^discharge-summary/(?P<discharge_id>\d+)/?$", download_discharge_summary, name="download-discharge-summary"),]

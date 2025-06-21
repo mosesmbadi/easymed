@@ -9,12 +9,8 @@ User = get_user_model()
 
 
 class PatientAdmissionSerializer(serializers.ModelSerializer):
-    ward = serializers.PrimaryKeyRelatedField(
-        queryset=Ward.objects.all(), write_only=True
-    )
-    bed = serializers.PrimaryKeyRelatedField(
-        queryset=Bed.objects.all(), write_only=True
-    )
+    ward = serializers.PrimaryKeyRelatedField(queryset=Ward.objects.all(), required=False, allow_null=True)
+    bed = serializers.PrimaryKeyRelatedField(queryset=Bed.objects.all(), required=False, allow_null=True)
 
     patient_first_name = serializers.CharField(
         source="patient.first_name", read_only=True
@@ -32,39 +28,34 @@ class PatientAdmissionSerializer(serializers.ModelSerializer):
     class Meta:
         model = PatientAdmission
         fields = [
-            "id",
-            "admission_id",
-            "patient",
-            "patient_first_name",
-            "patient_second_name",
-            "patient_age",
-            "patient_gender",
-            "ward",
-            "bed",
-            "reason_for_admission",
-            "admitted_by_name",
-            "admitted_at",
+            "id", "admission_id", "patient",
+            "patient_first_name", "patient_second_name",
+            "patient_age", "patient_gender", "ward", "bed",
+            "reason_for_admission", "admitted_by_name", "admitted_at",
         ]
 
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        data["ward"] = instance.ward.name if instance.ward else None
-        data["bed"] = instance.bed.bed_number if instance.bed else None
-        return data
+    # def to_representation(self, instance):
+    #     data = super().to_representation(instance)
+    #     data["ward"] = getattr(instance.ward, "name", None)
+    #     data["bed"] = getattr(instance.bed, "bed_number", None)
+    #     data["bed_status"] = getattr(instance.bed, "status", None)
+    #     return data
 
 
-    def validate(self, data):
-        bed = data.get("bed")
-        ward = data.get("ward")
+    # def validate(self, attrs):
+    #     bed  = attrs.get("bed")
+    #     ward = attrs.get("ward")
 
-        if bed.status != "available":
-            raise serializers.ValidationError({"bed": "This bed is already occupied."})
-        if bed.ward != ward:
-            raise serializers.ValidationError(
-                {"bed": "The bed does not belong to the selected ward."}
-            )
-
-        return data
+    #     if bed:
+    #         if bed.status != "available":
+    #             raise serializers.ValidationError(
+    #                 {"bed": "This bed is already occupied."}
+    #             )
+    #         if ward and bed.ward != ward:
+    #             raise serializers.ValidationError(
+    #                 {"bed": "The bed does not belong to the selected ward."}
+    #             )
+    #     return attrs
 
 
 class WardSerializer(serializers.ModelSerializer):
