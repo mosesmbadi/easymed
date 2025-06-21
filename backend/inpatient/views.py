@@ -28,8 +28,8 @@ from .serializers import (BedSerializer, PatientAdmissionSerializer,
                         WardNurseAssignmentSerializer, WardSerializer)
 
 
-
 logger = logging.getLogger(__name__)
+
 
 class PatientAdmissionViewSet(viewsets.ModelViewSet):
     queryset = PatientAdmission.objects.all()
@@ -48,11 +48,10 @@ class PatientAdmissionViewSet(viewsets.ModelViewSet):
 
         try:
             if bed:
-                bed = serializer.validated_data["bed"]
                 bed.status = "occupied"
                 bed.save()
-                serializer.save(admitted_by=request.user)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            instance = serializer.save(admitted_by=request.user)
+            return Response(self.get_serializer(instance).data, status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response(
                 {"Cannot admit patient": str(e)}, status=status.HTTP_400_BAD_REQUEST

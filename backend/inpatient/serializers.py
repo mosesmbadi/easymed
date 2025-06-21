@@ -45,20 +45,20 @@ class PatientAdmissionSerializer(serializers.ModelSerializer):
         return data
 
 
-    # def validate(self, attrs):
-    #     bed  = attrs.get("bed")
-    #     ward = attrs.get("ward")
+    def validate(self, attrs):
+        bed  = attrs.get("bed")
+        ward = attrs.get("ward")
 
-    #     if bed:
-    #         if bed.status != "available":
-    #             raise serializers.ValidationError(
-    #                 {"bed": "This bed is already occupied."}
-    #             )
-    #         if ward and bed.ward != ward:
-    #             raise serializers.ValidationError(
-    #                 {"bed": "The bed does not belong to the selected ward."}
-    #             )
-    #     return attrs
+        if bed:
+            if bed.status != "available":
+                raise serializers.ValidationError(
+                    {"bed": "This bed is already occupied."}
+                )
+            if ward and bed.ward != ward:
+                raise serializers.ValidationError(
+                    {"bed": "The bed does not belong to the selected ward."}
+                )
+        return attrs
 
 
 class WardSerializer(serializers.ModelSerializer):
