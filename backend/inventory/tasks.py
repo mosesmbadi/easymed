@@ -1,33 +1,20 @@
-# import os
 import logging
 from asgiref.sync import async_to_sync
 from celery import shared_task
 from channels.layers import get_channel_layer
-from datetime import timedelta
-from collections import defaultdict
 from django.conf import settings
-from django.utils import timezone
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
 from django.db import transaction
 from django.db.models import F
 from django.core.exceptions import ValidationError
 
-User = get_user_model()
-
-from pharmacy.helpers import ( 
- get_active_prescriptions,
- get_due_doses,
- )
-
 from authperms.models import Group
-from celery import shared_task
-from inpatient.models import PatientAdmission
 from inventory.models import (
     Inventory, InventoryArchive
 )
-from laboratory.models import TestKitCounter, TestKit, LabTestRequestPanel
 
+User = get_user_model()
 
 logger = logging.getLogger(__name__)
 
@@ -210,97 +197,4 @@ def inventory_garbage_collection(self):
             exc_info=True
         )
         # Retry the task if it fails
-        self.retry(exc=e, countdown=60 * 5)
-
-
-@shared_task
-def deduct_test_kit(lab_test_panel_id):
-    lab_test_panel = LabTestRequestPanel.objects.get(id=lab_test_panel_id)
-    
-    if lab_test_panel.is_billed:
-        test_kit = TestKit.objects.filter(item=lab_test_panel.test_panel.item).first()
-        
-        if test_kit:
-            test_kit_counters = TestKitCounter.objects.filter(lab_test_kit=test_kit, counter__gt=0).order_by('id')
-
-            for test_kit_counter in test_kit_counters:
-                if test_kit_counter.counter > 0:
-                    test_kit_counter.counter -= 1
-                    test_kit_counter.save()
-                    break
-
-
-@shared_task(bind=True, max_retries=3)
-def check_medication_notifications(self):
-    """
-    Periodically checks for prescriptions with doses due in the next hour and sends notifications.
-    """
-    try:
-        now = timezone.now()
-        one_hour_later = now + timedelta(hours=1)
-        ward_messages = defaultdict(list)
-
-        prescriptions = get_active_prescriptions(one_hour_later)
-        if not prescriptions.exists():
-            logger.info("No prescriptions due in the next hour.")
-            return
-
-        admissions = {
-        a.patient_id: a
-        for a in PatientAdmission.objects.filter(discharge__isnull=True)
-        }
-
-        for prescription in prescriptions:
-            patient = prescription.attendanceprocess.patient
-            admission = admissions.get(patient.id)
-            if not admission:
-                continue
-
-            for drug in prescription.prescribeddrug_set.filter(is_dispensed=False):
-                due_times = get_due_doses(drug, now, one_hour_later)
-                for dose_time in due_times:
-                    unit = drug.item.units_of_measure
-                    dosage_display = (
-                        f"{drug.dosage} {unit}" if unit != 'unit'
-                        else f"{drug.dosage} {'tablets' if drug.item.category == 'Drug' else 'units'}"
-                    )
-                    entry = (
-                        f"Patient {admission.admission_id} in bed {admission.bed.bed_number}, "
-                        f"needs {dosage_display} of {drug.item.name} "
-                        f"at {dose_time.strftime('%Y-%m-%d %H:%M')}."
-                    )
-                    ward_messages[admission.ward].append(entry)
-
-        for ward, med_list in ward_messages.items():
-            message = (
-                "The following medications are due within the next hour:\n\n"
-                + "\n".join(med_list)
-                + "\n\nPlease collect them from the pharmacy."
-            )
-            send_ward_websocket_task.delay(ward.id, message)
-
-    except Exception as e:
-        logger.error(f"Error in check_medication_notifications: {e}", exc_info=True)
-        self.retry(exc=e, countdown=60)
-
-
-
-@shared_task(bind=True, max_retries=3)
-def send_ward_websocket_task(self, ward_id, message):
-    """
-    Sends a WebSocket notification to all nurses in a ward's group.
-    """
-    try:
-        from channels.layers import get_channel_layer
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            f"ward_{ward_id}_notifications",
-            {
-                'type': 'send_notification',
-                'message': message
-            }
-        )
-        logger.info(f"Sent WebSocket notification to ward {ward_id}.")
-    except Exception as e:
-        logger.error(f"Failed to send WebSocket for ward {ward_id}: {e}", exc_info=True)
-        self.retry(exc=e, countdown=60)
+        self.retry(exc=e, countdown=60 * 5)            
