@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import AsyncMock, patch
 from asgiref.sync import sync_to_async
 from django.db import transaction
-from easymed.celery_tasks import check_inventory_reorder_levels
+from inventory.tasks import check_inventory_reorder_levels
 
 @pytest.mark.asyncio
 @pytest.mark.django_db

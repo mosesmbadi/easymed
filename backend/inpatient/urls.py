@@ -4,7 +4,7 @@ from rest_framework_nested.routers import NestedDefaultRouter
 
 from .views import (BedViewSet, PatientAdmissionViewSet,
                     PatientDischargeViewset, WardNurseAssignmentViewSet,
-                    WardViewSet, download_discharge_summary)
+                    WardViewSet, DownloadDischargeSummaryView)
 
 app_name = 'inpatient'
 
@@ -23,4 +23,5 @@ urlpatterns = [
     path("", include(router.urls)),
     path("", include(admissions_url.urls)),
     path("", include(wards_url.urls)),
-    re_path(r"^discharge-summary/(?P<discharge_id>\d+)/?$", download_discharge_summary, name="download-discharge-summary"),]
+    path("discharge-summary/<str:admission_id>/", DownloadDischargeSummaryView.as_view(), name="download-discharge-summary-by-admission"),
+]

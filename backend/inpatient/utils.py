@@ -8,7 +8,7 @@ from laboratory.models import LabTestRequest, PatientSample
 from patient.models import AttendanceProcess, PrescribedDrug, Triage
 
 def generate_discharge_summary_pdf(admission_id, request):
-    admission = PatientAdmission.objects.get(pk=admission_id)
+    admission = PatientAdmission.objects.get(admission_id=admission_id)
     if not hasattr(admission, 'discharge'):
         return None, {"error": "No discharge record found."}
     discharge = admission.discharge
@@ -101,7 +101,7 @@ def generate_discharge_summary_pdf(admission_id, request):
             'referred_by': discharge.referral.referred_by.get_fullname() if discharge.referral.referred_by else 'N/A'
         }
 
-    html_string = render_to_string('inpatient/discharge_summary.html', context)
+    html_string = render_to_string('discharge_summary.html', context)
     html = HTML(string=html_string)
     pdf_file = BytesIO()
     html.write_pdf(pdf_file)

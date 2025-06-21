@@ -34,12 +34,15 @@ class PatientAdmissionSerializer(serializers.ModelSerializer):
             "reason_for_admission", "admitted_by_name", "admitted_at",
         ]
 
-    # def to_representation(self, instance):
-    #     data = super().to_representation(instance)
-    #     data["ward"] = getattr(instance.ward, "name", None)
-    #     data["bed"] = getattr(instance.bed, "bed_number", None)
-    #     data["bed_status"] = getattr(instance.bed, "status", None)
-    #     return data
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        # Only add extra fields if instance is a model (not an OrderedDict)
+        from django.db.models import Model
+        if isinstance(instance, Model):
+            data["ward"] = getattr(instance.ward, "name", None)
+            data["bed"] = getattr(instance.bed, "bed_number", None)
+            data["bed_status"] = getattr(instance.bed, "status", None)
+        return data
 
 
     # def validate(self, attrs):
