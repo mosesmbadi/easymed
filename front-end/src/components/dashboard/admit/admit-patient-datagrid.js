@@ -1,6 +1,9 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { Column, Paging, Pager, HeaderFilter, Scrolling } from "devextreme-react/data-grid";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchAdmitted } from "@/redux/features/inpatient";
+import { useAuth } from "@/assets/hooks/use-auth";
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
   ssr: false,
@@ -9,22 +12,30 @@ const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
 const allowedPageSizes = [5, 10, 'all'];
 
 const AdmitPatientDataGrid = () => {
-  const fakeData = []; // empty data for now
-  
+  const showPageSizeSelector = true;
+  const [showNavButtons, setShowNavButtons] = useState(true);
+  const showInfo = true;
+  const { patients } = useSelector((store) => store.inpatient);
+  const dispatch = useDispatch();
+  const auth = useAuth();
 
   // dummy functions and values for now
   const onSelectionChanged = () => {};
   const selectedRecords = [];
-  const showPageSizeSelector = true;
-  const [showNavButtons, setShowNavButtons] = useState(true);
-  const showInfo = true;
+
   const patientNameRender = () => "John Doe";
   const actionsFunc = () => "Edit/Delete";
+
+  useEffect(() => {
+    if(auth.token){
+      dispatch(fetchAdmitted(auth));
+    }
+  }, [auth])
 
   return (
     <section>
       <DataGrid
-        dataSource={fakeData}
+        dataSource={patients}
         allowColumnReordering={true}
         rowAlternationEnabled={true}
         onSelectionChanged={onSelectionChanged}
@@ -48,7 +59,7 @@ const AdmitPatientDataGrid = () => {
           showNavigationButtons={showNavButtons}
         />
         <Column
-          dataField="patient_number"
+          dataField="patient"
           caption="PId"
           allowFiltering={true}
           allowSearch={true}
@@ -60,7 +71,7 @@ const AdmitPatientDataGrid = () => {
           allowSearch={true}
           cellRender={patientNameRender}
         />
-        <Column dataField="reason" caption="Reason" width={200} />
+        <Column dataField="reason_for_admission" caption="Reason" width={200} />
         <Column dataField="actions" caption="Action" cellRender={actionsFunc} />
       </DataGrid>
     </section>

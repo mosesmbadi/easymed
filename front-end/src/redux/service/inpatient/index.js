@@ -111,3 +111,16 @@ export const admitPatient = (auth, payload) => {
             })
     })
 }
+
+export const fetchAdmittedPatients = (auth) =>{
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve,reject) =>{
+        axiosInstance.get(`${APP_API_URL.ADMIT_PATIENT}`)
+            .then((res) =>{
+                resolve(res.data)
+            })
+            .catch((err) => {
+                reject(err.message)
+            })
+    })
+}
