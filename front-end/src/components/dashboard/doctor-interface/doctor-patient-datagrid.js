@@ -22,6 +22,7 @@ import LabModal from "./lab-modal";
 import ViewAddedResults from "./ViewAddedResults";
 import ApproveResults from "../laboratory/add-result/ApproveResults";
 import ProcessFilter from "@/components/common/process/ProcessFilter";
+import AdmitModal from "./admit-modal";
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
   ssr: false,
@@ -75,6 +76,7 @@ const DoctorPatientDataGrid = () => {
   const [consultOpen, setConsultOpen] = useState(false);
   const [prescribeOpen, setPrescribeOpen] = useState(false);
   const [labOpen, setLabOpen] = useState(false);
+  const [admitOpen, setAdmitOpen] = useState(false);
   const userActions = getActions();
   const dispatch = useDispatch();
   const auth = useAuth();
@@ -116,7 +118,10 @@ const DoctorPatientDataGrid = () => {
     }else if(menu.action === "results"){
       setSelectedRowData(data);
       setResultOpen(true);
-    }
+    }else if (menu.action === "admit") {
+      setSelectedRowData(data);
+      setAdmitOpen(true);
+    } 
   };
 
   const actionsFunc = ({ data }) => {
@@ -141,10 +146,6 @@ const DoctorPatientDataGrid = () => {
 
   return (
     <section>
-      {/* <div className="capitalize flex gap-4 py-4">
-        <p className="cursor-pointer text-primary border-b border-primary px-2" onClick={()=> setProcessTrack("doctor")}>New Appointments</p>
-        <p className="cursor-pointer text-primary border-b border-primary px-2" onClick={()=> setProcessTrack("lab")}>From The Lab</p>
-      </div> */}
       <ProcessFilter selectedFilter={processFilter} setProcessFilter={setProcessFilter}/>
       <DataGrid
         dataSource={doctorsSchedules}
@@ -204,6 +205,8 @@ const DoctorPatientDataGrid = () => {
       {/* {resultOpen && (<ViewAddedResults resultOpen={resultOpen} setResultOpen={setResultOpen} selectedData={selectedRowData}
       />)} */}
       {resultOpen && (<ApproveResults selectedData={selectedRowData} approveOpen={resultOpen} setApproveOpen={setResultOpen}/>)}
+      
+      {admitOpen && (<AdmitModal admitOpen={admitOpen} setAdmitOpen={setAdmitOpen} selectedRowdata={selectedRowData} />)}
     </section>
   );
 };
