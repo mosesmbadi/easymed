@@ -27,8 +27,8 @@ const AdmitModal = ({admitOpen, setAdmitOpen, selectedRowdata}) => {
     patient: selectedRowdata.patient,
     reason_for_admission: "",
     admitted_by: auth.user_id,
-    ward: 1,
-    bed: 1,
+    // ward: 1,
+    // bed: 1,
   };
 
   const validationSchema = Yup.object().shape({

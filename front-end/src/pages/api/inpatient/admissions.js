@@ -23,7 +23,7 @@ export default async function handler(req, res) {
 
             const query = req.query;
 
-            await backendAxiosInstance.get(`${API_URL.ADMIT_PATIENT}`, config).then(response => {
+            await backendAxiosInstance.get(`${API_URL.ADMIT_PATIENT}?ward=${query.ward}`, config).then(response => {
                 res.status(200).json(response.data);
 
             }).catch(e => {
