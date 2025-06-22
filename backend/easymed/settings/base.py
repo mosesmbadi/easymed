@@ -228,16 +228,16 @@ CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 
 CELERY_BEAT_SCHEDULE = {
     "check_inventory_reorder_levels": {
-    "task": "easymed.celery_tasks.check_inventory_reorder_levels",            
+    "task": "inventory.tasks.check_inventory_reorder_levels",            
     "schedule": crontab(minute='*/600'),  
     },
 
     "inventory_garbage_collection": {
-        "task": "easymed.celery_tasks.inventory_garbage_collection",            
+        "task": "inventory.tasks.inventory_garbage_collection",            
         "schedule": crontab(minute='*/45'),  
     },
     "check-medication-notifications": {
-        "task": "easymed.celery_tasks.check_medication_notifications",
+        "task": "inpatient.tasks.check_medication_notifications",
         'schedule': crontab(minute='*/60'),
     },
 }

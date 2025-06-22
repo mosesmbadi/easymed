@@ -11,7 +11,7 @@ from inventory.models import (
     Department,
     Supplier
 )
-from easymed.celery_tasks import inventory_garbage_collection
+from inventory.tasks import inventory_garbage_collection
 
 @pytest.mark.django_db
 def test_zero_quantity_items_are_archived(item, department):

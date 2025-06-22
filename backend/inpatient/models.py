@@ -85,8 +85,10 @@ class PatientAdmission(models.Model):
     def save(self, *args, **kwargs):
         if not self.admission_id:
             self.admission_id = self.generate_admission_id()
-        if self.bed and self.bed.ward != self.ward:
-            raise ValidationError("Bed must belong to the assigned ward.")
+        # Only check bed/ward relationship if both are set
+        if self.bed is not None and self.ward is not None:
+            if self.bed.ward != self.ward:
+                raise ValidationError("Bed must belong to the assigned ward.")
         super().save(*args, **kwargs)
 
     def __str__(self):

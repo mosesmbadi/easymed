@@ -5,12 +5,16 @@ from customuser.management.utils.data_generators import (
     create_dummy_insurance_companies,
     create_dummy_company_branches,
     create_dummy_items,
-    create_permissions_and_groups
+    create_permissions_and_groups,
+    create_dummy_patients,
+    create_demo_lab_profiles_and_panels,
 )
 from customuser.models import CustomUser
 from company.models import Company, CompanyBranch, InsuranceCompany
 from inventory.models import Item
-from authperms.models import Permission, Group 
+from authperms.models import Permission, Group
+from patient.models import Patient
+from laboratory.models import LabTestProfile, LabTestPanel
 
 class Command(BaseCommand):
     help = "Generate all dummy data (users, companies, etc.)"
@@ -73,3 +77,17 @@ class Command(BaseCommand):
         else:
             create_permissions_and_groups()
             self.stdout.write(self.style.SUCCESS("Created default groups and permissions."))
+
+        if Patient.objects.count() >= DEFAULT_COUNT:
+            self.stdout.write(self.style.WARNING("Skipping patients: already have enough records."))
+        else:
+            insurance_companies = list(InsuranceCompany.objects.all())
+            users = list(CustomUser.objects.filter(role=CustomUser.PATIENT))
+            patients = create_dummy_patients(count=DEFAULT_COUNT, insurances=insurance_companies, users=users)
+            self.stdout.write(self.style.SUCCESS(f"Created {len(patients)} dummy patients."))   
+        
+        if LabTestProfile.objects.exists() and LabTestPanel.objects.exists():
+            self.stdout.write(self.style.WARNING("Skipping lab test profiles/panels: already exist."))
+        else:
+            profiles, panels = create_demo_lab_profiles_and_panels()
+            self.stdout.write(self.style.SUCCESS(f"Created {len(profiles)} lab test profiles and {len(panels)} panels."))    

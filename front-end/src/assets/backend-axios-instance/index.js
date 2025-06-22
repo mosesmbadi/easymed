@@ -1,7 +1,9 @@
 import axios from "axios";
 
+const baseURL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://api:8080";
+
 export const backendAxiosInstance = axios.create({
-    baseURL: "http://api:8080/",
+    baseURL: baseURL,
 });
 
 backendAxiosInstance.interceptors.request.use(async (request) => {
