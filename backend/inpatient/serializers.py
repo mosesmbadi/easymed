@@ -46,10 +46,23 @@ class PatientAdmissionSerializer(serializers.ModelSerializer):
 
 
     def validate(self, attrs):
-        bed  = attrs.get("bed")
+        bed = attrs.get("bed")
         ward = attrs.get("ward")
 
+        # For update, get the current instance
+        instance = getattr(self, 'instance', None)
+
         if bed:
+            # Check if the bed is already assigned to another active admission
+            existing_admission = PatientAdmission.objects.filter(
+                bed=bed, discharge__isnull=True
+            )
+            if instance:
+                existing_admission = existing_admission.exclude(pk=instance.pk)
+            if existing_admission.exists():
+                raise serializers.ValidationError(
+                    {"bed": "This bed is already occupied."}
+                )
             if bed.status != "available":
                 raise serializers.ValidationError(
                     {"bed": "This bed is already occupied."}
