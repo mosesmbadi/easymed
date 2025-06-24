@@ -1,24 +1,15 @@
 import logging
-from io import BytesIO
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 from django.db.models import Prefetch
 from django_filters.rest_framework import DjangoFilterBackend
 from django.http import HttpResponse
 from django.utils import timezone
-from django.template.loader import get_template
 from rest_framework import status, viewsets
 from rest_framework.response import Response
-from django.template.loader import render_to_string
-from rest_framework.decorators import action
-
-from weasyprint import HTML
 
 
 from authperms.permissions import IsDoctorUser, IsSeniorNurseUser
-from company.models import Company
-from laboratory.models import LabTestRequest, PatientSample
-from patient.models import Triage, AttendanceProcess, PrescribedDrug
 
 from .utils import (generate_discharge_summary_pdf)
 from .filters import WardFilter, PatientAdmissionFilter
