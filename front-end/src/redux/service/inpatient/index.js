@@ -98,3 +98,50 @@ export const fetchFacilityWards = (auth) =>{
             })
     })
 }
+
+export const admitPatient = (auth, payload) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve,reject) =>{
+        axiosInstance.post(`${APP_API_URL.ADMIT_PATIENT}`,payload)
+            .then((res) =>{
+                resolve(res.data)
+            })
+            .catch((err) =>{
+                reject(err.message)
+            })
+    })
+}
+
+export const fetchAdmittedPatients = (auth, ward) =>{
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve,reject) =>{
+        axiosInstance.get(`${APP_API_URL.ADMIT_PATIENT}`, {
+            params: {
+                ward: ward
+            }
+        })
+            .then((res) =>{
+                resolve(res.data)
+            })
+            .catch((err) => {
+                reject(err.message)
+            })
+    })
+}
+
+export const updateAdmissionDetails = (auth, payload, admission_id) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve,reject) =>{
+        axiosInstance.patch(`${APP_API_URL.ADMIT_PATIENT}`,payload, {
+            params: {
+                admission_id: admission_id
+            }
+        })
+            .then((res) =>{
+                resolve(res.data)
+            })
+            .catch((err) =>{
+                reject(err.message)
+            })
+    })
+}
