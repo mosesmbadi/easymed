@@ -3,7 +3,9 @@ from rest_framework import serializers
 
 from patient.serializers import ReferralSerializer
 from .models import (Bed, PatientAdmission, PatientDischarge, Ward,
-                     WardNurseAssignment)
+                    WardNurseAssignment)
+from .celery_tasks import set_bed_status_occupied
+
 
 User = get_user_model()
 
@@ -72,6 +74,12 @@ class PatientAdmissionSerializer(serializers.ModelSerializer):
                     {"bed": "The bed does not belong to the selected ward."}
                 )
         return attrs
+
+    def save(self, **kwargs):
+        instance = super().save(**kwargs)
+        if instance.bed:
+            set_bed_status_occupied.delay(instance.bed.id)
+        return instance    
 
 
 class WardSerializer(serializers.ModelSerializer):
