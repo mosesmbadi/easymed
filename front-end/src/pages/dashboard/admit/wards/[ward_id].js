@@ -6,9 +6,11 @@ import AdmitPatientDataGrid from '@/components/dashboard/admit/admit-patient-dat
 import WardBeds from '@/components/dashboard/admit/Beds';
 import NursesDuties from '@/components/dashboard/admit/Duties';
 import AdmitNav from '@/components/dashboard/admit/AdmitNav';
+import { useParams } from 'next/navigation';
 
 const WardDetails = () => {
 const [currentTab, setCurrentTab] = useState(0)
+const params = useParams()
   return (    
     <Container maxWidth="xl" className="mt-8">
         <AdmitNav />
@@ -53,7 +55,7 @@ const [currentTab, setCurrentTab] = useState(0)
         </div>
         </section>
         <div className="mt-2">
-        {currentTab === 0 && <AdmitPatientDataGrid />}
+        {currentTab === 0 && <AdmitPatientDataGrid ward_id={params?.ward_id}/>}
         {currentTab === 1 && <WardBeds />}
         {currentTab === 2 && <NursesDuties />}
         </div>

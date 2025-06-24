@@ -13,7 +13,7 @@ class PatientAdmissionFilter(filters.FilterSet):
 
     class Meta:
         model = PatientAdmission
-        fields = []
+        fields = ['status', 'ward']
 
     def filter_status(self, queryset, name, value):
         if value == "admitted":

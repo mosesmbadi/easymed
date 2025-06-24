@@ -1,9 +1,10 @@
-import { fetchFacilityBeds, fetchFacilityWards } from "@/redux/service/inpatient";
+import { fetchAdmittedPatients, fetchFacilityBeds, fetchFacilityWards } from "@/redux/service/inpatient";
 import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
   beds: [],
   wards: [],
+  patients: [],
 };
 
 const InpatientSlice = createSlice({
@@ -34,13 +35,22 @@ const InpatientSlice = createSlice({
         ward.id === updatedWard.id ? updatedWard : ward
       );
     },
+    admittedPatients: (state, action) => {
+      state.patients = action.payload;
+    },
+    updateAdmissionInStore: (state, action) => {
+      const updatedAdmission = action.payload;
+      state.patients = state.patients.map((patient) =>
+        patient.id === updatedAdmission.id ? updatedAdmission : patient
+      );
+    },
   },
 });
 
 export const { 
   fetchBeds, fetchWards, 
   addBedToStore, addWardToStore,
-  updateWardInStore, updateBedInStore
+  updateWardInStore, updateBedInStore, admittedPatients, updateAdmissionInStore
  } = InpatientSlice.actions;
 
 export const fetchHospitalBeds = (auth, ward_id) => async (dispatch) => {
@@ -62,6 +72,15 @@ export const fetchHospitalWards = (auth) => async (dispatch) => {
   }
 };
 
+export const fetchAdmitted = (auth, ward) => async (dispatch) => {
+  try {
+    const response = await fetchAdmittedPatients(auth, ward);
+    dispatch(admittedPatients(response));
+  } catch (error) {
+    console.log("ADMITTED_PATIENTS_ERROR ", error);
+  }
+};
+
 export const updateBedStoreAfterPost = (response) => async (dispatch) => {
   dispatch(addBedToStore(response))  
 }
@@ -77,5 +96,10 @@ export const updateBedStoreAfterPatch = (response) => async (dispatch) => {
 export const updateWardStoreAfterPatch = (response) => async (dispatch) => {
   dispatch(updateWardInStore(response))  
 }
+
+export const updateAdmissionStoreAfterPatch = (response) => async (dispatch) => {
+  dispatch(updateAdmissionInStore(response))  
+}
+
 
 export default InpatientSlice.reducer;
