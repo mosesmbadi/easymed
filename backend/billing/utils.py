@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from easymed.celery_tasks import update_stock_quantity_if_stock_is_available
+from inventory.tasks import update_stock_quantity_if_stock_is_available
 from inventory.models import Inventory
 from patient.models import AttendanceProcess, PrescribedDrug
 from laboratory.models import LabTestRequest, LabTestRequestPanel
