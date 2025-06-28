@@ -198,3 +198,22 @@ def inventory_garbage_collection(self):
         )
         # Retry the task if it fails
         self.retry(exc=e, countdown=60 * 5)            
+
+
+
+from .models import InsuranceItemSalePrice, Inventory
+from company.models import InsuranceCompany
+
+@shared_task
+def create_insurance_prices_for_inventory(inventory_id):
+    inventory = Inventory.objects.get(id=inventory_id)
+    insurance_companies = InsuranceCompany.objects.all()
+    for company in insurance_companies:
+        InsuranceItemSalePrice.objects.get_or_create(
+            item=inventory.item,
+            insurance_company=company,
+            defaults={
+                'sale_price': inventory.sale_price,
+                'co_pay': 0.00
+            }
+        )        
