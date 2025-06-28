@@ -324,7 +324,7 @@ class DepartmentInventory(AbstractBaseModel):
     purchase_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     sale_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     main_inventory = models.ForeignKey(Inventory, on_delete=models.SET_NULL, null=True,
-                                       help_text="Main inventory record this was transferred from")
+                                    help_text="Main inventory record this was transferred from")
 
     # class Meta:
     #     unique_together = ('item')    

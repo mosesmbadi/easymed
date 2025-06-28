@@ -13,9 +13,9 @@ from .utils import update_purchase_order_status
 from .models import (
     PurchaseOrderItem,
     IncomingItem,
-    Inventory,
- 
+    Inventory
 )
+from .tasks import (create_insurance_prices_for_inventory)
 
 logger=logging.getLogger(__name__)
 
@@ -118,4 +118,12 @@ def update_last_deducted_on(sender, instance, **kwargs):
             instance.save()
     
 
-
+@receiver(post_save, sender=Inventory)
+def create_default_insurance_prices(sender, instance, created, **kwargs):
+    '''
+    Creates a default insurance price for the item whenver an inventory record
+    is created for that item. This will make blind errors/bugs less common for
+    billing
+    '''
+    if created:
+        create_insurance_prices_for_inventory.delay(instance.id)
