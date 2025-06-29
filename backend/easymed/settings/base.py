@@ -240,6 +240,11 @@ CELERY_BEAT_SCHEDULE = {
         "task": "inpatient.tasks.check_medication_notifications",
         'schedule': crontab(minute='*/60'),
     },
+    "export_patients_to_csv_nightly": { # We export data so the ML model can read and analyse
+        "task": "patient.tasks.export_patients_to_csv",
+        "schedule": crontab(minute='*/2'),
+        # "schedule": crontab(hour=2, minute=0),
+    },
 }
 
 

@@ -21,6 +21,11 @@ RUN pip install -r requirements.txt
 
 COPY . /app
 
+# Create /app/tmp directory and set permissions 
+# We dump data here for our ML models
+RUN mkdir -p /app/tmp && chmod 777 /app/tmp
+RUN chown -R 1000:1000 /app/tmp
+
 EXPOSE 8080
 
 RUN chmod +x ./entrypoint.sh
