@@ -34,7 +34,7 @@ CustomUser = get_user_model()
 # Base Serializers
 class BaseItemSerializer(serializers.ModelSerializer):
     item_name = serializers.CharField(source='item.name', read_only=True)
-    item_code = serializers.CharField(source='item.item_code')
+    item_code = serializers.CharField(source='item.item_code', required=False)
     buying_price = serializers.DecimalField(source='item.buying_price', max_digits=10, decimal_places=2, read_only=True)
     selling_price = serializers.DecimalField(source='item.selling_price', max_digits=10, decimal_places=2, read_only=True)
     vat_rate = serializers.DecimalField(source='item.vat_rate', max_digits=10, decimal_places=2, read_only=True)
@@ -106,7 +106,7 @@ class RequisitionItemSerializer(BaseItemSerializer, BaseSupplierSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data['preferred_supplier'] = instance.preferred_supplier.official_name if instance.preferred_supplier else None
-        data['item_code'] = instance.item.item_code
+        data['item_code'] = instance.item.item_code if hasattr(instance.item, 'item_code') else None
         return data
     
     def get_quantity_at_hand(self, obj):    

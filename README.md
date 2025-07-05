@@ -94,13 +94,18 @@ If not installed already, install celery and redis INSIDE YOUR VIRTUAL ENV
 Run Celery: `celery -A easymed beat --loglevel=INFO`
 
 ## Frontend
+The backend url is updated inside .env
+i.e NEXT_PUBLIC_BACKEND_URL=http://<your-private-ip-address>:8080/
 
-Update the baseURL inside `./src/assets/backend-axios-instance/index.js` to `"http://127.0.0.1:8000",`
+If you want to run frontend outside of docker, you will need to create a .env file in the same directory as the src folder then add the following:
 
-#### First, create a .env file in the same directory as the src folder then add the following:
+```
+NEXT_PUBLIC_BACKEND_URL=http://<your-private-ip-address>:8080/
+NEXT_PUBLIC_HMIS_VERSION=v0.0.1-alpha-0.1
+NEXT_PUBLIC_BASE_URL=""
+```
 
-- NEXT_PUBLIC_HMIS_VERSION=v0.0.1-alpha-0.1
-- NEXT_PUBLIC_BASE_URL=""
+You can get your private IP by running `ifconfig` on Linux or `ipconfig` on Windows.
 
 Install dependencies:
 
@@ -122,9 +127,10 @@ npm start
 ```
 
 Visit localhost `127.0.0.1:3000/dashboard`
+For you to borwse through frontend pages, you will need to set up permissions. So, let's go back to backend and add permission and groups.
 
 # 2. Adding Permissions
-
+The steps below are performed inside the django admin interface.
 You need to create groups and associate permissions. make sure groups follow this order `SYS_ADMIN`, `PATIENT` group then the rest ie `DOCTOR`,`PHARMACIST`, `RECEPTIONIST`, `LAB_TECH` , `NURSE`
 Then create permissions below and link to the `GROUPS`.
 N/B: Frontend will not work without permissions and Groups set up.
