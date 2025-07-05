@@ -22,6 +22,7 @@ urlpatterns = [
     path('password-reset/request/', PasswordResetRequestView.as_view(), name='password_reset_request'),
     path('password-reset/confirm/<str:uidb64>/<str:token>/', PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
     path('users/<int:user_id>/admin-change-password/', AdminInitiatePasswordResetView.as_view(), name='admin_change_password'),
+    path('users/admin-reset-password/', AdminInitiatePasswordResetView.as_view(), name='admin_reset_password'),
 
 
     path('', include(router.urls)),

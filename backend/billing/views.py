@@ -157,7 +157,7 @@ def download_invoice_pdf(request, invoice_id):
             item.total_amount = item.actual_total or item.item_amount or regular_sale_price
 
     subtotal = sum(item.total_amount for item in invoice_items)
-    tax = sum((item.item.vat_rate or 0) * item.total_amount / 100 for item in invoice_items)
+    # tax = sum((item.item.vat_rate or 0) * item.total_amount / 100 for item in invoice_items)
 
     html_template = get_template('invoice.html').render({
         'company_logo_url': company_logo_url,
@@ -165,7 +165,7 @@ def download_invoice_pdf(request, invoice_id):
         'invoice_items': invoice_items,
         'company': company,
         'subtotal': subtotal,
-        'tax': tax
+        'tax': 0.00
     })
 
     pdf_file = HTML(string=html_template).write_pdf()

@@ -169,7 +169,7 @@ class PatientSample(models.Model):
         with transaction.atomic():
             last_sample = PatientSample.objects.filter(
                 patient_sample_code__startswith=prefix
-            ).order_by('-patient_sample_code').select_for_update().first()
+            ).order_by('-id').select_for_update().first()
 
             if last_sample:
                 try:
