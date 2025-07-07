@@ -145,3 +145,51 @@ export const updateAdmissionDetails = (auth, payload, admission_id) => {
             })
     })
 }
+
+export const createNurseDuty = (auth, payload) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve,reject) =>{
+        axiosInstance.post(`${APP_API_URL.INPATIENT_NURSE_DUTIES}`,payload)
+            .then((res) =>{
+                resolve(res.data)
+            })
+            .catch((err) =>{
+                reject(err.message)
+            })
+    })
+}
+
+export const fetchNursesDuties = (auth, ward_id) =>{
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve,reject) =>{
+        axiosInstance.get(`${APP_API_URL.INPATIENT_NURSE_DUTIES}`, {
+            params: {
+                ward_id: ward_id
+            }
+        })
+            .then((res) =>{
+                resolve(res.data)
+            })
+            .catch((err) =>{
+                reject(err.message)
+            })
+    })
+}
+
+export const updateNursesDuties = (auth, payload, duty_id) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve,reject) =>{
+        axiosInstance.patch(`${APP_API_URL.INPATIENT_NURSE_DUTIES}`,payload, {
+            params: {
+                duty_id: duty_id
+            }
+        })
+            .then((res) =>{
+                resolve(res.data)
+            })
+            .catch((err) =>{
+                reject(err.message)
+            })
+    })
+}
+

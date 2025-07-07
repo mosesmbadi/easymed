@@ -19,10 +19,9 @@ export default async function handler(req, res) {
                     'Authorization': req.headers.authorization,
                 }
             };
+    
 
-            const ward_id = req.query.ward_id;    
-
-            await backendAxiosInstance.get(`${API_URL.INPATIENT_NURSE_DUTIES}?ward=${ward_id}`, config).then(response => {
+            await backendAxiosInstance.get(`${API_URL.FETCH_NURSES}`, config).then(response => {
                 res.status(200).json(response.data);
 
             }).catch(e => {
@@ -36,9 +35,9 @@ export default async function handler(req, res) {
     }
     else if (req.method === API_METHODS.POST) {
         try {
-            // if (!req.headers?.authorization){
-            //     res.status(401).send('Unauthorized');
-            // }
+            if (!req.headers?.authorization){
+                res.status(401).send('Unauthorized');
+            }
             const config = {
                 headers: {
                     'Authorization': req.headers.authorization,
@@ -46,7 +45,7 @@ export default async function handler(req, res) {
             };
             const body = req.body;
 
-            await backendAxiosInstance.post(`${API_URL.INPATIENT_NURSE_DUTIES}`,body,config)
+            await backendAxiosInstance.post(`${API_URL.FETCH_NURSES}`,body,config)
                 .then(response => {
                     res.status(200).json(response.data);
                 })
@@ -59,20 +58,20 @@ export default async function handler(req, res) {
             res.status(500).json(e.message);
         }
     }
-    else if (req.method === API_METHODS.PATCH) {
+    else if (req.method === API_METHODS.PUT) {
         try {
-            if (!req.headers?.authorization){
-                res.status(401).send('Unauthorized');
-            }
+            // if (!req.headers?.authorization){
+            //     res.status(401).send('Unauthorized');
+            // }
             const config = {
                 headers: {
                     'Authorization': req.headers.authorization,
                 }
             };
             const body = req.body;
-            const query = req.query;
+            const req = req.query;
 
-            await backendAxiosInstance.patch(`${API_URL.INPATIENT_NURSE_DUTIES}${query.duty_id}/`, body, config).then(response => {
+            await backendAxiosInstance.post(`${API_URL.FETCH_NURSES}/${req.nurse_id}`,body, config).then(response => {
                 res.status(200).json(response.data);
 
             }).catch(e => {

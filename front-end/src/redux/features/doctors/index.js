@@ -1,9 +1,10 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { fetchDoctors } from "@/redux/service/doctor";
+import { fetchDoctors, fetchNurses } from "@/redux/service/doctor";
 
 
 const initialState = {
   doctors: [],
+  nurses: [],
 };
 
 const DoctorSlice = createSlice({
@@ -13,10 +14,13 @@ const DoctorSlice = createSlice({
     setDoctors: (state, action) => {
       state.doctors = action.payload;
     },
+    setNurses: (state, action) => {
+      state.nurses = action.payload;
+    },
   },
 });
 
-export const { setDoctors } = DoctorSlice.actions;
+export const { setDoctors, setNurses } = DoctorSlice.actions;
 
 
 export const getAllDoctors = (auth) => async (dispatch) => {
@@ -25,6 +29,15 @@ export const getAllDoctors = (auth) => async (dispatch) => {
     dispatch(setDoctors(response));
   } catch (error) {
     console.log("DOCTORS_ERROR ", error);
+  }
+};
+
+export const getAllNurses = (auth) => async (dispatch) => {
+  try {
+    const response = await fetchNurses(auth);
+    dispatch(setNurses(response));
+  } catch (error) {
+    console.log("NURSES_ERROR ", error);
   }
 };
 
