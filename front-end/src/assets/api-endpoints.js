@@ -48,6 +48,9 @@ export const API_URL = {
   CREATE_DOCTOR: "/accounts/register/",
   FETCH_DOCTOR: "/users/doctors/",
 
+  /***************** CUSTOM USERS APIS **********************/
+  FETCH_NURSES: "/customuser/nurses/",
+
   /***************** LABORATORY APIS **********************/
   FETCH_LAB_RESULTS: "/lab/lab-test-results/",
   SEND_LAB_RESULTS: "/lab/lab-test-results/",
@@ -207,6 +210,9 @@ export const APP_API_URL = {
   /***************** DOCTOR APIS **********************/
   CREATE_DOCTOR: "/api/doctor/create-doctor",
   FETCH_DOCTOR: "/api/doctor/fetch-doctor",
+
+  /***************** CUSTOM USERS APIS **********************/
+  FETCH_NURSES: "/api/nurses/nurses",
 
   /***************** LABORATORY APIS **********************/
   FETCH_LAB_RESULTS: "/api/laboratory/get-lab-results",

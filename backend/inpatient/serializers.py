@@ -166,7 +166,9 @@ class WardNurseAssignmentSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data["ward"] = instance.ward.name
+        data["ward_id"] = instance.ward.pk
         data["nurse"] = instance.nurse.get_fullname()
+        data["nurse_id"] = instance.nurse.pk
         data["assigned_by"] = instance.assigned_by.get_fullname()
         return data
 

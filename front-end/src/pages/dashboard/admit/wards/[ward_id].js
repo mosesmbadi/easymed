@@ -57,7 +57,7 @@ const params = useParams()
         <div className="mt-2">
         {currentTab === 0 && <AdmitPatientDataGrid ward_id={params?.ward_id}/>}
         {currentTab === 1 && <WardBeds />}
-        {currentTab === 2 && <NursesDuties />}
+        {currentTab === 2 && <NursesDuties ward_id={params?.ward_id}/>}
         </div>
     </Container>
   )
