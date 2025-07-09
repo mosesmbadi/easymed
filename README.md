@@ -361,6 +361,12 @@ If you get an error saying invalid AMI, you can check the available AMIs in your
 
 ---
 
+Like the project? Help us buy more coffee 🙂: <br/> 
+[☕ Donate with PayPal](https://www.paypal.com/donate/?hosted_button_id=45A3RRNJMNAGQ) ||
+[₿ Donate with Bitcoin](https://www.blockchain.com/btc/address/bc1q9cymjyzt7zj28zcztjafys0sur329gektd4zzh)
+
+---
+
 Rev 1.2.0
 
 Last revised on June, 5, 2025, by [Moses Mbadi](https://www.linkedin.com/in/moses-mbadi-0b8500198/)

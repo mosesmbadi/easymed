@@ -7,12 +7,13 @@ from django.http import HttpResponse
 from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.response import Response
+from rest_framework.exceptions import PermissionDenied
 
 
-from authperms.permissions import IsDoctorUser, IsSeniorNurseUser
+from authperms.permissions import IsDoctorUser, IsSeniorNurseUser, IsSystemsAdminUser
 
 from .utils import (generate_discharge_summary_pdf)
-from .filters import WardFilter, PatientAdmissionFilter
+from .filters import WardFilter, PatientAdmissionFilter, WardNurseAssignmentFilter
 from .models import (Bed, PatientAdmission, PatientDischarge, Ward, WardNurseAssignment)
 from .serializers import (BedSerializer, PatientAdmissionSerializer,
                         PatientDischargeSerializer,
@@ -55,15 +56,16 @@ class PatientAdmissionViewSet(viewsets.ModelViewSet):
 class WardNurseAssignmentViewSet(viewsets.ModelViewSet):
     queryset = WardNurseAssignment.objects.all()
     serializer_class = WardNurseAssignmentSerializer
-    permission_classes = [IsSeniorNurseUser]
-
-    def get_queryset(self):
-        user = self.request.user
-        if user:
-            return self.queryset.filter(assigned_by=user)
-        return self.queryset.none()
+    permission_classes = [IsSeniorNurseUser | IsDoctorUser | IsSystemsAdminUser]
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = WardNurseAssignmentFilter
 
     def create(self, request, *args, **kwargs):
+        if not any([perm().has_permission(request, self) for perm in self.permission_classes]):
+            return Response(
+                {"detail": "Only a senior nurse, doctor, or super admin can assign a nurse to a ward."},
+                status=status.HTTP_403_FORBIDDEN
+            )
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         try:
@@ -74,6 +76,11 @@ class WardNurseAssignmentViewSet(viewsets.ModelViewSet):
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     def update(self, request, *args, **kwargs):
+        if not any([perm().has_permission(request, self) for perm in self.permission_classes]):
+            return Response(
+                {"detail": "Only a senior nurse, doctor, or super admin can update nurse assignments."},
+                status=status.HTTP_403_FORBIDDEN
+            )
         instance = self.get_object() 
         serializer = self.get_serializer(instance, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
