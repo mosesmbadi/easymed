@@ -13,7 +13,7 @@ from rest_framework.exceptions import PermissionDenied
 from authperms.permissions import IsDoctorUser, IsSeniorNurseUser, IsSystemsAdminUser
 
 from .utils import (generate_discharge_summary_pdf)
-from .filters import WardFilter, PatientAdmissionFilter
+from .filters import WardFilter, PatientAdmissionFilter, WardNurseAssignmentFilter
 from .models import (Bed, PatientAdmission, PatientDischarge, Ward, WardNurseAssignment)
 from .serializers import (BedSerializer, PatientAdmissionSerializer,
                         PatientDischargeSerializer,
@@ -57,6 +57,8 @@ class WardNurseAssignmentViewSet(viewsets.ModelViewSet):
     queryset = WardNurseAssignment.objects.all()
     serializer_class = WardNurseAssignmentSerializer
     permission_classes = [IsSeniorNurseUser | IsDoctorUser | IsSystemsAdminUser]
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = WardNurseAssignmentFilter
 
     def create(self, request, *args, **kwargs):
         if not any([perm().has_permission(request, self) for perm in self.permission_classes]):
