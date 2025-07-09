@@ -361,19 +361,9 @@ If you get an error saying invalid AMI, you can check the available AMIs in your
 
 ---
 
-Like the project? Help us buy more coffee 🙂:
-<div style="margin-bottom: 20px;">
-  <a href="https://www.paypal.com/donate/?hosted_button_id=45A3RRNJMNAGQ" target="_blank" style="text-decoration: none;">
-    <button style="background-color: #0070ba; color: white; border: none; border-radius: 5px; padding: 12px 28px; font-size: 1.1em; margin: 8px; cursor: pointer;">
-      ☕ Donate with PayPal
-    </button>
-  </a>
-  <a href="https://www.blockchain.com/btc/address/bc1q9cymjyzt7zj28zcztjafys0sur329gektd4zzh" target="_blank" style="text-decoration: none;">
-    <button style="background-color: #f7931a; color: white; border: none; border-radius: 5px; padding: 12px 28px; font-size: 1.1em; margin: 8px; cursor: pointer;">
-      ₿ Donate with Bitcoin
-    </button>
-  </a>
-</div>
+Like the project? Help us buy more coffee 🙂: <br/> 
+[☕ Donate with PayPal](https://www.paypal.com/donate/?hosted_button_id=45A3RRNJMNAGQ) ||
+[₿ Donate with Bitcoin](https://www.blockchain.com/btc/address/bc1q9cymjyzt7zj28zcztjafys0sur329gektd4zzh)
 
 ---
 
