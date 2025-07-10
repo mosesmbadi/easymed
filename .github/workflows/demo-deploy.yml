@@ -58,6 +58,8 @@ jobs:
 
       - name: Set up SSH key
         run: |
+          pwd
+          ls -la
           mkdir -p ~/.ssh
           echo "${DEMO_SERVER_SSH_PRIVATE_KEY}" | tr -d '\r' > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa

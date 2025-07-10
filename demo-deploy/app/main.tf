@@ -53,3 +53,34 @@ resource "aws_lightsail_static_ip_attachment" "static_ip_attach" {
   static_ip_name = aws_lightsail_static_ip.static_ip.name
   instance_name  = aws_lightsail_instance.app_server.name
 }
+
+# Open required ports in Lightsail firewall
+resource "aws_lightsail_instance_public_ports" "app_ports" {
+  instance_name = aws_lightsail_instance.app_server.name
+
+  port_info {
+    protocol   = "tcp"
+    from_port  = 8080
+    to_port    = 8080
+  }
+  port_info {
+    protocol   = "tcp"
+    from_port  = 3000
+    to_port    = 3000
+  }
+  port_info {
+    protocol   = "tcp"
+    from_port  = 80
+    to_port    = 80
+  }
+  port_info {
+    protocol   = "tcp"
+    from_port  = 9090
+    to_port    = 9090
+  }
+  port_info {
+    protocol   = "tcp"
+    from_port  = 9091
+    to_port    = 9091
+  }
+}
