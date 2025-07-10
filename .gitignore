@@ -1,4 +1,5 @@
 # USER DEFINED=========================================
+/deploymentv2/
 
 #terraform files
 /deployment/linux_amd64/
