@@ -61,7 +61,7 @@ jobs:
           pwd
           ls -la
           mkdir -p ~/.ssh
-          echo "${DEMO_SERVER_SSH_PRIVATE_KEY}" | tr -d '\r' > ~/.ssh/id_rsa
+          echo "${DEMO_SERVER_PRIVATE_KEY}" | tr -d '\r' > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H $DEMO_SERVER_IP >> ~/.ssh/known_hosts
 
