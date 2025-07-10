@@ -58,12 +58,15 @@ jobs:
 
       - name: Set up SSH key
         run: |
-          pwd
-          ls -la
           mkdir -p ~/.ssh
           echo "${DEMO_SERVER_PRIVATE_KEY}" | tr -d '\r' > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H $DEMO_SERVER_IP >> ~/.ssh/known_hosts
+          echo "Key file exists:" && ls -l ~/.ssh/id_rsa
+          echo "First few lines of key:"
+          head -5 ~/.ssh/id_rsa
+          echo "Key file size:"
+          wc -c ~/.ssh/id_rsa
 
       - name: Transfer docker-compose.yml
         run: |
