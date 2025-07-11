@@ -56,17 +56,15 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Print DEMO_SERVER_PRIVATE_KEY
-        run: |
-          echo "START OF KEY"
-          echo "${DEMO_SERVER_PRIVATE_KEY}"
-          echo "END OF KEY"
-
       - name: Set up SSH key
         run: |
+          set -x
           mkdir -p ~/.ssh
           echo "${DEMO_SERVER_PRIVATE_KEY}" | tr -d '\r' > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
+          ls -l ~/.ssh/id_rsa
+          file ~/.ssh/id_rsa
+          cat -n ~/.ssh/id_rsa | head -10
           ssh-keyscan -H $DEMO_SERVER_IP >> ~/.ssh/known_hosts
           echo "Key file exists:" && ls -l ~/.ssh/id_rsa
           echo "First few lines of key:"
