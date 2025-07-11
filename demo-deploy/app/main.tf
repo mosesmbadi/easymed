@@ -4,6 +4,25 @@ provider "aws" {
   secret_key = var.aws_secret_key
 }
 
+data "terraform_remote_state" "persistent" {
+  backend = "local"
+  config = {
+    path = "../persistent/terraform.tfstate"
+  }
+}
+
+resource "aws_lightsail_disk_attachment" "postgres" {
+  disk_name     = data.terraform_remote_state.persistent.outputs.postgres_disk_name
+  instance_name = aws_lightsail_instance.app_server.name
+
+  disk_path     = "/dev/xvdf"  # Must match what you mount in init.sh
+
+  depends_on = [
+    aws_lightsail_instance.app_server
+  ]
+}
+
+
 resource "aws_lightsail_key_pair" "github_actions_key" {
   name       = "github-actions-key"
   public_key = file("~/.ssh/github-actions.pub")

@@ -9,7 +9,7 @@ resource "aws_lightsail_key_pair" "github_actions_key" {
   public_key = file("~/.ssh/github-actions.pub")
 }
 
-resource "aws_lightsail_disk" "db_disk" {
+resource "aws_lightsail_disk" "postgres_disk" {
   name              = "postgres-disk"
   size_in_gb        = 50
   availability_zone = "us-east-1a"
@@ -21,5 +21,5 @@ resource "aws_lightsail_disk" "db_disk" {
 
 #./persistent/output.tf
 output "disk_name" {
-  value = aws_lightsail_disk.db_disk.name
+  value = aws_lightsail_disk.postgres_disk.name
 }
