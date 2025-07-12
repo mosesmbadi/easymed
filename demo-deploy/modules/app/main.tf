@@ -24,3 +24,43 @@ resource "aws_lightsail_key_pair" "github_actions_key" {
   name       = "github-actions-key"
   public_key = file("~/.ssh/github-actions.pub")
 }
+
+resource "aws_lightsail_instance_public_ports" "app_server_ports" {
+  instance_name = aws_lightsail_instance.app_server.name
+  port_info {
+    protocol = "tcp"
+    from_port = 22
+    to_port = 22
+  }
+  port_info {
+    protocol = "tcp"
+    from_port = 80
+    to_port = 80
+  }
+  port_info {
+    protocol = "tcp"
+    from_port = 3000
+    to_port = 3000
+  }
+  port_info {
+    protocol = "tcp"
+    from_port = 8000
+    to_port = 8000
+  }
+  port_info {
+    protocol = "tcp"
+    from_port = 8080
+    to_port = 8080
+  }
+  port_info {
+    protocol = "tcp"
+    from_port = 9090
+    to_port = 9090
+  }
+  port_info {
+    protocol = "tcp"
+    from_port = 9091
+    to_port = 9091
+  }
+}
+
