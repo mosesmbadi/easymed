@@ -22,6 +22,19 @@ jobs:
       - name: Docker system prune
         run: docker system prune -af
 
+  build-nginx:
+    if: github.ref == 'refs/heads/dev-moses'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Docker Login
+        run: echo $DOCKER_TOKEN | docker login -u $DOCKER_USER --password-stdin
+      - name: Build & Push Nginx Image
+        run: |
+          cd nginx
+          docker build . -t mosesmbadi/easymednginx:latest
+          docker push mosesmbadi/easymednginx:latest
+
   build-backend:
     if: github.ref == 'refs/heads/dev-moses'
     runs-on: ubuntu-latest

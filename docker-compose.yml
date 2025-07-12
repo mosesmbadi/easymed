@@ -1,6 +1,6 @@
 services:
     nginx:
-        build: ./nginx
+        image: mosesmbadi/easymednginx:latest
         container_name: "nginx"
         volumes:
         - /var/log/nginx:/var/log/nginx
