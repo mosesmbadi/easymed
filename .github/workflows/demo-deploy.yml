@@ -16,14 +16,12 @@ env:
 
 jobs:
   cleanup:
-    if: github.ref == 'refs/heads/dev-moses'
     runs-on: ubuntu-latest
     steps:
       - name: Docker system prune
         run: docker system prune -af
 
   build-nginx:
-    if: github.ref == 'refs/heads/dev-moses'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -36,7 +34,6 @@ jobs:
           docker push mosesmbadi/easymednginx:latest
 
   build-backend:
-    if: github.ref == 'refs/heads/dev-moses'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -49,7 +46,6 @@ jobs:
           docker push mosesmbadi/easymedbackend:latest
 
   build-frontend:
-    if: github.ref == 'refs/heads/dev-moses'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -62,8 +58,11 @@ jobs:
           docker push mosesmbadi/easymedfrontend:latest
 
   deploy:
-    if: github.ref == 'refs/heads/dev-moses'
     runs-on: ubuntu-latest
+    needs:
+      - build-nginx
+      - build-backend
+      - build-frontend
 
     steps:
       - name: Checkout Code
