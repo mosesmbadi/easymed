@@ -72,6 +72,16 @@ jobs:
           echo "Key file size:"
           wc -c ~/.ssh/id_rsa
 
+      - name: Transfer .env
+        run: |
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ./.env.sample $DEMO_SERVER_USERNAME@$DEMO_SERVER_IP:/home/$DEMO_SERVER_USERNAME/.env    
+
+      - name: Transfer Prometheus config files
+        run: |
+          ssh -o StrictHostKeyChecking=no $DEMO_SERVER_USERNAME@$DEMO_SERVER_IP "mkdir -p /home/$DEMO_SERVER_USERNAME/prometheus"
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ./prometheus/prometheus.yml $DEMO_SERVER_USERNAME@$DEMO_SERVER_IP:/home/$DEMO_SERVER_USERNAME/prometheus/prometheus.yml
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ./prometheus/rules.yml $DEMO_SERVER_USERNAME@$DEMO_SERVER_IP:/home/$DEMO_SERVER_USERNAME/prometheus/rules.yml
+
       - name: Transfer docker-compose.yml
         run: |
           scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa docker-compose.yml $DEMO_SERVER_USERNAME@$DEMO_SERVER_IP:/home/$DEMO_SERVER_USERNAME/docker-compose.yml    

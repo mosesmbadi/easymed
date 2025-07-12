@@ -9,13 +9,8 @@
 **/override.tf.json
 **/*.tfstate
 **/*.tfstate.*
-
-**/demo-deploy/app/variables.tf
-**/demo-deploy/app/terraform.tfvars
-
-**/demo-deploy/persistent/variables.tf
-**/demo-deploy/persistent/terraform.tfvars
-
+**/*tfplan
+**/*.tfvars
 
 
 .$easymed-lab.drawio.bkp

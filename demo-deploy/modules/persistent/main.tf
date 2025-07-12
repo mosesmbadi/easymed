@@ -18,8 +18,3 @@ resource "aws_lightsail_disk" "postgres_disk" {
     prevent_destroy = false
   }
 }
-
-#./persistent/output.tf
-output "disk_name" {
-  value = aws_lightsail_disk.postgres_disk.name
-}
