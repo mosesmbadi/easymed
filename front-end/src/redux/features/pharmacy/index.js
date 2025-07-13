@@ -57,9 +57,9 @@ export const getAllPublicPrescriptions = (auth) => async (dispatch) => {
   }
 };
 
-export const getAllPrescribedDrugs = (auth) => async (dispatch) => {
+export const getAllPrescribedDrugs = (auth, prescription_id) => async (dispatch) => {
   try {
-    const response = await fetchPrescribedDrugs(auth);
+    const response = await fetchPrescribedDrugs(auth, prescription_id);
     dispatch(setPrescribedDrugs(response));
   } catch (error) {
     console.log("PRESCRIPTIONS_DRUGS_ERROR ", error);

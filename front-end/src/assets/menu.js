@@ -78,7 +78,7 @@ export const menus = [
   },
   {
     label: "In-patient",
-    href: "/dashboard/admit",
+    href: "/dashboard/admit/patients",
     icon: <FaBed className="text-xl" />,
   },
   {

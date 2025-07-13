@@ -213,7 +213,7 @@ class NurseAPIView(APIView):
         responses=NurseSerializer,
     )
     def get(self, request: Request, *args, **kwargs):
-        nurse = Nurse.objects.filter(role = CustomUser.DOCTOR)
+        nurse = Nurse.objects.filter(role = CustomUser.NURSE)
         serializers = NurseSerializer(nurse, many=True)
         return Response(serializers.data, status=status.HTTP_200_OK)
 

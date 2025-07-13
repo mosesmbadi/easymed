@@ -20,9 +20,9 @@ export default async function handler(req, res) {
                 }
             };
 
-            console.log("PRESCRIBED_DRUGS_HEADERS ",config);
+            const { prescription_id } = req.query;
     
-            await backendAxiosInstance.get(`${API_URL.FETCH_PRESCRIBED_DRUGS}`, config).then(response => {
+            await backendAxiosInstance.get(`${API_URL.FETCH_PRESCRIBED_DRUGS}?prescription=${prescription_id}`, config).then(response => {
                 res.status(200).json(response.data);
 
             }).catch(e => {

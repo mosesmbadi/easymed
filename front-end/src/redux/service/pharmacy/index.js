@@ -28,10 +28,14 @@ export const fetchPublicPrescriptions = (auth) =>{
     })
 }
 
-export const fetchPrescribedDrugs = (auth) =>{
+export const fetchPrescribedDrugs = (auth, prescription_id="") =>{
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve,reject) =>{
-        axiosInstance.get(`${APP_API_URL.FETCH_PRESCRIBED_DRUGS}`,auth)
+        axiosInstance.get(`${APP_API_URL.FETCH_PRESCRIBED_DRUGS}`, {
+            params: {
+                prescription_id: prescription_id,
+            },
+        })
             .then((res) =>{
                 resolve(res.data)
             })
