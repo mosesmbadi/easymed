@@ -1,12 +1,17 @@
 # USER DEFINED=========================================
+# Ignore all Terraform state and configuration files
+**/.terraform/
+**/.terraform.lock.hcl
+**/terraform.tfstate
+**/terraform.tfstate.*
+**/crash.log
+**/override.tf
+**/override.tf.json
+**/*.tfstate
+**/*.tfstate.*
+**/*tfplan
+**/*.tfvars
 
-#terraform files
-/deployment/linux_amd64/
-/deployment/.terraform/
-/deployment/terraform.tfstate
-/deployment/terraform.tfstate.backup
-/deployment/.terraform.lock.hcl
-*.terraform.lock.hcl
 
 .$easymed-lab.drawio.bkp
 

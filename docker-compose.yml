@@ -1,4 +1,18 @@
 services:
+    nginx:
+        image: mosesmbadi/easymednginx:latest
+        container_name: "nginx"
+        volumes:
+        - /var/log/nginx:/var/log/nginx
+        restart: always
+        depends_on:
+        - frontend
+        ports:
+        - 80:80
+        - 443:443
+        networks:
+        - mks  
+
     postgres:
         image: postgres:15
         container_name: postgres
@@ -7,7 +21,7 @@ services:
         ports:
         - "5433:5432"
         volumes:
-        - pg_data:/var/lib/postgresql/data
+        - /srv/postgres_data:/var/lib/postgresql/data
         networks:
         - mks
 
@@ -74,6 +88,7 @@ services:
         - 9090:9090
         volumes:
         - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+        - ./prometheus/rules.yml:/etc/prometheus/rules.yml
         depends_on:
         - backend
         - worker
@@ -101,7 +116,6 @@ services:
                 "9091",
                 "--reload",
             ]
-
         restart: unless-stopped
         networks:
             - mks  
