@@ -6,6 +6,8 @@ import DashboardLayout from '@/components/layout/dashboard-layout';
 import { useDispatch } from 'react-redux';
 import { useAuth } from '@/assets/hooks/use-auth';
 import { getOneProcess } from '@/redux/features/patients';
+import { Container } from '@mui/material';
+import AdmitNav from '@/components/dashboard/admit/AdmitNav';
 
 const AdmittedPatient = () => {
   const params = useParams();
@@ -18,7 +20,9 @@ const AdmittedPatient = () => {
 
 
   return (
-    <div>AdmittedPatient</div>
+    <Container maxWidth="xl" className="mt-8">
+      <AdmitNav />
+    </Container>
   )
 }
 
