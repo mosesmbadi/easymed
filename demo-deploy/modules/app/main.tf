@@ -62,5 +62,14 @@ resource "aws_lightsail_instance_public_ports" "app_server_ports" {
     from_port = 9091
     to_port = 9091
   }
+    lifecycle {
+    # Prevent destroy until instance is destroyed manually
+    # or explicitly wait for this resource first
+    create_before_destroy = true
+  }
+
+  depends_on = [
+    aws_lightsail_disk_attachment.postgres
+  ]
 }
 
