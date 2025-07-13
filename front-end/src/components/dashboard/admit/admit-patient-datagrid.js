@@ -8,6 +8,7 @@ import CmtDropdownMenu from "@/assets/DropdownMenu";
 import { LuMoreHorizontal } from "react-icons/lu";
 import { BiEdit } from "react-icons/bi";
 import EditAdmission from "./modals/UpdateAdmissionModal";
+import { useRouter } from "next/router";
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
   ssr: false,
@@ -20,6 +21,11 @@ const getActions = () => {
     {
       action: "update",
       label: "Update Admission",
+      icon: <BiEdit className="text-success text-xl mx-2" />,
+    },
+    {
+      action: "procedures",
+      label: "Patient Procedures",
       icon: <BiEdit className="text-success text-xl mx-2" />,
     },
   ];
@@ -37,11 +43,15 @@ const AdmitPatientDataGrid = ({ward_id=""}) => {
   const dispatch = useDispatch();
   const auth = useAuth();
   const userActions = getActions();
+   const router = useRouter()
 
   const onMenuClick = async (menu, data) => {
     if(menu.action === "update"){
       setSelectedRowData(data);
       setEditOpen(true);      
+    }else if(menu.action === "procedures"){
+      // Handle procedures action here
+      router.push(`/dashboard/admit/patients/${data.attendance_process}`)
     }
   };
 

@@ -19,9 +19,10 @@ export default async function handler(req, res) {
                     'Authorization': req.headers.authorization,
                 }
             };
-    
 
-            await backendAxiosInstance.get(`${API_URL.FETCH_LAB_REQUESTS}`, config).then(response => {
+            const query = req.query;    
+
+            await backendAxiosInstance.get(`${API_URL.FETCH_LAB_REQUESTS}?process=${query.process_id}`, config).then(response => {
                 res.status(200).json(response.data);
 
             }).catch(e => {
