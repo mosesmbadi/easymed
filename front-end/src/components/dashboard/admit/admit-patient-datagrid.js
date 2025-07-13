@@ -52,7 +52,7 @@ const AdmitPatientDataGrid = ({ward_id=""}) => {
     }else if(menu.action === "procedures"){
       // Handle procedures action here
       console.log("Procedures action clicked for:", data);
-      router.push(`/dashboard/admit/${data.id}`)
+      router.push(`/dashboard/admit/${data.attendance_process}`)
 
     }
   };

@@ -20,9 +20,16 @@ export default async function handler(req, res) {
                 }
             };
 
-            console.log("PATIENT_PROCESS_HEADERS ",config);
-    
-            await backendAxiosInstance.get(`${API_URL.PATIENT_ATTENDANCE_PROCESS}`, config).then(response => {
+            const query = req.query;
+            const process_id = query.process_id ? query.process_id : null;
+
+            let url = `${API_URL.PATIENT_ATTENDANCE_PROCESS}`;
+
+            if (process_id) {
+                url = `${API_URL.PATIENT_ATTENDANCE_PROCESS}${process_id}/`
+            }
+
+            await backendAxiosInstance.get(url, config).then(response => {
                 res.status(200).json(response.data);
 
             }).catch(e => {
