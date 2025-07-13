@@ -63,9 +63,10 @@ export const searchPatients = (first_name) =>{
     })
 }
 
-export const fetchPatientProfile = (userId) =>{
+export const fetchPatientProfile = (auth, userId) =>{
+    const axiosInstance = UseAxios(auth);
     return new Promise((resolve,reject) =>{
-        axios.get(`${APP_API_URL.GET_PATIENT_PROFILE}`,{
+        axiosInstance.get(`${APP_API_URL.GET_PATIENT_PROFILE}`,{
             params:{
                 userId: userId
             }

@@ -138,9 +138,9 @@ export const getAllSearchedPatients = (first_name) => async (dispatch) => {
   }
 };
 
-export const getPatientProfile = (userId) => async (dispatch) => {
+export const getPatientProfile = (auth, userId) => async (dispatch) => {
   try {
-    const response = await fetchPatientProfile(userId);
+    const response = await fetchPatientProfile(auth, userId);
     dispatch(setProfile(response));
   } catch (error) {
     console.log("PROFILE_ERROR ", error);
