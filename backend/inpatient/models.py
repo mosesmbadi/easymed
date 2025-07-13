@@ -100,6 +100,27 @@ class PatientAdmission(models.Model):
         return f"{self.admission_id} - {self.patient.first_name} {self.patient.second_name}"
 
 
+class InPatientTriage(models.Model):
+    '''
+    i.e /inpatient/patient-admissions/<admission_pk>/triages
+    '''
+    created_by = models.CharField(max_length=45)
+    date_created = models.DateTimeField(auto_now_add=True)
+    temperature = models.DecimalField(max_digits=5, decimal_places=2, null=True)
+    height = models.DecimalField(max_digits=5, decimal_places=2, null=True)
+    weight = models.IntegerField(null=True)
+    pulse = models.PositiveIntegerField(null=True)
+    diastolic = models.PositiveIntegerField(null=True)
+    systolic = models.PositiveIntegerField(null=True)
+    bmi = models.DecimalField(max_digits=10, decimal_places=1, null=True)
+    fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    notes = models.CharField(max_length=300, blank=True, null=True)
+    patient_admission = models.ForeignKey(PatientAdmission, on_delete=models.CASCADE, related_name="triages")
+
+    def __str__(self):
+        return f"{self.patient_admission.admission_id} - {self.patient_admission.patient.first_name} {self.patient_admission.patient.second_name}" 
+
+
 class PatientDischarge(models.Model):
     DISCHARGE_TYPES = (
         ('normal', 'Normal'),

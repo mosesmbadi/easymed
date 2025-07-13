@@ -14,13 +14,27 @@ from authperms.permissions import IsDoctorUser, IsSeniorNurseUser, IsSystemsAdmi
 
 from .utils import (generate_discharge_summary_pdf)
 from .filters import WardFilter, PatientAdmissionFilter, WardNurseAssignmentFilter
-from .models import (Bed, PatientAdmission, PatientDischarge, Ward, WardNurseAssignment)
+from .models import (Bed, PatientAdmission, PatientDischarge, Ward, WardNurseAssignment, InPatientTriage)
 from .serializers import (BedSerializer, PatientAdmissionSerializer,
                         PatientDischargeSerializer,
-                        WardNurseAssignmentSerializer, WardSerializer)
+                        WardNurseAssignmentSerializer, WardSerializer, InPatientTriageSerializer)
 
 
 logger = logging.getLogger(__name__)
+
+
+class InPatientTriageViewSet(viewsets.ModelViewSet):
+    serializer_class = InPatientTriageSerializer
+    permission_classes = [IsDoctorUser | IsSeniorNurseUser | IsSystemsAdminUser]
+
+    def get_queryset(self):
+        admission_id = self.kwargs.get('admission_pk')
+        return InPatientTriage.objects.filter(patient_admission__id=admission_id)
+
+    def perform_create(self, serializer):
+        admission_id = self.kwargs.get('admission_pk')
+        patient_admission = get_object_or_404(PatientAdmission, id=admission_id)
+        serializer.save(patient_admission=patient_admission)
 
 
 class PatientAdmissionViewSet(viewsets.ModelViewSet):

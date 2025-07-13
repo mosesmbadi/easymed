@@ -4,7 +4,7 @@ from rest_framework import serializers
 from patient.serializers import ReferralSerializer
 from patient.models import AttendanceProcess
 from .models import (Bed, PatientAdmission, PatientDischarge, Ward,
-                    WardNurseAssignment)
+                    WardNurseAssignment, InPatientTriage)
 from .celery_tasks import set_bed_status_occupied
 
 
@@ -98,8 +98,26 @@ class WardSerializer(serializers.ModelSerializer):
         ]
 
         read_only_fields = ["created_at", "id"]
-   
+
     
+class InPatientTriageSerializer(serializers.ModelSerializer):
+    patient_admission = serializers.PrimaryKeyRelatedField(queryset=PatientAdmission.objects.all())
+    attendance_id = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = InPatientTriage
+        fields = [
+            'id', 'created_by', 'date_created', 'temperature', 'height', 'weight', 'pulse',
+            'diastolic', 'systolic', 'bmi', 'fee', 'notes', 'patient_admission', 'attendance_id'
+        ]
+
+    def get_attendance_id(self, obj):
+        # Return the related PatientAdmission's attendance_process id
+        if obj.patient_admission and hasattr(obj.patient_admission, 'attendance_process'):
+            return getattr(obj.patient_admission.attendance_process, 'id', None)
+        return None
+
+
 class BedSerializer(serializers.ModelSerializer):
     ward = serializers.SerializerMethodField()
     current_occupant = serializers.SerializerMethodField()
