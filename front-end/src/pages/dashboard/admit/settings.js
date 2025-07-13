@@ -22,7 +22,7 @@ const InpatientSettings = () => {
                 ? "cursor-pointer text-primary p-4 border-b-2 border-primary text-center"
                 : "cursor-pointer text-center p-4"
             } `}
-            onClick={() => setCurrentTab(2)}
+            onClick={() => setCurrentTab(0)}
           >
             Assigned Nurses
           </p>
