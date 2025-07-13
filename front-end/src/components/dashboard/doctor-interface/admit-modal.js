@@ -24,6 +24,7 @@ const AdmitModal = ({admitOpen, setAdmitOpen, selectedRowdata}) => {
   };
 
   const initialValues = {
+    attendance_process: selectedRowdata.id,
     patient: selectedRowdata.patient,
     reason_for_admission: "",
     admitted_by: auth.user_id,

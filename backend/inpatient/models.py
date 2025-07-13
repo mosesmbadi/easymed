@@ -3,7 +3,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.utils import timezone
-from patient.models import Patient, Referral
+from patient.models import Patient, Referral, AttendanceProcess
 
 
 class Ward(models.Model):
@@ -56,6 +56,11 @@ class Bed(models.Model):
 
 
 class PatientAdmission(models.Model):
+    attendance_process = models.ForeignKey(
+        AttendanceProcess,
+        on_delete=models.CASCADE,
+        related_name="AttendanceProcess",
+    )
     patient = models.ForeignKey(
         Patient, on_delete=models.CASCADE, related_name="admissions"
     )

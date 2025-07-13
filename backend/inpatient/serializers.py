@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from patient.serializers import ReferralSerializer
+from patient.models import AttendanceProcess
 from .models import (Bed, PatientAdmission, PatientDischarge, Ward,
                     WardNurseAssignment)
 from .celery_tasks import set_bed_status_occupied
@@ -13,6 +14,7 @@ User = get_user_model()
 class PatientAdmissionSerializer(serializers.ModelSerializer):
     ward = serializers.PrimaryKeyRelatedField(queryset=Ward.objects.all(), required=False, allow_null=True)
     bed = serializers.PrimaryKeyRelatedField(queryset=Bed.objects.all(), required=False, allow_null=True)
+    attendance_process = serializers.PrimaryKeyRelatedField(queryset=AttendanceProcess.objects.all(), required=False, allow_null=True)
 
     patient_first_name = serializers.CharField(
         source="patient.first_name", read_only=True
@@ -33,7 +35,7 @@ class PatientAdmissionSerializer(serializers.ModelSerializer):
             "id", "admission_id", "patient",
             "patient_first_name", "patient_second_name",
             "patient_age", "patient_gender", "ward", "bed",
-            "reason_for_admission", "admitted_by_name", "admitted_at",
+            "reason_for_admission", "admitted_by_name", "admitted_at", "attendance_process"
         ]
 
     def to_representation(self, instance):
