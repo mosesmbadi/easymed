@@ -16,10 +16,14 @@ export const fetchLabResults = (auth) =>{
     })
 }
 
-export const fetchLabRequests = (auth) =>{
+export const fetchLabRequests = (auth, process_id="") =>{
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve,reject) =>{
-        axiosInstance.get(`${APP_API_URL.FETCH_LAB_REQUESTS}`,auth)
+        axiosInstance.get(`${APP_API_URL.FETCH_LAB_REQUESTS}`, {
+            params: {
+                process_id: process_id
+            }
+        })
             .then((res) =>{
                 resolve(res.data)
             })

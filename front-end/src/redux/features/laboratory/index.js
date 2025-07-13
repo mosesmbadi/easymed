@@ -226,9 +226,9 @@ export const getAllLabEquipments = (auth) => async (dispatch) => {
   }
 };
 
-export const getAllLabRequests = (auth) => async (dispatch) => {
+export const getAllLabRequests = (auth, process_id) => async (dispatch) => {
   try {
-    const response = await fetchLabRequests(auth);
+    const response = await fetchLabRequests(auth, process_id);
     dispatch(setLabRequests(response));
   } catch (error) {
     console.log("LAB_ERROR ", error);

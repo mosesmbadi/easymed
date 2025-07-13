@@ -9,6 +9,8 @@ import { getOneProcess } from '@/redux/features/patients';
 import { Container } from '@mui/material';
 import AdmitNav from '@/components/dashboard/admit/AdmitNav';
 import AdmittedPatientDetails from '@/components/dashboard/admit/AdmittedPatientDetails';
+import AdmittedTests from '@/components/dashboard/admit/AdmittedTests';
+import AdmittedPrescription from '@/components/dashboard/admit/AdmittedPrescription';
 
 const tabs = [
   { label: 'Patient Details', value: 0 },
@@ -27,7 +29,9 @@ const AdmittedPatient = () => {
   const auth = useAuth();
 
   useEffect(() => {
-    dispatch(getOneProcess(auth, params?.admission_process_id));
+    if(auth.token){
+      dispatch(getOneProcess(auth, params?.admission_process_id));
+    }
   }, [params?.admission_process_id]);
 
   const tabsJsx = tabs.map((tab) => (
@@ -59,9 +63,8 @@ const AdmittedPatient = () => {
         {currentTab === 1 && <div>Admission Details Content</div>}
         {currentTab === 2 && <div>Vitals Content</div>}
         {currentTab === 3 && <div>Schedules Content</div>}
-        {currentTab === 4 && <div>Tests Content</div>}
-        {currentTab === 5 && <div>Prescriptions Content</div>}
-
+        {currentTab === 4 && <AdmittedTests process_test_req={processDetails.process_test_req} />}
+        {currentTab === 5 && <AdmittedPrescription prescription={processDetails.prescription} />}
       </div>
     </Container>
   )
