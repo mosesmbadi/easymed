@@ -8,6 +8,7 @@ from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.decorators import action
 
 
 from authperms.permissions import IsDoctorUser, IsSeniorNurseUser, IsSystemsAdminUser
@@ -111,6 +112,19 @@ class WardNurseAssignmentViewSet(viewsets.ModelViewSet):
 class WardViewSet(viewsets.ModelViewSet):
     queryset = Ward.objects.all()
     serializer_class = WardSerializer
+
+    @action(detail=True, methods=['get'])
+    def nurses(self, request, pk=None):
+        ward = self.get_object()
+        assignments = ward.nurse_assignments.all()
+        data = [
+            {
+                "id": assignment.nurse.id,
+                "name": assignment.nurse.get_fullname() if hasattr(assignment.nurse, 'get_fullname') else str(assignment.nurse)
+            }
+            for assignment in assignments
+        ]
+        return Response(data)
     filter_backends = [DjangoFilterBackend]
     filterset_class = WardFilter
 
