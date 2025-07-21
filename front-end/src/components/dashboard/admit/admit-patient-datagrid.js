@@ -51,7 +51,7 @@ const AdmitPatientDataGrid = ({ward_id=""}) => {
       setEditOpen(true);      
     }else if(menu.action === "procedures"){
       // Handle procedures action here
-      router.push(`/dashboard/admit/patients/${data.attendance_process}`)
+      router.push(`/dashboard/admit/patients/${data.attendance_process}/${data.id}`)
     }
   };
 
