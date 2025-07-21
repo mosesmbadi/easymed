@@ -54,7 +54,7 @@ const AdmittedPrescription = ({prescription}) => {
           showNavigationButtons={showNavButtons}
         />
         <Column 
-          dataField="item" 
+          dataField="item_name" 
           caption="Drug" 
         />
         <Column 

@@ -54,7 +54,7 @@ const AdmittedTests = ({process_test_req}) => {
           showNavigationButtons={showNavButtons}
         />
         <Column 
-          dataField="test_profile" 
+          dataField="test_profile_name" 
           caption="Test Profile" 
         />
         <Column 
@@ -62,7 +62,7 @@ const AdmittedTests = ({process_test_req}) => {
           caption="Date Requested" 
         />
         <Column
-          dataField="requested_by"
+          dataField="requested_by_name"
           caption="Requested By"
         />
         <Column
