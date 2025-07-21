@@ -11,6 +11,8 @@ import AdmitNav from '@/components/dashboard/admit/AdmitNav';
 import AdmittedPatientDetails from '@/components/dashboard/admit/AdmittedPatientDetails';
 import AdmittedTests from '@/components/dashboard/admit/AdmittedTests';
 import AdmittedPrescription from '@/components/dashboard/admit/AdmittedPrescription';
+import AdmissionDetails from '@/components/dashboard/admit/AdmissionDetails';
+import AdmissionVitals from '@/components/dashboard/admit/AdmissionVitals';
 
 const tabs = [
   { label: 'Patient Details', value: 0 },
@@ -60,8 +62,8 @@ const AdmittedPatient = () => {
       </section>
       <div className="mt-2">
         {currentTab === 0 && <AdmittedPatientDetails patient={processDetails.patient}/>}
-        {currentTab === 1 && <div>Admission Details Content</div>}
-        {currentTab === 2 && <div>Vitals Content</div>}
+        {currentTab === 1 && <AdmissionDetails admission_id={params.patient_admission} />}
+        {currentTab === 2 && <AdmissionVitals admission_id={params.patient_admission}/>}
         {currentTab === 3 && <div>Schedules Content</div>}
         {currentTab === 4 && <AdmittedTests process_test_req={processDetails.process_test_req} />}
         {currentTab === 5 && <AdmittedPrescription prescription={processDetails.prescription} />}

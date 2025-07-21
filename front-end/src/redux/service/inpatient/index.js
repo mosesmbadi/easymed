@@ -112,12 +112,30 @@ export const admitPatient = (auth, payload) => {
     })
 }
 
-export const fetchAdmittedPatients = (auth, ward) =>{
+export const fetchAdmittedPatients = (auth, ward, admission_id='') =>{
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve,reject) =>{
         axiosInstance.get(`${APP_API_URL.ADMIT_PATIENT}`, {
             params: {
-                ward: ward
+                ward: ward,
+                admission_id: admission_id
+            }
+        })
+            .then((res) =>{
+                resolve(res.data)
+            })
+            .catch((err) => {
+                reject(err.message)
+            })
+    })
+}
+
+export const fetchAdmittedPatientsVitals = (auth, admission_id='') =>{
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve,reject) =>{
+        axiosInstance.get(`${APP_API_URL.ADMITTED_PATIENT_VITALS}`, {
+            params: {
+                admission_id: admission_id
             }
         })
             .then((res) =>{

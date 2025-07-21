@@ -1,4 +1,4 @@
-import { fetchAdmittedPatients, fetchFacilityBeds, fetchFacilityWards, fetchNursesDuties } from "@/redux/service/inpatient";
+import { fetchAdmittedPatients, fetchAdmittedPatientsVitals, fetchFacilityBeds, fetchFacilityWards, fetchNursesDuties } from "@/redux/service/inpatient";
 import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
@@ -6,6 +6,8 @@ const initialState = {
   wards: [],
   patients: [],
   assignedNurses: [],
+  oneAdmission: {},
+  vitals: [],
 };
 
 const InpatientSlice = createSlice({
@@ -39,6 +41,12 @@ const InpatientSlice = createSlice({
     admittedPatients: (state, action) => {
       state.patients = action.payload;
     },
+    oneAdmission: (state, action) => {
+      state.oneAdmission = action.payload;
+    },
+    setVitals: (state, action) => {
+      state.vitals = action.payload;
+    },
     updateAdmissionInStore: (state, action) => {
       const updatedAdmission = action.payload;
       state.patients = state.patients.map((patient) =>
@@ -56,7 +64,7 @@ export const {
   addBedToStore, addWardToStore,
   updateWardInStore, updateBedInStore, 
   admittedPatients, updateAdmissionInStore,
-  assignedNurses
+  assignedNurses, oneAdmission, setVitals
  } = InpatientSlice.actions;
 
 export const fetchHospitalBeds = (auth, ward_id) => async (dispatch) => {
@@ -84,6 +92,25 @@ export const fetchAdmitted = (auth, ward) => async (dispatch) => {
     dispatch(admittedPatients(response));
   } catch (error) {
     console.log("ADMITTED_PATIENTS_ERROR ", error);
+  }
+};
+
+
+export const fetchOneAdmission = (auth, ward, admission_id) => async (dispatch) => {
+  try {
+    const response = await fetchAdmittedPatients(auth, ward, admission_id);
+    dispatch(oneAdmission(response));
+  } catch (error) {
+    console.log("ONE_ADMISSION_ERROR ", error);
+  }
+};
+
+export const fetchAdmissionVitals = (auth, admission_id) => async (dispatch) => {
+  try {
+    const response = await fetchAdmittedPatientsVitals(auth, admission_id);
+    dispatch(setVitals(response));
+  } catch (error) {
+    console.log("ONE_ADMISSION_ERROR ", error);
   }
 };
 
