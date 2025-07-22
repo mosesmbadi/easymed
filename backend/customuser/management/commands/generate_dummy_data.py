@@ -91,3 +91,5 @@ class Command(BaseCommand):
         else:
             profiles, panels = create_demo_lab_profiles_and_panels()
             self.stdout.write(self.style.SUCCESS(f"Created {len(profiles)} lab test profiles and {len(panels)} panels."))    
+
+        # TODO  Inventory records

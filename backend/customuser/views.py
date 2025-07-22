@@ -168,16 +168,41 @@ class PasswordResetConfirmView(generics.GenericAPIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class AdminInitiatePasswordResetByEmailView(generics.GenericAPIView):
+    """
+    View for admin to initiate password reset by providing user's email.
+    This is used for the admin_reset_password URL pattern.
+    """
+    permission_classes = (IsAdminUser,)
+    serializer_class = ResetPasswordRequestSerializer
+
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            email = serializer.validated_data['email']
+            try:
+                user = User.objects.get(email=email)
+                send_password_reset_email(request, user, subject_prefix="Admin-Initiated Password Reset")
+                return Response({'message': 'Password reset link sent to user.'}, status=status.HTTP_200_OK)
+            except User.DoesNotExist:
+                return Response({'detail': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
 class AdminInitiatePasswordResetView(generics.GenericAPIView):
+    """
+    View for admin to reset a user's password by providing user_id in the URL.
+    This is used for the admin_change_password URL pattern.
+    """
     serializer_class = PasswordResetConfirmSerializer
     permission_classes = (IsAdminUser,)
 
     def post(self, request, user_id):
         try:
-            user_id  = self.kwargs.get('user_id')
             user = User.objects.get(pk=user_id)
         except User.DoesNotExist:
             return Response({'detail': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+            
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             new_password = serializer.validated_data['new_password']

@@ -10,7 +10,7 @@ def test_admit_patient_authenticated_doctor(authenticated_doctor_client, doctor,
     """
     Test that an authenticated doctor can admit a patient and the bed is marked as occupied.
     """
-    url = reverse('patient-admission-list')  
+    url = reverse('inpatient:patient-admission-list')  
     payload = {
         'patient': patient.id,
         'ward': ward.id,
@@ -36,7 +36,7 @@ def test_admit_patient_unauthenticated(client, patient, ward, bed):
     """
     Test that an unauthenticated user cannot admit a patient.
     """
-    url = reverse('patient-admission-list')
+    url = reverse('inpatient:patient-admission-list')
     payload = {
         'patient': patient.id,
         'ward': ward.id,
@@ -53,7 +53,7 @@ def test_admit_patient_non_doctor(authenticated_client, patient, ward, bed):
     """
     Test that a non-doctor (e.g., patient user) cannot admit a patient.
     """
-    url = reverse('patient-admission-list')
+    url = reverse('inpatient:patient-admission-list')
     payload = {
         'patient': patient.id,
         'ward': ward.id,
@@ -70,7 +70,7 @@ def test_admit_patient_occupied_bed(authenticated_doctor_client, patient, ward, 
     """
     Test that admitting a patient to an occupied bed fails.
     """
-    url = reverse('patient-admission-list')
+    url = reverse('inpatient:patient-admission-list')
     payload = {
         'patient': patient.id,
         'ward': ward.id,
