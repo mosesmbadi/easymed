@@ -31,6 +31,7 @@ urlpatterns = [
     path('pharmacy/', include('pharmacy.urls')),
     path('company/', include('company.urls')),
     path('inpatient/', include('inpatient.urls', namespace='inpatient')),
+    path('roby/', include('roby.urls')),
 
     # For prometheus metrics
     path('', include('django_prometheus.urls')),

@@ -59,7 +59,8 @@ INSTALLED_APPS = [
     'announcement.apps.AnnouncementConfig',
     'inpatient.apps.InpatientConfig',
     'company',
-    'reports'
+    'reports',
+    'roby'
 ]
 
 MIDDLEWARE = [
