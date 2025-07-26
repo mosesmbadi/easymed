@@ -1,4 +1,5 @@
-import { fetchAdmittedPatients, fetchAdmittedPatientsVitals, fetchFacilityBeds, fetchFacilityWards, fetchNursesDuties } from "@/redux/service/inpatient";
+import { AddAdmittedPatientsVitals, fetchAdmittedPatients, fetchAdmittedPatientsVitals, fetchFacilityBeds, fetchFacilityWards, fetchNursesDuties } from "@/redux/service/inpatient";
+import { fetchPatientTriage } from "@/redux/service/patients";
 import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
@@ -47,6 +48,9 @@ const InpatientSlice = createSlice({
     setVitals: (state, action) => {
       state.vitals = action.payload;
     },
+    setNewVital: (state, action) => {
+      state.vitals = [action.payload, ...state.vitals];
+    },
     updateAdmissionInStore: (state, action) => {
       const updatedAdmission = action.payload;
       state.patients = state.patients.map((patient) =>
@@ -64,7 +68,7 @@ export const {
   addBedToStore, addWardToStore,
   updateWardInStore, updateBedInStore, 
   admittedPatients, updateAdmissionInStore,
-  assignedNurses, oneAdmission, setVitals
+  assignedNurses, oneAdmission, setVitals, setNewVital
  } = InpatientSlice.actions;
 
 export const fetchHospitalBeds = (auth, ward_id) => async (dispatch) => {
@@ -105,12 +109,22 @@ export const fetchOneAdmission = (auth, ward, admission_id) => async (dispatch) 
   }
 };
 
-export const fetchAdmissionVitals = (auth, admission_id) => async (dispatch) => {
+export const fetchAdmissionVitals = (auth, admission_id, triage_id) => async (dispatch) => {
   try {
     const response = await fetchAdmittedPatientsVitals(auth, admission_id);
-    dispatch(setVitals(response));
+    const outpatientTriage = await fetchPatientTriage(triage_id, auth);
+    dispatch(setVitals([outpatientTriage, ...response]));
   } catch (error) {
-    console.log("ONE_ADMISSION_ERROR ", error);
+    console.log("ADMISSION VITALS ERROR ", error);
+  }
+};
+
+export const AddAdmissionVitals = (auth, payload, admission_id) => async (dispatch) => {
+  try {
+    const response = await AddAdmittedPatientsVitals(auth, payload, admission_id);
+    dispatch(setNewVital(response));
+  } catch (error) {
+    console.log("ADD ADMISSION VITALS ", error);
   }
 };
 

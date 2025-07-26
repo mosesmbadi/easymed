@@ -147,6 +147,23 @@ export const fetchAdmittedPatientsVitals = (auth, admission_id='') =>{
     })
 }
 
+export const AddAdmittedPatientsVitals = (auth, payload, admission_id) =>{
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve,reject) =>{
+        axiosInstance.post(`${APP_API_URL.ADMITTED_PATIENT_VITALS}`, payload, {
+            params: {
+                admission_id: admission_id
+            }
+        })
+            .then((res) =>{
+                resolve(res.data)
+            })
+            .catch((err) => {
+                reject(err.message)
+            })
+    })
+}
+
 export const updateAdmissionDetails = (auth, payload, admission_id) => {
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve,reject) =>{

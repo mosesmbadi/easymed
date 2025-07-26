@@ -48,8 +48,9 @@ export default async function handler(req, res) {
             };
             const body = req.body;
             const query = req.query
+            let url = `${API_URL.ADMITTED_PATIENT_VITALS}`;
 
-            await backendAxiosInstance.post(`${API_URL.ADMITTED_PATIENT_VITALS}`,body,config)
+            await backendAxiosInstance.post(`${url}${query.admission_id}/triages/`,body,config)
                 .then(response => {
                     res.status(200).json(response.data);
                 })
