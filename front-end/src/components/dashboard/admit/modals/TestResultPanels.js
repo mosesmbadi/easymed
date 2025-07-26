@@ -4,7 +4,7 @@ import { useSelector } from 'react-redux';
 import { useAuth } from '@/assets/hooks/use-auth';
 import { fetchLabTestPanelsByTestRequestId, updateLabRequestPanels } from '@/redux/service/laboratory';
 
-const TestResultsPanels = ({test}) => {
+const InpatientTestResultsPanels = ({test}) => {
   const auth = useAuth()
   const router = useRouter()
   const [loading, setLoading] = useState(false)
@@ -12,7 +12,7 @@ const TestResultsPanels = ({test}) => {
   const currentPath = router.pathname;
   const { labTestPanels } = useSelector((store) => store.laboratory);
 
-  const current_interface = currentPath.includes('doctor-interface' || "admit/patients") ? 'doctor' : 'lab'
+  const current_interface = currentPath.includes('doctor-interface') ? 'doctor' : 'lab'
 
   const getTestPanelsByTestReq = async (test, auth)=> {
     try {
@@ -120,4 +120,4 @@ const TestResultsPanels = ({test}) => {
   )
 }
 
-export default TestResultsPanels
+export default InpatientTestResultsPanels

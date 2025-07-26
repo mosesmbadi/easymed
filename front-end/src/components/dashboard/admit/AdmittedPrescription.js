@@ -29,7 +29,15 @@ const AdmittedPrescription = ({prescription}) => {
 
   return (
     <div className='w-full p-4 bg-white shadow-md rounded-lg'>
-      <h2 className='text-xl font-semibold mb-4'>{`Patient Prescriptions` }</h2>
+      <div className='w-full flex items-center justify-between mb-4'>
+        <h1 className="text-2xl font-semibold mb-4">{`Patient Prescriptions` }</h1>
+        <button
+          className="bg-primary text-white px-4 py-2 rounded"
+          onClick={() => setShowAddVitalsModal(!showAddVitalsModal)}
+        >
+          New Prescription
+        </button>
+      </div>
 
       <DataGrid
         dataSource={prescribedDrugs}
