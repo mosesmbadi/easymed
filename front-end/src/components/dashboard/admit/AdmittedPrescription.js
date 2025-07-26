@@ -5,6 +5,7 @@ import { Column, Paging, Pager, HeaderFilter, Scrolling } from "devextreme-react
 import React, { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import { getAllPrescribedDrugs } from '@/redux/features/pharmacy';
+import PrescribeDrug from './modals/PrescribeDrug';
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
   ssr: false,
@@ -12,7 +13,7 @@ const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
 
 const allowedPageSizes = [5, 10, 'all'];
 
-const AdmittedPrescription = ({prescription}) => {
+const AdmittedPrescription = ({prescription, process}) => {
   const [showPageSizeSelector, setShowPageSizeSelector] = useState(true);
   const [showNavButtons, setShowNavButtons] = useState(true);
   const [showInfo, setShowInfo] = useState(true);
@@ -31,12 +32,7 @@ const AdmittedPrescription = ({prescription}) => {
     <div className='w-full p-4 bg-white shadow-md rounded-lg'>
       <div className='w-full flex items-center justify-between mb-4'>
         <h1 className="text-2xl font-semibold mb-4">{`Patient Prescriptions` }</h1>
-        <button
-          className="bg-primary text-white px-4 py-2 rounded"
-          onClick={() => setShowAddVitalsModal(!showAddVitalsModal)}
-        >
-          New Prescription
-        </button>
+        <PrescribeDrug prescription={prescription} process={process}/>
       </div>
 
       <DataGrid
@@ -81,11 +77,6 @@ const AdmittedPrescription = ({prescription}) => {
           dataField="note"
           caption="Note"
         />
-        {/* <Column
-          dataField=""
-          caption=""
-          cellRender={actionsFunc}
-        /> */}
       </DataGrid>
       
     </div>

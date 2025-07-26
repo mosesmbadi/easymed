@@ -23,6 +23,9 @@ const PrescriptionSlice = createSlice({
     setPrescribedDrugs: (state, action) => {
       state.prescribedDrugs = action.payload;
     },
+    setPrescribedDrugsStore: (state, action) => {
+      state.prescribedDrugs = [action.payload, ...state.prescribedDrugs];
+    },
     setPrescriptionsPrescribedDrugs: (state, action) => {
       state.prescriptionsPrescribed = action.payload;
     },
@@ -36,7 +39,7 @@ const PrescriptionSlice = createSlice({
   },
 });
 
-export const { setPrescriptions,setSearchedPrescriptions, setPrescriptionsPrescribedDrugs, setPrescribedDrugs, setPrescriptionStatus, setPublicPrescriptions } = PrescriptionSlice.actions;
+export const { setPrescriptions,setSearchedPrescriptions, setPrescriptionsPrescribedDrugs, setPrescribedDrugs, setPrescribedDrugsStore, setPrescriptionStatus, setPublicPrescriptions } = PrescriptionSlice.actions;
 
 
 export const getAllPrescriptions = (auth) => async (dispatch) => {
@@ -65,6 +68,12 @@ export const getAllPrescribedDrugs = (auth, prescription_id) => async (dispatch)
     console.log("PRESCRIPTIONS_DRUGS_ERROR ", error);
   }
 };
+
+export const updateStorePrescription = (payload) => async (dispatch) => {
+  dispatch(setPrescribedDrugsStore(payload));
+};
+
+
 
 export const getAllPrescriptionsPrescribedDrugs = (prescription_id, auth) => async (dispatch) => {
   try {
