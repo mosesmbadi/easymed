@@ -27,10 +27,9 @@ const AdmissionVitals = ({admission_id, triage}) => {
     dispatch(fetchAdmissionVitals(auth, admission_id, triage));
   }, []);
   return (
-    <div>
-      <h1 className="text-2xl font-semibold mb-4">Admission Vitals</h1>
-
-      <div className='w-full flex items-center justify-end mb-4'>
+    <div className='w-full p-4 bg-white shadow-md rounded-lg'>
+      <div className='w-full flex items-center justify-between mb-4'>
+        <h1 className="text-2xl font-semibold mb-4">Admission Vitals</h1>
         <button
           className="bg-primary text-white px-4 py-2 rounded"
           onClick={() => setShowAddVitalsModal(!showAddVitalsModal)}
