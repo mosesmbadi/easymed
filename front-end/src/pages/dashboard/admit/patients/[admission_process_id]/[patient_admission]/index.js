@@ -66,7 +66,7 @@ const AdmittedPatient = () => {
         {currentTab === 2 && <AdmissionVitals admission_id={params.patient_admission} triage={processDetails.triage}/>}
         {currentTab === 3 && <div>Schedules Content</div>}
         {currentTab === 4 && <AdmittedTests process={processDetails} />}
-        {currentTab === 5 && <AdmittedPrescription prescription={processDetails.prescription} />}
+        {currentTab === 5 && <AdmittedPrescription prescription={processDetails.prescription} process={processDetails}/>}
       </div>
     </Container>
   )
