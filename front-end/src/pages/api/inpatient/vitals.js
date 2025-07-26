@@ -22,12 +22,9 @@ export default async function handler(req, res) {
 
 
             const query = req.query;
-            let url = `${API_URL.ADMIT_PATIENT}`;
-            if (query.admission_id) {
-                url += `${query.admission_id}/`;
-            }
+            let url = `${API_URL.ADMITTED_PATIENT_VITALS}`;
 
-            await backendAxiosInstance.get(`${url}?ward=${query.ward}`, config).then(response => {
+            await backendAxiosInstance.get(`${url}${query.admission_id}/triages/`, config).then(response => {
                 res.status(200).json(response.data);
 
             }).catch(e => {
@@ -51,8 +48,9 @@ export default async function handler(req, res) {
             };
             const body = req.body;
             const query = req.query
+            let url = `${API_URL.ADMITTED_PATIENT_VITALS}`;
 
-            await backendAxiosInstance.post(`${API_URL.ADMIT_PATIENT}`,body,config)
+            await backendAxiosInstance.post(`${url}${query.admission_id}/triages/`,body,config)
                 .then(response => {
                     res.status(200).json(response.data);
                 })
@@ -78,7 +76,7 @@ export default async function handler(req, res) {
             const body = req.body;
             const query = req.query;
 
-            await backendAxiosInstance.patch(`${API_URL.ADMIT_PATIENT}${query.admission_id}/`, body, config).then(response => {
+            await backendAxiosInstance.patch(`${API_URL.ADMITTED_PATIENT_VITALS}${query.admission_id}/`, body, config).then(response => {
                 res.status(200).json(response.data);
 
             }).catch(e => {
