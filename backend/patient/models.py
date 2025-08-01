@@ -108,9 +108,9 @@ class PublicAppointment(models.Model):
 class Triage(models.Model):
     created_by_user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     date_created = models.DateTimeField(auto_now_add=True)
-    temperature = models.DecimalField(max_digits=5, decimal_places=2, null=True)
-    height = models.DecimalField(max_digits=5, decimal_places=2, null=True)
-    weight = models.IntegerField(null=True)
+    temperature = models.DecimalField(max_digits=5, decimal_places=2, null=True) # degrees celcius
+    height = models.DecimalField(max_digits=5, decimal_places=2, null=True) # meters
+    weight = models.IntegerField(null=True) # kilograms
     pulse = models.PositiveIntegerField(null=True)
     diastolic = models.PositiveIntegerField(null=True)
     systolic = models.PositiveIntegerField(null=True)
@@ -118,6 +118,7 @@ class Triage(models.Model):
     fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     notes = models.CharField(max_length=300, blank=True, null=True)
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name="triages", blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f'Triage #{self.id} PatientID: {self.patient}'
