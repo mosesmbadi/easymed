@@ -8,14 +8,18 @@ from .models import (
 
 class InvoiceItemSerializer(serializers.ModelSerializer):
     category = serializers.SerializerMethodField()
-    category = serializers.SerializerMethodField()
     item_name = serializers.SerializerMethodField()
     item_code = serializers.SerializerMethodField()
     payment_mode_name = serializers.SerializerMethodField()
+    insurance_company_id = serializers.SerializerMethodField()
 
     class Meta:
         model = InvoiceItem
-        fields = '__all__'
+        fields = [
+            'id', 'invoice', 'item', 'payment_mode', 'item_amount',
+            'category', 'item_name', 'item_code', 'payment_mode_name',
+            'insurance_company_id'
+            ]
 
     def get_category(self, obj):
         item = obj.item
@@ -30,9 +34,13 @@ class InvoiceItemSerializer(serializers.ModelSerializer):
         return item.item_code if item else None
     
     def get_payment_mode_name(self, obj):
-        item = obj.payment_mode
-        return item.paymet_mode if item  else None
+        payment_mode = obj.payment_mode
+        return payment_mode.paymet_mode if payment_mode  else None
 
+    def get_insurance_company_id(self, obj):
+        payment_mode = obj.payment_mode
+        return payment_mode.insurance_id if payment_mode  else None
+    
     def save(self, **kwargs):
         try:
             return super().save(**kwargs)

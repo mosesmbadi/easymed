@@ -106,17 +106,22 @@ class PublicAppointment(models.Model):
 
 
 class Triage(models.Model):
-    created_by = models.CharField(max_length=45)
+    created_by_user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     date_created = models.DateTimeField(auto_now_add=True)
-    temperature = models.DecimalField(max_digits=5, decimal_places=2, null=True)
-    height = models.DecimalField(max_digits=5, decimal_places=2, null=True)
-    weight = models.IntegerField(null=True)
+    temperature = models.DecimalField(max_digits=5, decimal_places=2, null=True) # degrees celcius
+    height = models.DecimalField(max_digits=5, decimal_places=2, null=True) # meters
+    weight = models.IntegerField(null=True) # kilograms
     pulse = models.PositiveIntegerField(null=True)
     diastolic = models.PositiveIntegerField(null=True)
     systolic = models.PositiveIntegerField(null=True)
     bmi = models.DecimalField(max_digits=10, decimal_places=1, null=True)
     fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     notes = models.CharField(max_length=300, blank=True, null=True)
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name="triages", blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'Triage #{self.id} PatientID: {self.patient}'
 
 
 class Consultation(models.Model):
@@ -228,6 +233,9 @@ class AttendanceProcess(models.Model):
     triage = models.OneToOneField(Triage, on_delete=models.CASCADE, null=True)
     track = models.CharField(max_length=50, choices=TRACK, default='reception')
     created_at = models.DateTimeField(default=timezone.now)
+    created_by = models.ForeignKey(
+        CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_attendance_processes'
+    )
 
     def save(self, *args, **kwargs):
         if not self.pk:
@@ -246,7 +254,11 @@ class AttendanceProcess(models.Model):
             # Create related records
             self.invoice = Invoice.objects.create(invoice_amount=0, invoice_number=self.track_number, patient=self.patient, invoice_date=self.created_at)
             self.process_test_req = ProcessTestRequest.objects.create(reference=self.track_number)
-            self.triage = Triage.objects.create()
+            self.triage = Triage.objects.create(
+                created_by_user= self.created_by,
+                created_at=self.created_at,
+                patient=self.patient
+            )
             self.prescription = Prescription.objects.create()
 
         super().save(*args, **kwargs)

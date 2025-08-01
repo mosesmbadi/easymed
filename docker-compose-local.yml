@@ -32,7 +32,6 @@ services:
         # command: uvicorn --host 0.0.0.0 --port 8080 easymed.asgi:application
         volumes:
             - ./backend:/app
-            - ./tmp:/app/tmp
         ports:
             - 8080:8080
         env_file:
@@ -48,9 +47,9 @@ services:
         env_file:
             - ./.env    
         command: celery -A easymed worker --loglevel=INFO
-        volumes:
-            - ./backend:/app
-            - ./tmp:/app/tmp
+        # volumes:
+        #     - ./backend:/app
+        #     - ./tmp:/app/tmp
         depends_on:
             - redis
         networks:
@@ -60,9 +59,9 @@ services:
         build: ./backend
         container_name: celery-beat
         command: celery -A easymed beat --loglevel=INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
-        volumes:
-            - ./backend:/app
-            - ./tmp:/app/tmp
+        # volumes:
+        #     - ./backend:/app
+        #     - ./tmp:/app/tmp
         env_file:
             - ./.env
         restart: unless-stopped
