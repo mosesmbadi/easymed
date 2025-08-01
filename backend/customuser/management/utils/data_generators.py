@@ -1,7 +1,7 @@
 import random
 from faker import Faker
 
-from inventory.models import Item
+from inventory.models import Item, Department
 from customuser.models import CustomUser
 from company.models import Company, CompanyBranch, InsuranceCompany
 from authperms.models import Permission, Group
@@ -12,11 +12,17 @@ from laboratory.models import LabTestProfile, Specimen, LabTestPanel
 
 fake = Faker()
 
+DEPARTMENTS = [
+    "General", "Surgery", "Radiology", "Laboratory", "Pharmacy", "Dental", "Orthopedics", "Ophthalmology",
+    "Cardiology", "Neurology", "Psychiatry", "Gynecology", "Pediatrics", "Dermatology", "ENT", "Urology",
+]
+
 MEDICAL_ITEM_NAMES = [
-    "Paracetamol Tablet", "Surgical Gloves", "Syringe 5ml", "IV Cannula", "Blood Pressure Monitor",
+    "Paracetamol Tablet", "Surgical Gloves", "Blood Pressure Monitor",
     "Stethoscope", "Insulin Pen", "Antiseptic Solution", "Gauze Roll", "Thermometer",
     "Amoxicillin Capsule", "Saline Drip", "Face Mask", "ECG Machine", "Defibrillator",
-    "Scalpel", "Surgical Mask", "Bandage", "Wheelchair", "Crutches"
+    "Scalpel", "Surgical Mask", "Bandage", "Wheelchair", "Crutches", "General Appointment",
+    "Specialized appointment",
 ]
 
 MEDICAL_DESCRIPTIONS = [
@@ -169,6 +175,7 @@ def create_dummy_permissions(count=20):
         permissions.append(perm)
     return permissions
 
+
 def create_dummy_groups(count=10, permissions_per_group=5):
     groups = []
     all_permissions = list(Permission.objects.all())
@@ -230,6 +237,12 @@ def create_dummy_patients(count=20, insurances=None, users=None):
     return patients
 
 
+def create_dummy_departments():
+    departments = []
+    for name in DEPARTMENTS:
+        department, _ = Department.objects.get_or_create(name=name)
+        departments.append(department)
+    return departments
 
 
 def create_demo_lab_profiles_and_panels():

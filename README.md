@@ -151,7 +151,19 @@ If doing all these manually sounds like too much work, you can run the command b
 python manage.py generate_dummy_data
 ```
 
-This will also generate dummy data for the database, including users, items, and insurance companies.
+This should be the output:
+
+```
+created 50 dummy users.
+Created 50 dummy companies.
+Created 2500 dummy company branches.
+Created 50 dummy insurance companies.
+Created 50 dummy inventory items.
+Created default groups and permissions.
+Created 50 dummy patients.
+Created 6 lab test profiles and 13 panels
+```
+
 
 ---
 
