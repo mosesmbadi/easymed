@@ -106,7 +106,7 @@ class PublicAppointment(models.Model):
 
 
 class Triage(models.Model):
-    created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    created_by_user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     date_created = models.DateTimeField(auto_now_add=True)
     temperature = models.DecimalField(max_digits=5, decimal_places=2, null=True)
     height = models.DecimalField(max_digits=5, decimal_places=2, null=True)
@@ -117,7 +117,10 @@ class Triage(models.Model):
     bmi = models.DecimalField(max_digits=10, decimal_places=1, null=True)
     fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     notes = models.CharField(max_length=300, blank=True, null=True)
-    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name="triages")
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name="triages", blank=True, null=True)
+
+    def __str__(self):
+        return f'Triage #{self.id} PatientID: {self.patient}'
 
 
 class Consultation(models.Model):
@@ -251,7 +254,7 @@ class AttendanceProcess(models.Model):
             self.invoice = Invoice.objects.create(invoice_amount=0, invoice_number=self.track_number, patient=self.patient, invoice_date=self.created_at)
             self.process_test_req = ProcessTestRequest.objects.create(reference=self.track_number)
             self.triage = Triage.objects.create(
-                created_by= self.created_by,
+                created_by_user= self.created_by,
                 created_at=self.created_at,
                 patient=self.patient
             )

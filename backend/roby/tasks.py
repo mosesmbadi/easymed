@@ -36,7 +36,7 @@ def process_triage_request(patient_id, **kwargs):
     try:
         patient = Patient.objects.get(id=patient_id)
         triage_records = Triage.objects.filter(
-            created_by=patient.user
+            patient=patient
         ).order_by('-date_created')[:5]
         consultations = Consultation.objects.filter(patient=patient).order_by('-date_created')[:5] # Last 5 consultations
 
@@ -45,14 +45,7 @@ def process_triage_request(patient_id, **kwargs):
         logger.info(f"Found {len(triage_records)} triage records and {len(consultations)} consultations.")
 
         if not triage_records and not consultations:
-            # If no records are found, save an informative error and exit
             message = "No triage or consultation data found for this patient."
-            TriageResult.objects.create(
-                patient=patient,
-                status='error',
-                predicted_condition=message,
-                gemini_response={"full_response": message}
-            )
             logger.warning(message)
             return  # Exit the task
         
@@ -104,12 +97,6 @@ def process_triage_request(patient_id, **kwargs):
         # Re-check for insufficient data after filtering
         if not prompt_data["triage_records"] and not prompt_data["consultations"]:
             message = "Triage records found were all empty or invalid."
-            TriageResult.objects.create(
-                patient=patient,
-                status='error',
-                predicted_condition=message,
-                gemini_response={"full_response": message}
-            )
             logger.warning(message)
             return
         
