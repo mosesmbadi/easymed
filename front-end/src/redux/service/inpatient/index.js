@@ -112,6 +112,22 @@ export const admitPatient = (auth, payload) => {
     })
 }
 
+export const dischargePatient = (auth, payload, admission_id) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve,reject) =>{
+        axiosInstance.post(`${APP_API_URL.DISCHARGE_PATIENT}`,payload, {
+            params: {
+                admission_id: admission_id
+            }})
+            .then((res) =>{
+                resolve(res.data)
+            })
+            .catch((err) =>{
+                reject(err.message)
+            })
+    })
+}
+
 export const fetchAdmittedPatients = (auth, ward, admission_id='') =>{
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve,reject) =>{

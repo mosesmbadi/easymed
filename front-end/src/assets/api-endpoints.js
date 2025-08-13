@@ -152,6 +152,7 @@ export const API_URL = {
 
   /***************** INPATIENT ENDPOINTS **********************/
   ADMIT_PATIENT: "/inpatient/patient-admissions/",
+  DISCHARGE_PATIENT: "/inpatient/patient-admissions/",
   ADMITTED_PATIENT_VITALS: "/inpatient/patient-admissions/",
   INPATIENT_BEDS: "/inpatient/beds/",
   INPATIENT_WARDS: "/inpatient/wards/",
@@ -320,6 +321,7 @@ export const APP_API_URL = {
 
   /***************** INPATIENT ENDPOINTS **********************/
   ADMIT_PATIENT: "/api/inpatient/admissions/",
+  DISCHARGE_PATIENT: "/api/inpatient/discharge/",
   ADMITTED_PATIENT_VITALS: "/api/inpatient/vitals/",
   INPATIENT_BEDS: "/api/inpatient/bed",
   INPATIENT_WARDS: "/api/inpatient/wards",
