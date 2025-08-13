@@ -64,7 +64,7 @@ class PatientAdmission(models.Model):
     patient = models.ForeignKey(
         Patient, on_delete=models.CASCADE, related_name="admissions"
     )
-    admission_id = models.CharField(max_length=20, unique=True, editable=False)
+    admission_id = models.CharField(max_length=40, unique=True, editable=False)
     ward = models.ForeignKey(
         Ward, on_delete=models.SET_NULL, null=True, related_name="admissions"
     )
@@ -79,12 +79,13 @@ class PatientAdmission(models.Model):
         related_name="admissions_made",
     )
     admitted_at = models.DateTimeField(default=timezone.now)
+    discharged = models.BooleanField(default=False)
 
     class Meta:
         ordering = ['-admitted_at']
         
     def generate_admission_id(self):
-        return f"IP{self.patient.unique_id}"
+        return f"IP-{self.patient.unique_id}-{self.admitted_at.strftime('%Y%m%d%H%M%S')}"
         uuid = str(uuid4()).replace("-", "")[:8]
         return f"IP-{self.patient.unique_id}-{uuid}"[:20]
     def save(self, *args, **kwargs):
@@ -140,6 +141,7 @@ class PatientDischarge(models.Model):
                 self.admission.bed.status = "available"
                 self.admission.bed.save()
                 self.admission.bed = None
+                self.admission.discharged = True
                 self.admission.save()
             super().save(*args, **kwargs)
 

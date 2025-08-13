@@ -35,7 +35,7 @@ class PatientAdmissionSerializer(serializers.ModelSerializer):
             "id", "admission_id", "patient",
             "patient_first_name", "patient_second_name",
             "patient_age", "patient_gender", "ward", "bed",
-            "reason_for_admission", "admitted_by_name", "admitted_at", "attendance_process"
+            "reason_for_admission", "admitted_by_name", "admitted_at", "attendance_process", "discharged"
         ]
 
     def to_representation(self, instance):
