@@ -3,16 +3,19 @@ import React, { useEffect } from 'react'
 import { getPatientProfile } from '@/redux/features/patients';
 import { useDispatch, useSelector } from 'react-redux';
 import { useAuth } from '@/assets/hooks/use-auth';
+import { getAllInvoiceItemsByInvoiceId } from '@/redux/features/billing';
 
-const AdmittedPatientDetails = ({patient}) => {
+const AdmittedPatientDetails = ({patient, invoice}) => {
   const dispatch = useDispatch();
   const { profileDetails } = useSelector((store) => store.patient);
+  const { invoiceItems } = useSelector((store) => store.billing);
   
   const auth = useAuth();
 
   useEffect(() => {
     if(auth.token){
       dispatch(getPatientProfile(auth, patient));
+      dispatch(getAllInvoiceItemsByInvoiceId(auth, invoice))
     }
   }, [patient]);
 
@@ -33,9 +36,18 @@ const AdmittedPatientDetails = ({patient}) => {
         <h2 className='text-xl font-semibold mb-4'>{`Patient Insurances` }</h2>
         <ul className='list-disc pl-5'>
           {profileDetails.insurances && profileDetails.insurances.map((insurance, index) => (
-            <li key={index}>{insurance.name} - {insurance.policy_number}</li>
+            <li key={index}>{insurance.name}</li>
           ))}
           {(!profileDetails.insurances || profileDetails.insurances.length === 0) && <li>No insurances found</li>}
+        </ul>
+      </div>
+      <div className='mt-4'>
+        <h2 className='text-xl font-semibold mb-4'>{`Patient Invoices` }</h2>
+        <ul className='list-disc pl-5'>
+          {invoiceItems.length > 0 && invoiceItems.map((invoiceItem, index) => (
+            <li key={index}>{invoiceItem.item_name} - {invoiceItem.item_amount} - {invoiceItem.status}</li>
+          ))}
+          {(!invoiceItems || invoiceItems.length === 0) && <li>No Invoice found</li>}
         </ul>
       </div>
     </div>
