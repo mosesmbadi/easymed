@@ -11,8 +11,6 @@ const DispatchPatientModal = ({dispatchOpen, setDispatchOpen, selectedRowData}) 
   const [loading, setLoading] = React.useState(false);
   const auth = useAuth();
 
-  console.log("Selected Row Data:", selectedRowData);
-
   const handleClose = () => {
     setDispatchOpen(false);
   }

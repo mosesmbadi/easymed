@@ -74,7 +74,7 @@ const AdmitPatientDataGrid = ({ward_id=""}) => {
       <>
         <CmtDropdownMenu
           sx={{ cursor: "pointer" }}
-          items={userActions}
+          items={data.discharged.toLowerCase() === "pending" ? userActions : userActions.filter(item => item.action === "procedures")}
           onItemClick={(menu) => onMenuClick(menu, data)}
           TriggerComponent={
             <LuMoreHorizontal className="cursor-pointer text-xl" />
@@ -92,6 +92,10 @@ const AdmitPatientDataGrid = ({ward_id=""}) => {
     return `${cellData.data.patient_first_name} ${cellData.data.patient_second_name}`
   }
 
+  const statusRender = (cellData) => {
+    return `${cellData.data.discharged} Discharge`
+  }
+
   useEffect(() => {
     if(auth.token){
       dispatch(fetchAdmitted(auth, ward_id));
@@ -101,7 +105,7 @@ const AdmitPatientDataGrid = ({ward_id=""}) => {
   return (
     <section>
       <DataGrid
-        dataSource={patients.filter((admitPatient) => !admitPatient.discharged)}
+        dataSource={patients}
         allowColumnReordering={true}
         rowAlternationEnabled={true}
         onSelectionChanged={onSelectionChanged}
@@ -153,6 +157,13 @@ const AdmitPatientDataGrid = ({ward_id=""}) => {
         <Column dataField="ward" caption="Ward" />
         <Column dataField="bed" caption="Bed" />
         <Column dataField="admitted_by_name" caption="Admitted By" />
+        <Column
+          dataField="discharged"
+          caption="Status"
+          allowFiltering={true}
+          allowSearch={true}
+          cellRender={statusRender}
+        />
         <Column dataField="actions" caption="Action" cellRender={actionsFunc} />
       </DataGrid>
       {/* Add your modal component here for editing admission */}
