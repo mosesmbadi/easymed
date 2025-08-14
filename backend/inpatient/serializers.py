@@ -1,5 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
+from django.core.exceptions import ObjectDoesNotExist
+
 
 from patient.serializers import ReferralSerializer
 from patient.models import AttendanceProcess
@@ -28,6 +30,12 @@ class PatientAdmissionSerializer(serializers.ModelSerializer):
     admitted_by_name = serializers.CharField(
         source="admitted_by.get_fullname", read_only=True
     )
+    discharged = serializers.SerializerMethodField()
+    def get_discharged(self, obj):
+        try:
+            return obj.discharge.discharge_types
+        except ObjectDoesNotExist:
+            return 'Pending'
 
     class Meta:
         model = PatientAdmission
