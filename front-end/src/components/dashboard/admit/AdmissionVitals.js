@@ -14,7 +14,7 @@ const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
 const allowedPageSizes = [5, 10, 'all'];
 
 
-const AdmissionVitals = ({admission_id, triage}) => {
+const AdmissionVitals = ({admission_id, triage, patient}) => {
   const showPageSizeSelector = true;
   const showInfo = true;
   const [showNavButtons, setShowNavButtons] = useState(true);
@@ -29,7 +29,7 @@ const AdmissionVitals = ({admission_id, triage}) => {
   return (
     <div className='w-full p-4 bg-white shadow-md rounded-lg'>
       <div className='w-full flex items-center justify-between mb-4'>
-        <h1 className="text-2xl font-semibold mb-4">Admission Vitals</h1>
+        <h2 className='text-xl font-semibold mb-4'>{patient}</h2>
         <button
           className="bg-primary text-white px-4 py-2 rounded"
           onClick={() => setShowAddVitalsModal(!showAddVitalsModal)}

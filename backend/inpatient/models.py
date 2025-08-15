@@ -141,6 +141,7 @@ class PatientDischarge(models.Model):
                 self.admission.bed.status = "available"
                 self.admission.bed.save()
                 self.admission.bed = None
+                self.admission.ward = None
                 self.admission.discharged = True
                 self.admission.save()
             super().save(*args, **kwargs)

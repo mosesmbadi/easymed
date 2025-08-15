@@ -13,7 +13,7 @@ const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
 
 const allowedPageSizes = [5, 10, 'all'];
 
-const AdmittedPrescription = ({prescription, process}) => {
+const AdmittedPrescription = ({prescription, process, patient}) => {
   const [showPageSizeSelector, setShowPageSizeSelector] = useState(true);
   const [showNavButtons, setShowNavButtons] = useState(true);
   const [showInfo, setShowInfo] = useState(true);
@@ -31,7 +31,7 @@ const AdmittedPrescription = ({prescription, process}) => {
   return (
     <div className='w-full p-4 bg-white shadow-md rounded-lg'>
       <div className='w-full flex items-center justify-between mb-4'>
-        <h1 className="text-2xl font-semibold mb-4">{`Patient Prescriptions` }</h1>
+        <h2 className='text-xl font-semibold mb-4'>{patient}</h2>
         <PrescribeDrug prescription={prescription} process={process}/>
       </div>
 
