@@ -31,7 +31,7 @@ const getActions = () => {
 };
 
 
-const AdmittedTests = ({process}) => {
+const AdmittedTests = ({process, patient}) => {
   const [showPageSizeSelector, setShowPageSizeSelector] = useState(true);
   const [showNavButtons, setShowNavButtons] = useState(true);
   const [showInfo, setShowInfo] = useState(true);
@@ -75,7 +75,7 @@ const AdmittedTests = ({process}) => {
   return (
     <div className='w-full p-4 bg-white shadow-md rounded-lg'>
       <div className='w-full flex items-center justify-between mb-4'>
-        <h1 className="text-2xl font-semibold mb-4">{`Patient Tests` }</h1>
+        <h2 className='text-xl font-semibold mb-4'>{patient}</h2>
         <button
           className="bg-primary text-white px-4 py-2 rounded"
           onClick={() => setLabOpen(!labOpen)}
