@@ -15,10 +15,11 @@ from authperms.permissions import IsDoctorUser, IsSeniorNurseUser, IsSystemsAdmi
 
 from .utils import (generate_discharge_summary_pdf)
 from .filters import WardFilter, PatientAdmissionFilter, WardNurseAssignmentFilter
-from .models import (Bed, PatientAdmission, PatientDischarge, Ward, WardNurseAssignment, InPatientTriage)
+from .models import (Bed, PatientAdmission, PatientDischarge, Schedule, ScheduledDrug, Ward, WardNurseAssignment, InPatientTriage)
 from .serializers import (BedSerializer, PatientAdmissionSerializer,
-                        PatientDischargeSerializer,
-                        WardNurseAssignmentSerializer, WardSerializer, InPatientTriageSerializer)
+                        PatientDischargeSerializer, ScheduledDrugSerializer,
+                        WardNurseAssignmentSerializer, WardSerializer, InPatientTriageSerializer,
+                        ScheduleSerializer)
 
 
 logger = logging.getLogger(__name__)
@@ -204,3 +205,17 @@ class DownloadDischargeSummaryView(APIView):
         response = HttpResponse(pdf_file, content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename=\"discharge_summary_{admission_id}.pdf\"'
         return response
+
+class ScheduledDrugViewSet(viewsets.ModelViewSet):
+    queryset = ScheduledDrug.objects.all()
+    serializer_class = ScheduledDrugSerializer
+    permission_classes = [IsDoctorUser | IsSeniorNurseUser | IsSystemsAdminUser]
+    
+class ScheduleViewSet(viewsets.ModelViewSet):
+    queryset = Schedule.objects.all()
+    serializer_class = ScheduleSerializer
+    permission_classes = [IsDoctorUser | IsSeniorNurseUser | IsSystemsAdminUser]
+    
+    def get_queryset(self):
+        admission_id = self.kwargs.get('admission_pk')
+        return Schedule.objects.filter(admission__id=admission_id)

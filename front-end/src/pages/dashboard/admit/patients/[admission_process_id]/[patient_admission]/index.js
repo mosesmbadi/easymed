@@ -14,6 +14,7 @@ import AdmittedPrescription from '@/components/dashboard/admit/AdmittedPrescript
 import AdmissionDetails from '@/components/dashboard/admit/AdmissionDetails';
 import AdmissionVitals from '@/components/dashboard/admit/AdmissionVitals';
 import { fetchOneAdmission } from '@/redux/features/inpatient';
+import Schedules from '@/components/dashboard/admit/Schedules';
 
 const tabs = [
   { label: 'Patient Details', value: 0 },
@@ -67,7 +68,12 @@ const AdmittedPatient = () => {
         {currentTab === 0 && <AdmittedPatientDetails invoice={processDetails.invoice} patient={processDetails.patient}/>}
         {currentTab === 1 && <AdmissionDetails admission_id={params.patient_admission} />}
         {currentTab === 2 && <AdmissionVitals patient={`${oneAdmission.patient_first_name} ${oneAdmission.patient_second_name} (${oneAdmission?.admission_id})`} admission_id={params.patient_admission} triage={processDetails.triage}/>}
-        {currentTab === 3 && <div>Schedules Content</div>}
+        {currentTab === 3 && 
+                <Schedules 
+                  patient={`${oneAdmission.patient_first_name} ${oneAdmission.patient_second_name} (${oneAdmission?.admission_id})`} 
+                  admission_id={params.patient_admission} 
+                />
+        }
         {currentTab === 4 && <AdmittedTests patient={`${oneAdmission.patient_first_name} ${oneAdmission.patient_second_name} (${oneAdmission?.admission_id})`} process={processDetails} />}
         {currentTab === 5 && <AdmittedPrescription patient={`${oneAdmission.patient_first_name} ${oneAdmission.patient_second_name} (${oneAdmission?.admission_id})`} prescription={processDetails.prescription} process={processDetails}/>}
       </div>

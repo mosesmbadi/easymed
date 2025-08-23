@@ -1,4 +1,4 @@
-import { AddAdmittedPatientsVitals, fetchAdmittedPatients, fetchAdmittedPatientsVitals, fetchFacilityBeds, fetchFacilityWards, fetchNursesDuties } from "@/redux/service/inpatient";
+import { AddAdmittedPatientsVitals, fetchAdmittedPatients, fetchAdmittedPatientsVitals, fetchFacilityBeds, fetchFacilityWards, fetchNursesDuties, fetchAdmittedPatientSchedules, updateSheduledDrug } from "@/redux/service/inpatient";
 import { fetchPatientTriage } from "@/redux/service/patients";
 import { createSlice } from "@reduxjs/toolkit";
 
@@ -9,6 +9,7 @@ const initialState = {
   assignedNurses: [],
   oneAdmission: {},
   vitals: [],
+  schedules: [],
 };
 
 const InpatientSlice = createSlice({
@@ -51,6 +52,16 @@ const InpatientSlice = createSlice({
     setNewVital: (state, action) => {
       state.vitals = [action.payload, ...state.vitals];
     },
+    setSchedules: (state, action) => {
+      state.schedules = action.payload;
+    },
+    setUpdatedScheduledDrug: (state, action) => {
+      const updatedScheduledDrug = action.payload;
+      
+      state.schedules[0].scheduled_drugs = state.schedules[0].scheduled_drugs.map((sched) => {
+        return sched.id === updatedScheduledDrug.id ? updatedScheduledDrug : sched;
+      });
+    },
     updateAdmissionInStore: (state, action) => {
       const updatedAdmission = action.payload;
       state.patients = state.patients.map((patient) =>
@@ -68,7 +79,7 @@ export const {
   addBedToStore, addWardToStore,
   updateWardInStore, updateBedInStore, 
   admittedPatients, updateAdmissionInStore,
-  assignedNurses, oneAdmission, setVitals, setNewVital
+  assignedNurses, oneAdmission, setVitals, setNewVital, setSchedules, setUpdatedScheduledDrug
  } = InpatientSlice.actions;
 
 export const fetchHospitalBeds = (auth, ward_id) => async (dispatch) => {
@@ -156,6 +167,24 @@ export const updateWardStoreAfterPatch = (response) => async (dispatch) => {
 export const updateAdmissionStoreAfterPatch = (response) => async (dispatch) => {
   dispatch(updateAdmissionInStore(response))  
 }
+
+export const admittedPatientSchedules = (auth, admission_id) => async (dispatch) => {
+  try {
+    const response = await fetchAdmittedPatientSchedules(auth, admission_id);
+    dispatch(setSchedules(response));
+  } catch (error) {
+    console.log("SCHEDULES ", error);
+  }
+};
+
+export const updateInpatientScheduledDrug = (auth, admission_id, scheduled_drug_id, payload) => async (dispatch) => {
+  try {
+    const response = await updateSheduledDrug(auth, admission_id, scheduled_drug_id, payload);
+    dispatch(setUpdatedScheduledDrug(response));
+  } catch (error) {
+    console.log("SCHEDULES ", error);
+  }
+};
 
 
 export default InpatientSlice.reducer;

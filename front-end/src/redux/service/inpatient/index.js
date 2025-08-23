@@ -244,3 +244,39 @@ export const updateNursesDuties = (auth, payload, duty_id) => {
     })
 }
 
+export const fetchAdmittedPatientSchedules = (auth, admission_id) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+        axiosInstance.get(`${APP_API_URL.ADMITTED_PATIENT_SCHEDULES}`, {
+            params: {
+                admission_id: admission_id
+            }
+        })
+            .then((res) => {
+                resolve(res.data);
+            })
+            .catch((err) => {
+                reject(err.message);
+            });
+    });
+}
+
+
+export const updateSheduledDrug = (auth, admission_id, scheduled_drug_id, payload) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+        axiosInstance.patch(`${APP_API_URL.ADMITTED_PATIENT_SCHEDULED_DRUGS}`, payload, {
+            params: {
+                admission_id: admission_id,
+                scheduled_drug_id: scheduled_drug_id
+            }
+        })
+            .then((res) => {
+                resolve(res.data);
+            })
+            .catch((err) => {
+                reject(err.message);
+            });
+    });
+}
+
