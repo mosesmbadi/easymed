@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useAuth } from '@/assets/hooks/use-auth';
 import { getAllInvoiceItemsByInvoiceId } from '@/redux/features/billing';
 
-const AdmittedPatientDetails = ({patient, invoice}) => {
+const AdmittedPatientDetails = ({patient}) => {
   const dispatch = useDispatch();
   const { profileDetails } = useSelector((store) => store.patient);
   const { invoiceItems } = useSelector((store) => store.billing);
@@ -15,7 +15,6 @@ const AdmittedPatientDetails = ({patient, invoice}) => {
   useEffect(() => {
     if(auth.token){
       dispatch(getPatientProfile(auth, patient));
-      dispatch(getAllInvoiceItemsByInvoiceId(auth, invoice))
     }
   }, [patient]);
 
@@ -40,54 +39,6 @@ const AdmittedPatientDetails = ({patient, invoice}) => {
           ))}
           {(!profileDetails.insurances || profileDetails.insurances.length === 0) && <li>No insurances found</li>}
         </ul>
-      </div>
-      <div className='mt-4'>
-        <h2 className='text-xl font-semibold mb-4'>Patient Invoices</h2>
-        
-        {/* Check if there are any invoices to display */}
-        {invoiceItems && invoiceItems.length > 0 ? (
-          <div className="overflow-x-auto ">
-            <table className="min-w-full divide-y divide-white_light border border-white_light rounded-lg">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium gray_darkest uppercase tracking-wider">
-                    Item Name
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium gray_darkest uppercase tracking-wider">
-                    Amount
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium gray_darkest uppercase tracking-wider">
-                    Payment Mode
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium gray_darkest uppercase tracking-wider">
-                    Status
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-white_light">
-                {invoiceItems.map((invoiceItem, index) => (
-                  <tr key={index}>
-                    <td className="px-6 py-2 whitespace-nowrap text-sm font-medium gray_darkest">
-                      {invoiceItem.item_name}
-                    </td>
-                    <td className="px-6 py-2 whitespace-nowrap text-sm gray_darkest">
-                      {invoiceItem.item_amount}
-                    </td>
-                    <td className="px-6 py-2 whitespace-nowrap text-sm gray_darkest">
-                      {invoiceItem.payment_mode_name}
-                    </td>
-                    <td className="px-6 py-2 whitespace-nowrap text-sm gray_darkest">
-                      {invoiceItem.status}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          // Display a message if no invoices are found
-          <p>No Invoice found</p>
-        )}
       </div>
     </div>
   )
