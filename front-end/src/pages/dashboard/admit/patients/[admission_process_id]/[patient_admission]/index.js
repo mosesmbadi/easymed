@@ -15,6 +15,7 @@ import AdmissionDetails from '@/components/dashboard/admit/AdmissionDetails';
 import AdmissionVitals from '@/components/dashboard/admit/AdmissionVitals';
 import { fetchOneAdmission } from '@/redux/features/inpatient';
 import Schedules from '@/components/dashboard/admit/Schedules';
+import AdmittedInvoices from '@/components/dashboard/admit/AdmittedInvoices';
 
 const tabs = [
   { label: 'Patient Details', value: 0 },
@@ -23,6 +24,7 @@ const tabs = [
   { label: 'Schedules', value: 3 },
   { label: 'Lab Tests', value: 4 },
   { label: 'Prescriptions', value: 5 },
+  {label: 'Invoices', value: 6}
 ];
 
 const AdmittedPatient = () => {
@@ -65,17 +67,18 @@ const AdmittedPatient = () => {
         </div>
       </section>
       <div className="mt-2">
-        {currentTab === 0 && <AdmittedPatientDetails invoice={processDetails.invoice} patient={processDetails.patient}/>}
+        {currentTab === 0 && <AdmittedPatientDetails patient={processDetails.patient}/>}
         {currentTab === 1 && <AdmissionDetails admission_id={params.patient_admission} />}
-        {currentTab === 2 && <AdmissionVitals patient={`${oneAdmission.patient_first_name} ${oneAdmission.patient_second_name} (${oneAdmission?.admission_id})`} admission_id={params.patient_admission} triage={processDetails.triage}/>}
+        {currentTab === 2 && <AdmissionVitals patient={`${oneAdmission.patient_first_name} ${oneAdmission.patient_second_name}`} admission_id={params.patient_admission} triage={processDetails.triage}/>}
         {currentTab === 3 && 
                 <Schedules 
-                  patient={`${oneAdmission.patient_first_name} ${oneAdmission.patient_second_name} (${oneAdmission?.admission_id})`} 
+                  patient={`${oneAdmission.patient_first_name} ${oneAdmission.patient_second_name}`} 
                   admission_id={params.patient_admission} 
                 />
         }
-        {currentTab === 4 && <AdmittedTests patient={`${oneAdmission.patient_first_name} ${oneAdmission.patient_second_name} (${oneAdmission?.admission_id})`} process={processDetails} />}
-        {currentTab === 5 && <AdmittedPrescription patient={`${oneAdmission.patient_first_name} ${oneAdmission.patient_second_name} (${oneAdmission?.admission_id})`} prescription={processDetails.prescription} process={processDetails}/>}
+        {currentTab === 4 && <AdmittedTests patient={`${oneAdmission.patient_first_name} ${oneAdmission.patient_second_name}`} process={processDetails} />}
+        {currentTab === 5 && <AdmittedPrescription patient={`${oneAdmission.patient_first_name} ${oneAdmission.patient_second_name}`} prescription={processDetails.prescription} process={processDetails}/>}
+        {currentTab === 6 && <AdmittedInvoices invoice={processDetails.invoice} patient={`${oneAdmission.patient_first_name} ${oneAdmission.patient_second_name}`}/>}
       </div>
     </Container>
   )

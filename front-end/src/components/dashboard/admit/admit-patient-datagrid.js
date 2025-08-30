@@ -96,6 +96,16 @@ const AdmitPatientDataGrid = ({ward_id=""}) => {
     return `${cellData.data.discharged} Discharge`
   }
 
+
+  const renderBed = (cellData) => {
+    return cellData.data.bed ?  `${cellData.data.bed} ` : 'Not Assigned'
+  }
+
+
+  const renderWard = (cellData) => {
+    return cellData.data.ward ? `${cellData.data.ward} ` : 'Not Assigned' 
+   }
+
   useEffect(() => {
     if(auth.token){
       dispatch(fetchAdmitted(auth, ward_id));
@@ -154,8 +164,16 @@ const AdmitPatientDataGrid = ({ward_id=""}) => {
           allowSearch={true}
         />
         <Column dataField="reason_for_admission" caption="Reason" />
-        <Column dataField="ward" caption="Ward" />
-        <Column dataField="bed" caption="Bed" />
+        <Column 
+          dataField="ward" 
+          caption="Ward" 
+          cellRender={renderWard}
+        />
+        <Column 
+          dataField="bed" 
+          caption="Bed"
+          cellRender={renderBed}
+        />
         <Column dataField="admitted_by_name" caption="Admitted By" />
         <Column
           dataField="discharged"

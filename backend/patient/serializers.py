@@ -129,6 +129,8 @@ class TriageSerializer(serializers.ModelSerializer):
 class AttendanceProcessSerializer(serializers.ModelSerializer):
     insurances = serializers.SerializerMethodField()
     invoice_items = serializers.SerializerMethodField()
+    assigned_doctor = serializers.CharField(source='doctor.get_fullname', read_only=True)
+    patient_name = serializers.SerializerMethodField()
     class Meta:
         model = AttendanceProcess
         fields = '__all__'
@@ -136,6 +138,9 @@ class AttendanceProcessSerializer(serializers.ModelSerializer):
     def get_insurances(self, obj):
         insurances = obj.patient.insurances.all()
         return InsuranceCompanySerializer(insurances, many=True).data
+    
+    def get_patient_name(self, obj):
+        return obj.patient.first_name + " " + obj.patient.second_name
     
     def get_invoice_items(self, obj):
         invoice = obj.invoice.pk
