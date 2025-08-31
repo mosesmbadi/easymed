@@ -1,11 +1,13 @@
-
 name: CI/CD Pipeline
 
 on:
   push:
     branches:
+      - main
       - dev-moses
-    
+  pull_request:
+    branches:
+      - "**"    
 
 env:
   DOCKER_USER: ${{ secrets.DOCKER_USERNAME }}
@@ -17,12 +19,14 @@ env:
 jobs:
   cleanup:
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev-moses'
     steps:
       - name: Docker system prune
         run: docker system prune -af
 
   build-nginx:
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev-moses'
     steps:
       - uses: actions/checkout@v3
       - name: Docker Login
@@ -35,6 +39,7 @@ jobs:
 
   build-backend:
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev-moses'
     steps:
       - uses: actions/checkout@v3
       - name: Docker Login
@@ -47,6 +52,7 @@ jobs:
 
   build-frontend:
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev-moses'
     steps:
       - uses: actions/checkout@v3
       - name: Docker Login
@@ -59,7 +65,6 @@ jobs:
 
   test-backend:
     runs-on: ubuntu-latest
-    if: github.event_name == 'push'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -71,7 +76,7 @@ jobs:
         run: |
           docker build -f backend/Dockerfile -t backend-test:ci ./backend
 
-      - name: Run backend unit tests
+      - name: Run backend system checks & unit tests
         run: |
           docker run --rm \
             -e SECRET_KEY='django-insecure-test-key-for-ci-only' \
@@ -103,6 +108,7 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev-moses'
     needs:
       - test-backend
       - build-nginx
@@ -119,15 +125,7 @@ jobs:
           mkdir -p ~/.ssh
           echo "${DEMO_SERVER_PRIVATE_KEY}" | tr -d '\r' > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ls -l ~/.ssh/id_rsa
-          file ~/.ssh/id_rsa
-          cat -n ~/.ssh/id_rsa | head -10
           ssh-keyscan -H $DEMO_SERVER_IP >> ~/.ssh/known_hosts
-          echo "Key file exists:" && ls -l ~/.ssh/id_rsa
-          echo "First few lines of key:"
-          head -5 ~/.ssh/id_rsa
-          echo "Key file size:"
-          wc -c ~/.ssh/id_rsa
 
       - name: Transfer .env
         run: |
@@ -146,7 +144,6 @@ jobs:
       - name: Deploy using remote Docker Compose
         run: |
           ssh -o StrictHostKeyChecking=no $DEMO_SERVER_USERNAME@$DEMO_SERVER_IP << 'EOF'
-            pwd && ls -la
             echo "Stopping and removing old containers..."
             docker compose down --remove-orphans
 
