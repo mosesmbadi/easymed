@@ -25,7 +25,6 @@ urlpatterns = [
     path('billing/', include('billing.urls')),
     path('inventory/', include('inventory.urls')),
     path('authperms/', include('authperms.urls')),
-    path('customuser/', include('customuser.urls')),
     path('users/', include('customuser.urls')),
     path('reports/', include('reports.urls')),
     path('pharmacy/', include('pharmacy.urls')),

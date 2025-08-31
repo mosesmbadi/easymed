@@ -59,8 +59,7 @@ jobs:
 
   test-backend:
     runs-on: ubuntu-latest
-    needs:
-      - build-backend
+    if: github.event_name == 'push'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -97,9 +96,10 @@ jobs:
             -e AWS_ACCESS_KEY_ID='test-key-id' \
             -e AWS_SECRET_ACCESS_KEY='test-secret-key' \
             -e AWS_DEFAULT_REGION='us-east-1' \
+            -e GEMINI_API_KEY='test-gemini-api-key-for-ci' \
             -e NEXT_PUBLIC_BACKEND_URL='http://localhost:8080/' \
             -e NEXT_PUBLIC_HMIS_VERSION='v0.0.1-test' \
-            backend-test:ci pytest -v
+            backend-test:ci sh -c "python manage.py check && pytest -v"
 
   deploy:
     runs-on: ubuntu-latest
