@@ -1,4 +1,4 @@
-# Deployment file for Dounebain Diagnostics
+
 name: CI/CD Pipeline
 
 on:
@@ -74,7 +74,19 @@ jobs:
 
       - name: Run backend unit tests
         run: |
-          docker run --rm backend-test:ci pytest -v
+          docker run --rm \
+            -e SECRET_KEY='django-insecure-test-key-for-ci-only' \
+            -e DEBUG=True \
+            -e DB_ENGINE=django.db.backends.sqlite3 \
+            -e POSTGRES_HOST=localhost \
+            -e POSTGRES_DB=test_db \
+            -e POSTGRES_NAME=test_db \
+            -e POSTGRES_USER=test_user \
+            -e POSTGRES_PASSWORD=test_password \
+            -e POSTGRES_PORT=5432 \
+            -e CELERY_BROKER_URL=memory:// \
+            -e CELERY_RESULT_BACKEND=cache+memory:// \
+            backend-test:ci pytest -v
 
   deploy:
     runs-on: ubuntu-latest
