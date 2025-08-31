@@ -76,16 +76,29 @@ jobs:
         run: |
           docker run --rm \
             -e SECRET_KEY='django-insecure-test-key-for-ci-only' \
+            -e DJANGO_SETTINGS_MODULE=easymed.settings.base \
             -e DEBUG=True \
-            -e DB_ENGINE=django.db.backends.sqlite3 \
-            -e POSTGRES_HOST=localhost \
-            -e POSTGRES_DB=test_db \
-            -e POSTGRES_NAME=test_db \
-            -e POSTGRES_USER=test_user \
-            -e POSTGRES_PASSWORD=test_password \
+            -e EMAIL_BACKEND='django.core.mail.backends.console.EmailBackend' \
+            -e EMAIL_USE_TLS=True \
+            -e EMAIL_HOST='localhost' \
+            -e EMAIL_PORT=587 \
+            -e EMAIL_HOST_USER='test@example.com' \
+            -e EMAIL_HOST_PASSWORD='testpassword' \
+            -e DEFAULT_FROM_EMAIL='test@example.com' \
+            -e CELERY_BROKER_URL='memory://' \
+            -e CELERY_RESULT_BACKEND='cache+memory://' \
+            -e DB_ENGINE='django.db.backends.sqlite3' \
+            -e POSTGRES_HOST='localhost' \
+            -e POSTGRES_DB='test_db' \
+            -e POSTGRES_USER='test_user' \
+            -e POSTGRES_PASSWORD='test_password' \
             -e POSTGRES_PORT=5432 \
-            -e CELERY_BROKER_URL=memory:// \
-            -e CELERY_RESULT_BACKEND=cache+memory:// \
+            -e S3_BUCKET_NAME='test-bucket' \
+            -e AWS_ACCESS_KEY_ID='test-key-id' \
+            -e AWS_SECRET_ACCESS_KEY='test-secret-key' \
+            -e AWS_DEFAULT_REGION='us-east-1' \
+            -e NEXT_PUBLIC_BACKEND_URL='http://localhost:8080/' \
+            -e NEXT_PUBLIC_HMIS_VERSION='v0.0.1-test' \
             backend-test:ci pytest -v
 
   deploy:
