@@ -12,7 +12,11 @@ def test_admit_patient_authenticated_doctor(authenticated_doctor_client, doctor,
     """
     from patient.models import AttendanceProcess
     # Create an attendance process for the patient
-    attendance_process = AttendanceProcess.objects.create(patient=patient)
+    attendance_process = AttendanceProcess.objects.create(
+        patient=patient,
+        reason="Test admission reason",
+        created_by=doctor
+    )
     
     url = reverse('inpatient:patient-admission-list')  
     payload = {
@@ -103,7 +107,7 @@ def test_discharge_patient_normal_authenticated_doctor(authenticated_doctor_clie
     """
     Test that an authenticated doctor can discharge a patient with normal discharge type.
     """
-    url = reverse('discharge-list', kwargs={'admission_pk': patient_admission.id})
+    url = reverse('inpatient:admission-discharge-list', kwargs={'admission_pk': patient_admission.id})
     payload = {
         'discharge_types': 'normal',
         'discharge_notes': 'Patient recovered, follow up in 2 weeks.',
@@ -127,7 +131,7 @@ def test_discharge_patient_normal_non_doctor(authenticated_client, patient_admis
     """
     Test that a non-doctor (e.g., patient user) cannot discharge a patient with normal discharge type.
     """
-    url = reverse('discharge-list', kwargs={'admission_pk': patient_admission.id})
+    url = reverse('inpatient:admission-discharge-list', kwargs={'admission_pk': patient_admission.id})
     payload = {
         'discharge_types': 'normal',
         'discharge_notes': 'Patient recovered, follow up in 2 weeks.',
@@ -143,7 +147,7 @@ def test_discharge_patient_normal_already_discharged(authenticated_doctor_client
     Test that discharging an already discharged patient (normal) fails.
     """
     admission = patient_discharge_normal.admission
-    url = reverse('discharge-list', kwargs={'admission_pk': admission.id})
+    url = reverse('inpatient:admission-discharge-list', kwargs={'admission_pk': admission.id})
     payload = {
         'discharge_types': 'normal',
         'discharge_notes': 'Trying to discharge again',
@@ -163,7 +167,7 @@ def test_discharge_patient_referral_authenticated_doctor(authenticated_doctor_cl
     """
     Test that an authenticated doctor can discharge a patient with referral discharge type.
     """
-    url = reverse('discharge-list', kwargs={'admission_pk': patient_admission.id})
+    url = reverse('inpatient:admission-discharge-list', kwargs={'admission_pk': patient_admission.id})
     payload = {
         'discharge_types': 'referral',
         'discharge_notes': 'Transfer for cardiology care.',
@@ -193,7 +197,7 @@ def test_discharge_patient_deceased_authenticated_doctor(authenticated_doctor_cl
     """
     Test that an authenticated doctor can discharge a patient with deceased discharge type.
     """
-    url = reverse('discharge-list', kwargs={'admission_pk': patient_admission.id})
+    url = reverse('inpatient:admission-discharge-list', kwargs={'admission_pk': patient_admission.id})
     payload = {
         'discharge_types': 'deceased',
         'discharge_notes': 'Patient passed away.',
@@ -217,7 +221,7 @@ def test_discharge_patient_referral_missing_data(authenticated_doctor_client, pa
     """
     Test that referral discharge fails without referral_data.
     """
-    url = reverse('discharge-list', kwargs={'admission_pk': patient_admission.id})
+    url = reverse('inpatient:admission-discharge-list', kwargs={'admission_pk': patient_admission.id})
     payload = {
         'discharge_types': 'referral',
         'discharge_notes': 'Transfer for cardiology care.',

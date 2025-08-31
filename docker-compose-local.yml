@@ -1,16 +1,4 @@
 services:
-    postgres:
-        image: postgres:15
-        container_name: postgres
-        env_file:
-            - ./.env
-        ports:
-        - "5433:5432"
-        volumes:
-        - postgres_data:/var/lib/postgresql/data
-        networks:
-        - mks
-        
     redis:
         image: redis:7.0-alpine
         container_name: redis
@@ -37,38 +25,34 @@ services:
         env_file:
             - ./.env
         restart: unless-stopped
+        depends_on:
+            - redis
         networks:
-            - mks
+            - mks  
 
     worker:
         build: ./backend
         container_name: "celery"
         restart: unless-stopped
         env_file:
-            - ./.env    
+            - ./.env
         command: celery -A easymed worker --loglevel=INFO
-        # volumes:
-        #     - ./backend:/app
-        #     - ./tmp:/app/tmp
         depends_on:
             - redis
         networks:
-            - mks   
-    
+            - mks
+
     celery-beat:
         build: ./backend
         container_name: celery-beat
         command: celery -A easymed beat --loglevel=INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
-        # volumes:
-        #     - ./backend:/app
-        #     - ./tmp:/app/tmp
         env_file:
             - ./.env
         restart: unless-stopped
         depends_on:
             - redis
         networks:
-            - mks    
+            - mks
 
     frontend:
         build:
@@ -83,7 +67,7 @@ services:
         environment:
             - NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL}
         depends_on:
-            - backend 
+            - backend
         networks:
             - mks
 
@@ -92,14 +76,14 @@ services:
         container_name: flower
         command: celery flower
         environment:
-        - CELERY_BROKER_URL=redis://redis:6379/0
-        - FLOWER_PORT=8888
+            - CELERY_BROKER_URL=redis://redis:6379/0
+            - FLOWER_PORT=8888
         ports:
-        - 8888:8888
+            - 8888:8888
         depends_on:
             - redis
         networks:
-            - mks  
+            - mks
 
     lis_server:
         image: mosesmbadi/hl7-astm-parser:latest
@@ -124,29 +108,7 @@ services:
 
         restart: unless-stopped
         networks:
-            - mks        
-
-    # TODO: Configuration and testing needed for thi
-    # db_backup:
-    #     image: amazonlinux:2
-    #     container_name: db_backup
-    #     depends_on:
-    #     - postgres
-    #     volumes:
-    #     - ./backup:/app
-    #     environment:
-    #     - POSTGRES_USER=${POSTGRES_USER}
-    #     - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-    #     - POSTGRES_DB=${POSTGRES_DB}
-    #     - S3_BUCKET_NAME=${S3_BUCKET_NAME}
-    #     - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-    #     - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-    #     - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
-    #     working_dir: /app
-    #     entrypoint: ["/bin/sh", "-c", "yum install -y postgresql aws-cli cronie && chmod +x /app/backup.sh && crontab /app/crontab && crond -f"]
-    #     networks:
-    #     - mks
-
+            - mks
 
 volumes:
     postgres_data:

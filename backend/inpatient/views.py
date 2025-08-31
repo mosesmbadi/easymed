@@ -76,6 +76,22 @@ class WardNurseAssignmentViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_class = WardNurseAssignmentFilter
 
+    def get_queryset(self):
+        """
+        Filter assignments based on user role:
+        - Senior nurses can only see assignments they made
+        - Doctors and system admins can see all assignments
+        """
+        user = self.request.user
+        queryset = WardNurseAssignment.objects.all()
+        
+        if user.role == user.SENIOR_NURSE:
+            # Senior nurses can only see assignments they made
+            queryset = queryset.filter(assigned_by=user)
+        # Doctors and system admins can see all assignments
+        
+        return queryset
+
     def create(self, request, *args, **kwargs):
         if not any([perm().has_permission(request, self) for perm in self.permission_classes]):
             return Response(
