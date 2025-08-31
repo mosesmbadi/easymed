@@ -47,6 +47,9 @@ const LaboratorySlice = createSlice({
     setLabRequests: (state, action) => {
       state.labRequests = action.payload;
     },
+    updateAddedLabRequestToStore: (state, action) => {
+      state.labRequests = [action.payload, ...state.labRequests];
+    },    
     setPhlebotomySamples: (state, action) => {
       state.phlebotomySamples = action.payload;
     },
@@ -195,7 +198,7 @@ export const { setLabResults,
   clearProcessAllTestRequest, setProcessesSamples, clearProcessesSamples,
   setPhlebotomySamples, updateLabEquipmentStore, createLabEquipmentStore, setSpecimens, newTestPanelsStore,
   updatePanelsOnPatch, addSpecimenToStoreOnCreate, updateSpecimenToStoreOnPatch,
-  updateProfileToStoreOnPatch, addProfileToStoreOnCreate, updateLabResultItems
+  updateProfileToStoreOnPatch, addProfileToStoreOnCreate, updateLabResultItems, updateAddedLabRequestToStore
 } = LaboratorySlice.actions;
 
 
@@ -226,13 +229,17 @@ export const getAllLabEquipments = (auth) => async (dispatch) => {
   }
 };
 
-export const getAllLabRequests = (auth) => async (dispatch) => {
+export const getAllLabRequests = (auth, process_id) => async (dispatch) => {
   try {
-    const response = await fetchLabRequests(auth);
+    const response = await fetchLabRequests(auth, process_id);
     dispatch(setLabRequests(response));
   } catch (error) {
     console.log("LAB_ERROR ", error);
   }
+};
+
+export const updateInpatientLabTestsStore = (payload) => (dispatch) => {
+  dispatch(updateAddedLabRequestToStore(payload));
 };
 
 export const getAllPhlebotomySamples = (auth) => async (dispatch) => {

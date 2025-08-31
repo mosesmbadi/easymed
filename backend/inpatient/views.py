@@ -7,19 +7,36 @@ from django.http import HttpResponse
 from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.response import Response
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.decorators import action
 
 
-from authperms.permissions import IsDoctorUser, IsSeniorNurseUser
+from authperms.permissions import IsDoctorUser, IsSeniorNurseUser, IsSystemsAdminUser
 
 from .utils import (generate_discharge_summary_pdf)
-from .filters import WardFilter, PatientAdmissionFilter
-from .models import (Bed, PatientAdmission, PatientDischarge, Ward, WardNurseAssignment)
+from .filters import WardFilter, PatientAdmissionFilter, WardNurseAssignmentFilter
+from .models import (Bed, PatientAdmission, PatientDischarge, Schedule, ScheduledDrug, Ward, WardNurseAssignment, InPatientTriage)
 from .serializers import (BedSerializer, PatientAdmissionSerializer,
-                        PatientDischargeSerializer,
-                        WardNurseAssignmentSerializer, WardSerializer)
+                        PatientDischargeSerializer, ScheduledDrugSerializer,
+                        WardNurseAssignmentSerializer, WardSerializer, InPatientTriageSerializer,
+                        ScheduleSerializer)
 
 
 logger = logging.getLogger(__name__)
+
+
+class InPatientTriageViewSet(viewsets.ModelViewSet):
+    serializer_class = InPatientTriageSerializer
+    permission_classes = [IsDoctorUser | IsSeniorNurseUser | IsSystemsAdminUser]
+
+    def get_queryset(self):
+        admission_id = self.kwargs.get('admission_pk')
+        return InPatientTriage.objects.filter(patient_admission__id=admission_id)
+
+    def perform_create(self, serializer):
+        admission_id = self.kwargs.get('admission_pk')
+        patient_admission = get_object_or_404(PatientAdmission, id=admission_id)
+        serializer.save(patient_admission=patient_admission)
 
 
 class PatientAdmissionViewSet(viewsets.ModelViewSet):
@@ -55,15 +72,16 @@ class PatientAdmissionViewSet(viewsets.ModelViewSet):
 class WardNurseAssignmentViewSet(viewsets.ModelViewSet):
     queryset = WardNurseAssignment.objects.all()
     serializer_class = WardNurseAssignmentSerializer
-    permission_classes = [IsSeniorNurseUser]
-
-    def get_queryset(self):
-        user = self.request.user
-        if user:
-            return self.queryset.filter(assigned_by=user)
-        return self.queryset.none()
+    permission_classes = [IsSeniorNurseUser | IsDoctorUser | IsSystemsAdminUser]
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = WardNurseAssignmentFilter
 
     def create(self, request, *args, **kwargs):
+        if not any([perm().has_permission(request, self) for perm in self.permission_classes]):
+            return Response(
+                {"detail": "Only a senior nurse, doctor, or super admin can assign a nurse to a ward."},
+                status=status.HTTP_403_FORBIDDEN
+            )
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         try:
@@ -74,6 +92,11 @@ class WardNurseAssignmentViewSet(viewsets.ModelViewSet):
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     def update(self, request, *args, **kwargs):
+        if not any([perm().has_permission(request, self) for perm in self.permission_classes]):
+            return Response(
+                {"detail": "Only a senior nurse, doctor, or super admin can update nurse assignments."},
+                status=status.HTTP_403_FORBIDDEN
+            )
         instance = self.get_object() 
         serializer = self.get_serializer(instance, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -90,6 +113,19 @@ class WardNurseAssignmentViewSet(viewsets.ModelViewSet):
 class WardViewSet(viewsets.ModelViewSet):
     queryset = Ward.objects.all()
     serializer_class = WardSerializer
+
+    @action(detail=True, methods=['get'])
+    def nurses(self, request, pk=None):
+        ward = self.get_object()
+        assignments = ward.nurse_assignments.all()
+        data = [
+            {
+                "id": assignment.nurse.id,
+                "name": assignment.nurse.get_fullname() if hasattr(assignment.nurse, 'get_fullname') else str(assignment.nurse)
+            }
+            for assignment in assignments
+        ]
+        return Response(data)
     filter_backends = [DjangoFilterBackend]
     filterset_class = WardFilter
 
@@ -169,3 +205,17 @@ class DownloadDischargeSummaryView(APIView):
         response = HttpResponse(pdf_file, content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename=\"discharge_summary_{admission_id}.pdf\"'
         return response
+
+class ScheduledDrugViewSet(viewsets.ModelViewSet):
+    queryset = ScheduledDrug.objects.all()
+    serializer_class = ScheduledDrugSerializer
+    permission_classes = [IsDoctorUser | IsSeniorNurseUser | IsSystemsAdminUser]
+    
+class ScheduleViewSet(viewsets.ModelViewSet):
+    queryset = Schedule.objects.all()
+    serializer_class = ScheduleSerializer
+    permission_classes = [IsDoctorUser | IsSeniorNurseUser | IsSystemsAdminUser]
+    
+    def get_queryset(self):
+        admission_id = self.kwargs.get('admission_pk')
+        return Schedule.objects.filter(admission__id=admission_id)

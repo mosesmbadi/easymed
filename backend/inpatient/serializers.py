@@ -1,9 +1,12 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
+from django.core.exceptions import ObjectDoesNotExist
+
 
 from patient.serializers import ReferralSerializer
-from .models import (Bed, PatientAdmission, PatientDischarge, Ward,
-                    WardNurseAssignment)
+from patient.models import AttendanceProcess
+from .models import (Bed, PatientAdmission, PatientDischarge, Schedule, ScheduledDrug, Ward,
+                    WardNurseAssignment, InPatientTriage)
 from .celery_tasks import set_bed_status_occupied
 
 
@@ -13,6 +16,7 @@ User = get_user_model()
 class PatientAdmissionSerializer(serializers.ModelSerializer):
     ward = serializers.PrimaryKeyRelatedField(queryset=Ward.objects.all(), required=False, allow_null=True)
     bed = serializers.PrimaryKeyRelatedField(queryset=Bed.objects.all(), required=False, allow_null=True)
+    attendance_process = serializers.PrimaryKeyRelatedField(queryset=AttendanceProcess.objects.all(), required=False, allow_null=True)
 
     patient_first_name = serializers.CharField(
         source="patient.first_name", read_only=True
@@ -26,6 +30,12 @@ class PatientAdmissionSerializer(serializers.ModelSerializer):
     admitted_by_name = serializers.CharField(
         source="admitted_by.get_fullname", read_only=True
     )
+    discharged = serializers.SerializerMethodField()
+    def get_discharged(self, obj):
+        try:
+            return obj.discharge.discharge_types
+        except ObjectDoesNotExist:
+            return 'Pending'
 
     class Meta:
         model = PatientAdmission
@@ -33,7 +43,7 @@ class PatientAdmissionSerializer(serializers.ModelSerializer):
             "id", "admission_id", "patient",
             "patient_first_name", "patient_second_name",
             "patient_age", "patient_gender", "ward", "bed",
-            "reason_for_admission", "admitted_by_name", "admitted_at",
+            "reason_for_admission", "admitted_by_name", "admitted_at", "attendance_process", "discharged"
         ]
 
     def to_representation(self, instance):
@@ -96,8 +106,26 @@ class WardSerializer(serializers.ModelSerializer):
         ]
 
         read_only_fields = ["created_at", "id"]
-   
+
     
+class InPatientTriageSerializer(serializers.ModelSerializer):
+    patient_admission = serializers.PrimaryKeyRelatedField(queryset=PatientAdmission.objects.all())
+    attendance_id = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = InPatientTriage
+        fields = [
+            'id', 'created_by', 'date_created', 'temperature', 'height', 'weight', 'pulse',
+            'diastolic', 'systolic', 'bmi', 'fee', 'notes', 'patient_admission', 'attendance_id'
+        ]
+
+    def get_attendance_id(self, obj):
+        # Return the related PatientAdmission's attendance_process id
+        if obj.patient_admission and hasattr(obj.patient_admission, 'attendance_process'):
+            return getattr(obj.patient_admission.attendance_process, 'id', None)
+        return None
+
+
 class BedSerializer(serializers.ModelSerializer):
     ward = serializers.SerializerMethodField()
     current_occupant = serializers.SerializerMethodField()
@@ -187,7 +215,9 @@ class WardNurseAssignmentSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data["ward"] = instance.ward.name
+        data["ward_id"] = instance.ward.pk
         data["nurse"] = instance.nurse.get_fullname()
+        data["nurse_id"] = instance.nurse.pk
         data["assigned_by"] = instance.assigned_by.get_fullname()
         return data
 
@@ -212,5 +242,29 @@ class WardSerializer(serializers.ModelSerializer):
     def get_admissions(self, instance):
         active_admissions = instance.admissions.filter(discharge__isnull=True)
         return PatientAdmissionSerializer(active_admissions, many=True).data
+
+
+class ScheduledDrugSerializer(serializers.ModelSerializer):
+    drug_name = serializers.CharField(source='prescribed_drug.item.name', read_only=True)
+    frequency = serializers.CharField(source='prescribed_drug.frequency', read_only=True)
+    dosage = serializers.CharField(source='prescribed_drug.dosage', read_only=True)
+    duration = serializers.CharField(source='prescribed_drug.duration', read_only=True)
+    note = serializers.CharField(source='prescribed_drug.note', read_only=True)
+
+    class Meta:
+        model = ScheduledDrug
+        fields = '__all__'
+
+class ScheduleSerializer(serializers.Serializer):
+    scheduled_drugs = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Schedule
+        fields = '__all__'
+
+    def get_scheduled_drugs(self, obj):
+        schedules = obj.prescription_schedule.all()
+        return ScheduledDrugSerializer(schedules, many=True).data
+
 
 

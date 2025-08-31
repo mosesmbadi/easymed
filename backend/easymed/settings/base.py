@@ -59,7 +59,8 @@ INSTALLED_APPS = [
     'announcement.apps.AnnouncementConfig',
     'inpatient.apps.InpatientConfig',
     'company',
-    'reports'
+    'reports',
+    'roby'
 ]
 
 MIDDLEWARE = [
@@ -240,11 +241,6 @@ CELERY_BEAT_SCHEDULE = {
         "task": "inpatient.tasks.check_medication_notifications",
         'schedule': crontab(minute='*/60'),
     },
-    "export_patients_to_csv_nightly": { # We export data so the ML model can read and analyse
-        "task": "patient.tasks.export_patients_to_csv",
-        "schedule": crontab(minute='*/2'),
-        # "schedule": crontab(hour=2, minute=0),
-    },
 }
 
 
@@ -261,13 +257,44 @@ DATABASES = {
     }
 }
 
-''''
-For some reason, docker is not able to differentiate db configs 
-'''
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
+# For some reason, docker is not able to differentiate db configs 
+# '''
+# # DATABASES = {
+# #     'default': {
+# #         'ENGINE': 'django.db.backends.sqlite3',
+# #         'NAME': BASE_DIR / 'db.sqlite3',
+# #     }
+# # }
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'roby': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}
 

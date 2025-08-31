@@ -106,17 +106,22 @@ class PublicAppointment(models.Model):
 
 
 class Triage(models.Model):
-    created_by = models.CharField(max_length=45)
+    created_by_user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     date_created = models.DateTimeField(auto_now_add=True)
-    temperature = models.DecimalField(max_digits=5, decimal_places=2, null=True)
-    height = models.DecimalField(max_digits=5, decimal_places=2, null=True)
-    weight = models.IntegerField(null=True)
+    temperature = models.DecimalField(max_digits=5, decimal_places=2, null=True) # degrees celcius
+    height = models.DecimalField(max_digits=5, decimal_places=2, null=True) # meters
+    weight = models.IntegerField(null=True) # kilograms
     pulse = models.PositiveIntegerField(null=True)
     diastolic = models.PositiveIntegerField(null=True)
     systolic = models.PositiveIntegerField(null=True)
     bmi = models.DecimalField(max_digits=10, decimal_places=1, null=True)
     fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     notes = models.CharField(max_length=300, blank=True, null=True)
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name="triages", blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'Triage #{self.id} PatientID: {self.patient}'
 
 
 class Consultation(models.Model):
@@ -163,10 +168,45 @@ class PrescribedDrug(models.Model):
 
 
     def __str__(self):
-        return f"Prescribed Drug #{self.item.name} - {self.created_on}"    
+        return f"Prescribed Drug #{self.item.name} - {self.created_on}"
     
     class Meta:
         unique_together = ("prescription_id", "item")    
+
+    def save(self, *args, **kwargs):
+            from inpatient.models import ScheduledDrug
+            """
+            Saves the PrescribedDrug instance and creates a Schedule if an
+            AttendanceProcess is linked to the prescription.
+            """
+            # Save the instance first. This is crucial for a new instance to have a primary key.
+            super().save(*args, **kwargs)
+
+            # Check for the existence of the related prescription and its attendance_prescription.
+            if hasattr(self, 'prescription') and hasattr(self.prescription, 'attendace_prescription'):
+                try:
+                    # Use select_related to fetch the AttendanceProcess in a single query.
+                    attendance_process = self.prescription.attendace_prescription.AttendanceProcess.first()
+
+                    # If the attendance_process exists and has a schedule, create the ScheduledDrug.
+                    if attendance_process and attendance_process.schedules:
+                        ScheduledDrug.objects.create(
+                            prescribed_drug=self,
+                            schedule_time=self.created_at,
+                            prescription_schedule=attendance_process.schedules,
+                            comment=self.note,
+                        )
+                        print("INFO: AttendanceProcess exists, a new Schedule has been created.")
+                    else:
+                        print("INFO: AttendanceProcess or its schedule does not exist, skipping schedule creation.")
+
+                except Exception as e:
+                    # Catch a more general exception for safety or refine it based on your models.
+                    print(f"INFO: An error occurred: {e}. Skipping schedule creation.")
+            else:
+                print("INFO: No prescription or attendance_prescription found, skipping schedule creation.")
+
+    
 
 
 class Referral(models.Model):
@@ -224,10 +264,13 @@ class AttendanceProcess(models.Model):
     reason = models.TextField(max_length=300)
     invoice = models.OneToOneField(Invoice, on_delete=models.CASCADE, null=True)
     process_test_req = models.OneToOneField(ProcessTestRequest, on_delete=models.CASCADE, null=True)
-    prescription = models.OneToOneField(Prescription, on_delete=models.CASCADE, null=True)
+    prescription = models.OneToOneField(Prescription, on_delete=models.CASCADE, null=True, related_name="attendace_prescription")
     triage = models.OneToOneField(Triage, on_delete=models.CASCADE, null=True)
     track = models.CharField(max_length=50, choices=TRACK, default='reception')
     created_at = models.DateTimeField(default=timezone.now)
+    created_by = models.ForeignKey(
+        CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_attendance_processes'
+    )
 
     def save(self, *args, **kwargs):
         if not self.pk:
@@ -246,7 +289,11 @@ class AttendanceProcess(models.Model):
             # Create related records
             self.invoice = Invoice.objects.create(invoice_amount=0, invoice_number=self.track_number, patient=self.patient, invoice_date=self.created_at)
             self.process_test_req = ProcessTestRequest.objects.create(reference=self.track_number)
-            self.triage = Triage.objects.create()
+            self.triage = Triage.objects.create(
+                created_by_user= self.created_by,
+                created_at=self.created_at,
+                patient=self.patient
+            )
             self.prescription = Prescription.objects.create()
 
         super().save(*args, **kwargs)

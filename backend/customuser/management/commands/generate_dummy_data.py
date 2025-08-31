@@ -8,15 +8,20 @@ from customuser.management.utils.data_generators import (
     create_permissions_and_groups,
     create_dummy_patients,
     create_demo_lab_profiles_and_panels,
+    create_dummy_departments
 )
 from customuser.models import CustomUser
 from company.models import Company, CompanyBranch, InsuranceCompany
-from inventory.models import Item
+from inventory.models import Item, Department
 from authperms.models import Permission, Group
 from patient.models import Patient
 from laboratory.models import LabTestProfile, LabTestPanel
 
 class Command(BaseCommand):
+    '''
+    Command to generate dummy data for development and testing.
+    python manage.py generate_dummy_data
+    '''
     help = "Generate all dummy data (users, companies, etc.)"
 
     def handle(self, *args, **options):
@@ -91,3 +96,11 @@ class Command(BaseCommand):
         else:
             profiles, panels = create_demo_lab_profiles_and_panels()
             self.stdout.write(self.style.SUCCESS(f"Created {len(profiles)} lab test profiles and {len(panels)} panels."))    
+
+        # create departments
+        if Department.objects.exists():
+            self.stdout.write(self.style.WARNING("Skipping departments: already exist."))
+        else:
+            create_dummy_departments()
+            self.stdout.write(self.style.SUCCESS(f"Created {len(Department.objects.all())} departments."))
+        # TODO  Inventory records

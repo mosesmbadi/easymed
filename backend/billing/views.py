@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, Http404
 from rest_framework import viewsets, status
 from django.template.loader import get_template
 from .models import Invoice, InvoiceItem, PaymentMode
@@ -27,6 +27,24 @@ from .serializers import (
     InvoiceItemSerializer, InvoiceSerializer,
     PaymentModeSerializer, InvoicePaymentSerializer
     )
+
+
+class InvoiceItemsByInsuranceCompany(generics.ListAPIView):
+    """
+    API View to return all invoice items for a specific insurance company.
+    Expected URL format: /billing/invoice-items/insurance-company/?insurance_company_id=5
+    """
+    serializer_class = InvoiceItemSerializer
+    permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser,)
+
+    def get_queryset(self):
+        insurance_company_id = self.request.query_params.get('insurance_company_id')
+        if not insurance_company_id:
+            raise Http404("insurance_company_id parameter is required")
+            
+        return InvoiceItem.objects.filter(
+            payment_mode__insurance_id=insurance_company_id
+        ).order_by('-item_created_at')
 
 
 class InvoiceViewset(viewsets.ModelViewSet):
@@ -66,8 +84,6 @@ class InvoiceItemViewset(viewsets.ModelViewSet):
         except serializers.ValidationError as e:
             error_message = str(e.detail['detail']).strip("[] '\"")
             return Response({'error': error_message}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
-
-
 
 class InvoiceItemsByInvoiceId(generics.ListAPIView):
     serializer_class = InvoiceItemSerializer

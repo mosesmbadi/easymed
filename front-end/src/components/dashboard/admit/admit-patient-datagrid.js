@@ -7,7 +7,12 @@ import { useAuth } from "@/assets/hooks/use-auth";
 import CmtDropdownMenu from "@/assets/DropdownMenu";
 import { LuMoreHorizontal } from "react-icons/lu";
 import { BiEdit } from "react-icons/bi";
+import { MdPersonRemove } from "react-icons/md";
+import { TbListDetails } from "react-icons/tb";
 import EditAdmission from "./modals/UpdateAdmissionModal";
+import { useRouter } from "next/router";
+import DispatchPatientModal from "./modals/DispatchPatientModal";
+import { admitPatient } from "@/redux/service/inpatient";
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
   ssr: false,
@@ -22,6 +27,16 @@ const getActions = () => {
       label: "Update Admission",
       icon: <BiEdit className="text-success text-xl mx-2" />,
     },
+    {
+      action: "procedures",
+      label: "Patient Procedures",
+      icon: <TbListDetails className="text-success text-xl mx-2" />,
+    },
+    {
+      action: "discharge",
+      label: "Discharge Patient",
+      icon: <MdPersonRemove className="text-success text-xl mx-2" />,
+    },
   ];
 
   return actions;
@@ -33,15 +48,24 @@ const AdmitPatientDataGrid = ({ward_id=""}) => {
   const [editOpen, setEditOpen] = useState(false);
   const [selectedRowData, setSelectedRowData] = useState({});
   const showInfo = true;
+  const [showDispatchModal, setShowDispatchModal] = useState(false);
   const { patients } = useSelector((store) => store.inpatient);
   const dispatch = useDispatch();
   const auth = useAuth();
   const userActions = getActions();
+   const router = useRouter()
 
   const onMenuClick = async (menu, data) => {
     if(menu.action === "update"){
       setSelectedRowData(data);
       setEditOpen(true);      
+    }else if(menu.action === "procedures"){
+      // Handle procedures action here
+      router.push(`/dashboard/admit/patients/${data.attendance_process}/${data.id}`)
+    }else if(menu.action === "discharge"){
+      // Handle discharge action here
+      setShowDispatchModal(true);
+      setSelectedRowData(data);
     }
   };
 
@@ -50,7 +74,7 @@ const AdmitPatientDataGrid = ({ward_id=""}) => {
       <>
         <CmtDropdownMenu
           sx={{ cursor: "pointer" }}
-          items={userActions}
+          items={data.discharged.toLowerCase() === "pending" ? userActions : userActions.filter(item => item.action === "procedures")}
           onItemClick={(menu) => onMenuClick(menu, data)}
           TriggerComponent={
             <LuMoreHorizontal className="cursor-pointer text-xl" />
@@ -67,6 +91,20 @@ const AdmitPatientDataGrid = ({ward_id=""}) => {
   const patientNameRender = (cellData) => {
     return `${cellData.data.patient_first_name} ${cellData.data.patient_second_name}`
   }
+
+  const statusRender = (cellData) => {
+    return `${cellData.data.discharged} Discharge`
+  }
+
+
+  const renderBed = (cellData) => {
+    return cellData.data.bed ?  `${cellData.data.bed} ` : 'Not Assigned'
+  }
+
+
+  const renderWard = (cellData) => {
+    return cellData.data.ward ? `${cellData.data.ward} ` : 'Not Assigned' 
+   }
 
   useEffect(() => {
     if(auth.token){
@@ -126,16 +164,42 @@ const AdmitPatientDataGrid = ({ward_id=""}) => {
           allowSearch={true}
         />
         <Column dataField="reason_for_admission" caption="Reason" />
-        <Column dataField="ward" caption="Ward" />
-        <Column dataField="bed" caption="Bed" />
+        <Column 
+          dataField="ward" 
+          caption="Ward" 
+          cellRender={renderWard}
+        />
+        <Column 
+          dataField="bed" 
+          caption="Bed"
+          cellRender={renderBed}
+        />
         <Column dataField="admitted_by_name" caption="Admitted By" />
+        <Column
+          dataField="discharged"
+          caption="Status"
+          allowFiltering={true}
+          allowSearch={true}
+          cellRender={statusRender}
+        />
         <Column dataField="actions" caption="Action" cellRender={actionsFunc} />
       </DataGrid>
       {/* Add your modal component here for editing admission */}
-      <EditAdmission
-        open={editOpen}
-        setOpen={setEditOpen}
-        selectedRowData={selectedRowData}/>
+      { editOpen && (
+        <EditAdmission
+          open={editOpen}
+          setOpen={setEditOpen}
+          selectedRowData={selectedRowData}
+        />
+      )}
+      {/* Add your modal component here for dispatching patient */}
+        {showDispatchModal && (
+          <DispatchPatientModal
+            dispatchOpen={showDispatchModal}
+            setDispatchOpen={setShowDispatchModal}
+            selectedRowData={selectedRowData}
+          />
+        )}
     </section>
   );
 };

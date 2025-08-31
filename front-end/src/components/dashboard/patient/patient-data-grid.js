@@ -23,6 +23,7 @@ import EditPatientDetails from "../admin-interface/edit-patient-details-modal";
 import { GiMedicinePills } from "react-icons/gi";
 import LabModal from "../doctor-interface/lab-modal";
 import { useAuth } from "@/assets/hooks/use-auth";
+import ShowInsurancesPopover from "./ShowInsurancesPopover";
 
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
@@ -62,7 +63,7 @@ const PatientsDataGrid = () => {
   const [showInfo, setShowInfo] = useState(true);
   const [labOpen, setLabOpen] = useState(false);
   const router = useRouter()
-
+  
   const onMenuClick = async (menu, data) => {
     if (menu.action === "add") {
       setSelectedRowData(data);
@@ -98,16 +99,12 @@ const PatientsDataGrid = () => {
   }
 
   const renderInsurances = ({ data }) => {
-    if(data.insurances.length > 0){
-      let insuranceString = ''
-      data.insurances.forEach((insurance)=> {
-        insuranceString = insuranceString + `${insurance.name}, `
-      })
-
-      return insuranceString
-      
-    }else return 'NA'
-  }
+    if (data.insurances.length > 0) {
+      return <ShowInsurancesPopover data={data}/>
+    } else {
+      return 'NA';
+    }
+  };
 
   useEffect(() => {
     dispatch(getAllPatients(auth));
@@ -145,12 +142,12 @@ const PatientsDataGrid = () => {
         <Column 
           dataField="unique_id" 
           caption="id" 
-          width={180}
+          width={100}
         />
         <Column 
           dataField="" 
           caption="Patient Name" 
-          width={180}
+          width={150}
           calculateCellValue={patientFullName}
         />
         <Column
@@ -161,19 +158,19 @@ const PatientsDataGrid = () => {
         <Column
           dataField="email"
           caption="Email"
-          width={150}
+          width={100}
         />
         <Column
           dataField="age"
           caption="Age"
-          width={80}
+          width={50}
         />
         <Column dataField="gender" caption="Gender" width={100} />
         <Column 
           dataField="" 
           caption="Insurance"
           cellRender={renderInsurances}
-          width={100} 
+          width={180} 
         />
         <Column
           dataField=""
@@ -183,7 +180,6 @@ const PatientsDataGrid = () => {
         />
       </DataGrid>
     </section>
-
     {open && <CreateAppointmentModal {...{setOpen,open,selectedRowData}} />}
     <EditPatientDetails open={editOpen} setOpen={setEditOpen} selectedRowData={selectedRowData}  />
     </>

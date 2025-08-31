@@ -3,8 +3,8 @@ from rest_framework.routers import DefaultRouter
 from rest_framework_nested.routers import NestedDefaultRouter
 
 from .views import (BedViewSet, PatientAdmissionViewSet,
-                    PatientDischargeViewset, WardNurseAssignmentViewSet,
-                    WardViewSet, DownloadDischargeSummaryView)
+                    PatientDischargeViewset, ScheduleViewSet, ScheduledDrugViewSet, WardNurseAssignmentViewSet,
+                    WardViewSet, DownloadDischargeSummaryView, InPatientTriageViewSet)
 
 app_name = 'inpatient'
 
@@ -12,10 +12,13 @@ router = DefaultRouter()
 router.register(r"patient-admissions", PatientAdmissionViewSet, basename="patient-admission")
 router.register(r"wards", WardViewSet, basename="ward")
 router.register(r"beds", BedViewSet, basename="bed")
-router.register(r"discharge", PatientDischargeViewset, basename="discharge")
 router.register(r"ward-nurse-assignments", WardNurseAssignmentViewSet, basename="wardnurseassignment")
 
 admissions_url = NestedDefaultRouter(router, "patient-admissions", lookup="admission")
+admissions_url.register(r"triages", InPatientTriageViewSet, basename="admission-triages")
+admissions_url.register(r"schedules", ScheduleViewSet, basename="admission-schedules")
+admissions_url.register(r"scheduled_drug", ScheduledDrugViewSet, basename="admission-scheduled_drugs")
+admissions_url.register(r"discharge", PatientDischargeViewset, basename="admission-discharge")
 wards_url = NestedDefaultRouter(router, "wards", lookup="ward")
 wards_url.register(r"beds", BedViewSet, basename="ward-bed")
 

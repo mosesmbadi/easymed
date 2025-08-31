@@ -1,7 +1,7 @@
 import django_filters
 from django_filters import rest_framework as filters
 
-from .models import Ward, PatientAdmission
+from .models import Ward, PatientAdmission, WardNurseAssignment
 
 class WardFilter(django_filters.FilterSet):
     class Meta:
@@ -21,3 +21,11 @@ class PatientAdmissionFilter(filters.FilterSet):
         elif value == "discharged":
             return queryset.filter(discharge__isnull=False)
         return queryset
+
+class WardNurseAssignmentFilter(filters.FilterSet):
+    nurse_id = filters.NumberFilter(field_name="nurse__id", lookup_expr="exact")
+    ward_id = filters.NumberFilter(field_name="ward__id", lookup_expr="exact")
+
+    class Meta:
+        model = WardNurseAssignment
+        fields = ["nurse_id", "ward_id"]

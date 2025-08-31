@@ -1,4 +1,29 @@
 services:
+    nginx:
+        image: mosesmbadi/easymednginx:latest
+        container_name: "nginx"
+        volumes:
+        - /var/log/nginx:/var/log/nginx
+        - letsencrypt:/etc/letsencrypt
+        - certbot-www:/var/www/certbot
+        restart: always
+        depends_on:
+        - frontend
+        ports:
+        - 80:80
+        - 443:443
+        networks:
+        - mks  
+
+    certbot:
+        image: certbot/certbot
+        volumes:
+        - letsencrypt:/etc/letsencrypt
+        - certbot-www:/var/www/certbot
+        entrypoint: /bin/sh -c
+        command: >
+            "trap exit TERM; while :; do sleep 6h & wait $${!}; certbot renew --webroot -w /var/www/certbot; done"
+
     postgres:
         image: postgres:15
         container_name: postgres
@@ -7,7 +32,7 @@ services:
         ports:
         - "5433:5432"
         volumes:
-        - pg_data:/var/lib/postgresql/data
+        - /srv/postgres_data:/var/lib/postgresql/data
         networks:
         - mks
 
@@ -74,6 +99,7 @@ services:
         - 9090:9090
         volumes:
         - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+        - ./prometheus/rules.yml:/etc/prometheus/rules.yml
         depends_on:
         - backend
         - worker
@@ -101,7 +127,6 @@ services:
                 "9091",
                 "--reload",
             ]
-
         restart: unless-stopped
         networks:
             - mks  
@@ -110,6 +135,8 @@ volumes:
     pg_data:
     grafana_data:
     redis:
+    letsencrypt:
+    certbot-www:
     
 networks:
     mks:

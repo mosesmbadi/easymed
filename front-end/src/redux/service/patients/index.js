@@ -63,9 +63,10 @@ export const searchPatients = (first_name) =>{
     })
 }
 
-export const fetchPatientProfile = (userId) =>{
+export const fetchPatientProfile = (auth, userId) =>{
+    const axiosInstance = UseAxios(auth);
     return new Promise((resolve,reject) =>{
-        axios.get(`${APP_API_URL.GET_PATIENT_PROFILE}`,{
+        axiosInstance.get(`${APP_API_URL.GET_PATIENT_PROFILE}`,{
             params:{
                 userId: userId
             }
@@ -275,10 +276,14 @@ export const fetchPatientPrescribeDrugs = (patient_id) =>{
     })
 }
 
-export const fetchAllAttendanceProcesses = (auth) =>{
+export const fetchAllAttendanceProcesses = (auth, process_id=null) =>{
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve,reject) =>{
-        axiosInstance.get(`${APP_API_URL.PATIENT_ATTENDANCE_PROCESS}`)
+        axiosInstance.get(`${APP_API_URL.PATIENT_ATTENDANCE_PROCESS}`, {
+            params: {
+                process_id: process_id
+            }
+        })
             .then((res) =>{
                 resolve(res.data)
             })

@@ -13,6 +13,7 @@ import {
 
 const initialState = {
   processes: [],
+  processDetails: {},
   services: [],
   patients: [],
   prescriptionItems: [],
@@ -28,6 +29,9 @@ const PatientSlice = createSlice({
   reducers: {
     setProcesses: (state, action) => {
       state.processes = action.payload;
+    },
+    setOneProcess: (state, action) => {
+      state.processDetails = action.payload;
     },
     setServices: (state, action) => {
       state.services = action.payload;
@@ -78,12 +82,13 @@ export const {
   setPatients,
   setProfile,
   setPatientTriage,
-  setSearchedPatients, 
-  removePrescriptionItem, 
-  setPatientPrescriptionItem, 
-  clearPrescriptionItems, 
+  setSearchedPatients,
+  removePrescriptionItem,
+  setPatientPrescriptionItem,
+  clearPrescriptionItems,
   setPatientPrescribedDrugs,
   setProcesses,
+  setOneProcess,
   setPrescriptionItem,
 } = PatientSlice.actions;
 
@@ -93,6 +98,15 @@ export const getAllProcesses = (auth) => async (dispatch) => {
     dispatch(setProcesses(response));
   } catch (error) {
     console.log("ATTENDANCE_PROCESSES_ERROR ", error);
+  }
+};
+
+export const getOneProcess = (auth, process_id) => async (dispatch) => {
+  try {
+    const response = await fetchAllAttendanceProcesses(auth, process_id);
+    dispatch(setOneProcess(response));
+  } catch (error) {
+    console.log("ATTENDANCE_PROCESS_ERROR ", error);
   }
 };
 
@@ -124,9 +138,9 @@ export const getAllSearchedPatients = (first_name) => async (dispatch) => {
   }
 };
 
-export const getPatientProfile = (userId) => async (dispatch) => {
+export const getPatientProfile = (auth, userId) => async (dispatch) => {
   try {
-    const response = await fetchPatientProfile(userId);
+    const response = await fetchPatientProfile(auth, userId);
     dispatch(setProfile(response));
   } catch (error) {
     console.log("PROFILE_ERROR ", error);

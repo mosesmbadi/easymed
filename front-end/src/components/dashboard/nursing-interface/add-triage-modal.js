@@ -95,7 +95,7 @@ export default function AddTriageModal({
     try {
       const formData = {
         ...formValue,
-        created_by: auth?.user_id,
+        created_by_user: auth?.user_id,
         bmi: parseFloat(formValue.bmi).toFixed(1),
       };
       setLoading(true);

@@ -22,8 +22,12 @@ export default async function handler(req, res) {
 
 
             const query = req.query;
+            let url = `${API_URL.ADMIT_PATIENT}`;
+            if (query.admission_id) {
+                url += `${query.admission_id}/`;
+            }
 
-            await backendAxiosInstance.get(`${API_URL.ADMIT_PATIENT}?ward=${query.ward}`, config).then(response => {
+            await backendAxiosInstance.get(`${url}?ward=${query.ward}`, config).then(response => {
                 res.status(200).json(response.data);
 
             }).catch(e => {

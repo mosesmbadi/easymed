@@ -12,6 +12,7 @@ from .views import (
     PaymentModeViewset,
     InvoicesByPatientId,
     InvoiceItemsByInvoiceId,
+    InvoiceItemsByInsuranceCompany,
     PaymentBreakdownView,
     InvoicePaymentViewset
 )
@@ -28,6 +29,7 @@ urlpatterns = [
     path('download_invoice_pdf/<int:invoice_id>/', download_invoice_pdf, name='download_invoice_pdf'),
     path('invoices/patient/<int:patient_id>/', InvoicesByPatientId.as_view()),
     path('invoices/items/<int:invoice_id>/', InvoiceItemsByInvoiceId.as_view()),
+    path('invoice-items-by-insurance-company/', InvoiceItemsByInsuranceCompany.as_view(), name='invoice-items-by-insurance-company'),
     path('payment-modes-breakdown/', PaymentBreakdownView.as_view(), name='payment-breakdown'),
 ]
 

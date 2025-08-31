@@ -3,7 +3,8 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.utils import timezone
-from patient.models import Patient, Referral
+from inventory.models import Item
+from patient.models import Patient, PrescribedDrug, Referral, AttendanceProcess
 
 
 class Ward(models.Model):
@@ -53,13 +54,36 @@ class Bed(models.Model):
 
     def __str__(self):
         return f"{self.ward.name} - {self.bed_number}"
+    
+class Schedule(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
+
+    def __str__(self):
+        return f"Schedules for {self.created_at.strftime('%Y-%m-%d %H:%M')}"
+    
+class ScheduledDrug(models.Model):
+    prescription_schedule = models.ForeignKey(Schedule, on_delete=models.CASCADE, related_name="prescription_schedule")
+    prescribed_drug = models.ForeignKey(PrescribedDrug, on_delete=models.CASCADE, related_name="prescribed_drug")
+    schedule_time = models.DateTimeField()
+    comment = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Schedule for {self.prescribed_drug.item.name} on {self.schedule_time.strftime('%Y-%m-%d %H:%M')}"
 
 class PatientAdmission(models.Model):
+    attendance_process = models.ForeignKey(
+        AttendanceProcess,
+        on_delete=models.CASCADE,
+        related_name="AttendanceProcess",
+    )
     patient = models.ForeignKey(
         Patient, on_delete=models.CASCADE, related_name="admissions"
     )
-    admission_id = models.CharField(max_length=20, unique=True, editable=False)
+    admission_id = models.CharField(max_length=40, unique=True, editable=False)
     ward = models.ForeignKey(
         Ward, on_delete=models.SET_NULL, null=True, related_name="admissions"
     )
@@ -74,25 +98,55 @@ class PatientAdmission(models.Model):
         related_name="admissions_made",
     )
     admitted_at = models.DateTimeField(default=timezone.now)
+    discharged = models.BooleanField(default=False)
+    schedules = models.OneToOneField(
+        Schedule, on_delete=models.CASCADE, related_name="admission", null=True
+    )
 
     class Meta:
         ordering = ['-admitted_at']
         
     def generate_admission_id(self):
-        return f"IP{self.patient.unique_id}"
+        return f"IP-{self.patient.unique_id}-{self.admitted_at.strftime('%Y%m%d%H%M%S')}"
         uuid = str(uuid4()).replace("-", "")[:8]
         return f"IP-{self.patient.unique_id}-{uuid}"[:20]
     def save(self, *args, **kwargs):
+        is_new_object = not self.pk
         if not self.admission_id:
             self.admission_id = self.generate_admission_id()
         # Only check bed/ward relationship if both are set
         if self.bed is not None and self.ward is not None:
             if self.bed.ward != self.ward:
                 raise ValidationError("Bed must belong to the assigned ward.")
+        if is_new_object and not self.schedules:
+            # Create a new Schedule instance if it doesn't exist            
+            self.schedules = Schedule.objects.create()
+            
         super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.admission_id} - {self.patient.first_name} {self.patient.second_name}"
+
+
+class InPatientTriage(models.Model):
+    '''
+    i.e /inpatient/patient-admissions/<admission_pk>/triages
+    '''
+    created_by = models.CharField(max_length=45)
+    date_created = models.DateTimeField(auto_now_add=True)
+    temperature = models.DecimalField(max_digits=5, decimal_places=2, null=True)
+    height = models.DecimalField(max_digits=5, decimal_places=2, null=True)
+    weight = models.IntegerField(null=True)
+    pulse = models.PositiveIntegerField(null=True)
+    diastolic = models.PositiveIntegerField(null=True)
+    systolic = models.PositiveIntegerField(null=True)
+    bmi = models.DecimalField(max_digits=10, decimal_places=1, null=True)
+    fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    notes = models.CharField(max_length=300, blank=True, null=True)
+    patient_admission = models.ForeignKey(PatientAdmission, on_delete=models.CASCADE, related_name="triages")
+
+    def __str__(self):
+        return f"{self.patient_admission.admission_id} - {self.patient_admission.patient.first_name} {self.patient_admission.patient.second_name}" 
 
 
 class PatientDischarge(models.Model):
@@ -114,6 +168,8 @@ class PatientDischarge(models.Model):
                 self.admission.bed.status = "available"
                 self.admission.bed.save()
                 self.admission.bed = None
+                self.admission.ward = None
+                self.admission.discharged = True
                 self.admission.save()
             super().save(*args, **kwargs)
 

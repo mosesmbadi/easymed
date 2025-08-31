@@ -168,6 +168,7 @@ class LabTestRequestSerializer(serializers.ModelSerializer):
     patient_first_name = serializers.ReadOnlyField(source='patient.first_name')
     patient_last_name = serializers.ReadOnlyField(source='patient.second_name')
     test_profile_name = serializers.ReadOnlyField(source='test_profile.name')
+    requested_by_name = serializers.ReadOnlyField(source='requested_by.get_fullname')
     category = serializers.CharField(source='test_profile.category', read_only=True)
     
 

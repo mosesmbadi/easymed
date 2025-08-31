@@ -10,16 +10,28 @@ def test_admit_patient_authenticated_doctor(authenticated_doctor_client, doctor,
     """
     Test that an authenticated doctor can admit a patient and the bed is marked as occupied.
     """
-    url = reverse('patient-admission-list')  
+    from patient.models import AttendanceProcess
+    # Create an attendance process for the patient
+    attendance_process = AttendanceProcess.objects.create(patient=patient)
+    
+    url = reverse('inpatient:patient-admission-list')  
     payload = {
         'patient': patient.id,
         'ward': ward.id,
         'bed': bed.id,
-        'reason_for_admission': 'Fever'
+        'reason_for_admission': 'Fever',
+        'attendance_process': attendance_process.id
     }
     response = authenticated_doctor_client.post(url, payload, format='json')
     
-    assert response.status_code == status.HTTP_201_CREATED
+    if response.status_code != status.HTTP_201_CREATED:
+        print("\n=== Response Data ===")
+        print(f"Status: {response.status_code}")
+        print("Response content:", response.content)
+        print("Response data:", response.data)
+        print("===================\n")
+    
+    assert response.status_code == status.HTTP_201_CREATED, f"Expected 201 but got {response.status_code}"
     assert PatientAdmission.objects.count() == 1
     admission = PatientAdmission.objects.first()
     assert admission.patient == patient
@@ -31,12 +43,13 @@ def test_admit_patient_authenticated_doctor(authenticated_doctor_client, doctor,
     bed.refresh_from_db()
     assert bed.status == 'occupied'
 
+
 @pytest.mark.django_db
 def test_admit_patient_unauthenticated(client, patient, ward, bed):
     """
     Test that an unauthenticated user cannot admit a patient.
     """
-    url = reverse('patient-admission-list')
+    url = reverse('inpatient:patient-admission-list')
     payload = {
         'patient': patient.id,
         'ward': ward.id,
@@ -53,7 +66,7 @@ def test_admit_patient_non_doctor(authenticated_client, patient, ward, bed):
     """
     Test that a non-doctor (e.g., patient user) cannot admit a patient.
     """
-    url = reverse('patient-admission-list')
+    url = reverse('inpatient:patient-admission-list')
     payload = {
         'patient': patient.id,
         'ward': ward.id,
@@ -70,7 +83,7 @@ def test_admit_patient_occupied_bed(authenticated_doctor_client, patient, ward, 
     """
     Test that admitting a patient to an occupied bed fails.
     """
-    url = reverse('patient-admission-list')
+    url = reverse('inpatient:patient-admission-list')
     payload = {
         'patient': patient.id,
         'ward': ward.id,
