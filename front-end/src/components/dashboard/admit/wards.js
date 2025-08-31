@@ -66,7 +66,7 @@ const Ward = () => {
     const onRowClick = (e) => {
         const wardId = e.data.id;
         if (wardId) {
-            router.push(`/dashboard/admit/wards/${wardId}`)
+            router.push(`/dashboard/admit/patients/wards/${wardId}`)
         }
     };
 

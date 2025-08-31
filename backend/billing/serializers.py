@@ -15,11 +15,7 @@ class InvoiceItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = InvoiceItem
-        fields = [
-            'id', 'invoice', 'item', 'payment_mode', 'item_amount',
-            'category', 'item_name', 'item_code', 'payment_mode_name',
-            'insurance_company_id'
-            ]
+        fields = '__all__'
 
     def get_category(self, obj):
         item = obj.item

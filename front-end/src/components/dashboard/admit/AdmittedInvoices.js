@@ -4,8 +4,8 @@ import { Column, Paging, Pager, HeaderFilter, Scrolling } from "devextreme-react
 
 import React, { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
-import { getAllPrescribedDrugs } from '@/redux/features/pharmacy';
-import PrescribeDrug from './modals/PrescribeDrug';
+import { getAllInvoiceItemsByInvoiceId } from '@/redux/features/billing';
+
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
   ssr: false,
@@ -13,30 +13,34 @@ const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
 
 const allowedPageSizes = [5, 10, 'all'];
 
-const AdmittedPrescription = ({prescription, process, patient}) => {
+const AdmittedInvoices = ({invoice, patient}) => {
   const [showPageSizeSelector, setShowPageSizeSelector] = useState(true);
   const [showNavButtons, setShowNavButtons] = useState(true);
   const [showInfo, setShowInfo] = useState(true);
+  const { invoiceItems } = useSelector((store) => store.billing);
   const dispatch = useDispatch();
-  const { prescribedDrugs } = useSelector((store) => store.prescription);
   const auth = useAuth();
+
+  const renderPaymentMode = (cellData) => {
+    return (
+      <span>{cellData.data?.payment_mode_name ? cellData.data?.payment_mode_name : 'Not Billed'}</span>
+    );
+  }
 
   useEffect(() => {
     if(auth.token){
-      dispatch(getAllPrescribedDrugs(auth, prescription));
+      dispatch(getAllInvoiceItemsByInvoiceId(auth, invoice))
     }
 
-  }, [prescription]);
-
+  }, []);
   return (
     <div className='w-full p-4 bg-white shadow-md rounded-lg'>
       <div className='w-full flex items-center justify-between mb-4'>
         <h2 className='text-xl font-semibold mb-4'>{patient}</h2>
-        <PrescribeDrug prescription={prescription} process={process}/>
       </div>
 
       <DataGrid
-        dataSource={prescribedDrugs}
+        dataSource={invoiceItems}
         allowColumnReordering={true}
         rowAlternationEnabled={true}
         showBorders={true}
@@ -59,28 +63,24 @@ const AdmittedPrescription = ({prescription, process, patient}) => {
         />
         <Column 
           dataField="item_name" 
-          caption="Drug" 
+          caption="Item Name" 
         />
         <Column 
-          dataField="dosage" 
-          caption="Dosage" 
+          dataField="item_amount" 
+          caption="Amount" 
         />
         <Column
-          dataField="frequency"
-          caption="Frequency"
+          dataField="payment_mode_name"
+          caption="Payment Mode"
+          cellRender={renderPaymentMode}
         />
         <Column
-          dataField="duration"
-          caption="Duration"
-        />
-        <Column
-          dataField="note"
-          caption="Note"
+          dataField="status"
+          caption="Status"
         />
       </DataGrid>
-      
     </div>
   )
 }
 
-export default AdmittedPrescription
+export default AdmittedInvoices

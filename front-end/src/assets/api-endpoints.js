@@ -152,6 +152,10 @@ export const API_URL = {
 
   /***************** INPATIENT ENDPOINTS **********************/
   ADMIT_PATIENT: "/inpatient/patient-admissions/",
+  DISCHARGE_PATIENT: "/inpatient/patient-admissions/",
+  ADMITTED_PATIENT_VITALS: "/inpatient/patient-admissions/",
+  ADMITTED_PATIENT_SCHEDULES: "/inpatient/patient-admissions/",
+  ADMITTED_PATIENT_SCHEDULED_DRUGS: "/inpatient/patient-admissions/",
   INPATIENT_BEDS: "/inpatient/beds/",
   INPATIENT_WARDS: "/inpatient/wards/",
   INPATIENT_NURSE_DUTIES: "/inpatient/ward-nurse-assignments/",
@@ -319,6 +323,10 @@ export const APP_API_URL = {
 
   /***************** INPATIENT ENDPOINTS **********************/
   ADMIT_PATIENT: "/api/inpatient/admissions/",
+  DISCHARGE_PATIENT: "/api/inpatient/discharge/",
+  ADMITTED_PATIENT_VITALS: "/api/inpatient/vitals/",
+  ADMITTED_PATIENT_SCHEDULES: "/api/inpatient/schedules/",
+  ADMITTED_PATIENT_SCHEDULED_DRUGS: "/api/inpatient/scheduled_drug/",
   INPATIENT_BEDS: "/api/inpatient/bed",
   INPATIENT_WARDS: "/api/inpatient/wards",
   INPATIENT_NURSE_DUTIES: "/api/inpatient/nurse-duties",

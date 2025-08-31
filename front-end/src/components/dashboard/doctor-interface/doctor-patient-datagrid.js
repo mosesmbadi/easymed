@@ -179,7 +179,13 @@ const DoctorPatientDataGrid = () => {
           allowSearch={true}
         />
         <Column
-          dataField="patient"
+          dataField="assigned_doctor"
+          caption="Assigned Doctor"
+          allowFiltering={true}
+          allowSearch={true}
+        />
+        <Column
+          dataField="patient_name"
           caption="Patient Name"
           allowFiltering={true}
           allowSearch={true}

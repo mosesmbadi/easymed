@@ -7,58 +7,41 @@ import * as Yup from "yup";
 import { Formik, Field, Form, ErrorMessage } from "formik";
 import { toast } from "react-toastify";
 import { useAuth } from "@/assets/hooks/use-auth";
-import { getAllProcesses, getPatientTriage } from "@/redux/features/patients";
-import { updateAttendanceProcesses, updatePatientTriage } from "@/redux/service/patients";
+import { AddAdmissionVitals } from "@/redux/features/inpatient";
 
-export default function AddTriageModal({
-  triageOpen,
-  setTriageOpen,
-  selectedRowData,
+export default function AdmissionVitalsModal({
+  showAddVitalsModal,
+  setShowAddVitalsModal,
+  admission_id
 }) {
   const [loading, setLoading] = useState(false);
   const auth = useAuth();
   const dispatch = useDispatch();
-  const { patientTriage, patients } = useSelector((store) => store.patient )
-
-  const triagePatient = patients.find((patient)=> patient.id === selectedRowData?.patient)
-
-
-  useEffect(()=> {
-    if(auth && selectedRowData){
-      fetchPatientTriage(selectedRowData.triage)
-    }
-  }, [triageOpen])
-
-  const fetchPatientTriage = async (triage_id)=> {
-    try{
-      dispatch(getPatientTriage(triage_id, auth))
-    }catch(error){
-
-    }
-  }
 
   const handleClose = () => {
-    setTriageOpen(false);
+    setShowAddVitalsModal(false);
   };
 
   const initialValues = {
-    temperature: patientTriage?.temperature,
-    height: patientTriage?.height ? patientTriage?.height : "",
-    weight: patientTriage?.weight ? patientTriage?.weight : "",
-    pulse: patientTriage?.pulse ? patientTriage?.pulse : "",
-    systolic:patientTriage?.systolic ? patientTriage?.systolic : "",
-    diastolic: patientTriage?.diastolic ? patientTriage?.diastolic : "",
-    bmi:patientTriage?.bmi ? patientTriage?.bmi : "",
-    notes: patientTriage?.notes ? patientTriage?.notes : "",
+    temperature: "",
+    height: "",
+    weight:  "",
+    pulse:  "",
+    systolic: "",
+    diastolic:  "",
+    bmi: "",
+    notes: "",
+    created_by: auth?.user_id,
+    patient_admission: admission_id
   };
 
   const validationSchema = Yup.object().shape({
-    temperature: Yup.number().required("Temperature is required!"),
-    height: Yup.number().required("Height is required!"),
-    weight: Yup.number().required("Weight is required!"),
-    pulse: Yup.number().required("Pulse is required!"),
-    systolic: Yup.number().required("Systolic is required!"),
-    diastolic: Yup.number().required("Diastolic is required!"),
+    temperature: Yup.number(),
+    height: Yup.number(),
+    weight: Yup.number(),
+    pulse: Yup.number(),
+    systolic: Yup.number(),
+    diastolic: Yup.number(),
     // notes: Yup.string().required("Notes is required!"),
   });
 
@@ -78,34 +61,19 @@ export default function AddTriageModal({
     return "";
   };
 
-  const sendToDoc = async (payload, process_id)=> {
-    try{
-      const response = await updateAttendanceProcesses(payload, process_id, auth)
-      dispatch(getAllProcesses(auth))
-      console.log("SUCCESSFULLY SENT TO DOC", response)
 
-    }catch(error){
-      console.log("FAILED SENDING TO DOCTOR", error)
-
-    }
-
-  }
-
-  const handleUpdateTriage = async (formValue, helpers) => {
+  const handleAddAdmissionTriage = async (formValue, helpers) => {
     try {
       const formData = {
         ...formValue,
-        created_by_user: auth?.user_id,
+        created_by: auth?.user_id,
         bmi: parseFloat(formValue.bmi).toFixed(1),
       };
       setLoading(true);
-      await updatePatientTriage(selectedRowData?.triage, formData, auth).then(() => {
-        helpers.resetForm();
-        sendToDoc({track:"doctor"}, selectedRowData?.id)
-        setLoading(false);
-        handleClose();
-        toast.success("Triage Created Successfully!");
-      });
+      await dispatch(AddAdmissionVitals(auth, formData, admission_id))
+      handleClose();
+      helpers.resetForm();
+      toast.success("Triage Added Successfully!");
     } catch (err) {
       setLoading(false);
       toast.error(err);
@@ -115,28 +83,25 @@ export default function AddTriageModal({
   return (
     <React.Fragment>
       <Dialog
-        open={triageOpen}
+        open={showAddVitalsModal}
         fullWidth
-        maxWidth="sm"
+        maxWidth="md"
         onClose={handleClose}
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
       >
         <DialogTitle id="alert-dialog-title">
           <div className="flex justify-between items-center">
-            <p>{`${triagePatient?.first_name} ${triagePatient?.second_name}`}</p>
-            <p>{`Gender: ${triagePatient?.gender}`}</p>
-            <p>{`Age: ${triagePatient?.age}`}</p>
+            <h2 className="text-lg font-semibold">{"Admission Triage"}</h2>
 
           </div>          
         </DialogTitle>
         <DialogContent>
-          <h2 className="py-2 text-sm font-semibold">{"Update Vital Signs"}</h2>
           <Formik
             key={JSON.stringify(initialValues)}
             initialValues={initialValues}
             validationSchema={validationSchema}
-            onSubmit={handleUpdateTriage}
+            onSubmit={handleAddAdmissionTriage}
           >
           {({ values, setFieldValue }) => {
             return (
@@ -279,7 +244,7 @@ export default function AddTriageModal({
                     ></path>
                   </svg>
                 )}
-                Update Triage
+                New Triage
               </button>
             </Form>
               );

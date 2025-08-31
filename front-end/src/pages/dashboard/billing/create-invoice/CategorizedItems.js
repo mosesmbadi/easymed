@@ -28,7 +28,7 @@ const CategorizedItems = ({
   const [updatedInvoiceItem, setUpdatedInvoiceItem] = useState(invoiceItem);
 
   const patient_insurance_for_this_item = patient_insurance?.filter((mode) =>
-    mode.insurance === null || inventoryPrices[0]?.insurance_sale_prices.some(insurance => insurance.id === mode.insurance)
+    mode.insurance === null || inventoryPrices[0]?.insurance_sale_prices.some(insurance => insurance.insurance === mode.insurance)
   );
 
   const fetchInventoryForPrices = async (item) => {
@@ -107,12 +107,12 @@ const CategorizedItems = ({
                   (mode) => mode.id === parseInt(e.target.value)
                 );
                 setSelectedPayMethod(selectedOption);
-                if (selectedOption?.paymet_mode.toLowerCase() === 'cash' || selectedOption?.paymet_mode.toLowerCase() === 'mpesa') {
+                if (selectedOption?.payment_category.toLowerCase() !== 'insurance') {
                   setSelectedPrice(inventoryPrices ? inventoryPrices[0].sale_price : 'NA');
                   setSelectedCoPay(0)
                 } else {
                   const selectedInsurance = inventoryPrices[0].insurance_sale_prices?.find((mode) => 
-                    mode.insurance_name.toLowerCase() === selectedOption?.paymet_mode.toLowerCase()
+                    mode.insurance === selectedOption?.insurance
                   );
                   setSelectedPrice(selectedInsurance ? selectedInsurance.price : 'NA');
                   setSelectedCoPay(selectedInsurance ? selectedInsurance.co_pay : 0)
