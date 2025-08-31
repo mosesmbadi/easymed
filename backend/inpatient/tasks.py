@@ -65,7 +65,7 @@ def check_medication_notifications(self):
         }
 
         for prescription in prescriptions:
-            patient = prescription.attendanceprocess.patient
+            patient = prescription.attendace_prescription.patient
             admission = admissions.get(patient.id)
             if not admission:
                 continue
