@@ -157,7 +157,7 @@ class PatientDischarge(models.Model):
     )
     admission = models.OneToOneField(PatientAdmission, on_delete=models.CASCADE, related_name="discharge")
     discharged_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,related_name="discharges")
-    discharge_types = models.CharField(choices=DISCHARGE_TYPES, default="normal")
+    discharge_types = models.CharField(max_length=20, choices=DISCHARGE_TYPES, default="normal")
     referral = models.ForeignKey(Referral, on_delete=models.SET_NULL, null=True, blank=True, related_name="discharges")
     discharged_at = models.DateTimeField(auto_now_add=True)
     discharge_notes = models.TextField(blank=True, null=True)
