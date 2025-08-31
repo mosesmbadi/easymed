@@ -14,7 +14,7 @@ def get_active_prescriptions(end_time: datetime) -> list:
         prescription__isnull=False
     )
     prescriptions = Prescription.objects.filter(
-        attendanceprocess__in=attendance_processes,
+        attendace_prescription__in=attendance_processes,
         start_date__lte=end_time
     )
     return prescriptions

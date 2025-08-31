@@ -32,7 +32,7 @@ services:
         ports:
         - "5433:5432"
         volumes:
-        - /srv/postgres_data:/var/lib/postgresql/data
+        - postgres_data:/var/lib/postgresql/data
         networks:
         - mks
 
@@ -132,8 +132,7 @@ services:
             - mks  
             
 volumes:
-    pg_data:
-    grafana_data:
+    postgres_data:
     redis:
     letsencrypt:
     certbot-www:
