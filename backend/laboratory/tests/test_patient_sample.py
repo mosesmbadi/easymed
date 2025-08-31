@@ -18,9 +18,12 @@ def test_generate_sample_code_first_sample(patient_sample):
     assert new_sample.patient_sample_code == f"DDLR00001-{current_year}"
 
 
-@pytest.mark.django_db
+@pytest.mark.django_db  
 def test_generate_sample_code_new_year_reset(patient_sample):
     """Test generating code when the year changes and the number resets."""
+    # Clear all existing samples to start fresh
+    PatientSample.objects.all().delete()
+    
     current_year = timezone.now().year
     PatientSample.objects.create(
         lab_test_request=patient_sample.lab_test_request,

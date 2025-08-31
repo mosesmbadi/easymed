@@ -16,16 +16,21 @@ load_dotenv()
 API_KEY = os.getenv("GEMINI_API_KEY")
 if API_KEY is None:
     logger.error("API key not found. Please create a .env file in the same directory as this script with: GEMINI_API_KEY=\"YOUR_ACTUAL_API_KEY\"")
-
-genai.configure(api_key=API_KEY)
+else:
+    genai.configure(api_key=API_KEY)
 
 @shared_task
 def process_triage_request(patient_id, **kwargs):
     '''
     Defines an asynchronous Celery task to process a patient's recent
-    triage and consultation data, send it to Gemini, and save the AI’s diagnosis.
+    triage and consultation data, send it to Gemini, and save the AI's diagnosis.
     '''
     print(f"Processing triage request for patient {patient_id}")
+
+    # Check if API key is available
+    if API_KEY is None:
+        logger.warning("GEMINI_API_KEY not available, skipping AI processing")
+        return
 
     try:
         # Fetch Patient and Their Records
@@ -127,16 +132,16 @@ def process_triage_request(patient_id, **kwargs):
         )
 
     except Patient.DoesNotExist:
-        print(f"Patient with ID {patient_id} not found.")
-        TriageResult.objects.create(
-            patient_id=patient_id, # Attempt to save with ID even if patient not found
-            status='error',
-            predicted_condition=f"Patient with ID {patient_id} not found."
-        )
+        logger.error(f"Patient with ID {patient_id} does not exist.")
     except Exception as e:
-        print(f"Error processing triage request for patient {patient_id}: {e}")
-        TriageResult.objects.create(
-            patient_id=patient_id, # Attempt to save with ID even if patient not found
-            status='error',
-            predicted_condition=f"Error: {e}"
-        )
+        logger.error(f"Error processing triage request for patient {patient_id}: {str(e)}")
+        try:
+            patient = Patient.objects.get(id=patient_id)
+            TriageResult.objects.create(
+                patient=patient,
+                status='error',
+                predicted_condition=f"Error occurred: {str(e)}",
+                gemini_response={"error": str(e)}
+            )
+        except:
+            logger.error(f"Failed to save error state for patient {patient_id}")
