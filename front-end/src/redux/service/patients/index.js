@@ -147,9 +147,10 @@ export const assignDoctor = (payload) =>{
 }
 
 
-export const consultPatient = (payload) =>{
+export const consultPatient = (auth, payload) =>{
+    const axiosInstance = UseAxios(auth);
     return new Promise((resolve,reject) =>{
-        axios.post(`${APP_API_URL.CONSULT_PATIENT}`,payload)
+        axiosInstance.post(`${APP_API_URL.CONSULT_PATIENT}`, payload)
             .then((res) =>{
                 resolve(res.data)
             })

@@ -3,7 +3,7 @@ import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
 import * as Yup from "yup";
 import { Formik, Field, Form, ErrorMessage } from "formik";
-import { Grid } from "@mui/material";
+import { Grid, DialogTitle } from "@mui/material";
 import { consultPatient } from "@/redux/service/patients";
 import { useContext } from "react";
 import { authContext } from "@/components/use-context";
@@ -20,36 +20,39 @@ const ConsultPatientModal = ({
   const [loading, setLoading] = React.useState(false);
   const { user } = useContext(authContext);
   const auth = useAuth()
-  const { patientTriage } = useSelector((store) => store.patient);
+  const { patientTriage, patients } = useSelector((store) => store.patient);
   const dispatch = useDispatch();
+
+  const patient = patients.find((patient)=> patient.id === selectedRowData.patient)
 
   const handleClose = () => {
     setConsultOpen(false);
   };
 
   const initialValues = {
-    note: "",
-    complaint: "",
-    disposition: "admitted",
+    diagnosis: "",
+    doctors_note: "",
+    signs_and_symptoms: "",
+    // disposition: "admitted",
     doctor: user?.user_id,
-    patient: selectedRowData?.id,
+    patient: selectedRowData?.patient,
   };
 
   const validationSchema = Yup.object().shape({
-    note: Yup.string().required("This field is required!"),
+    diagnosis: Yup.string().required("This field is required!"),
+    doctors_note: Yup.string().required("This field is required!"),
+    signs_and_symptoms: Yup.string().required("This field is required!"),
   });
 
   const handleConsultPatient = async (formValue, helpers) => {
     try {
       const formData = {
         ...formValue,
-        patient_id: parseInt(formValue.patient_id),
-        doctor_ID: parseInt(formValue.doctor_ID),
       };
       setLoading(true);
-      await consultPatient(formData).then(() => {
+      await consultPatient(auth, formData).then(() => {
         helpers.resetForm();
-        toast.success("Consultation Successful!");
+        toast.success("Saved Successful!");
         setLoading(false);
         handleClose();
       });
@@ -68,12 +71,19 @@ const ConsultPatientModal = ({
     <section>
       <Dialog
         fullWidth
-        maxWidth="sm"
+        maxWidth="md"
         open={consultOpen}
         onClose={handleClose}
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
       >
+        <DialogTitle>
+          <div className="flex justify-between">
+            <p>{`Name: ${patient?.first_name} ${patient?.second_name}`}</p>
+            <p>{`Gender: ${patient?.gender}`}</p>
+            <p>{`Age: ${patient?.age}`}</p>            
+          </div>
+        </DialogTitle>
         <DialogContent>
           <Formik
             initialValues={initialValues}
@@ -85,7 +95,9 @@ const ConsultPatientModal = ({
                 <h1 className="">Triage Information</h1>
                 <section className="flex items-center justify-between text-sm border-b bg-background p-1 rounded border-gray">
                   <div className="flex items-center gap-2">
-                    <span>Temperature :</span>
+                    <span>
+                      Temperature :
+                    </span>
                     <span>{patientTriage?.temperature}</span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -93,38 +105,82 @@ const ConsultPatientModal = ({
                     <span>{patientTriage?.height}</span>
                   </div>
                   <div className="flex items-center gap-2">
+                    <span>Weight :</span>
+                    <span>{patientTriage?.weight}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span>Bmi :</span>
+                    <span>{patientTriage?.bmi}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
                     <span>Pulse :</span>
                     <span>{patientTriage?.pulse}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span>Weight :</span>
-                    <span>{patientTriage?.weight}</span>
+                    <span>Systolic :</span>
+                    <span>{patientTriage?.systolic}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span>Diastolic :</span>
+                    <span>{patientTriage?.diastolic}</span>
+                  </div>
+                </section>
+                <section className="flex items-center justify-between text-sm border-b bg-background p-1 rounded border-gray">
+                  <div className="flex items-center gap-2">
+                    <span>Nurses Note :</span>
+                    <span>{patientTriage?.notes}</span>
                   </div>
                 </section>
                 <Grid container spacing={2}>
                   <Grid item md={12} xs={12}>
                     <section className="space-y-3">
+                      
                       <div>
+                        <label className="bold" htmlFor="gender">Diagnosis</label>
                         <Field
                           as="textarea"
                           className="block border border-gray rounded-xl py-2 text-sm px-4 focus:outline-none w-full"
                           type="text"
-                          placeholder="Add Consultation Notes"
-                          name="note"
+                          placeholder="Diagnosis"
+                          name="diagnosis"
                         />
                         <ErrorMessage
-                          name="note"
+                          name="diagnosis"
                           component="div"
                           className="text-warning text-xs"
                         />
                       </div>
+                      
                       <div>
+                        <label className="bold" htmlFor="gender">Signs and Symptoms</label>
                         <Field
                           as="textarea"
                           className="block border border-gray rounded-xl text-sm py-3 px-4 focus:outline-none w-full"
                           type="text"
-                          placeholder="Add Complaint"
-                          name="complaint"
+                          placeholder="Signs and Symptoms"
+                          name="signs_and_symptoms"
+                        />
+                        <ErrorMessage
+                          name="signs_and_symptoms"
+                          component="div"
+                          className="text-warning text-xs"
+                        />
+                      </div>
+                    
+                                         
+                      <div>
+                         <label className="bold" htmlFor="gender">Doctors Clinical Notes</label>
+                        <Field
+                          as="textarea"
+                          className="block border border-gray rounded-xl py-2 text-sm px-4 focus:outline-none w-full"
+                          type="text"
+                          placeholder="Doctors Clinical Notes"
+                          name="doctors_note"
+                        />
+                        <ErrorMessage
+                          name="doctors_note"
+                          component="div"
+                          className="text-warning text-xs"
                         />
                       </div>
                     </section>
