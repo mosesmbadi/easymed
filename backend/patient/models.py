@@ -134,11 +134,13 @@ class Consultation(models.Model):
     doctor = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
     date_created = models.DateTimeField(auto_now_add=True)
-    note = models.TextField(null=True, blank=True)
-    complaint = models.TextField(null=True, blank=True)
-    fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    disposition = models.CharField(
-        max_length=10, choices=DISPOSITION_CHOICES, default="")
+    diagnosis = models.CharField(max_length=300, null=True, blank=True)
+    doctors_note = models.CharField(max_length=300, null=True, blank=True)
+    signs_and_symptoms = models.CharField(max_length=300, null=True, blank=True)
+    # complaint = models.TextField(null=True, blank=True)
+    # fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    # disposition = models.CharField(
+    #     max_length=10, choices=DISPOSITION_CHOICES, default="")
     
     def __str__(self):
         return self.note
