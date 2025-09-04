@@ -226,13 +226,15 @@ class Referral(models.Model):
     note = models.TextField(null=True, blank=True)
     referred_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     service = models.CharField(max_length=50, choices=SERVICE, default='general')
-    email = models.EmailField()
+    preferred_provider = models.CharField(max_length=100, null=True, blank=True)
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
+    provider_email_contact = models.EmailField()
 
     def __str__(self):
         return f"Referral #{self.id}"
     
-    def set_referred_by(self, CustomUser):
-        self.referred_by = CustomUser
+    # def set_referred_by(self, CustomUser):
+    #     self.referred_by = CustomUser
 
     def save(self, *args, **kwargs):
         if not self.pk:
