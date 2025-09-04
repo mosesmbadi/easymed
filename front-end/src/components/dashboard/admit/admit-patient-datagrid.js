@@ -141,25 +141,27 @@ const AdmitPatientDataGrid = ({ward_id=""}) => {
         <Column
           dataField="admission_id"
           caption="Admission ID"
+          width={150}
           allowFiltering={true}
           allowSearch={true}
         />
         <Column
           dataField="patient"
-          caption="Patient Name"
+          caption="Name"
           allowFiltering={true}
           allowSearch={true}
           cellRender={patientNameRender}
         />
         <Column
           dataField="patient_age"
-          caption="Patient Age"
+          caption="Age"
+          width={80}
           allowFiltering={true}
           allowSearch={true}
         />
         <Column
           dataField="patient_gender"
-          caption="Patient Gender"
+          caption="Gender"
           allowFiltering={true}
           allowSearch={true}
         />
@@ -174,7 +176,7 @@ const AdmitPatientDataGrid = ({ward_id=""}) => {
           caption="Bed"
           cellRender={renderBed}
         />
-        <Column dataField="admitted_by_name" caption="Admitted By" />
+        <Column width={150} dataField="admitted_by_name" caption="Admitted By" />
         <Column
           dataField="discharged"
           caption="Status"
@@ -182,7 +184,7 @@ const AdmitPatientDataGrid = ({ward_id=""}) => {
           allowSearch={true}
           cellRender={statusRender}
         />
-        <Column dataField="actions" caption="Action" cellRender={actionsFunc} />
+        <Column width={50} dataField="" caption="Action" cellRender={actionsFunc} />
       </DataGrid>
       {/* Add your modal component here for editing admission */}
       { editOpen && (
