@@ -4,12 +4,12 @@ import DialogContent from "@mui/material/DialogContent";
 import * as Yup from "yup";
 import { Formik, Field, Form, ErrorMessage } from "formik";
 import { Grid, DialogTitle } from "@mui/material";
-import { consultPatient } from "@/redux/service/patients";
+import { consultPatient, updatePatientConsult } from "@/redux/service/patients";
 import { useContext } from "react";
 import { authContext } from "@/components/use-context";
 import { toast } from "react-toastify";
 import { useDispatch, useSelector } from "react-redux";
-import { getPatientTriage } from "@/redux/features/patients";
+import { getPatientTriage, updateAttendanceProcessStoreClinicalNotesData } from "@/redux/features/patients";
 import { useAuth } from "@/assets/hooks/use-auth";
 
 const ConsultPatientModal = ({
@@ -30,9 +30,9 @@ const ConsultPatientModal = ({
   };
 
   const initialValues = {
-    diagnosis: "",
-    doctors_note: "",
-    signs_and_symptoms: "",
+    diagnosis: selectedRowData?.clinical_note?.diagnosis || "",
+    doctors_note: selectedRowData?.clinical_note?.doctors_note || "",
+    signs_and_symptoms: selectedRowData?.clinical_note?.signs_and_symptoms || "",
     // disposition: "admitted",
     doctor: user?.user_id,
     patient: selectedRowData?.patient,
@@ -48,14 +48,28 @@ const ConsultPatientModal = ({
     try {
       const formData = {
         ...formValue,
+        attendance_process: selectedRowData.id,
       };
       setLoading(true);
-      await consultPatient(auth, formData).then(() => {
-        helpers.resetForm();
-        toast.success("Saved Successful!");
-        setLoading(false);
-        handleClose();
-      });
+      if(selectedRowData?.clinical_note){
+        await updatePatientConsult(auth, formValue, selectedRowData?.clinical_note?.id).then((res) => {
+          helpers.resetForm();
+          console.log(res)
+          dispatch(updateAttendanceProcessStoreClinicalNotesData(res))
+          toast.success("Saved Successful!");
+          setLoading(false);
+          handleClose();
+        });
+      }else{
+        await consultPatient(auth, formData).then((res) => {
+          helpers.resetForm();
+          console.log(res)
+          dispatch(updateAttendanceProcessStoreClinicalNotesData(res))
+          toast.success("Saved Successful!");
+          setLoading(false);
+          handleClose();
+        });
+      }
     } catch (err) {
       toast.error(err);
       setLoading(false);
