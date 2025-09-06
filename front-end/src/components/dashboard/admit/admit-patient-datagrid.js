@@ -184,7 +184,7 @@ const AdmitPatientDataGrid = ({ward_id=""}) => {
           allowSearch={true}
           cellRender={statusRender}
         />
-        <Column width={50} dataField="" caption="Action" cellRender={actionsFunc} />
+        <Column dataField="" caption="" cellRender={actionsFunc} />
       </DataGrid>
       {/* Add your modal component here for editing admission */}
       { editOpen && (
