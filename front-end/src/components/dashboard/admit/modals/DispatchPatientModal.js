@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
 import * as Yup from "yup";
@@ -7,15 +7,33 @@ import { Grid } from "@mui/material";
 import { DialogTitle } from "@mui/material";
 import { dischargePatient } from "@/redux/service/inpatient";
 import { useAuth } from "@/assets/hooks/use-auth";
+import { fetchAllAttendanceProcesses, referPatient } from "@/redux/service/patients";
+import { useDispatch } from "react-redux";
+import { updateAdmissionStoreDischarge } from "@/redux/features/inpatient";
 
 const DispatchPatientModal = ({dispatchOpen, setDispatchOpen, selectedRowData}) => {
   const [loading, setLoading] = React.useState(false);
   const auth = useAuth();
+  const dispatch = useDispatch();
+  
+  const services = [
+    "general",
+    "dentist",
+    "cardiologist",
+    "neurologist",
+    "orthopedist",
+    "psychiatrist",
+    "surgeon",
+    "physiotherapist",
+  ];
 
   const initialValues = {
     discharged_by: auth.user_id,
     discharge_types: "",
     discharge_notes: "",
+    service: "",
+    preferred_provider: "",
+    provider_email_contact: "",
   };
 
   const validationSchema = Yup.object().shape({
@@ -29,9 +47,31 @@ const DispatchPatientModal = ({dispatchOpen, setDispatchOpen, selectedRowData}) 
   const handleDischarge = async (formValue) => {
     setLoading(true);
     try {
-      await dischargePatient(auth, formValue, selectedRowData.id);
-      setLoading(false);
-      setDispatchOpen(false);
+      if(formValue.discharge_types === "referral") {
+          const referral_data = {
+            type:  "external",
+            note: formValue.discharge_notes,
+            service: formValue.service,
+            provider_email_contact: formValue.provider_email_contact,
+            preferred_provider: formValue.preferred_provider,
+            referred_by: auth?.user_id,
+            patient: selectedRowData?.patient,
+            reffered_doctor: null,
+            attendance_process: selectedRowData.attendance_process
+          }
+
+          const response = await dischargePatient(auth, {...formValue, referral_data: {...referral_data}}, selectedRowData.id);
+          dispatch(updateAdmissionStoreDischarge(response));
+          setLoading(false);
+          setDispatchOpen(false);
+
+      }else{
+          const response = await dischargePatient(auth, formValue, selectedRowData.id);
+          dispatch(updateAdmissionStoreDischarge(response));
+          setLoading(false);
+          setDispatchOpen(false);
+      }
+
     } catch (error) {
       setLoading(false);
       console.error("Error discharging patient:", error);
@@ -42,7 +82,7 @@ const DispatchPatientModal = ({dispatchOpen, setDispatchOpen, selectedRowData}) 
     <section>
       <Dialog
         fullWidth
-        maxWidth="sm"
+        maxWidth="md"
         open={dispatchOpen}
         onClose={handleClose}
         aria-labelledby="alert-dialog-title"
@@ -57,6 +97,7 @@ const DispatchPatientModal = ({dispatchOpen, setDispatchOpen, selectedRowData}) 
             validationSchema={validationSchema}
             onSubmit={handleDischarge}
           >
+            {({ values, handleChange }) => (
             <Form>
               <section className="space-y-1">
                 <Grid className="py-3 " container spacing={1}>
@@ -78,8 +119,83 @@ const DispatchPatientModal = ({dispatchOpen, setDispatchOpen, selectedRowData}) 
                       className="text-warning text-xs"
                     />
                   </Grid>
+                    {values.discharge_types && values.discharge_types === "referral" && (
+                      <>
+                        <Grid item md={12} xs={12}>
+                          <label className="bold" htmlFor="gender">Refer Service</label>
+                          <Field
+                            as="select"
+                            className="block pr-9 border border-gray rounded-xl py-2 text-sm px-4 focus:outline-none w-full"
+                            name="service"
+                          >
+                            <option value="">Select Service</option>
+                            {services.map((service, index) => (
+                              <option key={index} value={service}>
+                                {service}
+                              </option>
+                            ))}
+                          </Field>
+                          <ErrorMessage
+                            name="service"
+                            component="div"
+                            className="text-warning text-xs"
+                          />
+                        </Grid>
+                        <Grid item md={6} xs={12}>
+                          <label className="bold" htmlFor="gender">Service Provider</label>
+                          <Field
+                            className="block border border-gray rounded-xl text-sm py-2 px-4 focus:outline-none w-full"
+                            type="text"
+                            placeholder="Preferred Service Provider"
+                            name="preferred_provider"
+                          />
+                          <ErrorMessage
+                            name="preferred_provider"
+                            component="div"
+                            className="text-warning text-xs"
+                          />
+                        </Grid>
+                        <Grid item md={6} xs={12}>
+                          <label className="bold" htmlFor="gender">Service Provider Email</label>
+                          <Field
+                            className="block border border-gray rounded-xl text-sm py-2 px-4 focus:outline-none w-full"
+                            type="text"
+                            placeholder="Provider Email Contact"
+                            name="provider_email_contact"
+                          />
+                          <ErrorMessage
+                            name="provider_email_contact"
+                            component="div"
+                            className="text-warning text-xs"
+                          />
+                        </Grid>
+                      </>)}
+                      {values.discharge_types && values.discharge_types === "deceased" && (
+                        <>
+                          <Grid item md={12} xs={12}>
+                            <label className="bold" htmlFor="gender">Select Morgue</label>
+                            <Field
+                              as="select"
+                              className="block pr-9 border border-gray rounded-xl py-2 text-sm px-4 focus:outline-none w-full"
+                              name="service"
+                            >
+                              <option value="">Select Morgue</option>
+                              {services.map((service, index) => (
+                                <option key={index} value={service}>
+                                  {service}
+                                </option>
+                              ))}
+                            </Field>
+                            <ErrorMessage
+                              name="service"
+                              component="div"
+                              className="text-warning text-xs"
+                            />
+                          </Grid>
+                        </>
+                      )}
                   <Grid item md={12} xs={12}>
-                    <label htmlFor="name">Discharge Notes</label>
+                    <label className="capitalize" htmlFor="name">{`${values.discharge_types} Discharge Notes`}</label>
                     <Field
                       as="textarea"
                       rows={3}
@@ -132,6 +248,7 @@ const DispatchPatientModal = ({dispatchOpen, setDispatchOpen, selectedRowData}) 
                 </div>
               </section>
             </Form>
+            )}
           </Formik>
         </DialogContent>
       </Dialog>
