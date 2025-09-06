@@ -137,13 +137,14 @@ class Consultation(models.Model):
     diagnosis = models.CharField(max_length=300, null=True, blank=True)
     doctors_note = models.CharField(max_length=300, null=True, blank=True)
     signs_and_symptoms = models.CharField(max_length=300, null=True, blank=True)
+    attendance_process = models.OneToOneField('AttendanceProcess', on_delete=models.CASCADE, related_name='clinical_note', null=True, blank=True)
     # complaint = models.TextField(null=True, blank=True)
     # fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     # disposition = models.CharField(
     #     max_length=10, choices=DISPOSITION_CHOICES, default="")
     
     def __str__(self):
-        return self.note
+        return f"{self.patient.first_name} - {self.doctor.get_fullname()}"
 
 
 class Prescription(models.Model):
@@ -222,14 +223,20 @@ class Referral(models.Model):
         ('surgeon', 'Surgeon'),
         ('physiotherapist', 'Physiotherapist'),
     )
+    TYPE = (
+        ('internal', 'Internal'),
+        ('external', 'External')
+    )
     date_created = models.DateTimeField(auto_now_add=True)
     note = models.TextField(null=True, blank=True)
     referred_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     service = models.CharField(max_length=50, choices=SERVICE, default='general')
+    type = models.CharField(max_length=50, choices=TYPE, default='internal')
     preferred_provider = models.CharField(max_length=100, null=True, blank=True)
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
-    provider_email_contact = models.EmailField()
-
+    reffered_doctor = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='referred_doctor', null=True, blank=True)
+    provider_email_contact = models.EmailField(null=True, blank=True)
+    attendance_process = models.OneToOneField('AttendanceProcess', on_delete=models.CASCADE, related_name='referral', null=True, blank=True)
     def __str__(self):
         return f"Referral #{self.id}"
     

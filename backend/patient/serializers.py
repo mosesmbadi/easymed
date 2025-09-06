@@ -116,8 +116,8 @@ class PrescribedDrugSerializer(serializers.ModelSerializer):
 class ReferralSerializer(serializers.ModelSerializer):
     class Meta:
         model = Referral
-        fields = ['patient', 'note', 'service', 'provider_email_contact', 'preferred_provider', 'referred_by']
-        # read_only_fields = ['referred_by']
+        fields = ['id', 'patient', 'note', 'service', 'provider_email_contact', 'preferred_provider', 'referred_by', 'reffered_doctor', 'type', 'attendance_process']
+        read_only_fields = ['id']
 
 
 class TriageSerializer(serializers.ModelSerializer):
@@ -131,6 +131,8 @@ class AttendanceProcessSerializer(serializers.ModelSerializer):
     invoice_items = serializers.SerializerMethodField()
     assigned_doctor = serializers.CharField(source='doctor.get_fullname', read_only=True)
     patient_name = serializers.SerializerMethodField()
+    referral = ReferralSerializer(read_only=True)
+    clinical_note = ConsultationSerializer(read_only=True)
     class Meta:
         model = AttendanceProcess
         fields = '__all__'
