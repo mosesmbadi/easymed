@@ -55,6 +55,20 @@ const PatientSlice = createSlice({
       state.prescriptionItems = action.payload
 
     },
+    updateAttendaceProcessStoreRefer: (state, action) => {
+      state.processes = state.processes.map((process) => {
+        return (
+          process.id === action.payload.attendance_process ? { ...process, referral: action.payload } : process
+        )}
+      );
+    },
+    updateAttendaceProcessStoreClinicalNotes: (state, action) => {
+      state.processes = state.processes.map((process) => {
+      
+        return (
+           process.id === action.payload.attendance_process ? { ...process, clinical_note: action.payload } : process
+      )});
+    },
     setPatientPrescriptionItem: (state, action) => {
       const prescriptionItem = state.prescriptionItems.find(item => item.item === action.payload.item );
       if (prescriptionItem) {
@@ -90,6 +104,8 @@ export const {
   setProcesses,
   setOneProcess,
   setPrescriptionItem,
+  updateAttendaceProcessStoreClinicalNotes,
+  updateAttendaceProcessStoreRefer
 } = PatientSlice.actions;
 
 export const getAllProcesses = (auth) => async (dispatch) => {
@@ -99,6 +115,14 @@ export const getAllProcesses = (auth) => async (dispatch) => {
   } catch (error) {
     console.log("ATTENDANCE_PROCESSES_ERROR ", error);
   }
+};
+
+export const updateAttendanceProcessStoreClinicalNotesData = (payload) => (dispatch) => {
+  dispatch(updateAttendaceProcessStoreClinicalNotes(payload));
+};
+
+export const updateAttendanceProcessStoreReferData = (payload) => (dispatch) => {
+  dispatch(updateAttendaceProcessStoreRefer(payload));
 };
 
 export const getOneProcess = (auth, process_id) => async (dispatch) => {

@@ -146,10 +146,11 @@ export const assignDoctor = (payload) =>{
     })
 }
 
-
-export const consultPatient = (payload) =>{
+// Consult are clinical notes made by doctors during patient consultation
+export const consultPatient = (auth, payload) =>{
+    const axiosInstance = UseAxios(auth);
     return new Promise((resolve,reject) =>{
-        axios.post(`${APP_API_URL.CONSULT_PATIENT}`,payload)
+        axiosInstance.post(`${APP_API_URL.CONSULT_PATIENT}`, payload)
             .then((res) =>{
                 resolve(res.data)
             })
@@ -159,9 +160,45 @@ export const consultPatient = (payload) =>{
     })
 }
 
-export const referPatient = (payload) =>{
+// Consult are clinical notes made by doctors during patient consultation
+export const updatePatientConsult = (auth, payload, consult_id) =>{
+    const axiosInstance = UseAxios(auth);
     return new Promise((resolve,reject) =>{
-        axios.post(`${APP_API_URL.REFER_PATIENT}`,payload)
+        axiosInstance.patch(`${APP_API_URL.CONSULT_PATIENT}`, payload, {
+            params: {
+                consult_id: consult_id
+            }
+        })
+            .then((res) =>{
+                resolve(res.data)
+            })
+            .catch((err) =>{
+                reject(err.message)
+            })
+    })
+}
+
+export const referPatient = (auth, payload) =>{
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve,reject) =>{
+        axiosInstance.post(`${APP_API_URL.REFER_PATIENT}`,payload)
+            .then((res) =>{
+                resolve(res.data)
+            })
+            .catch((err) =>{
+                reject(err.message)
+            })
+    })
+}
+
+export const updatePatientRefer = (auth, payload, refer_id) =>{
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve,reject) =>{
+        axiosInstance.patch(`${APP_API_URL.REFER_PATIENT}`,payload, {
+            params: {
+                refer_id: refer_id
+            }
+        })
             .then((res) =>{
                 resolve(res.data)
             })

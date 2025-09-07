@@ -43,8 +43,8 @@ const ReviewInvoice = ({
     const router = useRouter();
 
     const validationSchema = Yup.object().shape({
-        invoice_description: Yup.string().required("This field is required!"),
-        cash_paid: Yup.number().required("This field is required!"),
+        // invoice_description: Yup.string().required("This field is required!"),
+        // cash_paid: Yup.number().required("This field is required!"),
       });
 
     function sumArray(array) {
@@ -158,13 +158,13 @@ const ReviewInvoice = ({
     <Formik
         initialValues={{ invoice_description: '', status:"paid", cash_paid: "" }}
         validationSchema={validationSchema}
-        onSubmit={updateInvoice}
+        onSubmit={()=> console.log("submit")}
     >
         <Form ref={invoiceRef} className="py-4 bg-white_light rounded-lg space-y-4 px-2 min-h-full flex flex-col justify-between">
             {selectedOption && 
             <>
             <div ref={invoiceRef} className='space-y-8'>
-            <div className='flex justify-between items-center'>
+            {/* <div className='flex justify-between items-center'>
                 <div>
                     <p className='text-2xl'> {selectedOption?.label} </p>
                     {selectedInvoice && (<p className='text-lg text-center'>{`Invoice Number: ${selectedInvoice.invoice_number}`}</p>)}
@@ -183,7 +183,7 @@ const ReviewInvoice = ({
                     className="text-warning text-xs"
                 />
                 </div>
-            </div>
+            </div> */}
             {InvoiceItems.length > 0 && selectedInvoice && (
                 <InvoiceItems 
                     selectedPatient={selectedPatient} 
@@ -222,11 +222,11 @@ const ReviewInvoice = ({
                 />
 
                 <section className="flex items-center justify-end gap-2">
-                <FormButton loading={loading} label={"Save Invoice"}/>
-                <button onClick={()=>console.log("printed")} className="border border-primary flex items-center gap-2 px-3 py-2 text-xs rounded-xl">
+                {/* <FormButton loading={loading} label={"Save Invoice"}/> */}
+                {/* <button onClick={()=>console.log("printed")} className="border border-primary flex items-center gap-2 px-3 py-2 text-xs rounded-xl">
                     <MdLocalPrintshop />
                     Print Invoice
-                </button>
+                </button> */}
                 </section>
             </section>
             </>}

@@ -39,7 +39,7 @@ const getActions = () => {
     },
     {
       action: "consult",
-      label: "Consult",
+      label: "Clinical Notes",
       icon: <BiSupport className="text-card text-xl mx-2" />,
     },
     {

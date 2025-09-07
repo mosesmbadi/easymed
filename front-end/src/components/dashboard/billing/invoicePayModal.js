@@ -88,14 +88,27 @@ const InvoicePayModal = () => {
     return cashAmount;
   };
 
+  const calculateInvoiceCashAndInsurance = (data) => {
+    let totalAmount = 0;
+    data.invoice_items.forEach((invoiceItem)=> {
+      totalAmount += parseFloat(invoiceItem.item_amount)
+    })
+    return totalAmount;
+  }
+
   const payIndividualInvoices = (payload) => {
     let paymentAmt = payload.payment_amount
 
     selectedItems?.selectedRowsData.forEach( async (invoice)=> {
+      // Get total cash required for invoice
       let requiredCash = calculateInvoiceCash(invoice)
+      // Get total cash and insurance required for invoice
+      let totalRequired = calculateInvoiceCashAndInsurance(invoice)
+      // Get balance from cash paid
       let balanceFromPaidCash = requiredCash - parseFloat(invoice.cash_paid)
-
-      if(paymentAmt > balanceFromPaidCash){
+      // If payment amount is greater than or equal to balance from paid cash, pay the balance from paid cash
+      // Else pay the payment amount
+      if(paymentAmt >= balanceFromPaidCash){
         payload = {
           ...payload,
           invoice: invoice.id,
@@ -145,7 +158,7 @@ const InvoicePayModal = () => {
       let amountPaid = parseFloat(invoice.cash_paid)
 
       invoice.invoice_items.forEach((invoiceItem)=> {
-        if(invoiceItem.payment_mode_name.toLowerCase()=== 'cash'){
+        if(invoiceItem.payment_mode_name?.toLowerCase() === 'cash'){
           let remainder = parseFloat(invoiceItem.actual_total) - amountPaid
           if(remainder > 0){
             paymentAmt -= parseFloat(remainder)

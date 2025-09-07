@@ -148,6 +148,7 @@ class BedSerializer(serializers.ModelSerializer):
 
 class PatientDischargeSerializer(serializers.ModelSerializer):
     discharged_by_name = serializers.CharField(source="discharged_by.get_fullname", read_only=True)
+    attendance_process = serializers.CharField(source="referral.attendance_process.id", read_only=True)
     admission = serializers.PrimaryKeyRelatedField(
         queryset=PatientAdmission.objects.all(),
         write_only=True,
@@ -161,9 +162,9 @@ class PatientDischargeSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'admission', 'admission_id', 'discharge_types',
             'discharged_by_name', 'discharge_notes', 'referral',
-            'referral_data', 'discharged_at'
+            'referral_data', 'discharged_at', 'attendance_process'
         ]
-        read_only_fields = ['discharged_by', 'discharged_at', 'referral', 'discharged_by_name', 'admission_id']
+        read_only_fields = ['discharged_by', 'discharged_at', 'referral', 'discharged_by_name', 'admission_id', 'attendance_process']
 
     def validate(self, data):
         discharge_types = data.get('discharge_types')
@@ -187,13 +188,36 @@ class PatientDischargeSerializer(serializers.ModelSerializer):
 
         # Set discharged_by to the requesting user
         validated_data['discharged_by'] = self.context['request'].user
+       
 
         # Create Referral instance for referral discharge
         if discharge_types == 'referral':
-            referral_serializer = ReferralSerializer(data=referral_data)
+            # Create a copy of referral_data to modify
+            referral_data_to_save = referral_data.copy()
+
+            # Assign primary keys from objects to the data
+            if referral_data_to_save.get('patient'):
+                referral_data_to_save['patient'] = referral_data_to_save['patient'].pk
+
+            if referral_data_to_save.get('attendance_process'):
+                referral_data_to_save['attendance_process'] = referral_data_to_save['attendance_process'].pk
+
+            if referral_data_to_save.get('referred_by'):
+                referral_data_to_save['referred_by'] = referral_data_to_save['referred_by'].pk
+
+            referral_serializer = ReferralSerializer(data=referral_data_to_save)
             referral_serializer.is_valid(raise_exception=True)
-            referral = referral_serializer.save(referred_by_id=self.context['request'].user.id)
+            
+            # The referred_by_id is already correctly handled by the `save` method
+            referral = referral_serializer.save(referred_by=self.context['request'].user)
+            
             validated_data['referral'] = referral
+
+            # referral_serializer = ReferralSerializer(data=referral_data)
+            # pdb.set_trace()
+            # referral_serializer.is_valid(raise_exception=True)
+            # referral = referral_serializer.save(referred_by_id=self.context['request'].user.id)
+            # validated_data['referral'] = referral
         return super().create(validated_data)
 
         

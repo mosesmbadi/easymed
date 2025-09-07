@@ -41,7 +41,7 @@ const PayAmountsDisplay = (
             </div>
         </div>
 
-        <div className='flex h-full w-full justify-end'>
+        {/* <div className='flex h-full w-full justify-end'>
             <div className='w-48'>
                 <Field
                     className="block border rounded-md text-sm border-gray py-4 px-4 focus:outline-card w-full"
@@ -55,7 +55,7 @@ const PayAmountsDisplay = (
                     className="text-warning text-xs"
                 />
             </div>
-        </div>
+        </div> */}
 
  
     </div>

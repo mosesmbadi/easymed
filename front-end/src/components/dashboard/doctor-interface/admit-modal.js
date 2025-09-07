@@ -1,18 +1,22 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
 import * as Yup from "yup";
 import { Formik, Field, Form, ErrorMessage } from "formik";
 import { DialogTitle, Grid } from "@mui/material";
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useAuth } from '@/assets/hooks/use-auth';
 import { toast } from 'react-toastify';
 import { admitPatient } from '@/redux/service/inpatient';
+import { fetchHospitalBeds, fetchHospitalWards } from '@/redux/features/inpatient';
 
 const AdmitModal = ({admitOpen, setAdmitOpen, selectedRowdata}) => {
   const auth = useAuth();
-  const [loading, setLoading] = React.useState(false);
+  const dispatch = useDispatch();
+  const [loading, setLoading] = useState(false);
   const { processes, patients } = useSelector((store)=> store.patient)
+  const [selectedWard, setSelectedWard] = useState("");
+  const { beds, wards } = useSelector((store) => store.inpatient);
 
   const patientRender = () => {
     const patient = patients.find((patient) => patient.id === selectedRowdata.patient);
@@ -28,10 +32,14 @@ const AdmitModal = ({admitOpen, setAdmitOpen, selectedRowdata}) => {
     patient: selectedRowdata.patient,
     reason_for_admission: "",
     admitted_by: auth.user_id,
+    ward: "",
+    bed: "",
   };
 
   const validationSchema = Yup.object().shape({
     reason_for_admission: Yup.string().required("This field is required!"),
+    ward: Yup.number().required("Ward is required!").min(1, "Ward must be at least 1"),
+    bed: Yup.number().required("Bed is required!").min(1, "Bed must be at least 1"),
   });
 
   const handleAdmissions = async (formValue, helpers) => {
@@ -49,6 +57,23 @@ const AdmitModal = ({admitOpen, setAdmitOpen, selectedRowdata}) => {
     }
   }
 
+  useEffect(() => {
+
+        const fetchWards = () => {
+            try {
+                dispatch(fetchHospitalWards(auth));
+            } catch (error) {
+                console.error("Error fetching wards:", error);
+            }
+        };
+
+        if(auth.token){
+            fetchWards();            
+        }
+
+
+  },[])
+
   return (
     <section>
         <Dialog
@@ -62,6 +87,7 @@ const AdmitModal = ({admitOpen, setAdmitOpen, selectedRowdata}) => {
             <DialogTitle>
               <div className="flex justify-between">
                   <p>{`Name: ${patientRender()?.first_name} ${patientRender()?.second_name}`}</p>
+                  <p>{`PId: ${patientRender()?.unique_id}`}</p>
                   <p>{`Gender: ${patientRender()?.gender}`}</p>
                   <p>{`Age: ${patientRender()?.age}`}</p>
               </div>
@@ -75,6 +101,55 @@ const AdmitModal = ({admitOpen, setAdmitOpen, selectedRowdata}) => {
                 {({ values, handleChange }) => (
                 <Form>
                     <Grid container spacing={4}>
+                        <Grid item md={12} xs={12}>
+                            <label>Select Ward</label>
+                            <Field
+                                as="select"
+                                className="block text-sm pr-9 border border-gray rounded-xl py-2 px-4 focus:outline-none w-full"
+                                onChange={(e) => {
+                                    handleChange(e);
+                                    dispatch(fetchHospitalBeds(auth, e.target.value));
+                                    setSelectedWard(e.target.value);
+                                }}
+                                name="ward"
+                                >
+                                <option value="">Select Ward</option>
+                                {wards.map((ward, index) => (
+                                    <option key={index} value={ward.id}>
+                                    {ward?.name}
+                                    </option>
+                                ))}
+                            </Field>
+                            <ErrorMessage
+                                name="ward"
+                                component="div"
+                                className="text-warning text-xs"
+                            />
+                        </Grid>
+                        <Grid item md={12} xs={12}>
+                            <label>Select Bed</label>
+                            <Field
+                                as="select"
+                                className="block text-sm pr-9 border border-gray rounded-xl py-2 px-4 focus:outline-none w-full"
+                                onChange={(e) => {
+                                    handleChange(e);
+                                    setSelectedWard(e.target.value);
+                                }}
+                                name="bed"
+                                >
+                                <option value="">Select Bed</option>
+                                {beds.filter((beed)=>beed.status === "available").map((bed, index) => (
+                                  <option key={index} value={bed.id}>
+                                    {bed?.bed_number} - {bed?.bed_type}
+                                  </option>
+                                ))}
+                            </Field>
+                            <ErrorMessage
+                                name="bed"
+                                component="div"
+                                className="text-warning text-xs"
+                            />
+                        </Grid>
                         <Grid item md={12} xs={12}>
                             <label>Reason for Admission</label>
                             <Field

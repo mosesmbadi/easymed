@@ -68,6 +68,12 @@ const InpatientSlice = createSlice({
         patient.id === updatedAdmission.id ? updatedAdmission : patient
       );
     },
+    updateAdmissionStoreDischargeData: (state, action) => {
+      const updatedAdmission = action.payload;
+      state.patients = state.patients.map((patient) =>
+        parseInt(patient.attendance_process) === parseInt(updatedAdmission.attendance_process) ? {...patient, ward: null, bed: null, discharged: updatedAdmission.discharge_types} : patient
+      );
+    },
     assignedNurses: (state, action) => {
       state.assignedNurses = action.payload;
     }
@@ -78,7 +84,7 @@ export const {
   fetchBeds, fetchWards, 
   addBedToStore, addWardToStore,
   updateWardInStore, updateBedInStore, 
-  admittedPatients, updateAdmissionInStore,
+  admittedPatients, updateAdmissionInStore, updateAdmissionStoreDischargeData,
   assignedNurses, oneAdmission, setVitals, setNewVital, setSchedules, setUpdatedScheduledDrug
  } = InpatientSlice.actions;
 
@@ -109,6 +115,9 @@ export const fetchAdmitted = (auth, ward) => async (dispatch) => {
     console.log("ADMITTED_PATIENTS_ERROR ", error);
   }
 };
+export const updateAdmissionStoreDischarge = (response) => async (dispatch) => {
+  dispatch(updateAdmissionStoreDischargeData(response))  
+}
 
 
 export const fetchOneAdmission = (auth, ward, admission_id) => async (dispatch) => {
