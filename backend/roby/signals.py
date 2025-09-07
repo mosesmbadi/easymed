@@ -1,7 +1,7 @@
 from django.dispatch import Signal
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from .tasks import process_triage_request
+from .task import process_triage_request
 
 triage_request_signal = Signal()
 

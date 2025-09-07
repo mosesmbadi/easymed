@@ -8,7 +8,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from customuser.models import CustomUser, Doctor, DoctorProfile, PatientUser
 from company.models import InsuranceCompany
-from patient.models import Patient
+from patient.models import Patient, AttendanceProcess, Referral
 from laboratory.models import (
     LabTestRequest,
     PatientSample,  
@@ -344,7 +344,16 @@ def occupied_bed(ward):
 
 @pytest.fixture
 def patient_admission(doctor, patient, ward, bed):
+    # Create an attendance process first
+    attendance_process = AttendanceProcess.objects.create(
+        patient=patient,
+        doctor=doctor,
+        reason="Medical admission for treatment",
+        created_by=doctor
+    )
+    
     admission = PatientAdmission.objects.create(
+        attendance_process=attendance_process,
         patient=patient,
         ward=ward,
         bed=bed,

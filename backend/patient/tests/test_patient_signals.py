@@ -10,6 +10,8 @@ def attendance_process(db, user, patient):
         doctor=None,
         track_number="TRK12345",
         patient=patient,
+        reason="Test reason",
+        created_by=user,
     )
 
 @pytest.mark.django_db

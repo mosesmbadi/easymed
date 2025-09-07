@@ -9,7 +9,7 @@ from inpatient.models import Ward
 User = get_user_model()
 
 def test_senior_nurse_can_assign_nurse_to_ward(authenticated_senior_nurse_client, senior_nurse, nurse, ward):
-    url = reverse('wardnurseassignment-list')
+    url = reverse('inpatient:wardnurseassignment-list')
     data = {
         "ward": ward.id,
         "nurse": nurse.id
@@ -27,7 +27,7 @@ def test_senior_nurse_can_assign_nurse_to_ward(authenticated_senior_nurse_client
     assert response.data["assigned_by"] == senior_nurse.get_fullname()
 
 def test_regular_nurse_cannot_assign_nurse_to_ward(authenticated_nurse_client, nurse, ward):
-    url = reverse('wardnurseassignment-list')
+    url = reverse('inpatient:wardnurseassignment-list')
     data = {
         "ward": ward.id,
         "nurse": nurse.id
@@ -72,7 +72,7 @@ def test_senior_nurse_can_only_see_their_assignments(authenticated_senior_nurse_
         assigned_by=senior_nurse2
     )
 
-    url = reverse('wardnurseassignment-list')
+    url = reverse('inpatient:wardnurseassignment-list')
     response = authenticated_senior_nurse_client.get(url)
     
     assert response.status_code == status.HTTP_200_OK
