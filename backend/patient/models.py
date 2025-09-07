@@ -233,7 +233,7 @@ class Referral(models.Model):
     service = models.CharField(max_length=50, choices=SERVICE, default='general')
     type = models.CharField(max_length=50, choices=TYPE, default='internal')
     preferred_provider = models.CharField(max_length=100, null=True, blank=True)
-    patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, null=True, blank=True)
     reffered_doctor = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='referred_doctor', null=True, blank=True)
     provider_email_contact = models.EmailField(null=True, blank=True)
     attendance_process = models.OneToOneField('AttendanceProcess', on_delete=models.CASCADE, related_name='referral', null=True, blank=True)
