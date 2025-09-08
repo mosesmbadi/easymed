@@ -1,20 +1,23 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
 import * as Yup from "yup";
 import { Formik, Field, Form, ErrorMessage } from "formik";
 import { Grid } from "@mui/material";
-import { referPatient } from "@/redux/service/patients";
+import { referPatient, updatePatientRefer } from "@/redux/service/patients";
 import { toast } from "react-toastify";
 import { useContext } from "react";
 import { authContext } from "@/components/use-context";
 import { useDispatch, useSelector } from "react-redux";
-import { getPatientTriage } from "@/redux/features/patients";
+import { getPatientTriage, updateAttendanceProcessStoreReferData } from "@/redux/features/patients";
 import { useAuth } from "@/assets/hooks/use-auth";
+import { getAllDoctors } from "@/redux/features/doctors";
 
 const ReferPatientModal = ({ selectedRowData, open, setOpen }) => {
-  const [loading, setLoading] = React.useState(false);
+  const [loading, setLoading] = useState(false);
+  const [selectedType, setSelectedType] = useState("")
   const { patientTriage } = useSelector((store) => store.patient);
+  const { doctors } = useSelector((store) => store.doctor);
   const { user } = useContext(authContext);
   const dispatch = useDispatch();
   const auth = useAuth()
@@ -34,36 +37,60 @@ const ReferPatientModal = ({ selectedRowData, open, setOpen }) => {
     "physiotherapist",
   ];
 
+  const referalTypes = [
+    "internal",
+    "external"
+  ];
+
   const initialValues = {
-    note: "",
-    service: "",
-    email: "",
-    patient_id: selectedRowData?.id,
+    type: selectedRowData?.referral?.type || "",
+    note: selectedRowData?.referral?.note || "",
+    service: selectedRowData?.referral?.service || "",
+    provider_email_contact: selectedRowData?.referral?.provider_email_contact || "",
+    preferred_provider: selectedRowData?.referral?.preferred_provider || "",
     referred_by: user?.user_id,
+    patient: selectedRowData?.patient,
+    reffered_doctor: selectedRowData?.referral?.reffered_doctor || "",
   };
 
   const validationSchema = Yup.object().shape({
     note: Yup.string().required("This field is required!"),
     service: Yup.string().required("This field is required!"),
-    email: Yup.string()
-      .email("This is not a valid email")
-      .required("Email is required!"),
+    type: Yup.string().required("This field is required!"),
+    // provider_email_contact: Yup.string()
+    //   .email("This is not a valid email")
+    //   .required("Email is required!"),
   });
 
   const handleReferPatient = async (formValue, helpers) => {
     try {
       const formData = {
         ...formValue,
-        patient_id: parseInt(formValue.patient_id),
-        referred_by: parseInt(formValue.referred_by),
+        attendance_process: selectedRowData.id
       };
       setLoading(true);
-      await referPatient(formData).then(() => {
-        helpers.resetForm();
-        toast.success("Patient Referred Successfully!");
-        setLoading(false);
-        handleClose();
-      });
+      if(selectedRowData?.referral){
+        // If referral exists, Update
+        await updatePatientRefer(auth, formValue, selectedRowData?.referral?.id).then((res) => {
+          helpers.resetForm();
+          console.log(res)
+          dispatch(updateAttendanceProcessStoreReferData(res));
+          toast.success("Patient Referred Successfully!");
+          setLoading(false);
+          handleClose();
+        });
+      }else{
+        // If no referral exists, Create a new one
+        await referPatient(auth, formData).then((res) => {
+          helpers.resetForm();
+          console.log(res)
+          dispatch(updateAttendanceProcessStoreReferData(res));
+          toast.success("Patient Referred Successfully!");
+          setLoading(false);
+          handleClose();
+        });
+      }
+
     } catch (err) {
       toast.error(err);
       setLoading(false);
@@ -72,13 +99,14 @@ const ReferPatientModal = ({ selectedRowData, open, setOpen }) => {
 
   useEffect(() => {
     dispatch(getPatientTriage(selectedRowData?.triage, auth));
+    dispatch(getAllDoctors(auth));
   }, [selectedRowData]);
 
   return (
     <section>
       <Dialog
         fullWidth
-        maxWidth="sm"
+        maxWidth="md"
         open={open}
         onClose={handleClose}
         aria-labelledby="alert-dialog-title"
@@ -90,6 +118,7 @@ const ReferPatientModal = ({ selectedRowData, open, setOpen }) => {
             validationSchema={validationSchema}
             onSubmit={handleReferPatient}
           >
+            {({ values, handleChange }) => (
             <Form>
               <section className="space-y-2">
                 <h1 className="">Triage Information</h1>
@@ -113,25 +142,37 @@ const ReferPatientModal = ({ selectedRowData, open, setOpen }) => {
                 </section>
                 <Grid container spacing={2}>
                   <Grid item md={6} xs={12}>
+                    <label className="bold" htmlFor="gender">Refer Type</label>
                     <Field
-                      className="block border border-gray rounded-xl text-sm py-2 px-4 focus:outline-none w-full"
-                      type="text"
-                      placeholder="email"
-                      name="email"
-                    />
+                      as="select"
+                      className="block pr-9 border border-gray rounded-xl py-2 text-sm px-4 focus:outline-none w-full"
+                      name="type"
+                      // onChange={(e) => {
+                      //   handleChange(e);
+                      //   setSelectedType(e.target.value);
+                      // }}
+                    >
+                      <option value="">Referral Type</option>
+                      {referalTypes.map((type, index) => (
+                        <option key={index} value={type}>
+                          {type}
+                        </option>
+                      ))}
+                    </Field>
                     <ErrorMessage
-                      name="email"
+                      name="type"
                       component="div"
                       className="text-warning text-xs"
                     />
                   </Grid>
                   <Grid item md={6} xs={12}>
+                    <label className="bold" htmlFor="gender">Refer Service</label>
                     <Field
                       as="select"
                       className="block pr-9 border border-gray rounded-xl py-2 text-sm px-4 focus:outline-none w-full"
                       name="service"
                     >
-                      <option value="">Select service</option>
+                      <option value="">Select Service</option>
                       {services.map((service, index) => (
                         <option key={index} value={service}>
                           {service}
@@ -144,22 +185,75 @@ const ReferPatientModal = ({ selectedRowData, open, setOpen }) => {
                       className="text-warning text-xs"
                     />
                   </Grid>
-                </Grid>
-                <Grid container spacing={2}>
-                  <Grid item md={12} xs={12}>
-                    <Field
-                      as="textarea"
-                      className="block pr-9 border rounded-xl border-gray py-2 text-sm px-4 focus:outline-none w-full"
-                      name="note"
-                      placeholder="note"
-                    />
+                  {/* Show only in External Referrals */}
+                  {values.service && values.type && values.type === "external" && (
+                    <>
+                      <Grid item md={6} xs={12}>
+                        <label className="bold" htmlFor="gender">Service Provider</label>
+                        <Field
+                          className="block border border-gray rounded-xl text-sm py-2 px-4 focus:outline-none w-full"
+                          type="text"
+                          placeholder="Preferred Service Provider"
+                          name="preferred_provider"
+                        />
+                        <ErrorMessage
+                          name="preferred_provider"
+                          component="div"
+                          className="text-warning text-xs"
+                        />
+                      </Grid>
+                      <Grid item md={6} xs={12}>
+                        <label className="bold" htmlFor="gender">Service Provider Email</label>
+                        <Field
+                          className="block border border-gray rounded-xl text-sm py-2 px-4 focus:outline-none w-full"
+                          type="text"
+                          placeholder="Provider Email Contact"
+                          name="provider_email_contact"
+                        />
+                        <ErrorMessage
+                          name="provider_email_contact"
+                          component="div"
+                          className="text-warning text-xs"
+                        />
+                      </Grid>
+                    </>)}
+                    {values.service &&  values.type && values.type === "internal" && (
+                      <Grid item md={12} xs={12}>
+                        <label className="bold" htmlFor="gender">Referred Doctor</label>
+                        <Field
+                          as="select"
+                          className="block pr-9 border border-gray rounded-xl py-2 text-sm px-4 focus:outline-none w-full"
+                          name="reffered_doctor"
+                        >
+                          <option value="">Select Doctor</option>
+                          {doctors.map((doctor, index) => (
+                            <option key={index} value={doctor.id}>
+                              {doctor.first_name} {doctor.last_name} - {doctor.profession}
+                            </option>
+                          ))}
+                        </Field>
+                        <ErrorMessage
+                          name="reffered_doctor"
+                          component="div"
+                          className="text-warning text-xs"
+                        />
+                      </Grid>
+                    )}
+                    <Grid item md={12} xs={12}>
+                      <label className="bold" htmlFor="gender">Refer Notes</label>
+                      <Field
+                        as="textarea"
+                        className="block pr-9 border rounded-xl border-gray py-2 text-sm px-4 focus:outline-none w-full"
+                        name="note"
+                        placeholder="note"
+                      />
 
-                    <ErrorMessage
-                      name="note"
-                      component="div"
-                      className="text-warning text-xs"
-                    />
-                  </Grid>
+                      <ErrorMessage
+                        name="note"
+                        component="div"
+                        className="text-warning text-xs"
+                      />
+                    </Grid>
                 </Grid>
                 <div>
                   <div className="flex justify-end gap-2 mt-4">
@@ -199,6 +293,7 @@ const ReferPatientModal = ({ selectedRowData, open, setOpen }) => {
                 </div>
               </section>
             </Form>
+            )}
           </Formik>
         </DialogContent>
       </Dialog>
