@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import dynamic from "next/dynamic";
 import { useSelector, useDispatch } from 'react-redux';
 import { Dialog, DialogContent, DialogTitle, Grid } from '@mui/material'
@@ -47,9 +47,9 @@ const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
   };
 
 
-const AppointmentCard = ({ processes }) => {
+const AppointmentCard = () => {
 
-    const [processsFilter, setProcessFilter]=useState('reception')
+    const [processsFilter, setProcessFilter]=useState({ track: 'reception', search: "" })
     const [assignOpen, setAssignOpen]=useState(false)
     const userActions = getActions();
     const [showPageSizeSelector, setShowPageSizeSelector] = useState(true);
@@ -60,8 +60,12 @@ const AppointmentCard = ({ processes }) => {
     const [open, setOpen] = useState(false)
     const dispatch = useDispatch()
     const auth = useAuth()
+    const { processes } = useSelector((store)=>store.patient);
     const [selectedData, setSelectedData] = useState({})
     const {patients} =  useSelector((store)=> store.patient)
+    const [searchQuery, setSearchQuery] = useState("")
+    // const [date, setDate] = useState("2025-09-12")
+    const [selectedSearchFilter, setSelectedSearchFilter] = useState({label: "", value: ""})
 
     const handleClose = () => {
         setOpen(false);
@@ -140,11 +144,29 @@ const AppointmentCard = ({ processes }) => {
         }
     }
 
-    const receptionProcesses = processes.filter((process)=> process.track.includes(processsFilter))
+    const receptionProcesses = processes.filter((process)=> process.track.includes(processsFilter.track))
+
+    useEffect(() => {
+        // This effect handles the debouncing logic
+        const timerId = setTimeout(() => {
+            // Dispatch the action only after a 500ms delay
+            dispatch(getAllProcesses(auth, null, processsFilter, selectedSearchFilter))
+        }, 500); // 500ms delay, adjust as needed
+
+        // Cleanup function: clears the timer if searchTerm changes before the delay is over
+        return () => {
+            clearTimeout(timerId);
+        };
+    }, [processsFilter.search]); // The effect re-runs only when the local `searchTerm` state changes
 
   return (
     <>
-    <ProcessFilter setProcessFilter={setProcessFilter} selectedFilter={processsFilter}/>
+    <ProcessFilter 
+        setProcessFilter={setProcessFilter} 
+        selectedFilter={processsFilter}
+        selectedSearchFilter={selectedSearchFilter} 
+        setSelectedSearchFilter={setSelectedSearchFilter}
+    />
     <DataGrid
         dataSource={receptionProcesses}
         allowColumnReordering={true}

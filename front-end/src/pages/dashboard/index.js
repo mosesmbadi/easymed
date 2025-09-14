@@ -23,7 +23,7 @@ const Dashboard = () => {
       <h2 className="text-2xl py-2">New Visits</h2>
       <hr class="h-px mb-8 bg-gray border-0 dark:bg-gray"></hr>
 
-      <AppointmentCard processes={processes}/>
+      <AppointmentCard />
     </Container>
   );
 };

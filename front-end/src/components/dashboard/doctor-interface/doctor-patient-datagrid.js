@@ -85,11 +85,13 @@ const DoctorPatientDataGrid = () => {
   const [showInfo, setShowInfo] = useState(true);
   const [showNavButtons, setShowNavButtons] = useState(true);
   const { processes, patients } = useSelector((store)=> store.patient)
-  const [processFilter, setProcessFilter] = useState("doctor")
+  const [processFilter, setProcessFilter] = useState({ track: 'doctor', search: "" });
   const actionsWhenOnDoctorTrack = userActions.filter((action)=> action.action !== "results")
   const actionsWhenOnResultedTrack = userActions.filter((action)=> action.action !== "send to lab")
+  const [selectedSearchFilter, setSelectedSearchFilter] = useState({label: "", value: ""})
 
-  const doctorsSchedules = processes.filter((process)=> process.track.includes(processFilter))
+
+  const doctorsSchedules = processes.filter((process)=> process.track.includes(processFilter.track))
 
   const patientNameRender = (cellData) => {
     const patient = patients.find((patient) => patient.id === cellData.data.patient);
@@ -144,9 +146,27 @@ const DoctorPatientDataGrid = () => {
     setSelectedRecords(selectedRowKeys);
   };
 
+  useEffect(() => {
+      // This effect handles the debouncing logic
+      const timerId = setTimeout(() => {
+          // Dispatch the action only after a 500ms delay
+          dispatch(getAllProcesses(auth, null, processFilter, selectedSearchFilter))
+      }, 500); // 500ms delay, adjust as needed
+
+      // Cleanup function: clears the timer if searchTerm changes before the delay is over
+      return () => {
+          clearTimeout(timerId);
+      };
+  }, [processFilter.search]); // The effect re-runs only when the local `searchTerm` state changes
+
   return (
     <section>
-      <ProcessFilter selectedFilter={processFilter} setProcessFilter={setProcessFilter}/>
+      <ProcessFilter 
+        selectedFilter={processFilter} 
+        setProcessFilter={setProcessFilter}
+        selectedSearchFilter={selectedSearchFilter} 
+        setSelectedSearchFilter={setSelectedSearchFilter}
+      />
       <DataGrid
         dataSource={doctorsSchedules}
         allowColumnReordering={true}

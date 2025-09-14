@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import dynamic from "next/dynamic";
 import { Column, Paging, Pager, Scrolling,
@@ -40,11 +40,13 @@ const LabRequestDataGrid = ( ) => {
   const [showPageSizeSelector, setShowPageSizeSelector] = useState(true);
   const [showInfo, setShowInfo] = useState(true);
   const [showNavButtons, setShowNavButtons] = useState(true);
-  const [processsFilter, setProcessFilter] = useState("lab")
+  const [processsFilter, setProcessFilter] = useState({ track: "lab", search: "" })
+  const [selectedSearchFilter, setSelectedSearchFilter] = useState({label: "", value: ""})
+  
 
   const { processes, patients } = useSelector((store)=> store.patient)
 
-  const labTestsSchedules = processes.filter((process)=> process.track.includes(processsFilter))
+  const labTestsSchedules = processes.filter((process)=> process.track.includes(processsFilter.track))
   const searchedProcesses = labTestsSchedules.filter((process)=> process.patient_number.includes(searchQuery))
 
 
@@ -79,48 +81,27 @@ const LabRequestDataGrid = ( ) => {
     );
   };
 
+  useEffect(() => {
+      // This effect handles the debouncing logic
+      const timerId = setTimeout(() => {
+          // Dispatch the action only after a 500ms delay
+          dispatch(getAllProcesses(auth, null, processsFilter, selectedSearchFilter))
+      }, 500); // 500ms delay, adjust as needed
+
+      // Cleanup function: clears the timer if searchTerm changes before the delay is over
+      return () => {
+          clearTimeout(timerId);
+      };
+  }, [processsFilter.search]); // The effect re-runs only when the local `searchTerm` state changes
+
   return (
     <>
-      <Grid container spacing={2} className="my-2">
-        <Grid item md={4} xs={12}>
-          <input
-            className="py-3 w-full px-4 focus:outline-none placeholder-font font-thin text-sm"
-            onChange={(e) => setSearchQuery(e.target.value)}
-            value={searchQuery}
-            fullWidth
-            placeholder="Search by patient ID"
-          />
-        </Grid>
-        <Grid item md={4} xs={12}>
-          <select
-            className="px-4 w-full py-3 focus:outline-none"
-            name=""
-            id=""
-          >
-            <option value="" selected>
-              Search by Month
-            </option>
-            {months.map((month, index) => (
-              <option key={index} value="">{month.name}</option>
-            ))}
-          </select>
-        </Grid>
-        <Grid item md={4} xs={12}>
-          <div className="flex">
-            <button className="bg-white shadow border-primary py-3 px-4 w-full">
-              Date
-            </button>
-            <button className="bg-white shadow border-primary py-3 px-4 w-full">
-              Week
-            </button>
-            <button className="bg-white shadow border-primary py-3 px-4 w-full">
-              Month
-            </button>
-          </div>
-        </Grid>
-      </Grid>
-
-      <ProcessFilter setProcessFilter={setProcessFilter} selectedFilter={processsFilter}/>
+      <ProcessFilter 
+        setProcessFilter={setProcessFilter} 
+        selectedFilter={processsFilter}
+        selectedSearchFilter={selectedSearchFilter} 
+        setSelectedSearchFilter={setSelectedSearchFilter}
+      />
 
       {/* DATAGRID STARTS HERE */}
       <DataGrid
