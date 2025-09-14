@@ -313,12 +313,14 @@ export const fetchPatientPrescribeDrugs = (patient_id) =>{
     })
 }
 
-export const fetchAllAttendanceProcesses = (auth, process_id=null) =>{
+export const fetchAllAttendanceProcesses = (auth, process_id=null, processsFilter, selectedSearchFilter) =>{
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve,reject) =>{
         axiosInstance.get(`${APP_API_URL.PATIENT_ATTENDANCE_PROCESS}`, {
             params: {
-                process_id: process_id
+                process_id: process_id,
+                search_field: selectedSearchFilter.value ? selectedSearchFilter.value : null,
+                search_value: processsFilter.search,
             }
         })
             .then((res) =>{

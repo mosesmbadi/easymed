@@ -22,8 +22,16 @@ export default async function handler(req, res) {
 
             const query = req.query;
             const process_id = query.process_id ? query.process_id : null;
+            const search_field = query.search_field
+            const search_value = query.search_value
+                //             processsFilter: processsFilter,
+                // selectedSearchFilter: selectedSearchFilter
 
-            let url = `${API_URL.PATIENT_ATTENDANCE_PROCESS}`;
+            let url = `${API_URL.PATIENT_ATTENDANCE_PROCESS}?search=${search_value}`;
+
+            if (search_field){
+                url = `${API_URL.PATIENT_ATTENDANCE_PROCESS}?search_field=${search_field}&search=${search_value}`
+            }
 
             if (process_id) {
                 url = `${API_URL.PATIENT_ATTENDANCE_PROCESS}${process_id}/`

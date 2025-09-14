@@ -10,6 +10,7 @@ from rest_framework.request import Request
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters
 from drf_spectacular.utils import (extend_schema)
 
 
@@ -42,6 +43,7 @@ from .serializers import (
     AttendanceProcessSerializer,
 )
 from .filters import (
+    AttendanceProcessFilter,
     PatientFilter,
     ConsultationFilter,
     TriageFilter,
@@ -178,7 +180,14 @@ class TriageViewSet(viewsets.ModelViewSet):
 class AttendanceProcessViewSet(viewsets.ModelViewSet):
     queryset = AttendanceProcess.objects.all().order_by('-id')
     serializer_class = AttendanceProcessSerializer
-
+    filter_backends = [AttendanceProcessFilter, DjangoFilterBackend] # Use your custom filter
+    filterset_fields = ['track']
+    search_fields = [
+        'patient__first_name', 'patient__second_name', 'track_number', 'patient_number',
+        'doctor__first_name', 'doctor__last_name',
+        'lab_tech__first_name', 'lab_tech__last_name',
+        'pharmacist__first_name', 'pharmacist__last_name'
+    ]
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
 

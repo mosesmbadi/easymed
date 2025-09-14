@@ -61,8 +61,10 @@ const PharmacyDataGrid = () => {
   const [showInfo, setShowInfo] = useState(true);
   const [showNavButtons, setShowNavButtons] = useState(true);
   const { processes, patients } = useSelector((store)=> store.patient)
-  const [processsFilter, setProcessFilter] = useState("pharmacy")
-  const filteredProcesses = processes.filter((process) => process.track.includes(processsFilter));
+  const [processsFilter, setProcessFilter] = useState({ track: "pharmacy", search: "" })
+  const filteredProcesses = processes.filter((process) => process.track.includes(processsFilter.track));
+  const [selectedSearchFilter, setSelectedSearchFilter] = useState({label: "", value: ""})
+  
 
   const searchedProcesses = filteredProcesses.filter((process)=> process.patient_number.includes(searchQuery))
 
@@ -128,19 +130,27 @@ const PharmacyDataGrid = () => {
     );
   };
 
+  useEffect(() => {
+      // This effect handles the debouncing logic
+      const timerId = setTimeout(() => {
+          // Dispatch the action only after a 500ms delay
+          dispatch(getAllProcesses(auth, null, processsFilter, selectedSearchFilter))
+      }, 500); // 500ms delay, adjust as needed
+
+      // Cleanup function: clears the timer if searchTerm changes before the delay is over
+      return () => {
+          clearTimeout(timerId);
+      };
+  }, [processsFilter.search]); // The effect re-runs only when the local `searchTerm` state changes
+
   return (
     <section className=" my-0">
-      <Grid container spacing={2} className="mb-4 mt-2">
-        <Grid item md={6} xs={12}>
-          <input
-            className="py-2 w-full px-4 focus:outline-none placeholder-font font-thin text-sm"
-            onChange={(e) => setSearchQuery(e.target.value)}
-            value={searchQuery}
-            placeholder="Search by patient ID"
-          />
-        </Grid>
-      </Grid>
-      <ProcessFilter setProcessFilter={setProcessFilter} selectedFilter={processsFilter}/>
+      <ProcessFilter 
+        setProcessFilter={setProcessFilter} 
+        selectedFilter={processsFilter}
+        selectedSearchFilter={selectedSearchFilter} 
+        setSelectedSearchFilter={setSelectedSearchFilter}
+      />
       <DataGrid
         dataSource={searchedProcesses}
         allowColumnReordering={true}
