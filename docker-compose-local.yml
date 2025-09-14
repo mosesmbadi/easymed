@@ -23,7 +23,7 @@ services:
         ports:
             - 8080:8080
         env_file:
-            - ./.env
+            - ./.env.local
         restart: unless-stopped
         depends_on:
             - redis
@@ -35,7 +35,7 @@ services:
         container_name: "celery"
         restart: unless-stopped
         env_file:
-            - ./.env
+            - ./.env.local
         command: celery -A easymed worker --loglevel=INFO
         depends_on:
             - redis
@@ -47,7 +47,7 @@ services:
         container_name: celery-beat
         command: celery -A easymed beat --loglevel=INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
         env_file:
-            - ./.env
+            - ./.env.local
         restart: unless-stopped
         depends_on:
             - redis
@@ -63,7 +63,7 @@ services:
         ports:
             - 3000:3000
         env_file:
-            - ./.env
+            - ./.env.local
         environment:
             - NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL}
         depends_on:
@@ -91,7 +91,7 @@ services:
         ports:
             - 9091:9091
         env_file:
-            - ./.env
+            - ./.env.local
         environment:
             - PYTHONUNBUFFERED=1
             - PYTHONPATH=/app/src

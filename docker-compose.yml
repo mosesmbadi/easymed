@@ -32,13 +32,13 @@ services:
         ports:
         - "5433:5432"
         volumes:
-        - /srv/postgres_data:/var/lib/postgresql/data
+        - postgres_data:/var/lib/postgresql/data
         networks:
         - mks
 
     redis:
         image: redis:7.0-alpine
-        container_name: redis2
+        container_name: redis
         command: redis-server --appendonly yes --replica-read-only no
         volumes:
             - redis:/etc/redis/
@@ -59,6 +59,7 @@ services:
         restart: unless-stopped
         depends_on:
             - redis
+            - postgres
         networks:
             - mks
         labels:
@@ -74,6 +75,7 @@ services:
         depends_on:
             - backend
             - redis
+            - postgres
         networks:
             - mks   
         labels:
@@ -132,8 +134,7 @@ services:
             - mks  
             
 volumes:
-    pg_data:
-    grafana_data:
+    postgres_data:
     redis:
     letsencrypt:
     certbot-www:

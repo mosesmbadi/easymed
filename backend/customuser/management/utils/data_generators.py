@@ -1,7 +1,7 @@
 import random
 from faker import Faker
 
-from inventory.models import Item, Department
+from inventory.models import Item, Department, Supplier
 from customuser.models import CustomUser
 from company.models import Company, CompanyBranch, InsuranceCompany
 from authperms.models import Permission, Group
@@ -311,3 +311,34 @@ def create_demo_lab_profiles_and_panels():
             )
             created_panels.append(lab_panel)
     return created_profiles, created_panels
+
+
+def create_dummy_suppliers(count=20):
+    """
+    Create dummy suppliers for testing and development.
+    """
+    suppliers = []
+    
+    # Common supplier types for medical/pharmaceutical industry
+    supplier_types = [
+        "Pharmaceuticals", "Medical Equipment", "Surgical Instruments", "Laboratory Supplies",
+        "Dental Equipment", "Radiology Equipment", "Healthcare Technology", "Medical Devices",
+        "Consumables", "Chemicals", "Biotechnology", "Diagnostics"
+    ]
+    
+    for _ in range(count):
+        supplier_type = random.choice(supplier_types)
+        
+        # Generate realistic company names
+        official_name = f"{fake.company()} {supplier_type} Ltd."
+        
+        # Create a shorter common name
+        common_name = fake.company()[:30]  # Ensure it fits the 30 char limit
+        
+        supplier = Supplier.objects.create(
+            official_name=official_name[:255],  # Ensure it fits the 255 char limit
+            common_name=common_name
+        )
+        suppliers.append(supplier)
+    
+    return suppliers

@@ -8,11 +8,12 @@ from customuser.management.utils.data_generators import (
     create_permissions_and_groups,
     create_dummy_patients,
     create_demo_lab_profiles_and_panels,
-    create_dummy_departments
+    create_dummy_departments,
+    create_dummy_suppliers
 )
 from customuser.models import CustomUser
 from company.models import Company, CompanyBranch, InsuranceCompany
-from inventory.models import Item, Department
+from inventory.models import Item, Department, Supplier
 from authperms.models import Permission, Group
 from patient.models import Patient
 from laboratory.models import LabTestProfile, LabTestPanel
@@ -103,4 +104,12 @@ class Command(BaseCommand):
         else:
             create_dummy_departments()
             self.stdout.write(self.style.SUCCESS(f"Created {len(Department.objects.all())} departments."))
+        
+        # create suppliers
+        if Supplier.objects.count() >= DEFAULT_COUNT:
+            self.stdout.write(self.style.WARNING("Skipping suppliers: already have 50 or more records."))
+        else:
+            suppliers = create_dummy_suppliers(count=DEFAULT_COUNT)
+            self.stdout.write(self.style.SUCCESS(f"Created {len(suppliers)} dummy suppliers."))
+        
         # TODO  Inventory records
