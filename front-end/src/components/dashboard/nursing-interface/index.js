@@ -45,8 +45,9 @@ const NursePatientDataGrid = () => {
   const [showPageSizeSelector, setShowPageSizeSelector] = useState(true);
   const [showInfo, setShowInfo] = useState(true);
   const [showNavButtons, setShowNavButtons] = useState(true);
-  const [processFilter, setProcessFilter] = useState('triage')
+  const [processFilter, setProcessFilter] = useState({ track: "triage", search: "" })
   const auth = useAuth()
+  const [selectedSearchFilter, setSelectedSearchFilter] = useState({label: "", value: ""})
 
 
   useEffect(() =>{
@@ -81,7 +82,7 @@ const NursePatientDataGrid = () => {
   };
 
   // filter users based on search query
-  const filteredProcesses = processes.filter((process) => process.track.includes(processFilter));
+  const filteredProcesses = processes.filter((process) => process.track.includes(processFilter.track));
 
   const billedDocSchedules = filteredProcesses.filter(schedule => {
     const hasAppointment = schedule.invoice_items.some(item =>  
@@ -101,9 +102,27 @@ const NursePatientDataGrid = () => {
     return doctor ? `${doctor.first_name} ${doctor.last_name}` : ""
   }
 
+  useEffect(() => {
+      // This effect handles the debouncing logic
+      const timerId = setTimeout(() => {
+          // Dispatch the action only after a 500ms delay
+          dispatch(getAllProcesses(auth, null, processFilter, selectedSearchFilter))
+      }, 500); // 500ms delay, adjust as needed
+
+      // Cleanup function: clears the timer if searchTerm changes before the delay is over
+      return () => {
+          clearTimeout(timerId);
+      };
+  }, [processFilter.search]); // The effect re-runs only when the local `searchTerm` state changes
+
   return (
     <section>
-      <ProcessFilter   selectedFilter={processFilter} setProcessFilter={setProcessFilter}/>
+      <ProcessFilter 
+        selectedFilter={processFilter} 
+        setProcessFilter={setProcessFilter}
+        selectedSearchFilter={selectedSearchFilter} 
+        setSelectedSearchFilter={setSelectedSearchFilter}
+      />
       <DataGrid
         dataSource={billedDocSchedules}
         allowColumnReordering={true}
