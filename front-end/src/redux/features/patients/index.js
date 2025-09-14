@@ -108,9 +108,9 @@ export const {
   updateAttendaceProcessStoreRefer
 } = PatientSlice.actions;
 
-export const getAllProcesses = (auth) => async (dispatch) => {
+export const getAllProcesses = (auth, process_id=null,  processsFilter, selectedSearchFilter) => async (dispatch) => {
   try {
-    const response = await fetchAllAttendanceProcesses(auth);
+    const response = await fetchAllAttendanceProcesses(auth, process_id, processsFilter, selectedSearchFilter);
     dispatch(setProcesses(response));
   } catch (error) {
     console.log("ATTENDANCE_PROCESSES_ERROR ", error);
