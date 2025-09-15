@@ -19,9 +19,20 @@ export default async function handler(req, res) {
                     'Authorization': req.headers.authorization,
                 }
             };
+            const query = req.query;
+            const search_field = query.search_field
+            const search_value = query.search_value
+
+            let url = `${API_URL.FETCH_PATIENT}?search=${search_value}`;
+            
+
+            if (search_field){
+                url = `${API_URL.FETCH_PATIENT}?search_field=${search_field}&search=${search_value}`
+            }
+
     
 
-            await backendAxiosInstance.get(`${API_URL.FETCH_PATIENT}`, config).then(response => {
+            await backendAxiosInstance.get(url, config).then(response => {
                 res.status(200).json(response.data);
 
             }).catch(e => {

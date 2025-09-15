@@ -59,7 +59,7 @@ class Patient(models.Model):
 
 
 class NextOfKin(models.Model):
-    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, null=True, blank=True)
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, null=True, blank=True, related_name="next_of_kin")
     first_name = models.CharField(max_length=40, null=True, blank=True)
     second_name = models.CharField(max_length=40, null=True, blank=True)
     relationship = models.CharField(max_length=40, null=True, blank=True)   
@@ -157,7 +157,7 @@ class Prescription(models.Model):
 
 
 class PrescribedDrug(models.Model):
-    prescription = models.ForeignKey(Prescription, on_delete=models.CASCADE, null=True)
+    prescription = models.ForeignKey(Prescription, on_delete=models.CASCADE, null=True, related_name="attendance_prescribed_drugs")
     dosage = models.CharField(max_length=45)
     frequency = models.CharField(max_length=45)
     duration = models.CharField(max_length=45)

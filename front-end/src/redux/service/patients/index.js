@@ -15,10 +15,15 @@ export const fetchServices = () =>{
     })
 }
 
-export const fetchPatient = (auth) =>{
+export const fetchPatient = (auth, processsFilter, selectedSearchFilter) =>{
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve,reject) =>{
-        axiosInstance.get(`${APP_API_URL.FETCH_PATIENT}`)
+        axiosInstance.get(`${APP_API_URL.FETCH_PATIENT}`, {
+            params: {
+                search_field: selectedSearchFilter.value ? selectedSearchFilter.value : null,
+                search_value: processsFilter.search,
+            }
+        })
             .then((res) =>{
                 resolve(res.data)
             })

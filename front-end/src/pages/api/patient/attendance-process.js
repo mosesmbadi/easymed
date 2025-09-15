@@ -24,8 +24,6 @@ export default async function handler(req, res) {
             const process_id = query.process_id ? query.process_id : null;
             const search_field = query.search_field
             const search_value = query.search_value
-                //             processsFilter: processsFilter,
-                // selectedSearchFilter: selectedSearchFilter
 
             let url = `${API_URL.PATIENT_ATTENDANCE_PROCESS}?search=${search_value}`;
 

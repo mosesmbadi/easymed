@@ -24,6 +24,7 @@ import { GiMedicinePills } from "react-icons/gi";
 import LabModal from "../doctor-interface/lab-modal";
 import { useAuth } from "@/assets/hooks/use-auth";
 import ShowInsurancesPopover from "./ShowInsurancesPopover";
+import PAtientSearch from "./PatientSearch";
 
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
@@ -63,6 +64,8 @@ const PatientsDataGrid = () => {
   const [showInfo, setShowInfo] = useState(true);
   const [labOpen, setLabOpen] = useState(false);
   const router = useRouter()
+  const [processsFilter, setProcessFilter] = useState({ search: "" })
+  const [selectedSearchFilter, setSelectedSearchFilter] = useState({label: "", value: ""})
   
   const onMenuClick = async (menu, data) => {
     if (menu.action === "add") {
@@ -106,14 +109,33 @@ const PatientsDataGrid = () => {
     }
   };
 
+  // useEffect(() => {
+  //   dispatch(getAllPatients(auth));
+  // }, []);
+
   useEffect(() => {
-    dispatch(getAllPatients(auth));
-  }, []);
+      // This effect handles the debouncing logic
+      const timerId = setTimeout(() => {
+          // Dispatch the action only after a 500ms delay
+          dispatch(getAllPatients(auth, processsFilter, selectedSearchFilter))
+      }, 500); // 500ms delay, adjust as needed
+
+      // Cleanup function: clears the timer if searchTerm changes before the delay is over
+      return () => {
+          clearTimeout(timerId);
+      };
+  }, [processsFilter.search]); // The effect re-runs only when the local `searchTerm` state changes
 
   return (
     <>
     <section className="mt-4">
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center gap-4 mb-4">
+        <PAtientSearch
+          setProcessFilter={setProcessFilter} 
+          selectedFilter={processsFilter}
+          selectedSearchFilter={selectedSearchFilter} 
+          setSelectedSearchFilter={setSelectedSearchFilter}
+        />
         <AddPatientModal />
       </div>
       <DataGrid

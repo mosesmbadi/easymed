@@ -46,6 +46,7 @@ from .filters import (
     AttendanceProcessFilter,
     PatientFilter,
     ConsultationFilter,
+    PatientFilterSearch,
     TriageFilter,
     PrescriptionFilter,
     PrescribedDrugFilter
@@ -67,9 +68,15 @@ class ContactDetailsViewSet(viewsets.ModelViewSet):
 class PatientViewSet(viewsets.ModelViewSet):
     queryset = Patient.objects.all().order_by('-id')
     serializer_class = PatientSerializer
-    filter_backends = (DjangoFilterBackend,)
     filterset_class = PatientFilter
     permission_classes = (IsReceptionistUser,)
+    filter_backends = [PatientFilterSearch, DjangoFilterBackend]
+    search_fields = [
+        'unique_id', 'first_name', 'email', 'phone',
+        'second_name', 'insurances__name', 'next_of_kin__first_name', 'next_of_kin__second_name',
+        'next_of_kin__contacts__tel_no', 'next_of_kin__contacts__email_address',
+    ]
+
 
 
 class PatientByUserIdAPIView(APIView):
@@ -180,13 +187,16 @@ class TriageViewSet(viewsets.ModelViewSet):
 class AttendanceProcessViewSet(viewsets.ModelViewSet):
     queryset = AttendanceProcess.objects.all().order_by('-id')
     serializer_class = AttendanceProcessSerializer
-    filter_backends = [AttendanceProcessFilter, DjangoFilterBackend] # Use your custom filter
+    filter_backends = [AttendanceProcessFilter, DjangoFilterBackend]
     filterset_fields = ['track']
     search_fields = [
         'patient__first_name', 'patient__second_name', 'track_number', 'patient_number',
         'doctor__first_name', 'doctor__last_name',
         'lab_tech__first_name', 'lab_tech__last_name',
-        'pharmacist__first_name', 'pharmacist__last_name'
+        'pharmacist__first_name', 'pharmacist__last_name', "reason", 
+        "clinical_note__diagnosis", "clinical_note__doctors_note", "clinical_note__signs_and_symptoms",
+        "process_test_req__attendace_test_requests__test_profile__name",
+        "prescription__attendance_prescribed_drugs__item__name",
     ]
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
