@@ -144,9 +144,9 @@ export const getAllServices = () => async (dispatch) => {
   }
 };
 
-export const getAllPatients = (auth) => async (dispatch) => {
+export const getAllPatients = (auth, processsFilter, selectedSearchFilter) => async (dispatch) => {
   try {
-    const response = await fetchPatient(auth);
+    const response = await fetchPatient(auth, processsFilter, selectedSearchFilter);
     dispatch(setPatients(response));
   } catch (error) {
     console.log("PATIENTS_ERROR ", error);

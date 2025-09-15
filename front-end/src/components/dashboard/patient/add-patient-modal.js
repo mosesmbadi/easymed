@@ -131,7 +131,7 @@ const AddPatientModal = () => {
     <section>
       <button
         onClick={handleClickOpen}
-        className="bg-primary text-white px-4 rounded-xl py-2 text-sm flex items-center gap-1"
+        className="bg-primary w-auto whitespace-nowrap text-white px-4 rounded-xl py-2 text-sm flex items-center gap-1"
       >
         <IoMdAdd /> Create Patient
       </button>
