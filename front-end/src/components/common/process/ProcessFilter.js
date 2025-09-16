@@ -2,7 +2,7 @@ import React, {useState} from 'react'
 import { Grid } from '@mui/material'
 import SearchItemFilterPopover from './SearchItemFilterPopover'
 
-const ProcessFilter = ( { selectedFilter, setProcessFilter, selectedSearchFilter, setSelectedSearchFilter } ) => {
+const ProcessFilter = ( { items, selectedFilter, setProcessFilter, selectedSearchFilter, setSelectedSearchFilter } ) => {
     const filters = ['all', 'reception', 'triage', 'doctor', 'pharmacy', 'lab']
     const [searchQuery, setSearchQuery] = useState("")
 
@@ -38,6 +38,7 @@ const ProcessFilter = ( { selectedFilter, setProcessFilter, selectedSearchFilter
                     <SearchItemFilterPopover 
                         selectedSearchFilter={selectedSearchFilter} 
                         setSelectedSearchFilter={setSelectedSearchFilter}
+                        items={items}
                     />
                     <input
                         className="py-3 w-full px-4 focus:outline-none placeholder-font font-thin text-sm"

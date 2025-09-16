@@ -15,10 +15,10 @@ const SearchPatientFilterPopover = ({selectedSearchFilter, setSelectedSearchFilt
         {label: "Email", value: "email"},
         {label: "Phone Number", value: "phone"},
         {label: "Insurance", value: "insurances__name"},
-        {label: "Next of Kin First Name", value: "next_of_kin__first_name"},
-        {label: "Next of Kin Second Name", value: "next_of_kin__second_name"},
-        {label: "Next of Kin Phone Number", value: "next_of_kin__contacts__tel_no"},
-        {label: "Next of Kin Email", value: "next_of_kin__contacts__email_address"},
+        // {label: "Next of Kin First Name", value: "next_of_kin__first_name"},
+        // {label: "Next of Kin Second Name", value: "next_of_kin__second_name"},
+        // {label: "Next of Kin Phone Number", value: "next_of_kin__contacts__tel_no"},
+        // {label: "Next of Kin Email", value: "next_of_kin__contacts__email_address"},
     ]
 
     const handlePopoverOpen = (event) => {
