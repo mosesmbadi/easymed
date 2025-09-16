@@ -20,8 +20,17 @@ export default async function handler(req, res) {
                 }
             };
 
+            const query = req.query;
+            const search_field = query.search_field
+            const search_value = query.search_value
 
-            await backendAxiosInstance.get(`${API_URL.FETCH_INVOICES}`, config).then(response => {
+            let url = `${API_URL.FETCH_INVOICES}?search=${search_value}`;            
+
+            if (search_field){
+                url = `${API_URL.FETCH_INVOICES}?search_field=${search_field}&search=${search_value}`
+            }
+
+            await backendAxiosInstance.get(url, config).then(response => {
                 res.status(200).json(response.data);
 
             }).catch(e => {

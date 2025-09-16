@@ -1,6 +1,7 @@
 from django.shortcuts import render, Http404
 from rest_framework import viewsets, status
 from django.template.loader import get_template
+
 from .models import Invoice, InvoiceItem, PaymentMode
 from inventory.models import IncomingItem
 from rest_framework import generics
@@ -13,8 +14,9 @@ from rest_framework import serializers
 from rest_framework.response import Response
 from django.db.models import Sum, Q
 from rest_framework.views import APIView
+from django_filters.rest_framework import DjangoFilterBackend
 
-
+from billing.filters import InvoiceFilterSearch
 from .models import InvoiceItem, Invoice, InvoicePayment
 from company.models import Company
 from inventory.models import InsuranceItemSalePrice
@@ -51,6 +53,10 @@ class InvoiceViewset(viewsets.ModelViewSet):
     queryset = Invoice.objects.all().order_by('-id')
     serializer_class = InvoiceSerializer
     permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser,)
+    filter_backends = [InvoiceFilterSearch, DjangoFilterBackend]
+    search_fields = [
+        'patient__first_name', 'patient__second_name', 'invoice_number'
+    ]
 
 
 class InvoicesByPatientId(generics.ListAPIView):
