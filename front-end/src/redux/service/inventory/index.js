@@ -4,9 +4,10 @@ import UseAxios from "@/assets/hooks/use-axios";
 
 
 
-export const addInventory = (payload) =>{
+export const addInventory = (payload, auth) =>{
+    const axiosInstance = UseAxios(auth);
     return new Promise((resolve,reject) =>{
-        axios.post(`${APP_API_URL.ADD_INVENTORY}`,payload)
+        axiosInstance.post(`${APP_API_URL.ADD_INVENTORY}`,payload)
             .then((res) =>{
                 resolve(res.data)
             })
