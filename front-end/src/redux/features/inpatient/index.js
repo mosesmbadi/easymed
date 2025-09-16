@@ -107,9 +107,9 @@ export const fetchHospitalWards = (auth) => async (dispatch) => {
   }
 };
 
-export const fetchAdmitted = (auth, ward) => async (dispatch) => {
+export const fetchAdmitted = (auth, ward, admission_id='', processFilter={}, selectedSearchFilter={}) => async (dispatch) => {
   try {
-    const response = await fetchAdmittedPatients(auth, ward);
+    const response = await fetchAdmittedPatients(auth, ward, admission_id, processFilter, selectedSearchFilter);
     dispatch(admittedPatients(response));
   } catch (error) {
     console.log("ADMITTED_PATIENTS_ERROR ", error);

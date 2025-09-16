@@ -128,13 +128,15 @@ export const dischargePatient = (auth, payload, admission_id) => {
     })
 }
 
-export const fetchAdmittedPatients = (auth, ward, admission_id='') =>{
+export const fetchAdmittedPatients = (auth, ward, admission_id='', processFilter, selectedSearchFilter) =>{
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve,reject) =>{
         axiosInstance.get(`${APP_API_URL.ADMIT_PATIENT}`, {
             params: {
                 ward: ward,
-                admission_id: admission_id
+                admission_id: admission_id,
+                search_field: selectedSearchFilter.value ? selectedSearchFilter.value : null,
+                search_value: processFilter.search,
             }
         })
             .then((res) =>{

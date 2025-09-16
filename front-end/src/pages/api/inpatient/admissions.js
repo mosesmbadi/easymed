@@ -20,14 +20,23 @@ export default async function handler(req, res) {
                 }
             };
 
-
             const query = req.query;
-            let url = `${API_URL.ADMIT_PATIENT}`;
+            const search_field = query.search_field
+            const search_value = query.search_value
+
+            let url = `${API_URL.ADMIT_PATIENT}?search=${search_value}&ward=${query.ward}`;
+            
+
+            if (search_field){
+                url = `${API_URL.ADMIT_PATIENT}?search_field=${search_field}&search=${search_value}&ward=${query.ward}`
+            }
+
+
             if (query.admission_id) {
                 url += `${query.admission_id}/`;
             }
 
-            await backendAxiosInstance.get(`${url}?ward=${query.ward}`, config).then(response => {
+            await backendAxiosInstance.get(url, config).then(response => {
                 res.status(200).json(response.data);
 
             }).catch(e => {
