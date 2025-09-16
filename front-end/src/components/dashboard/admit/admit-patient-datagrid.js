@@ -13,6 +13,7 @@ import EditAdmission from "./modals/UpdateAdmissionModal";
 import { useRouter } from "next/router";
 import DispatchPatientModal from "./modals/DispatchPatientModal";
 import { admitPatient } from "@/redux/service/inpatient";
+import SearchOnlyFilter from "@/components/common/process/SearchOnly";
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
   ssr: false,
@@ -53,7 +54,36 @@ const AdmitPatientDataGrid = ({ward_id=""}) => {
   const dispatch = useDispatch();
   const auth = useAuth();
   const userActions = getActions();
-   const router = useRouter()
+  const router = useRouter()
+  const [processFilter, setProcessFilter] = useState({ search: "" });
+  const [selectedSearchFilter, setSelectedSearchFilter] = useState({label: "", value: ""})
+
+    //   search_fields = [
+    //     'patient__first_name', 'patient__second_name', 'admission_id',
+    //     'ward__name', 'bed__bed_number', 'admitted_by__first_name', 'admitted_by__last_name',
+    //     'reason_for_admission'
+    // ]
+
+  const items = [
+    {label: "None", value: ""},
+    {label: "Patient First Name", value: "patient__first_name"},
+    {label: "Patient Second Name", value: "patient__second_name"},
+    {label: "Patient Id", value: "patient_number"},
+    {label: "Admission Id", value: "admission_id"},
+    {label: "Admitted By First Name", value: "admitted_by__first_name"},
+    {label: "Admitted By Last Name", value: "admitted_by__last_name"},
+    {label: "Ward Name", value: "ward__name"},
+    {label: "Bed Number", value: "bed__bed_number"},
+    // {label: "Pharmacist First Name", value: "pharmacist__first_name"},
+    // {label: "Pharmacist Last Name", value: "pharmacist__last_name"},
+    {label: "Reason For Admission", value: "reason_for_admission"},
+    // {label: "Diagnosis", value: "clinical_note__diagnosis"},
+    // {label: "Doctors Notes", value: "clinical_note__doctors_note"},
+    // {label: "Signs And Symptoms", value: "clinical_note__signs_and_symptoms"},
+    // {label: "Test Profile Name", value: "process_test_req__attendace_test_requests__test_profile__name"},
+    // {label: "Prescribed Drug Name", value: "prescription__attendance_prescribed_drugs__item__name"},
+
+  ]
 
   const onMenuClick = async (menu, data) => {
     if(menu.action === "update"){
@@ -106,14 +136,35 @@ const AdmitPatientDataGrid = ({ward_id=""}) => {
     return cellData.data.ward ? `${cellData.data.ward} ` : 'Not Assigned' 
    }
 
+  // useEffect(() => {
+  //   if(auth.token){
+  //     dispatch(fetchAdmitted(auth, ward_id));
+  //   }
+  // }, [auth])
+
   useEffect(() => {
-    if(auth.token){
-      dispatch(fetchAdmitted(auth, ward_id));
-    }
-  }, [auth])
+      // This effect handles the debouncing logic
+      const timerId = setTimeout(() => {
+          // Dispatch the action only after a 500ms delay
+          dispatch(fetchAdmitted(auth, ward_id, '', processFilter, selectedSearchFilter))
+      }, 500); // 500ms delay, adjust as needed
+
+      // Cleanup function: clears the timer if searchTerm changes before the delay is over
+      return () => {
+          clearTimeout(timerId);
+      };
+  }, [processFilter.search]); // The effect re-runs only when the local `searchTerm` state changes
 
   return (
     <section>
+      <SearchOnlyFilter 
+        selectedFilter={processFilter} 
+        setProcessFilter={setProcessFilter}
+        selectedSearchFilter={selectedSearchFilter} 
+        setSelectedSearchFilter={setSelectedSearchFilter}
+        items={items}
+      />
+      
       <DataGrid
         dataSource={patients}
         allowColumnReordering={true}

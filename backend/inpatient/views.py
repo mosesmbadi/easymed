@@ -14,7 +14,7 @@ from rest_framework.decorators import action
 from authperms.permissions import IsDoctorUser, IsSeniorNurseUser, IsSystemsAdminUser
 
 from .utils import (generate_discharge_summary_pdf)
-from .filters import WardFilter, PatientAdmissionFilter, WardNurseAssignmentFilter
+from .filters import InpatientFilterSearch, WardFilter, PatientAdmissionFilter, WardNurseAssignmentFilter
 from .models import (Bed, PatientAdmission, PatientDischarge, Schedule, ScheduledDrug, Ward, WardNurseAssignment, InPatientTriage)
 from .serializers import (BedSerializer, PatientAdmissionSerializer,
                         PatientDischargeSerializer, ScheduledDrugSerializer,
@@ -43,8 +43,15 @@ class PatientAdmissionViewSet(viewsets.ModelViewSet):
     queryset = PatientAdmission.objects.all()
     serializer_class = PatientAdmissionSerializer
     permission_classes = [IsDoctorUser]
-    filter_backends = [DjangoFilterBackend] 
     filterset_class = PatientAdmissionFilter
+    filter_backends = [InpatientFilterSearch, DjangoFilterBackend]
+    search_fields = [
+        'patient__first_name', 'patient__second_name', 'admission_id',
+        'ward__name', 'bed__bed_number', 'admitted_by__first_name', 'admitted_by__last_name',
+        'reason_for_admission'
+    ]
+
+    
 
     def get_queryset(self):
         return PatientAdmission.objects.all()

@@ -64,7 +64,27 @@ const PharmacyDataGrid = () => {
   const [processsFilter, setProcessFilter] = useState({ track: "pharmacy", search: "" })
   const filteredProcesses = processes.filter((process) => process.track.includes(processsFilter.track));
   const [selectedSearchFilter, setSelectedSearchFilter] = useState({label: "", value: ""})
-  
+
+  const items = [
+    {label: "None", value: ""},
+    {label: "Patient First Name", value: "patient__first_name"},
+    {label: "Patient Second Name", value: "patient__second_name"},
+    {label: "Patient Id", value: "patient_number"},
+    // {label: "Track Number", value: "track_number"},
+    {label: "Doctor First Name", value: "doctor__first_name"},
+    {label: "Doctor Last Name", value: "doctor__last_name"},
+    // {label: "Lab Tech First Name", value: "lab_tech__first_name"},
+    // {label: "Lab Tech Last Name", value: "lab_tech__last_name"},
+    // {label: "Pharmacist First Name", value: "pharmacist__first_name"},
+    // {label: "Pharmacist Last Name", value: "pharmacist__last_name"},
+    // {label: "Reason", value: "reason"},
+    // {label: "Diagnosis", value: "clinical_note__diagnosis"},
+    // {label: "Doctors Notes", value: "clinical_note__doctors_note"},
+    // {label: "Signs And Symptoms", value: "clinical_note__signs_and_symptoms"},
+    // {label: "Test Profile Name", value: "process_test_req__attendace_test_requests__test_profile__name"},
+    // {label: "Prescribed Drug Name", value: "prescription__attendance_prescribed_drugs__item__name"},
+  ]
+    
 
   const searchedProcesses = filteredProcesses.filter((process)=> process.patient_number.includes(searchQuery))
 
@@ -150,6 +170,7 @@ const PharmacyDataGrid = () => {
         selectedFilter={processsFilter}
         selectedSearchFilter={selectedSearchFilter} 
         setSelectedSearchFilter={setSelectedSearchFilter}
+        items={items}
       />
       <DataGrid
         dataSource={searchedProcesses}

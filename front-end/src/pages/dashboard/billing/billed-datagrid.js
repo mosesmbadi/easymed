@@ -17,6 +17,7 @@ import { dayTransaction } from '@/redux/service/reports';
 import DayTotalsPerPayMode from '@/components/dashboard/billing/DayTotalsPerPayMode';
 import { getAllPatients } from '@/redux/features/patients';
 import ViewInvoiceItems from '@/components/dashboard/billing/ViewInvoiceItemsModal';
+import SearchOnlyFilter from '@/components/common/process/SearchOnly';
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
     ssr: false,
@@ -52,10 +53,31 @@ const BilledDataGrid = () => {
     const [selectedRowData, setSelectedRowData] = useState({})
     const [infoAsPerPayMode, setInfoAsPerPayMode] = useState({})
     const [selectedPayMethod, setSelectedPayMethod] = useState('')
-
+    const [processFilter, setProcessFilter] = useState({ search: "" });
+    const [selectedSearchFilter, setSelectedSearchFilter] = useState({label: "", value: ""})
     const [showPageSizeSelector, setShowPageSizeSelector] = useState(true);
     const [showInfo, setShowInfo] = useState(true);
     const [showNavButtons, setShowNavButtons] = useState(true);
+
+    const items = [
+        {label: "None", value: ""},
+        {label: "Patient First Name", value: "patient__first_name"},
+        {label: "Patient Second Name", value: "patient__second_name"},
+        {label: "Invoice Number", value: "patient_number"},
+        // {label: "Track Number", value: "track_number"},
+        // {label: "Doctor First Name", value: "doctor__first_name"},
+        // {label: "Doctor Last Name", value: "doctor__last_name"},
+        // {label: "Lab Tech First Name", value: "lab_tech__first_name"},
+        // {label: "Lab Tech Last Name", value: "lab_tech__last_name"},
+        // {label: "Pharmacist First Name", value: "pharmacist__first_name"},
+        // {label: "Pharmacist Last Name", value: "pharmacist__last_name"},
+        // {label: "Reason", value: "reason"},
+        // {label: "Diagnosis", value: "clinical_note__diagnosis"},
+        // {label: "Doctors Notes", value: "clinical_note__doctors_note"},
+        // {label: "Signs And Symptoms", value: "clinical_note__signs_and_symptoms"},
+        // {label: "Test Profile Name", value: "process_test_req__attendace_test_requests__test_profile__name"},
+        // {label: "Prescribed Drug Name", value: "prescription__attendance_prescribed_drugs__item__name"},
+    ]
 
     const handlePrint = async (data) => {
         try{
@@ -119,15 +141,36 @@ const BilledDataGrid = () => {
       }
     
 
-    useEffect(()=> {
-        if(auth){
-            dispatch(getAllInvoices(auth));
-            dispatch(getAllPatients(auth));
-        }
-    }, [auth]);
+    // useEffect(()=> {
+    //     if(auth){
+    //         dispatch(getAllInvoices(auth));
+    //     }
+    // }, [auth]);
+
+    useEffect(() => {
+        // This effect handles the debouncing logic
+        const timerId = setTimeout(() => {
+            // Dispatch the action only after a 500ms delay
+            dispatch(getAllInvoices(auth, processFilter, selectedSearchFilter))
+        }, 500); // 500ms delay, adjust as needed
+
+        // Cleanup function: clears the timer if searchTerm changes before the delay is over
+        return () => {
+            clearTimeout(timerId);
+        };
+    }, [processFilter.search]); // The effect re-runs only when the local `searchTerm` state changes
 
     return (
         <section clasName="">
+            <SearchOnlyFilter
+                selectedFilter={processFilter} 
+                setProcessFilter={setProcessFilter}
+                selectedSearchFilter={selectedSearchFilter} 
+                setSelectedSearchFilter={setSelectedSearchFilter}
+                items={items}
+            />
+
+
             <DataGrid
                 dataSource={invoices}
                 allowColumnReordering={true}

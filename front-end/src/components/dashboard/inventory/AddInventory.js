@@ -54,7 +54,7 @@ const AddInventory = () => {
       };
 
       setLoading(true);
-      await addInventory(formData).then(() => {
+      await addInventory(formData, auth).then(() => {
         helpers.resetForm();
         toast.success("Inventory Added Successfully!");
         setLoading(false);
