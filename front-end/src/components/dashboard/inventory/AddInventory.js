@@ -50,7 +50,8 @@ const AddInventory = () => {
     try {
       const formData = {
         ...formValue,
-        item: parseInt(formValue.item.value),        
+        item: parseInt(formValue.item.value), 
+        department: parseInt(formValue.department.value),       
       };
 
       setLoading(true);
