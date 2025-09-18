@@ -158,10 +158,10 @@ export const getAllItems = (auth) => async (dispatch) => {
   }
 };
 
-export const getAllInventories = (auth, department, item) => async (dispatch) => {
+export const getAllInventories = (auth, department, item, processFilter, selectedSearchFilter) => async (dispatch) => {
 
   try {
-    const response = await fetchInventories(auth, department, item);
+    const response = await fetchInventories(auth, department, item, processFilter, selectedSearchFilter);
     dispatch(setInventories(response));
   } catch (error) {
     console.log("INVENTORIES_ERROR ", error);

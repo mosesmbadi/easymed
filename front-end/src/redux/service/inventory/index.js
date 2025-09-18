@@ -17,13 +17,15 @@ export const addInventory = (payload, auth) =>{
     })
 }
 
-export const fetchInventories = (auth, department='', item='') =>{
+export const fetchInventories = (auth, department='', item='', processFilter={ search: "" }, selectedSearchFilter={label: "", value: ""}) =>{
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve,reject) =>{
         axiosInstance.get(`${APP_API_URL.FETCH_INVENTORY}`,{
             params: {
                 department_name: department,
-                item: item
+                item: item,
+                search_field: selectedSearchFilter.value ? selectedSearchFilter.value : null,
+                search_value: processFilter.search,
             }
         })
             .then((res) =>{

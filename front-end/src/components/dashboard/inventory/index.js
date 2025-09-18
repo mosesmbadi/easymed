@@ -12,6 +12,7 @@ import { useDispatch } from "react-redux";
 import { useAuth } from "@/assets/hooks/use-auth";
 import { getAllInvoiceItems } from "@/redux/features/billing";
 import { getAllTheDepartments } from "@/redux/features/auth";
+import SearchOnlyFilter from "@/components/common/process/SearchOnly";
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
   ssr: false,
@@ -29,17 +30,44 @@ const InventoryDataGrid = ({ department }) => {
   const [showNavButtons, setShowNavButtons] = useState(true);
   const { departments } = useSelector(({ auth }) => auth);
   const [selectedDepartment, setSelectedDepartment] = useState(department)
+  const [processFilter, setProcessFilter] = useState({ search: "" });
+  const [selectedSearchFilter, setSelectedSearchFilter] = useState({label: "", value: ""})
+
+  const items = [
+    {label: "None", value: ""},
+    {label: "Lot Number", value: "lot_number"},
+    {label: "Item Name", value: "item__name"},
+    {label: "Item Code", value: "item__item_code"},
+    {label: "Department Name", value: "department__name"},
+  ]
 
   const filteredInventories = inventories.filter((inventory) => inventory.item_name.toLowerCase().includes(searchQuery.toLowerCase()))
 
   useEffect(() => {
     if (auth.token) {
-      dispatch(selectedDepartment !== "All" ? getAllInventories(auth, selectedDepartment, "") : getAllInventories(auth, department, ""));
+      // dispatch(selectedDepartment !== "All" ? getAllInventories(auth, selectedDepartment, "") : getAllInventories(auth, department, ""));
       dispatch(getAllTheDepartments(auth));
       // dispatch(getAllInvoiceItems(auth));
       // dispatch(getAllPurchaseOrders(auth));
     }
   }, [auth, selectedDepartment, department]);
+
+  useEffect(() => {
+      // This effect handles the debouncing logic
+      const timerId = setTimeout(() => {
+          // Dispatch the action only after a 500ms delay
+          if(auth.token){
+            const depat = selectedDepartment !== "All" ? selectedDepartment : department
+            dispatch(getAllInventories(auth, depat, "", processFilter, selectedSearchFilter));
+            dispatch(getAllTheDepartments(auth));
+          }
+      }, 500); // 500ms delay, adjust as needed
+
+      // Cleanup function: clears the timer if searchTerm changes before the delay is over
+      return () => {
+          clearTimeout(timerId);
+      };
+  }, [processFilter.search, selectedDepartment, department]); // The effect re-runs only when the local `searchTerm` state changes
 
   const inventorySummaryInfo = InventoryDisplayStats().map((item, index) => <InventoryInfoCardsItem key={`inventory-display-info ${index}`} itemData={item} />)
 
@@ -62,17 +90,6 @@ const InventoryDataGrid = ({ department }) => {
           </Grid>
         )}
 
-        {/* Search Bar */}
-        <Grid item className="flex items-center bg-white rounded-lg px-2 py-1 w-full sm:w-1/3">
-          <img className="h-4 w-4" src='/images/svgs/search.svg' />
-          <input
-            className="px-2 py-1 bg-transparent rounded-lg focus:outline-none text-xs w-full"
-            onChange={(e) => setSearchQuery(e.target.value)}
-            value={searchQuery}
-            placeholder="Search referrals by facility"
-          />
-        </Grid>
-
         {/* Add Inventory Button */}
         <Grid item>
           <Link href="/dashboard/inventory/add-inventory">
@@ -82,6 +99,13 @@ const InventoryDataGrid = ({ department }) => {
           </Link>
         </Grid>
       </Grid>
+      <SearchOnlyFilter
+        selectedFilter={processFilter} 
+        setProcessFilter={setProcessFilter}
+        selectedSearchFilter={selectedSearchFilter} 
+        setSelectedSearchFilter={setSelectedSearchFilter}
+        items={items}
+      />
 
       <DataGrid
         dataSource={filteredInventories}
