@@ -195,9 +195,9 @@ export const getAllRequisitionItems = (auth) => async (dispatch) => {
   }
 };
 
-export const getAllPurchaseOrders = (auth) => async (dispatch) => {
+export const getAllPurchaseOrders = (auth, processFilter, selectedSearchFilter) => async (dispatch) => {
   try {
-    const response = await fetchPurchaseOrders(auth);
+    const response = await fetchPurchaseOrders(auth, processFilter, selectedSearchFilter);
     dispatch(setPurchaseOrders(response));
   } catch (error) {
     console.log("PURCHASE_ORDERS_ERROR ", error);

@@ -193,6 +193,11 @@ class SupplierInvoiceViewSet(viewsets.ModelViewSet):
 class PurchaseOrderViewSet(viewsets.ModelViewSet):
     serializer_class = PurchaseOrderSerializer
     http_method_names = ['get', 'post', 'put', 'patch', 'delete']
+    filter_backends = [InventoryFilterSearch, DjangoFilterBackend]
+    search_fields = [
+        'PO_number', 'ordered_by__first_name', 'ordered_by__last_name',
+        'approved_by__first_name', 'approved_by__last_name'
+    ]
 
     def get_queryset(self):
         requisition_id = self.kwargs.get('requisition_pk')
