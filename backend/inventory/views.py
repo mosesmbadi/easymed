@@ -58,6 +58,7 @@ from .serializers import (
 
 from .filters import (
     InventoryFilter,
+    InventoryFilterSearch,
     ItemFilter,
     SupplierFilter,
     RequisitionItemFilter
@@ -101,6 +102,11 @@ class RequisitionViewSet(viewsets.ModelViewSet):
     serializer_class = RequisitionSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['requested_by', 'department']
+    filter_backends = [InventoryFilterSearch, DjangoFilterBackend]
+    search_fields = [
+        'requisition_number', 'requested_by__first_name', 'requested_by__last_name', 'department__name',
+        'approved_by__first_name', 'approved_by__last_name'
+    ]
 
     
 class RequisitionItemViewSet(viewsets.ModelViewSet):
@@ -126,6 +132,10 @@ class InventoryViewSet(viewsets.ModelViewSet):
     filter_backends = (DjangoFilterBackend,)
     filterset_fields = ['item',]
     filterset_class = InventoryFilter
+    filter_backends = [InventoryFilterSearch, DjangoFilterBackend]
+    search_fields = [
+        'lot_number', 'item__name', 'item__item_code', 'department__name'
+    ]
 
     @action(detail=False, methods=['get'], url_path='slow-moving-items')
     def slow_moving_items(self, request):
