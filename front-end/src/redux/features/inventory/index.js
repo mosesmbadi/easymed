@@ -168,9 +168,9 @@ export const getAllInventories = (auth, department, item, processFilter, selecte
   }
 };
 
-export const getAllRequisitions = (auth) => async (dispatch) => {
+export const getAllRequisitions = (auth, processFilter, selectedSearchFilter) => async (dispatch) => {
   try {
-    const response = await fetchRequisitions(auth);
+    const response = await fetchRequisitions(auth, processFilter, selectedSearchFilter);
     dispatch(setRequisitions(response));
   } catch (error) {
     console.log("REQUISITIONS_ERROR ", error);

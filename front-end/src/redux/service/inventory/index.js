@@ -226,10 +226,15 @@ export const deleteRequisitionItem = (requisition_id, requisition_item_id, auth)
     })
 }
 
-export const fetchRequisitions = (auth) =>{
+export const fetchRequisitions = (auth, processFilter, selectedSearchFilter) =>{
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve,reject) =>{
-        axiosInstance.get(`${APP_API_URL.REQUISITION}`,auth)
+        axiosInstance.get(`${APP_API_URL.REQUISITION}`,{
+            params: {
+                search_field: selectedSearchFilter.value ? selectedSearchFilter.value : null,
+                search_value: processFilter.search,
+            }
+        })
             .then((res) =>{
                 resolve(res.data)
             })
