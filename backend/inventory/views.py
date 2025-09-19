@@ -230,8 +230,8 @@ class PurchaseOrderViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def all_purchase_orders(self, request):
-        purchase_orders = PurchaseOrder.objects.all()
-        serializer = PurchaseOrderSerializer(purchase_orders, many=True)
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = PurchaseOrderSerializer(queryset, many=True)
         return Response(serializer.data)
    
 class PurchaseOrderItemViewSet(viewsets.ModelViewSet):
