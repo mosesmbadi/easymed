@@ -8,6 +8,7 @@ import { Column, Pager, Paging, Scrolling } from "devextreme-react/data-grid";
 import { useAuth } from '@/assets/hooks/use-auth';
 import { getAllIncomingItems, getItems } from '@/redux/features/inventory';
 import { months } from "@/assets/dummy-data/laboratory";
+import SearchOnlyFilter from '@/components/common/process/SearchOnly';
 
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
@@ -24,46 +25,47 @@ const IncomingItemsGrid = () => {
   const [showPageSizeSelector, setShowPageSizeSelector] = useState(true);
   const [showInfo, setShowInfo] = useState(true);
   const [showNavButtons, setShowNavButtons] = useState(true);
+  const [processFilter, setProcessFilter] = useState({ search: "" });
+  const [selectedSearchFilter, setSelectedSearchFilter] = useState({label: "", value: ""})
 
-  useEffect(()=>{
-    if (auth.token){
-      dispatch(getAllIncomingItems(auth));
-      dispatch(getItems(auth))
-    }
+  const items = [
+    {label: "None", value: ""},
+    {label: "Product Name", value: "item__name"},
+    {label: "Item Code", value: "item__item_code"},
+    {label: "LOT NO", value: "lot_no"},
+    {label: "Supplier", value: "supplier__name"},
+  ]
 
-  }, [auth])
+  useEffect(() => {
+    // This effect handles the debouncing logic
+    const timerId = setTimeout(() => {
+      // Dispatch the action only after a 500ms delay
+      if(auth.token){
+        dispatch(getAllIncomingItems(auth, {}, processFilter, selectedSearchFilter));
+      }
+    }, 500); // 500ms delay, adjust as needed
+
+    // Cleanup function: clears the timer if searchTerm changes before the delay is over
+    return () => {
+      clearTimeout(timerId);
+    };
+  }, [auth, processFilter.search]); // The effect re-runs only when the local `searchTerm` state changes
 
   return (
     <section className=" my-8">
       <h3 className="text-xl mt-8"> Incoming Items </h3>
-      <Grid className="my-2 flex justify-between gap-4">
-        <Grid className="w-full flex justify-between gap-8 rounded-lg">
-            <select className="px-4 w-full py-2 border broder-gray rounded-lg focus:outline-none" name="" id="">
-              <option value="" selected>                
-              </option>
-              {months.map((month, index) => (
-                <option key={index} value="">
-                  {month.name}
-                </option>
-              ))}
-            </select>
-        </Grid>
-        <Grid className="w-full bg-white px-2 flex items-center rounded-lg" item md={4} xs={4}>
-          <img className="h-4 w-4" src='/images/svgs/search.svg'/>
-          <input
-            className="py-2 w-full px-4 bg-transparent rounded-lg focus:outline-none placeholder-font font-thin text-sm"
-            onChange={(e) => setSearchQuery(e.target.value)}
-            value={searchQuery}
-            fullWidth
-            placeholder="Search referrals by facility"
-          />
-        </Grid>
-        <Grid className="w-full bg-primary rounded-md flex items-center text-white" item md={4} xs={4}>
-          <Link className="mx-4 w-full text-center" href="/dashboard/inventory/incoming-items/new">
-            add New Item
-          </Link>
-        </Grid>
-      </Grid>
+      <div className="w-full flex items-center justify-end text-white">
+        <Link className="mx-4 rounded-md p-2 bg-primary text-center" href="/dashboard/inventory/incoming-items/new">
+          add New Item
+        </Link>
+      </div>
+      <SearchOnlyFilter
+        selectedFilter={processFilter} 
+        setProcessFilter={setProcessFilter}
+        selectedSearchFilter={selectedSearchFilter} 
+        setSelectedSearchFilter={setSelectedSearchFilter}
+        items={items}
+      />
       <DataGrid
         dataSource={incomingItems}
         allowColumnReordering={true}

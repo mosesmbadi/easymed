@@ -20,9 +20,17 @@ export default async function handler(req, res) {
                 }
             };
 
-            console.log("PRESCRIPTION_HEADERS ",config);
+            const query = req.query;
+            const search_field = query.search_field
+            const search_value = query.search_value
+
+            let url = `${API_URL.REQUISITION}?search=${search_value}`;
+
+            if (search_field){
+                url = `${API_URL.REQUISITION}?search_field=${search_field}&search=${search_value}`
+            }
     
-            await backendAxiosInstance.get(`${API_URL.REQUISITION}`, config).then(response => {
+            await backendAxiosInstance.get(url, config).then(response => {
                 res.status(200).json(response.data);
 
             }).catch(e => {

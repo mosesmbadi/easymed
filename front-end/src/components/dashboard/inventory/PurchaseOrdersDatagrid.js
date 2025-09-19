@@ -15,6 +15,7 @@ import { downloadPDF } from '@/redux/service/pdfs';
 import CmtDropdownMenu from "@/assets/DropdownMenu";
 import { LuMoreHorizontal } from "react-icons/lu";
 import ViewPurchaseOrderItemsModal from "./modals/purchaseOrder/ViewPurchaseOrderItems";
+import SearchOnlyFilter from "@/components/common/process/SearchOnly";
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
   ssr: false,
@@ -53,6 +54,17 @@ const PurchaseOrdersDatagrid = () => {
   const [showNavButtons, setShowNavButtons] = useState(true);
   const [open, setOpen] = useState(false);
   const [selectedRowData, setSelectedRowData] = useState({});
+  const [processFilter, setProcessFilter] = useState({ search: "" });
+  const [selectedSearchFilter, setSelectedSearchFilter] = useState({label: "", value: ""})
+
+  const items = [
+    {label: "None", value: ""},
+    {label: "PO Number", value: "PO_number"},
+    {label: "Ordered By First Name", value: "ordered_by__first_name"},
+    {label: "Ordered By Last Name", value: "ordered_by__last_name"},
+    {label: "Approved By First Name", value: "approved_by__first_name"},
+    {label: "Approved By Last Name", value: "approved_by__last_name"},
+  ]
 
   const dispatch = useDispatch();
   const auth = useAuth();
@@ -129,11 +141,26 @@ const PurchaseOrdersDatagrid = () => {
     />
   );
 
-  useEffect(() => {
-    if (auth.token) {
-      dispatch(getAllPurchaseOrders(auth));
-    }
-  }, [auth, dispatch]);
+  // useEffect(() => {
+  //   if (auth.token) {
+  //     dispatch(getAllPurchaseOrders(auth));
+  //   }
+  // }, [auth, dispatch]);
+
+    useEffect(() => {
+      // This effect handles the debouncing logic
+      const timerId = setTimeout(() => {
+        // Dispatch the action only after a 500ms delay
+        if(auth.token){
+          dispatch(getAllPurchaseOrders(auth, processFilter, selectedSearchFilter));
+        }
+      }, 500); // 500ms delay, adjust as needed
+  
+      // Cleanup function: clears the timer if searchTerm changes before the delay is over
+      return () => {
+        clearTimeout(timerId);
+      };
+    }, [auth, processFilter.search]); // The effect re-runs only when the local `searchTerm` state changes
 
   const showStatusColorCode = ({ data }) => (
     <div className={`h-4 w-4 ${data.is_dispatched ? 'bg-success' : 'bg-amber'} rounded-full`}></div>
@@ -142,30 +169,18 @@ const PurchaseOrdersDatagrid = () => {
   return (
     <section className="my-8">
       <h3 className="text-xl mb-8">Purchase Orders</h3>
-      <Grid className="my-2 flex justify-between gap-4">
-        <Grid className="w-full flex justify-between gap-8 rounded-lg">
-          <select className="px-4 w-full py-2 border broder-gray rounded-lg focus:outline-none">
-            <option value="" selected></option>
-            {months.map((month, index) => (
-              <option key={index} value="">{month.name}</option>
-            ))}
-          </select>    
-        </Grid>
-        <Grid className="w-full bg-white px-2 flex items-center rounded-lg" item md={4} xs={4}>
-          <img className="h-4 w-4" src='/images/svgs/search.svg' alt="search" />
-          <input
-            className="py-2 w-full px-4 bg-transparent rounded-lg focus:outline-none placeholder-font font-thin text-sm"
-            onChange={(e) => setSearchQuery(e.target.value)}
-            value={searchQuery}
-            placeholder="Search referrals by facility"
-          />
-        </Grid>
-        <Grid className="w-full bg-primary rounded-md flex items-center text-white" item md={4} xs={4}>
-          <Link className="mx-4 w-full text-center" href='/dashboard/inventory/add-purchase'>
-            Create LPO
-          </Link>
-        </Grid>
-      </Grid>
+      <div className="w-full flex items-center justify-end text-white">
+        <Link className="mx-4 rounded-md p-2 bg-primary text-center" href='/dashboard/inventory/add-purchase'>
+          Create LPO
+        </Link>
+      </div>
+      <SearchOnlyFilter
+        selectedFilter={processFilter} 
+        setProcessFilter={setProcessFilter}
+        selectedSearchFilter={selectedSearchFilter} 
+        setSelectedSearchFilter={setSelectedSearchFilter}
+        items={items}
+      />
       
       <DataGrid
         dataSource={purchaseOrders}

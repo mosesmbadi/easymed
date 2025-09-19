@@ -16,6 +16,7 @@ import { CiSquareQuestion } from "react-icons/ci";
 import CmtDropdownMenu from "@/assets/DropdownMenu";
 import { LuMoreHorizontal } from "react-icons/lu";
 import ViewRequisitionItemsModal from "./modals/requisition/ViewRequisitionItemsModal";
+import SearchOnlyFilter from "@/components/common/process/SearchOnly";
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
   ssr: false,
@@ -50,6 +51,18 @@ const RequisitionDatagrid = () => {
   const [showNavButtons, setShowNavButtons] = useState(true);
   const [open, setOpen] = useState(false);
   const [selectedRowData, setSelectedRowData] = useState({})
+  const [processFilter, setProcessFilter] = useState({ search: "" });
+  const [selectedSearchFilter, setSelectedSearchFilter] = useState({label: "", value: ""})
+
+  const items = [
+    {label: "None", value: ""},
+    {label: "Requisition Number", value: "requisition_number"},
+    {label: "Requested By First Name", value: "requested_by__first_name"},
+    {label: "Requested By Last Name", value: "requested_by__last_name"},
+    {label: "Department", value: "department__name"},
+    {label: "Approved By First Name", value: "approved_by__first_name"},
+    {label: "Approved By LAst Name", value: "approved_by__last_name"},
+  ]
 
   const dispatch = useDispatch()
   const auth = useAuth();
@@ -123,46 +136,35 @@ const RequisitionDatagrid = () => {
   }
 
   useEffect(() => {
-    if (auth.token) {
-      dispatch(getAllRequisitions(auth));
-      dispatch(getAllSuppliers(auth));
-      dispatch(getAllItems(auth));
-      dispatch(getAllDoctors(auth))
-      dispatch(getAllTheUsers(auth))
-    }
-  }, [auth]);
+    // This effect handles the debouncing logic
+    const timerId = setTimeout(() => {
+      // Dispatch the action only after a 500ms delay
+      if(auth.token){
+        dispatch(getAllRequisitions(auth, processFilter, selectedSearchFilter));
+      }
+    }, 500); // 500ms delay, adjust as needed
+
+    // Cleanup function: clears the timer if searchTerm changes before the delay is over
+    return () => {
+      clearTimeout(timerId);
+    };
+  }, [auth, processFilter.search]); // The effect re-runs only when the local `searchTerm` state changes
 
   return (
     <section className=" my-8">
       <h3 className="text-xl mb-8"> Requisitions</h3>
-      <Grid className="my-2 flex justify-between gap-4">
-        <Grid className="w-full flex justify-between gap-8 rounded-lg">
-            <select className="px-4 w-full py-2 border broder-gray rounded-lg focus:outline-none" name="" id="">
-              <option value="" selected>                
-              </option>
-              {months.map((month, index) => (
-                <option key={index} value="">
-                  {month.name}
-                </option>
-              ))}
-            </select>
-        </Grid>
-        <Grid className="w-full bg-white px-2 flex items-center rounded-lg" item md={4} xs={4}>
-          <img className="h-4 w-4" src='/images/svgs/search.svg'/>
-          <input
-            className="py-2 w-full px-4 bg-transparent rounded-lg focus:outline-none placeholder-font font-thin text-sm"
-            onChange={(e) => setSearchQuery(e.target.value)}
-            value={searchQuery}
-            fullWidth
-            placeholder="Search referrals by facility"
-          />
-        </Grid>
-        <Grid className="w-full bg-primary rounded-md flex items-center text-white" item md={4} xs={4}>
-          <Link className="mx-4 w-full text-center" href='/dashboard/inventory/create-requisition'>
+        <div className="w-full flex items-center justify-end text-white">
+          <Link className="mx-4 rounded-md p-2 bg-primary text-center" href='/dashboard/inventory/create-requisition'>
             Create Requisition
           </Link>
-        </Grid>
-      </Grid>
+        </div>
+        <SearchOnlyFilter
+          selectedFilter={processFilter} 
+          setProcessFilter={setProcessFilter}
+          selectedSearchFilter={selectedSearchFilter} 
+          setSelectedSearchFilter={setSelectedSearchFilter}
+          items={items}
+        />
       <DataGrid
         dataSource={requisitions}
         allowColumnReordering={true}
@@ -203,8 +205,8 @@ const RequisitionDatagrid = () => {
           caption="Items"
         />
         <Column 
-          dataField="ordered_by"
-          caption="Requested By" 
+          dataField="approved_by"
+          caption="Approved By" 
         />
         {/* <Column dataField="department_approval_date" caption="Department Approval Date" /> */}
         <Column 

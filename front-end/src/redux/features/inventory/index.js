@@ -158,19 +158,19 @@ export const getAllItems = (auth) => async (dispatch) => {
   }
 };
 
-export const getAllInventories = (auth, department, item) => async (dispatch) => {
+export const getAllInventories = (auth, department, item, processFilter, selectedSearchFilter) => async (dispatch) => {
 
   try {
-    const response = await fetchInventories(auth, department, item);
+    const response = await fetchInventories(auth, department, item, processFilter, selectedSearchFilter);
     dispatch(setInventories(response));
   } catch (error) {
     console.log("INVENTORIES_ERROR ", error);
   }
 };
 
-export const getAllRequisitions = (auth) => async (dispatch) => {
+export const getAllRequisitions = (auth, processFilter, selectedSearchFilter) => async (dispatch) => {
   try {
-    const response = await fetchRequisitions(auth);
+    const response = await fetchRequisitions(auth, processFilter, selectedSearchFilter);
     dispatch(setRequisitions(response));
   } catch (error) {
     console.log("REQUISITIONS_ERROR ", error);
@@ -195,18 +195,18 @@ export const getAllRequisitionItems = (auth) => async (dispatch) => {
   }
 };
 
-export const getAllPurchaseOrders = (auth) => async (dispatch) => {
+export const getAllPurchaseOrders = (auth, processFilter, selectedSearchFilter) => async (dispatch) => {
   try {
-    const response = await fetchPurchaseOrders(auth);
+    const response = await fetchPurchaseOrders(auth, processFilter, selectedSearchFilter);
     dispatch(setPurchaseOrders(response));
   } catch (error) {
     console.log("PURCHASE_ORDERS_ERROR ", error);
   }
 };
 
-export const getAllIncomingItems = (auth) => async (dispatch) => {
+export const getAllIncomingItems = (auth, filter={}, processFilter, selectedSearchFilter) => async (dispatch) => {
   try {
-    const response = await fetchIncomingItems(auth);
+    const response = await fetchIncomingItems(auth, filter={}, processFilter, selectedSearchFilter);
     dispatch(setIncoming(response));
   } catch (error) {
     console.log("PURCHASE_ORDERS_ERROR ", error);

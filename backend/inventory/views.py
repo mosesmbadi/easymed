@@ -58,6 +58,7 @@ from .serializers import (
 
 from .filters import (
     InventoryFilter,
+    InventoryFilterSearch,
     ItemFilter,
     SupplierFilter,
     RequisitionItemFilter
@@ -73,8 +74,11 @@ class ItemViewSet(viewsets.ModelViewSet):
 class IncomingItemViewSet(viewsets.ModelViewSet):
     queryset = IncomingItem.objects.all()
     serializer_class = IncomingItemSerializer
-    filter_backends = [DjangoFilterBackend]
     filterset_fields = ['supplier_invoice', 'purchase_order', 'supplier']
+    filter_backends = [InventoryFilterSearch, DjangoFilterBackend]
+    search_fields = [
+        'lot_no', 'item__name', 'item__item_code', 'supplier__official_name'
+    ]
 
     def perform_create(self, serializer):
         """
@@ -101,6 +105,11 @@ class RequisitionViewSet(viewsets.ModelViewSet):
     serializer_class = RequisitionSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['requested_by', 'department']
+    filter_backends = [InventoryFilterSearch, DjangoFilterBackend]
+    search_fields = [
+        'requisition_number', 'requested_by__first_name', 'requested_by__last_name', 'department__name',
+        'approved_by__first_name', 'approved_by__last_name'
+    ]
 
     
 class RequisitionItemViewSet(viewsets.ModelViewSet):
@@ -126,6 +135,10 @@ class InventoryViewSet(viewsets.ModelViewSet):
     filter_backends = (DjangoFilterBackend,)
     filterset_fields = ['item',]
     filterset_class = InventoryFilter
+    filter_backends = [InventoryFilterSearch, DjangoFilterBackend]
+    search_fields = [
+        'lot_number', 'item__name', 'item__item_code', 'department__name'
+    ]
 
     @action(detail=False, methods=['get'], url_path='slow-moving-items')
     def slow_moving_items(self, request):
@@ -183,6 +196,11 @@ class SupplierInvoiceViewSet(viewsets.ModelViewSet):
 class PurchaseOrderViewSet(viewsets.ModelViewSet):
     serializer_class = PurchaseOrderSerializer
     http_method_names = ['get', 'post', 'put', 'patch', 'delete']
+    filter_backends = [InventoryFilterSearch, DjangoFilterBackend]
+    search_fields = [
+        'PO_number', 'ordered_by__first_name', 'ordered_by__last_name',
+        'approved_by__first_name', 'approved_by__last_name'
+    ]
 
     def get_queryset(self):
         requisition_id = self.kwargs.get('requisition_pk')

@@ -19,9 +19,19 @@ export default async function handler(req, res) {
                     'Authorization': req.headers.authorization,
                 }
             };
+
             const query = req.query;
+            const purchase_order = query.purchase_order ? query.purchase_order : ""
+            const search_field = query.search_field
+            const search_value = query.search_value
+
+            let url = `${API_URL.FETCH_INCOMING_ITEMS}?purchase_order=${purchase_order}&search=${search_value}`;            
+
+            if (search_field){
+                url = `${API_URL.FETCH_INCOMING_ITEMS}?purchase_order=${purchase_order}&search_field=${search_field}&search=${search_value}`
+            }
     
-            await backendAxiosInstance.get(`${API_URL.FETCH_INCOMING_ITEMS}?purchase_order=${query.purchase_order ? query.purchase_order : ""}`, config).then(response => {
+            await backendAxiosInstance.get(url, config).then(response => {
                 res.status(200).json(response.data);
 
             }).catch(e => {

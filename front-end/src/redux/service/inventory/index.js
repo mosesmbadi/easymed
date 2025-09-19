@@ -17,13 +17,15 @@ export const addInventory = (payload, auth) =>{
     })
 }
 
-export const fetchInventories = (auth, department='', item='') =>{
+export const fetchInventories = (auth, department='', item='', processFilter={ search: "" }, selectedSearchFilter={label: "", value: ""}) =>{
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve,reject) =>{
         axiosInstance.get(`${APP_API_URL.FETCH_INVENTORY}`,{
             params: {
                 department_name: department,
-                item: item
+                item: item,
+                search_field: selectedSearchFilter.value ? selectedSearchFilter.value : null,
+                search_value: processFilter.search,
             }
         })
             .then((res) =>{
@@ -224,10 +226,15 @@ export const deleteRequisitionItem = (requisition_id, requisition_item_id, auth)
     })
 }
 
-export const fetchRequisitions = (auth) =>{
+export const fetchRequisitions = (auth, processFilter, selectedSearchFilter) =>{
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve,reject) =>{
-        axiosInstance.get(`${APP_API_URL.REQUISITION}`,auth)
+        axiosInstance.get(`${APP_API_URL.REQUISITION}`,{
+            params: {
+                search_field: selectedSearchFilter.value ? selectedSearchFilter.value : null,
+                search_value: processFilter.search,
+            }
+        })
             .then((res) =>{
                 resolve(res.data)
             })
@@ -272,10 +279,15 @@ export const updatePurchaseOrder = (payload, requisition_id, purchase_order, aut
     })
 }
 
-export const fetchPurchaseOrders = (auth) =>{
+export const fetchPurchaseOrders = (auth, processFilter, selectedSearchFilter) =>{
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve,reject) =>{
-        axiosInstance.get(`${APP_API_URL.PURCHASE_ORDER}`,auth)
+        axiosInstance.get(`${APP_API_URL.PURCHASE_ORDER}`,{
+            params: {
+                search_field: selectedSearchFilter.value ? selectedSearchFilter.value : null,
+                search_value: processFilter.search,
+            }
+        })
             .then((res) =>{
                 resolve(res.data)
             })
@@ -297,12 +309,14 @@ export const addPurchaseOrdersItem = (payload) =>{
     })
 }
 
-export const fetchIncomingItems = (auth, filter={}) =>{
+export const fetchIncomingItems = (auth, filter={}, processFilter, selectedSearchFilter) =>{
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve,reject) =>{
         axiosInstance.get(`${APP_API_URL.FETCH_INCOMING_ITEMS}`, {
             params: {
-                purchase_order: filter.purchase_order
+                purchase_order: filter.purchase_order,
+                search_field: selectedSearchFilter.value ? selectedSearchFilter.value : null,
+                search_value: processFilter.search,
             }
         } )
             .then((res) =>{

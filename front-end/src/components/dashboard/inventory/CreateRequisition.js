@@ -3,16 +3,12 @@ import { Formik, Field, Form, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import { useAuth } from "@/assets/hooks/use-auth";
 import { useRouter } from 'next/navigation'
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
-import Link from "next/link";
 import dynamic from "next/dynamic";
 import { Column, Paging, Pager } from "devextreme-react/data-grid";
 import { Grid } from "@mui/material";
 import { addRequisition, addRequisitionItem } from "@/redux/service/inventory";
 import { useSelector, useDispatch } from "react-redux";
-import { getAllDoctors } from "@/redux/features/doctors";
-import { removeItemToInventoryPdf, clearItemsToInventoryPdf  } from "@/redux/features/inventory";
+import { removeItemToInventoryPdf, clearItemsToInventoryPdf, getAllSuppliers, getItems  } from "@/redux/features/inventory";
 import { toast } from "react-toastify";
 import AddRequisitionItemModal from "./create-requisition-dialog";
 import CmtDropdownMenu from "@/assets/DropdownMenu";
@@ -139,6 +135,8 @@ const CreateRequisition = () => {
   useEffect(()=> {
     if(auth.token){
       dispatch(getAllTheDepartments(auth));
+      dispatch(getAllSuppliers(auth));
+      dispatch(getItems(auth));
     }
   }, [auth])
 
