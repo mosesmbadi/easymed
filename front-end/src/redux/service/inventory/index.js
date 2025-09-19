@@ -309,12 +309,14 @@ export const addPurchaseOrdersItem = (payload) =>{
     })
 }
 
-export const fetchIncomingItems = (auth, filter={}) =>{
+export const fetchIncomingItems = (auth, filter={}, processFilter, selectedSearchFilter) =>{
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve,reject) =>{
         axiosInstance.get(`${APP_API_URL.FETCH_INCOMING_ITEMS}`, {
             params: {
-                purchase_order: filter.purchase_order
+                purchase_order: filter.purchase_order,
+                search_field: selectedSearchFilter.value ? selectedSearchFilter.value : null,
+                search_value: processFilter.search,
             }
         } )
             .then((res) =>{

@@ -74,8 +74,11 @@ class ItemViewSet(viewsets.ModelViewSet):
 class IncomingItemViewSet(viewsets.ModelViewSet):
     queryset = IncomingItem.objects.all()
     serializer_class = IncomingItemSerializer
-    filter_backends = [DjangoFilterBackend]
     filterset_fields = ['supplier_invoice', 'purchase_order', 'supplier']
+    filter_backends = [InventoryFilterSearch, DjangoFilterBackend]
+    search_fields = [
+        'lot_no', 'item__name', 'item__item_code', 'supplier__official_name'
+    ]
 
     def perform_create(self, serializer):
         """
