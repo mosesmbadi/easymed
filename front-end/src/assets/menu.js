@@ -52,7 +52,7 @@ export const menus = [
   //   ],
   // },
   {
-    label: "Patients",
+    label: "Registration",
     href: "/dashboard/patients",
     icon: <HiUsers className="text-xl" />,
   },
