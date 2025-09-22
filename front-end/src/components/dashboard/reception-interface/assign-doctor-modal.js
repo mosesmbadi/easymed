@@ -73,7 +73,7 @@ export default function AssignDoctorModal({
         helpers.resetForm();
         saveInvoiceItem(selectedData.invoice, parseInt(formValue.item.value))
         dispatch(getAllProcesses(authUser))
-        toast.success("Doctor Assigned Successfully!");
+        toast.success("Doctor Assigned, proceed to Billing!");
         setLoading(false);
         handleClose();
       });

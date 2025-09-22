@@ -84,9 +84,9 @@ const PrescriptionItemDialog = ({patient, patient_id}) => {
     >
       <DialogTitle>
         <div className="flex justify-between">
-          <p className="text-xs font-semibold">{`Name: ${patient.first_name} ${patient.second_name}`}</p>
-          <p className="text-xs font-semibold">{`Gender: ${patient.gender}`}</p>
-          <p className="text-xs font-semibold">{`Name: ${patient.age}`}</p>
+          <p className="text-xs font-semibold">{`Name: ${patient?.first_name || ''} ${patient?.second_name || ''}`}</p>
+          <p className="text-xs font-semibold">{`Gender: ${patient?.gender || ''}`}</p>
+          <p className="text-xs font-semibold">{`Age: ${patient?.age || ''}`}</p>
         </div>
       </DialogTitle>
       <DialogContent>

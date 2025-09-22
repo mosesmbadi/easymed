@@ -54,7 +54,7 @@ class InsuranceCompany(models.Model):
         super().save(*args, **kwargs)
         if created:
             PaymentMode.objects.create(
-                paymet_mode=self.name,
+                payment_mode=self.name,
                 insurance=self,
                 payment_category='insurance'
             )

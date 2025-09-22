@@ -18,8 +18,10 @@ class PaymentMode(models.Model):
         ('cash', 'Cash'),
         ('insurance', 'Insurance'),
         ('mpesa', 'MPesa'),
+        ('cheque', 'CHEQUE'),
+        ('direct_to_bank', 'DIRECT_TO_BANK')
     )
-    paymet_mode = models.CharField(max_length=100, blank=True, null=True, default='cash')
+    payment_mode = models.CharField(max_length=100, blank=True, null=True, default='cash')
     insurance = models.ForeignKey(
             'company.InsuranceCompany',
             null=True,
@@ -29,8 +31,15 @@ class PaymentMode(models.Model):
     payment_category = models.CharField(
         max_length=20, choices=PAYMENT_CATEGORY_CHOICES, default='cash')
     
+    class Meta:
+        indexes = [
+            models.Index(fields=['payment_category']),
+        ]
+    
     def __str__(self):
-        return self.payment_category + ' - ' + self.paymet_mode
+        return self.payment_category + ' - ' + self.payment_mode
+
+
 
 
 class Invoice(models.Model):
@@ -109,6 +118,13 @@ class Invoice(models.Model):
 
         super().save(*args, **kwargs)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=['status']),
+            models.Index(fields=['invoice_date']),
+            models.Index(fields=['patient']),  # Also frequently queried
+        ]
+
     def __str__(self):
         return f"{self.invoice_number} - {self.invoice_date} - {self.invoice_amount} - {self.patient.first_name}"
 
@@ -151,6 +167,14 @@ class InvoiceItem(models.Model):
     
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['status']),
+            models.Index(fields=['invoice']),  # Frequently queried
+            models.Index(fields=['payment_mode']),  # Used in aggregations
+            models.Index(fields=['item_created_at']),  # Used for ordering
+        ]
 
     def __str__(self):
         return self.item.name + ' - ' + str(self.item_created_at)

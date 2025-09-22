@@ -47,11 +47,11 @@ const CreatePaymodeModal = () => {
   const initialValues = {
     payment_category: "",
     insurance: "",
-    paymet_mode: "",
+    payment_mode: "",
   };
 
   const validationSchema = Yup.object().shape({
-    paymet_mode: Yup.string().required("Field is Required!"),
+    payment_mode: Yup.string().required("Field is Required!"),
     payment_category: Yup.object().required("Field is Required!"),
   });
 
@@ -140,10 +140,10 @@ const CreatePaymodeModal = () => {
                             className="block border rounded-md text-sm border-gray py-2.5 px-4 focus:outline-card w-full"
                             maxWidth="sm"
                             placeholder="Payment Mode Name"
-                            name="paymet_mode"
+                            name="payment_mode"
                             />
                             <ErrorMessage
-                            name="paymet_mode"
+                            name="payment_mode"
                             component="div"
                             className="text-warning text-xs"
                             />

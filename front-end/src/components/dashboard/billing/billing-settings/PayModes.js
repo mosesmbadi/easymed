@@ -86,9 +86,10 @@ const PayModes = () => {
     );
   };
 
-  //   filter Insurance Prices based on search query
-  const filteredPaymentModes = paymodes.filter((insurance) => {
-    return insurance.paymet_mode.toLocaleLowerCase().includes(searchQuery.toLowerCase()) || insurance.paymet_mode.toLocaleLowerCase().includes(searchQuery.toLowerCase())
+  //   filter Payment Modes based on search query
+  const filteredPaymentModes = paymodes.filter((paymode) => {
+    return paymode.payment_mode.toLowerCase().includes(searchQuery.toLowerCase()) || 
+           (paymode.insurance_company_name && paymode.insurance_company_name.toLowerCase().includes(searchQuery.toLowerCase()))
   });
 
   return (
@@ -101,7 +102,7 @@ const PayModes = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
             value={searchQuery}
             fullWidth
-            placeholder="Search by name"
+            placeholder="Search by payment mode or insurance name"
           />
         </Grid>
         <div className="w-full flex justify-end">
@@ -130,8 +131,8 @@ const PayModes = () => {
             showInfo={showInfo}
             showNavigationButtons={showNavButtons}
         />
-        <Column dataField="paymet_mode" caption="Mode" />
-        <Column dataField="insurance_name" caption="Insurance" />
+        <Column dataField="payment_mode" caption="Mode" />
+        <Column dataField="insurance_company_name" caption="Insurance" />
         <Column
           dataField="payment_category"
           caption="Category"

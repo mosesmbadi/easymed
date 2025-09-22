@@ -122,7 +122,7 @@ const CategorizedItems = ({
             <option value="" disabled selected>Payment Method</option>
             {patient_insurance_for_this_item?.map((mode) => (
               <option key={mode.id} value={mode.id}>
-                {mode.paymet_mode}
+                {mode.payment_mode}
               </option>
             ))}
           </select>
