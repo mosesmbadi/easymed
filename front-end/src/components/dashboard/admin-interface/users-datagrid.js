@@ -126,23 +126,22 @@ const AdminUsersDataGrid = ({ role }) => {
             showInfo={showInfo}
             showNavigationButtons={showNavButtons}
         />
-        <Column dataField="first_name" caption="First Name" width={100} />
-        <Column dataField="last_name" caption="Last Name" width={100} />
+        <Column dataField="first_name" caption="First Name" />
+        <Column dataField="last_name" caption="Last Name" />
         <Column
           dataField="email"
           caption="Email"
-          width={200}
+        
           allowFiltering={true}
           allowSearch={true}
         />
-        <Column dataField="age" caption="Age" width={100} />
-        <Column dataField="phone" caption="Phone Number" width={200} />
-        <Column dataField="profession" caption="Proffession" width={200} />
-        <Column dataField="role" caption="Role" width={140} />
+        <Column dataField="age" caption="Age" />
+        <Column dataField="phone" caption="Phone Number" />
+        <Column dataField="profession" caption="Proffession" />
+        <Column dataField="role" caption="Role"/>
         <Column
           dataField=""
           caption=""
-          width={80}
           cellRender={actionsFunc}
         />
       </DataGrid>
