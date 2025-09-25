@@ -127,21 +127,20 @@ const LabEquipments = () => {
             showInfo={showInfo}
             showNavigationButtons={showNavButtons}
         />
-        <Column dataField="name" caption="Name" width={180} />
-        <Column dataField="category" caption="Category" width={180} />
+        <Column dataField="name" caption="Name" />
+        <Column dataField="category" caption="Category" />
         <Column
           dataField="port"
           caption="Port"
-          width={180}
+        
           allowFiltering={true}
           allowSearch={true}
         />
-        <Column dataField="data_format" caption="Data fomat" width={180} />
-        <Column dataField="ip_address" caption="Ip Address" width={180} />
+        <Column dataField="data_format" caption="Data fomat" />
+        <Column dataField="ip_address" caption="Ip Address" />
         <Column
           dataField=""
           caption=""
-          width={80}
           cellRender={actionsFunc}
         />
       </DataGrid>
