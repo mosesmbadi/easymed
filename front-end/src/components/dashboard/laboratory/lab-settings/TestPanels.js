@@ -126,21 +126,19 @@ const TestPanels = () => {
             showInfo={showInfo}
             showNavigationButtons={showNavButtons}
         />
-        <Column dataField="name" caption="Name" width={180} />
-        <Column dataField="specimen_name" caption="Specimen" width={180} />
+        <Column dataField="name" caption="Name" />
+        <Column dataField="specimen_name" caption="Specimen" />
         <Column
           dataField="unit"
           caption="Unit"
-          width={180}
           allowFiltering={true}
           allowSearch={true}
         />
-        <Column dataField="is_qualitative" caption="Qualitative" width={100} />
-        <Column dataField="is_quantitative" caption="Quantitative" width={100} />
+        <Column dataField="is_qualitative" caption="Qualitative" />
+        <Column dataField="is_quantitative" caption="Quantitative" />
         <Column
           dataField=""
           caption=""
-          width={80}
           cellRender={actionsFunc}
         />
       </DataGrid>

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import { Column, Paging, Pager, Scrolling } from "devextreme-react/data-grid";
+import { Column, Paging, Pager, Scrolling, HeaderFilter } from "devextreme-react/data-grid";
 import { LuMoreHorizontal } from "react-icons/lu";
 import CmtDropdownMenu from "@/assets/DropdownMenu";
 import { AiFillDelete } from "react-icons/ai";
@@ -111,6 +111,7 @@ const AdminDoctorsDataGrid = () => {
         className="shadow-xl w-full"
         // height={"70vh"}
       >
+        <HeaderFilter visible={true} />
         <Scrolling rowRenderingMode='virtual'></Scrolling>
         <Paging defaultPageSize={10} />
         <Pager
@@ -136,6 +137,7 @@ const AdminDoctorsDataGrid = () => {
         />
         <Column dataField="email" caption="Email" width={140} />
         <Column dataField="role" caption="Role" width={200} />
+        <Column dataField="profession" caption="Profession" width={200} />
       </DataGrid>
       <EditDoctorDetailsModal {...{ open, setOpen, selectedRowData }} />
       <DeleteDoctorModal {...{ deleteOpen, setDeleteOpen, selectedRowData }} />

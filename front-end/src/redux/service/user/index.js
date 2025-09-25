@@ -19,11 +19,15 @@ export const getUserName = (user_id, auth) =>{
     })
 }
 
-export const getAllUsers = (auth) =>{
+export const getAllUsers = (auth, role="") =>{
 
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve,reject) =>{
-        axiosInstance.get(`${APP_API_URL.FETCH_ALL_USERS}`)
+        axiosInstance.get(`${APP_API_URL.FETCH_ALL_USERS}`, {
+            params:{
+                role: role,
+            },
+        })
             .then((res) =>{
                 resolve(res.data)
             })
