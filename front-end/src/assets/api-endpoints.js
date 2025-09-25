@@ -124,9 +124,9 @@ export const API_URL = {
   FETCH_PRESCRIPTIONS_PRESCRIBED_DRUGS: "/patients/prescribed-drugs/by-prescription",
 
   /***************** User **********************/
-  GET_USER_NAME: "/customuser/users",
-  FETCH_ALL_USERS: "/customuser/users/",
-  FETCH_USER_BY_ID: "/customuser/users",
+  GET_USER_NAME: "/users/users",
+  FETCH_ALL_USERS: "/users/users/",
+  FETCH_USER_BY_ID: "/users/users",
 
   /***************** Announcements **********************/
   FETCH_ANNOUNCEMENTS_CHANNELS: "/announcement/channels/",

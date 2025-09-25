@@ -27,9 +27,9 @@ const UserSlice = createSlice({
 export const { setUsers, setUserProfile, setUserPassword } = UserSlice.actions;
 
 
-export const getAllTheUsers = (auth) => async (dispatch) => {
+export const getAllTheUsers = (auth, role) => async (dispatch) => {
   try {
-    const response = await getAllUsers(auth);
+    const response = await getAllUsers(auth, role);
     dispatch(setUsers(response));
   } catch (error) {
     console.log("ALL_USERS_ERROR ", error);

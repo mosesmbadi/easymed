@@ -37,7 +37,7 @@ const getActions = () => {
   return actions;
 };
 
-const AdminUsersDataGrid = () => {
+const AdminUsersDataGrid = ({ role }) => {
   const auth = useAuth();
   const dispatch = useDispatch();
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -52,12 +52,10 @@ const AdminUsersDataGrid = () => {
 
   useEffect(()=> {
     if (auth){
-      dispatch(getAllTheUsers(auth));
+      dispatch(getAllTheUsers(auth, role));
     }
 
   }, [auth])
-
-  console.log("ALL THE USERS", users)
 
   const onMenuClick = async (menu, data) => {
     if (menu.action === "delete") {
@@ -103,7 +101,7 @@ const AdminUsersDataGrid = () => {
           />
         </Grid>
         <div className="w-full flex justify-end">
-          <AdminCreateUser />
+          <AdminCreateUser role={role}/>
         </div>
       </Grid>
       <DataGrid

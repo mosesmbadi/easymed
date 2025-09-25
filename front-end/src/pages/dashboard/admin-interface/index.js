@@ -18,7 +18,6 @@ const Admin = () => {
       <MainSettingsNav setSelectedRoute= {setSelectedRoute} selectedRoute={selectedRoute} />
       {selectedRoute === "members" && <MembersNav/>}
       {selectedRoute === "company" && <CompanyDetails/>}
-      {selectedRoute === "permissions" && <Permissions/>}
       {selectedRoute === "announcements" && <Channels/>}
     </Container>
   );

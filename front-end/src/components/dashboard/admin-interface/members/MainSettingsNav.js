@@ -7,19 +7,13 @@ const MainSettingsNav = ( { setSelectedRoute, selectedRoute } ) => {
             className={`cursor-pointer ${selectedRoute === 'members' ? "font-semibold text-xl text-warning ": ""}`} 
             onClick={()=>setSelectedRoute("members")}
         >
-            Members
+            Users And Rights
         </li>
         <li
           className={`cursor-pointer ${selectedRoute === 'company' ? "font-semibold text-xl text-warning ": ""}`} 
           onClick={()=>setSelectedRoute("company")}
         >
           Company
-        </li>
-        <li
-          className={`cursor-pointer ${selectedRoute === 'permissions' ? "font-semibold text-xl text-warning ": ""}`} 
-          onClick={()=>setSelectedRoute("permissions")}
-        >
-            Permissions
         </li>
         <li
           className={`cursor-pointer ${selectedRoute === 'announcements' ? "font-semibold text-xl text-warning ": ""}`} 

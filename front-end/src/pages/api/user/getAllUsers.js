@@ -20,9 +20,9 @@ export default async function handler(req, res) {
                 }
             };
 
-            console.log("ALL USERS ",config);
+            const query = req.query
     
-            await backendAxiosInstance.get(`${API_URL.FETCH_ALL_USERS}`, config).then(response => {
+            await backendAxiosInstance.get(`${API_URL.FETCH_ALL_USERS}?role=${query.role}`, config).then(response => {
                 res.status(200).json(response.data);
 
             }).catch(e => {

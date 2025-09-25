@@ -13,7 +13,7 @@ import { getAllGroups } from "@/redux/features/auth";
 import SeachableSelect from "@/components/select/Searchable";
 import { GoEye, GoEyeClosed } from "react-icons/go";
 
-const AdminCreateUser = () => {
+const AdminCreateUser = ({role}) => {
   const [password, setPassword]= useState("password");
   const [passwordConfirmation, setPasswordConfirmation]= useState("password");
   const [loading, setLoading] = useState(false);
@@ -54,6 +54,18 @@ const AdminCreateUser = () => {
     }
   }, [authUser]);
 
+  const setRole = ()=> {
+    let theRole = role;
+    if( theRole === "labtech"){
+      theRole = "lab_tech"
+    }
+    const roleSelected = groups.find((group) => group.name.toLowerCase() === theRole);
+    if (roleSelected) {
+      return { value: roleSelected.id, label: roleSelected.name };
+    }
+    return "";
+  }
+
   const initialValues = {
     first_name: "",
     last_name: "",
@@ -61,8 +73,8 @@ const AdminCreateUser = () => {
     password: "",
     password_confirmation:"",
     phone: "",
-    role: "",
-    group: null
+    role: role || "" ,
+    group: setRole()
   };
 
   const validationSchema = Yup.object().shape({
