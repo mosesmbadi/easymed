@@ -13,7 +13,7 @@ const LabSettingsNav = () => {
   const open = Boolean(anchorEl);
   const id = open ? "simple-popover" : undefined;
   return (
-    <Container maxWidth="xl" className="py-2">
+    <>
     <section className="mb-2">
       <div className="w-full py-1 px-2 flex items-center gap-4 text-center">
         <div>
@@ -72,7 +72,7 @@ const LabSettingsNav = () => {
       {currentTab === 2 && <TestProfile />}
       {currentTab === 3 && <Specimens />}
     </div>
-  </Container>
+  </>
   )
 }
 

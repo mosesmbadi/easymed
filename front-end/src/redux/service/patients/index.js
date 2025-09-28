@@ -15,7 +15,7 @@ export const fetchServices = () =>{
     })
 }
 
-export const fetchPatient = (auth, processsFilter, selectedSearchFilter) =>{
+export const fetchPatient = (auth, processsFilter = { search: "" }, selectedSearchFilter={label: "", value: ""}) =>{
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve,reject) =>{
         axiosInstance.get(`${APP_API_URL.FETCH_PATIENT}`, {

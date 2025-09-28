@@ -37,7 +37,7 @@ const getActions = () => {
   return actions;
 };
 
-const AdminUsersDataGrid = () => {
+const AdminUsersDataGrid = ({ role }) => {
   const auth = useAuth();
   const dispatch = useDispatch();
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -52,12 +52,10 @@ const AdminUsersDataGrid = () => {
 
   useEffect(()=> {
     if (auth){
-      dispatch(getAllTheUsers(auth));
+      dispatch(getAllTheUsers(auth, role));
     }
 
   }, [auth])
-
-  console.log("ALL THE USERS", users)
 
   const onMenuClick = async (menu, data) => {
     if (menu.action === "delete") {
@@ -103,7 +101,7 @@ const AdminUsersDataGrid = () => {
           />
         </Grid>
         <div className="w-full flex justify-end">
-          <AdminCreateUser />
+          <AdminCreateUser role={role}/>
         </div>
       </Grid>
       <DataGrid
@@ -128,23 +126,22 @@ const AdminUsersDataGrid = () => {
             showInfo={showInfo}
             showNavigationButtons={showNavButtons}
         />
-        <Column dataField="first_name" caption="First Name" width={100} />
-        <Column dataField="last_name" caption="Last Name" width={100} />
+        <Column dataField="first_name" caption="First Name" />
+        <Column dataField="last_name" caption="Last Name" />
         <Column
           dataField="email"
           caption="Email"
-          width={200}
+        
           allowFiltering={true}
           allowSearch={true}
         />
-        <Column dataField="age" caption="Age" width={100} />
-        <Column dataField="phone" caption="Phone Number" width={200} />
-        <Column dataField="profession" caption="Proffession" width={200} />
-        <Column dataField="role" caption="Role" width={140} />
+        <Column dataField="age" caption="Age" />
+        <Column dataField="phone" caption="Phone Number" />
+        <Column dataField="profession" caption="Proffession" />
+        <Column dataField="role" caption="Role"/>
         <Column
           dataField=""
           caption=""
-          width={80}
           cellRender={actionsFunc}
         />
       </DataGrid>

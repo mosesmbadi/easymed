@@ -4,6 +4,7 @@ import { Container } from '@mui/material'
 import AdminUsersDataGrid from '../users-datagrid'
 import AdminPatientsDataGrid from '../patients-datagrid'
 import AdminDoctorsDataGrid from '../doctors-datagrid'
+import Permissions from '../permissions/Permissions'
 
 const MembersNav = () => {
   const [currentTab, setCurrentTab] = useState(0);
@@ -21,10 +22,10 @@ const MembersNav = () => {
               currentTab === 0
                 ? "cursor-pointer text-primary p-4 border-b-2 border-primary text-center"
                 : "cursor-pointer text-center p-4"
-            }`}
+            } `}
             onClick={() => setCurrentTab(0)}
           >
-            Users
+            Patients
           </p>
         </div>
         <div>
@@ -33,10 +34,10 @@ const MembersNav = () => {
               currentTab === 1
                 ? "cursor-pointer text-primary p-4 border-b-2 border-primary text-center"
                 : "cursor-pointer text-center p-4"
-            } `}
+            }`}
             onClick={() => setCurrentTab(1)}
           >
-            Patients
+            Laboratory Staff
           </p>
         </div>
         <div>
@@ -51,12 +52,38 @@ const MembersNav = () => {
             Doctors
           </p>
         </div>
+        <div>
+          <p
+            className={`${
+              currentTab === 3
+                ? "cursor-pointer text-primary p-4 border-b-2 border-primary text-center"
+                : "cursor-pointer text-center p-4"
+            } `}
+            onClick={() => setCurrentTab(3)}
+          >
+            Nurses
+          </p>
+        </div>
+        <div>
+          <p
+            className={`${
+              currentTab === 4
+                ? "cursor-pointer text-primary p-4 border-b-2 border-primary text-center"
+                : "cursor-pointer text-center p-4"
+            } `}
+            onClick={() => setCurrentTab(4)}
+          >
+            Permissions
+          </p>
+        </div>
         </div>
     </section>
     <div className="mt-2">
-      {currentTab === 0 && <AdminUsersDataGrid />}
-      {currentTab === 1 && <AdminPatientsDataGrid />}
+      {currentTab === 0 && <AdminPatientsDataGrid />}
+      {currentTab === 1 && <AdminUsersDataGrid role={"labtech"}/>}
       {currentTab === 2 && <AdminDoctorsDataGrid />}
+      {currentTab === 3 && <AdminUsersDataGrid role={"nurse"}/>}
+      {currentTab === 4 && <Permissions/>}
     </div>
   </Container>
   )
