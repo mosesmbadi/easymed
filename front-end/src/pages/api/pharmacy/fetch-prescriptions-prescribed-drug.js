@@ -21,8 +21,6 @@ export default async function handler(req, res) {
             };
 
             const body = req.query;
-
-            console.log("PRESCRIPTIONS_PRESCRIBED_DRUGS_HEADERS ",config);
     
             await backendAxiosInstance.get(`${API_URL.FETCH_PRESCRIPTIONS_PRESCRIBED_DRUGS}/${body.prescription_id}/`, config).then(response => {
                 res.status(200).json(response.data);
