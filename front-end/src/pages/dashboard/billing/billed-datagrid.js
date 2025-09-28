@@ -5,9 +5,11 @@ import dynamic from "next/dynamic";
 import { Column, Paging, Pager, Scrolling } from "devextreme-react/data-grid";
 import { Button, Grid } from "@mui/material";
 import { MdLocalPrintshop } from 'react-icons/md'
+import { MdPayment } from 'react-icons/md'
 
 import { getAllInvoices } from '@/redux/features/billing';
 import { downloadPDF } from '@/redux/service/pdfs';
+import { updateInvoices } from '@/redux/service/billing';
 import { useAuth } from '@/assets/hooks/use-auth';
 import CmtDropdownMenu from '@/assets/DropdownMenu';
 import { LuMoreHorizontal } from 'react-icons/lu';
@@ -25,7 +27,7 @@ const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
 
 const allowedPageSizes = [5, 10, 'all'];
 
-const getActions = () => {
+const getActions = (isPaid = false) => {
     let actions = [
         {
             action: "print",
@@ -39,14 +41,22 @@ const getActions = () => {
         },
     ];
 
+    // Only add "Mark as Paid" for pending invoices
+    if (!isPaid) {
+        actions.push({
+            action: "mark_paid",
+            label: "Mark as Paid",
+            icon: <MdPayment className="text-success text-xl mx-2" />,
+        });
+    }
+
     return actions;
 };
 
 const BilledDataGrid = () => {
-    const userActions = getActions();
     const dispatch = useDispatch();
     const auth = useAuth()
-    const { invoices } = useSelector((store) => store.billing);
+    const { allInvoices } = useSelector((store) => store.billing);
     const { patients } = useSelector((store) => store.patient);
     const [open,setOpen] = useState(false)
     const [totalsViewOPen, setTotalsViewOPen] = useState(false)
@@ -92,16 +102,43 @@ const BilledDataGrid = () => {
         
     };
 
+    const handleMarkAsPaid = async (data) => {
+        try {
+            if (data.status === 'paid') {
+                toast.info("Invoice is already marked as paid");
+                return;
+            }
+
+            const payload = {
+                status: 'paid'
+            };
+
+            await updateInvoices(auth, data.id, payload);
+            toast.success("Invoice marked as paid successfully");
+            
+            // Refresh the invoices list
+            dispatch(getAllInvoices(auth, processFilter, selectedSearchFilter));
+        } catch (error) {
+            console.log(error);
+            toast.error("Failed to mark invoice as paid");
+        }
+    };
+
     const onMenuClick = async (menu, data) => {
         if (menu.action === "invoice_items") {
           setSelectedRowData(data);
           setOpen(true);
-        }else if (menu.action === "print"){
+        } else if (menu.action === "print"){
           handlePrint(data);
+        } else if (menu.action === "mark_paid") {
+          handleMarkAsPaid(data);
         }
       };
     
       const actionsFunc = ({ data }) => {
+        const isPaid = data.status === 'paid';
+        const userActions = getActions(isPaid);
+        
         return (
             <CmtDropdownMenu
               sx={{ cursor: "pointer" }}
@@ -111,6 +148,19 @@ const BilledDataGrid = () => {
                 <LuMoreHorizontal className="cursor-pointer text-xl flex items-center" />
               }
             />
+        );
+      };
+
+      const statusFunc = ({ data }) => {
+        const isPaid = data.status === 'paid';
+        return (
+            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                isPaid 
+                    ? 'bg-green-100 text-green-800' 
+                    : 'bg-yellow-100 text-yellow-800'
+            }`}>
+                {isPaid ? 'Paid' : 'Pending'}
+            </span>
         );
       };
 
@@ -141,24 +191,28 @@ const BilledDataGrid = () => {
       }
     
 
-    // useEffect(()=> {
-    //     if(auth){
-    //         dispatch(getAllInvoices(auth));
-    //     }
-    // }, [auth]);
+    // Initial load of all invoices and patients
+    useEffect(()=> {
+        if(auth){
+            dispatch(getAllInvoices(auth, processFilter, selectedSearchFilter));
+            dispatch(getAllPatients(auth));
+        }
+    }, [auth]);
 
     useEffect(() => {
-        // This effect handles the debouncing logic
+        // This effect handles the debouncing logic for search
         const timerId = setTimeout(() => {
             // Dispatch the action only after a 500ms delay
-            dispatch(getAllInvoices(auth, processFilter, selectedSearchFilter))
+            if (auth) {
+                dispatch(getAllInvoices(auth, processFilter, selectedSearchFilter))
+            }
         }, 500); // 500ms delay, adjust as needed
 
         // Cleanup function: clears the timer if searchTerm changes before the delay is over
         return () => {
             clearTimeout(timerId);
         };
-    }, [processFilter.search]); // The effect re-runs only when the local `searchTerm` state changes
+    }, [processFilter.search, selectedSearchFilter]); // The effect re-runs when search term or filter changes
 
     return (
         <section clasName="">
@@ -172,7 +226,7 @@ const BilledDataGrid = () => {
 
 
             <DataGrid
-                dataSource={invoices}
+                dataSource={allInvoices}
                 allowColumnReordering={true}
                 rowAlternationEnabled={true}
                 showBorders={true}
@@ -209,6 +263,7 @@ const BilledDataGrid = () => {
                 <Column 
                     dataField="status"
                     caption="Status"
+                    cellRender={statusFunc}
                 />
                 <Column 
                     dataField="" 

@@ -112,16 +112,6 @@ const NursePatientDataGrid = () => {
     return hasAppointment
   });
 
-  const patientNameRender = (cellData) => {
-    const patient = patients.find((patient) => patient.id === cellData.data.patient);
-    return patient ? `${patient.first_name} ${patient.second_name}` : ""
-  }
-
-  const doctorNameRender = (cellData) => {
-    const doctor = doctors.find((doctor) => doctor.id === cellData.data.doctor);
-    return doctor ? `${doctor.first_name} ${doctor.last_name}` : ""
-  }
-
   useEffect(() => {
       // This effect handles the debouncing logic
       const timerId = setTimeout(() => {
@@ -172,18 +162,16 @@ const NursePatientDataGrid = () => {
           caption="PId"
         />
         <Column
-          dataField="patient"
+          dataField="patient_name"
           caption="Patient Name"
           allowFiltering={true}
           allowSearch={true}
-          cellRender={patientNameRender}
         />
         <Column
-          dataField="doctor"
+          dataField="assigned_doctor"
           caption="Assigned Doctor"
           allowFiltering={true}
           allowSearch={true}
-          cellRender={doctorNameRender}
         />
         <Column
           dataField=""

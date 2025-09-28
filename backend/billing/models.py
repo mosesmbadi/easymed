@@ -177,4 +177,4 @@ class InvoiceItem(models.Model):
         ]
 
     def __str__(self):
-        return self.item.name + ' - ' + str(self.item_created_at)
+        return self.status + '-' + self.item.name + ' - ' + str(self.item_created_at)
