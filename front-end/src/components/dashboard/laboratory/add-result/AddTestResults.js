@@ -94,39 +94,30 @@ const AddTestResults = () => {
   // Removed menu actions - using inline editing instead
 
   const saveLabResults = async (formValue, helpers) => {
-    console.log("Bulk saving all results:", formValue)
+    console.log("Complete & Return clicked:", formValue)
 
     try {
-      const unsavedResults = labResultItems.filter(panel => 
-        panel.is_billed && panel.result && panel.result.toString().trim() !== ''
+      // Check if there are any results entered (results are auto-saved, so we just check for completion)
+      const resultsWithData = labResultItems.filter(panel => 
+        panel.result && panel.result.toString().trim() !== ''
       );
       
-      if (unsavedResults.length <= 0) {
-        toast.error("No results to save");
+      if (resultsWithData.length <= 0) {
+        toast.error("No results have been entered");
         return;
       }    
       
       setLoading(true);
       
-      // Save all results with proper error handling
-      const savePromises = unsavedResults.map(async (panel) => {
-        const payload = {
-          result: panel.result,
-          test_panel: panel.test_panel,
-          lab_test_request: panel.lab_test_request
-        };
-        return updateLabRequestPanelResult(panel.id, payload, auth);
-      });
-      
-      await Promise.all(savePromises);
-      
-      toast.success("All results saved successfully!");
+      // Since we're using auto-save, results are already saved
+      // Just show success message and navigate back
+      toast.success("Results completed successfully!");
       setLoading(false);
       router.back();
 
     } catch(error) {
-      console.error("Error bulk saving results:", error);
-      toast.error("Error saving some results. Please check and try again.");
+      console.error("Error completing results:", error);
+      toast.error("Error completing results. Please try again.");
       setLoading(false);
     }
   }

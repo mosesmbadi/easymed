@@ -24,8 +24,6 @@ export default async function handler(req, res) {
 
             await backendAxiosInstance.get(`${API_URL.GET_PATIENT_PROFILE}/${userId}`, config).then(response => {
                 res.status(200).json(response.data);
-                console.log("PATIENT DATA", response.data)
-
             }).catch(e => {
                     res.status(e.response?.status ?? 500).json(e.response?.data)
                 }
