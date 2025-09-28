@@ -33,7 +33,7 @@ export default async function handler(req, res) {
 
 
             if (query.admission_id) {
-                url += `${query.admission_id}/`;
+                url = `${API_URL.ADMIT_PATIENT}${query.admission_id}/?search=${search_value}&ward=${query.ward}`;
             }
 
             await backendAxiosInstance.get(url, config).then(response => {
