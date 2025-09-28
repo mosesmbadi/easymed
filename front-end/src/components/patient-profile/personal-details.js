@@ -22,13 +22,11 @@ const PersonalDetails = () => {
   }, []);
 
   const initialValues = {
-    first_name: userProfile.first_name ? userProfile.first_name : "",
-    second_name: userProfile.last_name ? userProfile.last_name : "",
-    date_of_birth: userProfile.date_of_birth
-      ? userProfile.date_of_birth
-      : "",
-    gender: userProfile.gender ? userProfile.gender : "",
-    insurance: userProfile.insurance ? userProfile.insurance : null,
+    first_name: userProfile?.first_name || "",
+    second_name: userProfile?.last_name || "",
+    date_of_birth: userProfile?.date_of_birth || "",
+    gender: userProfile?.gender || "",
+    insurance: userProfile?.insurance || null,
     user: auth?.user_id
   };
 

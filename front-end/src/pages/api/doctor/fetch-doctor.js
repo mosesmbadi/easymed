@@ -19,8 +19,6 @@ export default async function handler(req, res) {
                     'Authorization': req.headers.authorization,
                 }
             };
-
-            console.log("DOCTOR_HEADERS ",config);
     
             await backendAxiosInstance.get(`${API_URL.FETCH_DOCTOR}`, config).then(response => {
                 res.status(200).json(response.data);

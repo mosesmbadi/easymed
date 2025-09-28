@@ -320,18 +320,22 @@ export const fetchPatientPrescribeDrugs = (patient_id) =>{
 
 export const fetchAllAttendanceProcesses = (auth, process_id=null, processsFilter, selectedSearchFilter) =>{
     const axiosInstance = UseAxios(auth);
+    const params = {
+        process_id: process_id,
+        search_field: selectedSearchFilter?.value ? selectedSearchFilter.value : null,
+        search_value: processsFilter?.search || null,
+    };
+    console.log("SERVICE: fetchAllAttendanceProcesses called with params:", params);
+    console.log("SERVICE: Making API call to:", APP_API_URL.PATIENT_ATTENDANCE_PROCESS);
+    
     return new Promise((resolve,reject) =>{
-        axiosInstance.get(`${APP_API_URL.PATIENT_ATTENDANCE_PROCESS}`, {
-            params: {
-                process_id: process_id,
-                search_field: selectedSearchFilter.value ? selectedSearchFilter.value : null,
-                search_value: processsFilter.search,
-            }
-        })
+        axiosInstance.get(`${APP_API_URL.PATIENT_ATTENDANCE_PROCESS}`, { params })
             .then((res) =>{
+                console.log("SERVICE: API call successful, response:", res.data);
                 resolve(res.data)
             })
             .catch((err) =>{
+                console.log("SERVICE: API call failed, error:", err);
                 reject(err.message)
             })
     })

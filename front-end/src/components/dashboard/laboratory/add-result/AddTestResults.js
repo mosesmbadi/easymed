@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react';
 import { toast } from "react-toastify";
 import { useDispatch, useSelector } from 'react-redux';
 import { useRouter } from 'next/navigation';
@@ -12,11 +12,11 @@ import { LuMoreHorizontal } from 'react-icons/lu';
 import { SlMinus } from 'react-icons/sl';
 
 import { useAuth } from '@/assets/hooks/use-auth';
-import LabItemModal from './LabItemModal';
+// Removed unused imports - using inline editing instead
 
 import { removeItemToLabResultsItems, getAllLabRequests, getAllPhlebotomySamples, getAllLabTestPanelsBySample, updateItemToLabResultsItems, getAllLabTestPanels } from '@/redux/features/laboratory';
 import SeachableSelect from '@/components/select/Searchable';
-import { updateLabRequestPanels } from '@/redux/service/laboratory';
+import { updateLabRequestPanels, updateLabRequestPanelResult } from '@/redux/service/laboratory';
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
   ssr: false,
@@ -41,16 +41,16 @@ const getActions = () => {
 
 const AddTestResults = () => {
 
-  const userActions = getActions();
-  const [open, setOpen] = React.useState(false);
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [selected, setSelectedItem] = useState(null)
-  const [selectedOption, setSelectedOPtion] = useState(null)
+  const [selected, setSelectedItem] = useState(null);
+  const [savingResults, setSavingResults] = useState(new Set()); // Track which results are being saved
   const dispatch = useDispatch();
   const { labResultItems  } = useSelector((store) => store.laboratory);
   const { labTestPanels  } = useSelector((store) => store.laboratory);
   const auth = useAuth();
+
+  // Inline editing with auto-save - no modal needed
   const { phlebotomySamples } = useSelector((store) => store.laboratory);
 
   const token = useAuth();
@@ -66,79 +66,118 @@ const AddTestResults = () => {
       dispatch(getAllLabTestPanels(auth))
       dispatch(getAllPhlebotomySamples(token))
       if(selected){
+        console.log("Fetching lab test panels for sample:", selected.label);
         dispatch(getAllLabTestPanelsBySample(selected.label, token));
       }
     }
   }, [token, selected]);
   
+  // Debug logging for labResultItems
+  useEffect(() => {
+    console.log("=== LAB RESULT ITEMS DEBUG ===");
+    console.log("Total labResultItems:", labResultItems.length);
+    console.log("labResultItems data:", labResultItems);
+    
+    if (labResultItems.length > 0) {
+      console.log("First item structure:", labResultItems[0]);
+      console.log("First item keys:", Object.keys(labResultItems[0]));
+      console.log("is_billed values:", labResultItems.map(item => ({ id: item.id, is_billed: item.is_billed, test_panel_name: item.test_panel_name })));
+    } else {
+      console.log("No labResultItems found - check if sample selection is working");
+    }
+  }, [labResultItems]);
+  
   const validationSchema = Yup.object().shape({
     lab_test_request: Yup.object().required("This field is required!"),
   });
 
-  const onMenuClick = async (menu, data) => {
-    console.log(data)
-    if (menu.action === "remove") {
-      dispatch(removeItemToLabResultsItems(data))
-    }else if(menu.action === "add-result"){
-      setOpen(true);
-      setSelectedOPtion(data)
-    }
-  };
-
-  const actionsFunc = ({ data }) => {
-    return (
-      <>
-        <CmtDropdownMenu
-          sx={{ cursor: "pointer" }}
-          items={userActions}
-          onItemClick={(menu) => onMenuClick(menu, data)}
-          TriggerComponent={
-            <LuMoreHorizontal className="cursor-pointer text-xl" />
-          }
-        />
-      </>
-    );
-  };
+  // Removed menu actions - using inline editing instead
 
   const saveLabResults = async (formValue, helpers) => {
-    console.log(formValue)
+    console.log("Bulk saving all results:", formValue)
 
     try {
-      if (labResultItems.length <= 0) {
-        toast.error("No lab result items");
+      const unsavedResults = labResultItems.filter(panel => 
+        panel.is_billed && panel.result && panel.result.toString().trim() !== ''
+      );
+      
+      if (unsavedResults.length <= 0) {
+        toast.error("No results to save");
         return;
       }    
+      
       setLoading(true);
-
-      labResultItems.forEach(async(panel)=> {
-        if(panel.is_billed){
-          const payload = {
-            id:panel.id,
-            result: panel.result
-          }
-          const response = await updateLabRequestPanels(payload, auth)
-        }                 
-      })
+      
+      // Save all results with proper error handling
+      const savePromises = unsavedResults.map(async (panel) => {
+        const payload = {
+          result: panel.result,
+          test_panel: panel.test_panel,
+          lab_test_request: panel.lab_test_request
+        };
+        return updateLabRequestPanelResult(panel.id, payload, auth);
+      });
+      
+      await Promise.all(savePromises);
+      
+      toast.success("All results saved successfully!");
       setLoading(false);
-      router.back() 
+      router.back();
 
-      }catch(error){
-        console.log("ERR SAVING RESULTS")
-        setLoading(false);
-      }
+    } catch(error) {
+      console.error("Error bulk saving results:", error);
+      toast.error("Error saving some results. Please check and try again.");
+      setLoading(false);
+    }
   }
 
-  const updateRow = (e) => {
+  const updateRow = async (e) => {
     console.log("ROW UPDATED TO", e);
     e.cancel = true;
   
-    // Create a new object with updated data instead of mutating the old data
+    // Create a new object with updated data
     const updatedData = { ...e.oldData, result: e.newData.result };
-  
-    console.log("DATA AFTER UPDATE IS", updatedData);
-  
-    // Dispatch the updated object to the store
-    dispatch(updateItemToLabResultsItems(updatedData));
+    
+    // Add to saving set
+    setSavingResults(prev => new Set([...prev, updatedData.id]));
+    
+    try {
+      // Auto-save the result to backend
+      const payload = {
+        result: updatedData.result,
+        test_panel: updatedData.test_panel,
+        lab_test_request: updatedData.lab_test_request
+      };
+      
+      console.log("Auto-saving result for panel ID:", updatedData.id, "with payload:", payload);
+      console.log("Full updatedData object:", JSON.stringify(updatedData, null, 2));
+      
+      // Use the correct PUT API with panel ID in URL
+      const response = await updateLabRequestPanelResult(updatedData.id, payload, auth);
+      
+      // Update local state with the response from backend
+      dispatch(updateItemToLabResultsItems(response));
+      
+      toast.success(`Result saved!`, { 
+        position: "bottom-right",
+        autoClose: 2000,
+        hideProgressBar: true
+      });
+      
+    } catch (error) {
+      console.error("Error auto-saving result:", error);
+      toast.error("Failed to save result. Please try again.");
+      
+      // Don't update local state if save failed
+      return;
+    } finally {
+      // Remove from saving set
+      setSavingResults(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(updatedData.id);
+        return newSet;
+      });
+    }
   };
   return (
     <section>
@@ -146,8 +185,10 @@ const AddTestResults = () => {
           <img onClick={() => router.back()} className="h-3 w-3 cursor-pointer" src="/images/svgs/back_arrow.svg" alt="go back"/>
           <h3 className="text-xl"> Lab Result entry </h3>
       </div>
-      <div className='flex justify-end'>
-        {selected && (<LabItemModal open={open} setOpen={setOpen} sample_label={selected.label} selected={selectedOption}/>)}
+      <div className='flex justify-between items-center mb-4'>
+        <div className="text-sm text-gray-600">
+          💡 <strong>Tip:</strong> Click on any result cell to enter values. Results auto-save when you click outside the cell.
+        </div>
       </div>
 
       <Formik
@@ -175,7 +216,7 @@ const AddTestResults = () => {
         </Grid>
       </Grid>
       <DataGrid
-        dataSource={labResultItems.filter((resultItem)=> resultItem.is_billed)}
+        dataSource={labResultItems}
         allowColumnReordering={true}
         rowAlternationEnabled={true}
         showBorders={true}
@@ -201,19 +242,37 @@ const AddTestResults = () => {
           caption="Test Panel" 
           cellRender={(cellData) => {
             const testPanel = labTestPanels.find(item => item.id === cellData.data.test_panel);
-            return testPanel ? `${testPanel.name}` : 'null';
+            return testPanel ? `${testPanel.name}` : 'Loading...';
           }}
           allowEditing={false}
         />
         <Column 
           dataField="result" 
-          caption="Result" 
+          caption="Result (Click to edit)" 
           allowEditing={true}
+          cellRender={(cellData) => {
+            const hasResult = cellData.value && cellData.value.toString().trim() !== '';
+            const isSaving = savingResults.has(cellData.data.id);
+            
+            return (
+              <div className="flex items-center gap-2">
+                <div className={hasResult ? "text-blue-600 font-medium" : "text-gray-400 italic"}>
+                  {hasResult ? cellData.value : "Click to add result"}
+                </div>
+                {isSaving && (
+                  <div className="animate-spin h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                )}
+              </div>
+            );
+          }}
         />
         <Column 
-          dataField="" 
-          caption=""
-          cellRender={actionsFunc}
+          dataField="is_quantitative" 
+          caption="Type"
+          allowEditing={false}
+          cellRender={(cellData) => {
+            return cellData.data.is_quantitative ? "Quantitative" : "Qualitative";
+          }}
         />
       </DataGrid>
       <Grid className='py-2' item md={4} xs={12}>
@@ -256,7 +315,7 @@ const AddTestResults = () => {
                 ></path>
               </svg>
             )}
-            Save Results
+            Complete & Return
           </button>
         </div>
       </Grid>

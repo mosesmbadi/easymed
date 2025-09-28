@@ -249,8 +249,6 @@ class LabTestRequestPanelBySampleView(generics.ListAPIView):
         serializer_context = self.get_serializer_context()
         serializer_context['patient'] = patient
 
-        print("Serializer context:", serializer_context)  # Debug line
-
         serializer = self.get_serializer(queryset, many=True, context=serializer_context)
         return Response(serializer.data)
 

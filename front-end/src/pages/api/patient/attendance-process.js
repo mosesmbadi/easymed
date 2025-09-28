@@ -25,14 +25,14 @@ export default async function handler(req, res) {
             const search_field = query.search_field
             const search_value = query.search_value
 
-            let url = `${API_URL.PATIENT_ATTENDANCE_PROCESS}?search=${search_value}`;
-
-            if (search_field){
-                url = `${API_URL.PATIENT_ATTENDANCE_PROCESS}?search_field=${search_field}&search=${search_value}`
-            }
+            let url = API_URL.PATIENT_ATTENDANCE_PROCESS;
 
             if (process_id) {
                 url = `${API_URL.PATIENT_ATTENDANCE_PROCESS}${process_id}/`
+            } else if (search_field && search_value) {
+                url = `${API_URL.PATIENT_ATTENDANCE_PROCESS}?search_field=${search_field}&search=${search_value}`
+            } else if (search_value && search_value !== "null" && search_value !== null) {
+                url = `${API_URL.PATIENT_ATTENDANCE_PROCESS}?search=${search_value}`;
             }
 
             await backendAxiosInstance.get(url, config).then(response => {

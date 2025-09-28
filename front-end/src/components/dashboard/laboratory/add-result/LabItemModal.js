@@ -9,6 +9,7 @@ import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
 import SeachableSelect from "@/components/select/Searchable";
 import { useAuth } from "@/assets/hooks/use-auth";
+import { updateLabRequestPanelResult } from "@/redux/service/laboratory";
 
 const AddResultItemModal = ({open, setOpen, selected, sample_label}) => {
   const [loading, setLoading] = useState(false);
@@ -17,10 +18,11 @@ const AddResultItemModal = ({open, setOpen, selected, sample_label}) => {
   const { labTestPanels  } = useSelector((store) => store.laboratory);
   const selectedPanel = labTestPanels.find((panel)=> panel.id ===selected?.test_panel)
   
-  const handleClickOpen = () => {
-    setOpen(true);
-  };
-
+  // Debug logging
+  console.log("LabItemModal selected object:", selected);
+  console.log("Selected ID:", selected?.id);
+  console.log("Selected keys:", selected ? Object.keys(selected) : 'no selected object');
+  
   const handleClose = () => {
     setOpen(false);
   };
@@ -28,7 +30,7 @@ const AddResultItemModal = ({open, setOpen, selected, sample_label}) => {
   const initialValues = {
     result: selected?.result || '',
     test_panel: selectedPanel ? {value:selectedPanel.id, label: selectedPanel.name} : "",
-    lab_test_result: 0
+    lab_test_request: selected?.lab_test_request || 0
   };
 
   const validationSchema = Yup.object().shape({
@@ -37,21 +39,43 @@ const AddResultItemModal = ({open, setOpen, selected, sample_label}) => {
   });
 
   const handleAddLabResultItem = async (formValue, helpers) => {
-    console.log(formValue)
+    console.log("Form values:", formValue);
+    console.log("Selected panel data:", selected);
+    console.log("Selected ID:", selected?.id);
+    console.log("Selected object keys:", selected ? Object.keys(selected) : 'no selected object');
 
     try {
-      const formData = {
-        ...formValue,
+      // Check if we have the panel ID
+      if (!selected?.id) {
+        console.log("ERROR: No panel ID found. Selected object structure:", JSON.stringify(selected, null, 2));
+        toast.error("Panel ID is required to save the result");
+        return;
+      }
+
+      const payload = {
+        result: formValue.result,
         test_panel: formValue.test_panel.value,
+        lab_test_request: selected.lab_test_request || formValue.lab_test_request
       };
 
-      setLoading(true);    
-      dispatch(addItemToLabResultsItems(formData))
+      console.log("Payload being sent:", payload);
+      console.log("Panel ID being used:", selected.id);
+
+      setLoading(true);
+      
+      // Save to backend using PUT request with panel ID in URL
+      const response = await updateLabRequestPanelResult(selected.id, payload, auth);
+      
+      // Update Redux store with the saved data
+      dispatch(addItemToLabResultsItems(response));
+      
+      toast.success("Lab result saved successfully!");
       setLoading(false);
-      handleClose()
+      handleClose();
 
     } catch (err) {
-      toast.error(err);
+      console.error("Error saving lab result:", err);
+      toast.error(err.message || "Error saving lab result");
       setLoading(false);
     }
   };
@@ -65,9 +89,6 @@ const AddResultItemModal = ({open, setOpen, selected, sample_label}) => {
 
   return (
     <section>
-      <button onClick={handleClickOpen} className="bg-primary text-white text-sm rounded px-3 py-2">
-        Add Result Panel
-      </button>
       <Dialog
         fullWidth
         maxWidth="sm"

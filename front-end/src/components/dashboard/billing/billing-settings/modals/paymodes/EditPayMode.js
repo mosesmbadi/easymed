@@ -42,13 +42,13 @@ const EditPaymodeModal = ({ open, setOpen, selectedRowData }) => {
   };
 
   const initialValues = {
-    paymet_mode: selectedRowData?.paymet_mode || "",
+    payment_mode: selectedRowData?.payment_mode || "",
     insurance: getInsurance() || "",
     payment_category: getPaymentCategory() || "",
   };
 
   const validationSchema = Yup.object().shape({
-    paymet_mode: Yup.string().required("Field is Required!"),
+    payment_mode: Yup.string().required("Field is Required!"),
     payment_category: Yup.object().required("Field is Required!"),
   });
 
@@ -84,7 +84,7 @@ const EditPaymodeModal = ({ open, setOpen, selectedRowData }) => {
         aria-describedby="alert-dialog-description"
       >
         <DialogContent>
-        <h1 className="text-xl font-bold my-10">{selectedRowData?.paymet_mode}</h1>
+        <h1 className="text-xl font-bold my-10">{selectedRowData?.payment_mode}</h1>
 
         <section className="flex items-center justify-center gap-8">
               <div className="w-full space-y-4 px-4">
@@ -126,10 +126,10 @@ const EditPaymodeModal = ({ open, setOpen, selectedRowData }) => {
                             className="block border rounded-md text-sm border-gray py-2.5 px-4 focus:outline-card w-full"
                             maxWidth="sm"
                             placeholder="Payment Mode Name"
-                            name="paymet_mode"
+                            name="payment_mode"
                             />
                             <ErrorMessage
-                            name="paymet_mode"
+                            name="payment_mode"
                             component="div"
                             className="text-warning text-xs"
                             />

@@ -31,7 +31,7 @@ class InvoiceItemSerializer(serializers.ModelSerializer):
     
     def get_payment_mode_name(self, obj):
         payment_mode = obj.payment_mode
-        return payment_mode.paymet_mode if payment_mode  else None
+        return payment_mode.payment_mode if payment_mode  else None
 
     def get_insurance_company_id(self, obj):
         payment_mode = obj.payment_mode
@@ -61,9 +61,14 @@ class InvoiceSerializer(serializers.ModelSerializer):
 
 
 class PaymentModeSerializer(serializers.ModelSerializer):
+    insurance_company_name = serializers.SerializerMethodField()
+    
     class Meta:
         model = PaymentMode 
-        fields = '__all__'       
+        fields = '__all__'
+        
+    def get_insurance_company_name(self, obj):
+        return obj.insurance.name if obj.insurance else None
 
 
 class InvoicePaymentSerializer(serializers.ModelSerializer):

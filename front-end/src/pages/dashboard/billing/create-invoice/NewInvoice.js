@@ -5,6 +5,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import _ from 'lodash';
 
 import { getAllPatients } from "@/redux/features/patients";
+import { getAllInvoices } from "@/redux/features/billing";
 
 import LabTestRequests from './lab-test-requests';
 import PrescribedDrug from './prescribed-drug';
@@ -24,7 +25,25 @@ const NewInvoice = () => {
     const [patient, setPatient] = useState(null)
 
     const { patients } = useSelector((store) => store.patient);
-    const { invoices } = useSelector((store) => store.billing)
+    const { invoices, allInvoices } = useSelector((store) => store.billing)
+
+    // Get unique patients from pending invoices
+    const patientsWithPendingInvoices = React.useMemo(() => {
+        if (!allInvoices || !patients) return [];
+        
+        // Get pending invoices
+        const pendingInvoices = allInvoices.filter(invoice => invoice.status === 'pending');
+        
+        // Get unique patient IDs from pending invoices
+        const patientIds = [...new Set(pendingInvoices.map(invoice => invoice.patient))];
+        
+        // Match with patient details
+        const patientsWithDetails = patientIds.map(patientId => {
+            return patients.find(patient => patient.id === patientId);
+        }).filter(Boolean); // Remove undefined entries
+        
+        return patientsWithDetails;
+    }, [allInvoices, patients]);
 
 
     const handleChange = (selectedOption) => {
@@ -54,9 +73,14 @@ const NewInvoice = () => {
     }
 
     useEffect(() => {
-        dispatch(getAllPatients(auth));
-
-    }, [selectedOption]);
+        if (auth) {
+            // Pass empty filter parameters to get all patients and invoices
+            const emptyProcessFilter = { search: "" };
+            const emptySearchFilter = { label: "", value: "" };
+            dispatch(getAllPatients(auth, emptyProcessFilter, emptySearchFilter));
+            dispatch(getAllInvoices(auth, emptyProcessFilter, emptySearchFilter));
+        }
+    }, [auth]);
 
     const selectInvoice = (invoice)=> {
       setSelectedInvoice(invoice)
@@ -73,7 +97,9 @@ const NewInvoice = () => {
                   isSearchable
                   isClearable
                   onChange={handleChange}
-                  options={patients.map((patient) => ({ value: patient.id, label: `${patient.first_name} ${patient.second_name}` }))}
+                  options={patientsWithPendingInvoices.map((patient) => ({ value: patient.id, label: `${patient.first_name} ${patient.second_name}` }))}
+                  placeholder="Select a patient with pending invoices..."
+                  noOptionsMessage={() => "No patients with pending invoices found"}
               />
           </Grid>
 

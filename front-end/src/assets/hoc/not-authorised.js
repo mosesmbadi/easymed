@@ -4,6 +4,7 @@ import Link from "next/link";
 import { BiArrowBack } from "react-icons/bi";
 import { useAuth } from '../hooks/use-auth';
 import { getAllPatients } from "@/redux/features/patients";
+import jwtDecode from "jwt-decode";
 
 const NotAuthorized = () => {
   const dispatch = useDispatch();
@@ -15,47 +16,28 @@ const NotAuthorized = () => {
     }
   }, [auth, dispatch]);
 
-  let backUrl = "";
-  let backText = "";
+  // Function to check if token is expired
+  const isTokenExpired = () => {
+    if (!auth?.token) return true;
+    
+    try {
+      const decoded = jwtDecode(auth.token);
+      const currentTime = Date.now() / 1000; // Convert to seconds
+      return decoded.exp < currentTime;
+    } catch (error) {
+      // If token can't be decoded, consider it invalid
+      return true;
+    }
+  };
 
-  switch (auth?.role) {
+  // Check if user has invalid/expired token or lacks basic auth info
+  const hasInvalidToken = !auth?.token || !auth?.role || !auth?.user_id || isTokenExpired();
 
-    case "sysadmin":
-      backUrl = "/dashboard"
-      backText = "Back to Dashboard"
-      break;
-    case "receptionist":
-      backUrl = "/dashboard"
-      backText = "Back to Dashboard"
-      break;
-    case "labtech":
-      backUrl = "/dashboard/laboratory"
-      backText = "Back to Lab Page"
-      break;
-    case "nurse":
-      backUrl = "/dashboard/nursing-interface"
-      backText = "Back to Nursing Interface"
-      break;
-    case "senior_nurse":
-      backUrl = "/dashboard/nursing-interface"
-      backText = "Back to Nursing Interface"
-      break;
-    case "doctor":
-      backUrl = "/dashboard/doctor-interface"
-      backText = "Back to Doctors Page"
-      break;
-    case "pharmacist":
-        backUrl = "/dashboard/phamarcy"
-        backText = "Back to Pharmacy Page"
-        break;
-    case "patient":
-      backUrl = "/patient-overview"
-      backText = "Back to Patient Overview"
-      break;
-    default:
-      backUrl = "/dashboard"
-      backText = "Back to Dashboard"
-  }
+  let backUrl = "/auth/login"; // Always redirect to login page
+  let backText = "Login to Continue"; // Always show "Login to Continue"
+
+  // No role-based navigation - always redirect to login
+  // This ensures all users with restricted access go to login page
 
   return (
     <section className="p-12 flex items-center justify-center h-screen">

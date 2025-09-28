@@ -116,7 +116,7 @@ class PaymentBreakdownView(APIView):
 
     def get(self, request, *args, **kwargs):
         # Aggregate total amounts per payment mode
-        payment_modes = PaymentMode.objects.all()
+        payment_modes = PaymentMode.objects.prefetch_related('invoiceitem_set__invoice').all()
         breakdown = []
 
         for payment_mode in payment_modes:
@@ -136,7 +136,7 @@ class PaymentBreakdownView(APIView):
 
             # Build response for the current payment mode
             breakdown.append({
-                "payment_mode": payment_mode.paymet_mode,
+                "payment_mode": payment_mode.payment_mode,
                 "payment_category": payment_mode.payment_category,
                 "total_amount": total_amount,
                 "total_paid": total_paid,

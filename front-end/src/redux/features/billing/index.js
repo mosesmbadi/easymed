@@ -15,7 +15,8 @@ const initialState = {
   selectedAppointments: [],
   selectedLabRequests: [],
   selectedPrescribedDrugs: [],
-  invoices: [],
+  invoices: [], // Patient-specific invoices
+  allInvoices: [], // All invoices
   invoiceItems:[],
   paymodes: [],
 };
@@ -44,6 +45,9 @@ const BillingSlice = createSlice({
     },
     setInvoices: (state, action) => {
       state.invoices = action.payload;
+    },
+    setAllInvoices: (state, action) => {
+      state.allInvoices = action.payload;
     },
     setInvoiceItems: (state, action) => {
       state.invoiceItems = action.payload;
@@ -79,6 +83,7 @@ export const {
   setSelectedLabRequest,
   setSelectedPrescribedDrug,
   setInvoices,
+  setAllInvoices,
   setInvoiceItems, setPayModes, setPaymentModeStoreOnCreate, setPaymentModeStoreOnUpdate
 } = BillingSlice.actions;
 
@@ -115,7 +120,7 @@ export const getAllPatientBillingPrescribedDrug =
 export const getAllInvoices = (auth, processFilter, selectedSearchFilter) => async (dispatch) => {
   try {
     const response = await fetchInvoices(auth, processFilter, selectedSearchFilter);
-    dispatch(setInvoices(response));
+    dispatch(setAllInvoices(response));
   } catch (error) {
     console.log("BILLINGI_ERROR ", error);
   }

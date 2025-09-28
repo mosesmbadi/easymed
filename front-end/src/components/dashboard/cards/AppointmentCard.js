@@ -94,7 +94,7 @@ const AppointmentCard = () => {
     const sendToLab = (patient, process) => {
         const selectedData = {
             ...process,
-            patient_name: patient.first_name + " " + patient.second_name
+            patient_name: patient ? `${patient.first_name || ''} ${patient.second_name || ''}`.trim() : 'Unknown Patient'
         }
         setSelectedData(selectedData)
         setLabOpen(true)
@@ -103,7 +103,7 @@ const AppointmentCard = () => {
     const sendToPharmacy = (patient, process) => {
         const selectedData = {
             ...process,
-            patient_name: patient.first_name + " " + patient.second_name
+            patient_name: patient ? `${patient.first_name || ''} ${patient.second_name || ''}`.trim() : 'Unknown Patient'
         }
         setSelectedData(selectedData)
         setOpen(true)
@@ -112,7 +112,7 @@ const AppointmentCard = () => {
     const sendForTriage = (patient, process) => {
         const selectedData = {
             ...process,
-            patient_name: patient.first_name + " " + patient.second_name
+            patient_name: patient ? `${patient.first_name || ''} ${patient.second_name || ''}`.trim() : 'Unknown Patient'
         }
         console.log(selectedData)
         setSelectedData(selectedData)
@@ -122,11 +122,24 @@ const AppointmentCard = () => {
 
     const patientNameRender = (cellData) => {
         const patient = patients.find((patient) => patient.id === cellData.data.patient);
-        return patient ? `${patient.first_name} ${patient.second_name}` : ""
+        return patient ? `${patient.first_name || ''} ${patient.second_name || ''}`.trim() : "Unknown Patient"
     }
 
     const onMenuClick = async (menu, data) => {
         const linkedPatient = patients.find((patient)=> patient.id === data.patient)
+        
+        // Add logging to debug the issue
+        console.log('Menu clicked:', menu.action);
+        console.log('Process data:', data);
+        console.log('Linked patient:', linkedPatient);
+        console.log('All patients:', patients);
+        
+        if (!linkedPatient) {
+            console.error('Patient not found for ID:', data.patient);
+            alert('Patient information not found. Please refresh the page and try again.');
+            return;
+        }
+        
         if (menu.action === "consult") {
             sendForTriage(linkedPatient, data)
         } else if (menu.action === "prescribe") {

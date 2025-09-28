@@ -1,119 +1,136 @@
 services:
-    redis:
-        image: redis:7.0-alpine
-        container_name: redis
-        command: redis-server --appendonly yes --replica-read-only no
-        volumes:
-            - ./volumes/redis/:/etc/redis/
-        ports:
-            - 6379:6379
-        networks:
-            - mks
-        restart: unless-stopped
+  redis:
+    image: redis:7.0-alpine
+    container_name: redis
+    command: redis-server --appendonly yes --replica-read-only no
+    volumes:
+      - ./volumes/redis/:/etc/redis/
+    ports:
+      - 6379:6379
+    networks:
+      - mks
+    restart: unless-stopped
 
-    backend:
-        build:
-            context: ./backend
-            dockerfile: ./Dockerfile.local
-        container_name: api
-        command: python manage.py runserver 0.0.0.0:8080
-        # command: uvicorn --host 0.0.0.0 --port 8080 easymed.asgi:application
-        volumes:
-            - ./backend:/app
-        ports:
-            - 8080:8080
-        env_file:
-            - ./.env.local
-        restart: unless-stopped
-        depends_on:
-            - redis
-        networks:
-            - mks  
+  backend:
+    build:
+      context: ./backend
+      dockerfile: ./Dockerfile.local
+    container_name: api
+    command: python manage.py runserver 0.0.0.0:8080
+    # command: uvicorn --host 0.0.0.0 --port 8080 easymed.asgi:application
+    volumes:
+      - ./backend:/app
+    ports:
+      - 8080:8080
+    env_file:
+      - ./.env.local
+    restart: unless-stopped
+    depends_on:
+      - redis
+    networks:
+      - mks
+    healthcheck:
+      test: ["CMD", "python", "manage.py", "check", "--database", "default"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
-    worker:
-        build: ./backend
-        container_name: "celery"
-        restart: unless-stopped
-        env_file:
-            - ./.env.local
-        command: celery -A easymed worker --loglevel=INFO
-        depends_on:
-            - redis
-        networks:
-            - mks
+  worker:
+    build: ./backend
+    container_name: "celery"
+    restart: unless-stopped
+    env_file:
+      - ./.env.local
+    command: celery -A easymed worker --loglevel=INFO
+    entrypoint: [] # Skip entrypoint to avoid running migrations
+    depends_on:
+      backend:
+        condition: service_healthy # Wait for backend to be healthy (migrations complete)
+      redis:
+        condition: service_started
+    networks:
+      - mks
 
-    celery-beat:
-        build: ./backend
-        container_name: celery-beat
-        command: celery -A easymed beat --loglevel=INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
-        env_file:
-            - ./.env.local
-        restart: unless-stopped
-        depends_on:
-            - redis
-        networks:
-            - mks
+  celery-beat:
+    build: ./backend
+    container_name: celery-beat
+    command: celery -A easymed beat --loglevel=INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    entrypoint: [] # Skip entrypoint to avoid running migrations
+    env_file:
+      - ./.env.local
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy # Wait for backend to be healthy (migrations complete)
+      redis:
+        condition: service_started
+    networks:
+      - mks
 
-    frontend:
-        build:
-            context: ./front-end
-            dockerfile: ./Dockerfile.local
-        container_name: easymed-frontend
-        restart: unless-stopped
-        ports:
-            - 3000:3000
-        env_file:
-            - ./.env.local
-        environment:
-            - NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL}
-        depends_on:
-            - backend
-        networks:
-            - mks
+  #   frontend:
+  #     build:
+  #       context: ./front-end
+  #       dockerfile: ./Dockerfile.local
+  #     container_name: easymed-frontend
+  #     restart: unless-stopped
+  #     ports:
+  #       - 3000:3000
+  #     volumes:
+  #       - ./front-end:/app
+  #       - /app/node_modules
+  #     env_file:
+  #       - ./.env.local
+  #     environment:
+  #       - NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL}
+  #     depends_on:
+  #       - backend
+  #     networks:
+  #       - mks
 
-    flower:
-        image: mher/flower
-        container_name: flower
-        command: celery flower
-        environment:
-            - CELERY_BROKER_URL=redis://redis:6379/0
-            - FLOWER_PORT=8888
-        ports:
-            - 8888:8888
-        depends_on:
-            - redis
-        networks:
-            - mks
+  flower:
+    image: mher/flower
+    container_name: flower
+    command: celery flower
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - FLOWER_PORT=8888
+    ports:
+      - 8888:8888
+    depends_on:
+      - redis
+    networks:
+      - mks
 
-    lis_server:
-        image: mosesmbadi/hl7-astm-parser:latest
-        container_name: lis-server
-        ports:
-            - 9091:9091
-        env_file:
-            - ./.env.local
-        environment:
-            - PYTHONUNBUFFERED=1
-            - PYTHONPATH=/app/src
-        command:
-            [
-                "uvicorn",
-                "src.main:app",
-                "--host",
-                "0.0.0.0",
-                "--port",
-                "9091",
-                "--reload",
-            ]
+  lis_server:
+    image: mosesmbadi/hl7-astm-parser:latest
+    container_name: lis-server
+    ports:
+      - 9091:9091
+    env_file:
+      - ./.env.local
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app/src
+    command:
+      [
+        "uvicorn",
+        "src.main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "9091",
+        "--reload",
+      ]
 
-        restart: unless-stopped
-        networks:
-            - mks
+    restart: unless-stopped
+    networks:
+      - mks
 
 volumes:
-    postgres_data:
+  postgres_data:
 
 networks:
-    mks:
-        name: mks
-        driver: bridge
+  mks:
+    name: mks
+    driver: bridge

@@ -40,7 +40,7 @@ const LabRequestDataGrid = ( ) => {
   const [showPageSizeSelector, setShowPageSizeSelector] = useState(true);
   const [showInfo, setShowInfo] = useState(true);
   const [showNavButtons, setShowNavButtons] = useState(true);
-  const [processsFilter, setProcessFilter] = useState({ track: "lab", search: "" })
+  const [processFilter, setProcessFilter] = useState({ track: "lab", search: "" })
   const [selectedSearchFilter, setSelectedSearchFilter] = useState({label: "", value: ""})
   
 
@@ -67,7 +67,7 @@ const LabRequestDataGrid = ( ) => {
 
   const { processes, patients } = useSelector((store)=> store.patient)
 
-  const labTestsSchedules = processes.filter((process)=> process.track.includes(processsFilter.track))
+  const labTestsSchedules = processes.filter((process)=> process.track.includes(processFilter.track))
   const searchedProcesses = labTestsSchedules.filter((process)=> process.patient_number.includes(searchQuery))
 
 
@@ -106,20 +106,20 @@ const LabRequestDataGrid = ( ) => {
       // This effect handles the debouncing logic
       const timerId = setTimeout(() => {
           // Dispatch the action only after a 500ms delay
-          dispatch(getAllProcesses(auth, null, processsFilter, selectedSearchFilter))
+          dispatch(getAllProcesses(auth, null, processFilter, selectedSearchFilter))
       }, 500); // 500ms delay, adjust as needed
 
       // Cleanup function: clears the timer if searchTerm changes before the delay is over
       return () => {
           clearTimeout(timerId);
       };
-  }, [processsFilter.search]); // The effect re-runs only when the local `searchTerm` state changes
+  }, [processFilter.search]); // The effect re-runs only when the local `searchTerm` state changes
 
   return (
     <>
       <ProcessFilter 
         setProcessFilter={setProcessFilter} 
-        selectedFilter={processsFilter}
+        selectedFilter={processFilter}
         selectedSearchFilter={selectedSearchFilter} 
         setSelectedSearchFilter={setSelectedSearchFilter}
         items={items}
