@@ -29,6 +29,12 @@ services:
       - redis
     networks:
       - mks
+    healthcheck:
+      test: ["CMD", "python", "manage.py", "check", "--database", "default"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   worker:
     build: ./backend
@@ -37,8 +43,12 @@ services:
     env_file:
       - ./.env.local
     command: celery -A easymed worker --loglevel=INFO
+    entrypoint: [] # Skip entrypoint to avoid running migrations
     depends_on:
-      - redis
+      backend:
+        condition: service_healthy # Wait for backend to be healthy (migrations complete)
+      redis:
+        condition: service_started
     networks:
       - mks
 
@@ -46,33 +56,37 @@ services:
     build: ./backend
     container_name: celery-beat
     command: celery -A easymed beat --loglevel=INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    entrypoint: [] # Skip entrypoint to avoid running migrations
     env_file:
       - ./.env.local
     restart: unless-stopped
     depends_on:
-      - redis
+      backend:
+        condition: service_healthy # Wait for backend to be healthy (migrations complete)
+      redis:
+        condition: service_started
     networks:
       - mks
 
-#   frontend:
-#     build:
-#       context: ./front-end
-#       dockerfile: ./Dockerfile.local
-#     container_name: easymed-frontend
-#     restart: unless-stopped
-#     ports:
-#       - 3000:3000
-#     volumes:
-#       - ./front-end:/app
-#       - /app/node_modules
-#     env_file:
-#       - ./.env.local
-#     environment:
-#       - NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL}
-#     depends_on:
-#       - backend
-#     networks:
-#       - mks
+  #   frontend:
+  #     build:
+  #       context: ./front-end
+  #       dockerfile: ./Dockerfile.local
+  #     container_name: easymed-frontend
+  #     restart: unless-stopped
+  #     ports:
+  #       - 3000:3000
+  #     volumes:
+  #       - ./front-end:/app
+  #       - /app/node_modules
+  #     env_file:
+  #       - ./.env.local
+  #     environment:
+  #       - NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL}
+  #     depends_on:
+  #       - backend
+  #     networks:
+  #       - mks
 
   flower:
     image: mher/flower

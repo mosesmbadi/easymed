@@ -110,7 +110,9 @@ export const {
 
 export const getAllProcesses = (auth, process_id=null,  processsFilter, selectedSearchFilter) => async (dispatch) => {
   try {
+    console.log("REDUX ACTION: Calling fetchAllAttendanceProcesses with:", { auth, process_id, processsFilter, selectedSearchFilter });
     const response = await fetchAllAttendanceProcesses(auth, process_id, processsFilter, selectedSearchFilter);
+    console.log("REDUX ACTION: fetchAllAttendanceProcesses response:", response);
     dispatch(setProcesses(response));
   } catch (error) {
     console.log("ATTENDANCE_PROCESSES_ERROR ", error);

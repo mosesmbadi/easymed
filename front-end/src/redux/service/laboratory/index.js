@@ -176,6 +176,19 @@ export const updateLabRequestPanels = (payload, auth) =>{
     })
 }
 
+export const updateLabRequestPanelResult = (panelId, payload, auth) =>{
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve,reject) =>{
+        axiosInstance.put(`${APP_API_URL.FETCH_LAB_TEST_REQUEST_PANELS}${panelId}/`, payload)
+            .then((res) =>{
+                resolve(res.data)
+            })
+            .catch((err) =>{
+                reject(err.message)
+            })
+    })
+}
+
 
 export const fetchLabTestPanelsByProfileId = (profile_id, auth) =>{
 

@@ -30,7 +30,7 @@ const getActions = () => {
     },
     {
       action: "confirm",
-      label: "Confirm Appointment",
+      label: "Confirm Process",
       icon: <GiConfirmed className="text-success text-xl mx-2" />,
     }
   ];
@@ -49,25 +49,24 @@ const PatientAppointmentDataGrid = ({ patientAppointments }) => {
   const [showInfo, setShowInfo] = useState(true);
   const [showNavButtons, setShowNavButtons] = useState(true);
 
-  const confirmAppointment = async (appointmentID) => {
+  const confirmProcess = async (processID) => {
     try {
-      const payload = {
-        appointment: appointmentID
-      }
-      const response = await initiateNewAttendanceProcesses(payload, auth)
-      console.log("SUCCESSFULLY INITIATED", response)
+      console.log("PROCESS CONFIRMED", processID)
+      // Add your logic here to move the process to next stage
     }catch(error){
-      console.log("ERROR INITIATING PROCESS", error)
+      console.log("ERROR CONFIRMING PROCESS", error)
     }
-
   }
 
-  const newAppointments = [].filter((appointment)=> appointment.status !== "confirmed")
+  const newAppointments = patientAppointments || []
+  
+  console.log("DATAGRID: Received patientAppointments:", patientAppointments);
+  console.log("DATAGRID: newAppointments array:", newAppointments);
 
   const onMenuClick = async (menu, data) => {
-    console.log("I WANT THE ID OF APP", data)
+    console.log("ATTENDANCE PROCESS DATA", data)
     if (menu.action === "confirm") {
-      confirmAppointment(data.id)
+      confirmProcess(data.id)
     } else if (menu.action === "assign") {
       setSelectedRowData(data);
       setAssignOpen(true);
@@ -89,15 +88,8 @@ const PatientAppointmentDataGrid = ({ patientAppointments }) => {
     );
   };
 
-  const appointmentDateFunc = ({ data }) => {
-    const formattedate = new Date(
-      data?.appointment_date_time
-    ).toLocaleDateString();
-    return <p>{formattedate}</p>;
-  };
-
-  const dateCreatedFunc = ({ data }) => {
-    const formattedate = new Date(data?.date_created).toLocaleDateString();
+  const createdAtFunc = ({ data }) => {
+    const formattedate = new Date(data?.created_at).toLocaleDateString();
     return <p>{formattedate}</p>;
   };
 
@@ -108,7 +100,7 @@ const PatientAppointmentDataGrid = ({ patientAppointments }) => {
       <section className="flex items-center justify-between mb-2">
         <div className="">
           <h1 className="text-xl text-primary">
-            Patient Appointments
+            Attendance Processes
           </h1>
         </div>
         <div className="flex gap-4">
@@ -148,7 +140,7 @@ const PatientAppointmentDataGrid = ({ patientAppointments }) => {
         />
         <HeaderFilter visible={true} />
         <Column
-          dataField="gender"
+          dataField="id"
           caption="Action"
           width={100}
           allowFiltering={false}
@@ -156,34 +148,40 @@ const PatientAppointmentDataGrid = ({ patientAppointments }) => {
           cellRender={actionsFunc}
         />
         <Column
-          dataField="first_name"
-          caption="First Name"
+          dataField="patient_name"
+          caption="Patient Name"
+          width={180}
+          allowFiltering={true}
+          allowSearch={true}
+        />
+        <Column
+          dataField="track_number"
+          caption="Track Number"
           width={140}
           allowFiltering={true}
           allowSearch={true}
         />
         <Column
-          dataField="second_name"
-          caption="Last Name"
+          dataField="patient_number"
+          caption="Patient Number"
           width={140}
           allowFiltering={true}
           allowSearch={true}
         />
         <Column
-          dataField="appointment_date_time"
-          caption="Date of Appointment"
-          width={200}
-          cellRender={appointmentDateFunc}
+          dataField="reason"
+          caption="Reason"
+          width={180}
+          allowFiltering={true}
+          allowSearch={true}
         />
         <Column
-          dataField="date_created"
-          caption="Date Created"
+          dataField="created_at"
+          caption="Created Date"
           width={140}
-          cellRender={dateCreatedFunc}
+          cellRender={createdAtFunc}
         />
-        {/* <Column dataField="age" caption="Age" width={140} />
-        <Column dataField="gender" caption="Gender" width={100} /> */}
-        <Column dataField="status" caption="Status" width={140} />
+        <Column dataField="track" caption="Current Track" width={140} />
       </DataGrid>
       <CreateAppointmentModal {...{ open, setOpen, selectedRowData }} />
       <AssignDoctorModal {...{ assignOpen, setAssignOpen, selectedRowData }} />

@@ -3,23 +3,23 @@ services:
         image: mosesmbadi/easymednginx:latest
         container_name: "nginx"
         volumes:
-        - /var/log/nginx:/var/log/nginx
-        - letsencrypt:/etc/letsencrypt
-        - certbot-www:/var/www/certbot
+            - /var/log/nginx:/var/log/nginx
+            - letsencrypt:/etc/letsencrypt
+            - certbot-www:/var/www/certbot
         restart: always
         depends_on:
-        - frontend
+            - frontend
         ports:
-        - 80:80
-        - 443:443
+            - 80:80
+            - 443:443
         networks:
-        - mks  
+            - mks
 
     certbot:
         image: certbot/certbot
         volumes:
-        - letsencrypt:/etc/letsencrypt
-        - certbot-www:/var/www/certbot
+            - letsencrypt:/etc/letsencrypt
+            - certbot-www:/var/www/certbot
         entrypoint: /bin/sh -c
         command: >
             "trap exit TERM; while :; do sleep 6h & wait $${!}; certbot renew --webroot -w /var/www/certbot; done"
@@ -30,11 +30,11 @@ services:
         env_file:
             - ./.env
         ports:
-        - "5433:5432"
+            - "5433:5432"
         volumes:
-        - postgres_data:/var/lib/postgresql/data
+            - postgres_data:/var/lib/postgresql/data
         networks:
-        - mks
+            - mks
 
     redis:
         image: redis:7.0-alpine
@@ -68,18 +68,19 @@ services:
     worker:
         image: mosesmbadi/easymedbackend
         container_name: worker
-        command: celery -A easymed worker --loglevel=INFO        
+        command: celery -A easymed worker --loglevel=INFO
+        entrypoint: [] # Skip entrypoint to avoid running migrations
         restart: unless-stopped
         env_file:
-            - ./.env    
+            - ./.env
         depends_on:
-            - backend
+            - backend # Wait for backend to finish migrations
             - redis
             - postgres
         networks:
-            - mks   
+            - mks
         labels:
-            - "service: worker"    
+            - "service: worker"
 
     frontend:
         image: mosesmbadi/easymedfrontend
@@ -90,24 +91,24 @@ services:
         depends_on:
             - backend
         env_file:
-            - ./.env    
+            - ./.env
         networks:
-            - mks    
+            - mks
 
     prometheus:
         image: prom/prometheus:latest
         container_name: prometheus
         ports:
-        - 9090:9090
+            - 9090:9090
         volumes:
-        - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-        - ./prometheus/rules.yml:/etc/prometheus/rules.yml
+            - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+            - ./prometheus/rules.yml:/etc/prometheus/rules.yml
         depends_on:
-        - backend
-        - worker
-        - redis
+            - backend
+            - worker
+            - redis
         labels:
-        - "service: prometheus"
+            - "service: prometheus"
 
     lis_server:
         image: mosesmbadi/hl7-astm-parser:latest
@@ -131,14 +132,14 @@ services:
             ]
         restart: unless-stopped
         networks:
-            - mks  
-            
+            - mks
+
 volumes:
     postgres_data:
     redis:
     letsencrypt:
     certbot-www:
-    
+
 networks:
     mks:
         name: mks
