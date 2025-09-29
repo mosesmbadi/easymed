@@ -155,6 +155,12 @@ export const getAllItems = (auth) => async (dispatch) => {
     dispatch(setItems(response));
   } catch (error) {
     console.log("ITEMS_ERROR ", error);
+    // If it's a 401 error, the interceptor will handle logout
+    // For other errors, we could show a toast or handle differently
+    if (error.response?.status !== 401) {
+      // Handle other errors if needed
+      console.error("Failed to fetch items:", error.message);
+    }
   }
 };
 

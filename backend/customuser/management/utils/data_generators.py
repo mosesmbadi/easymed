@@ -21,8 +21,7 @@ MEDICAL_ITEM_NAMES = [
     "Paracetamol Tablet", "Surgical Gloves", "Blood Pressure Monitor",
     "Stethoscope", "Insulin Pen", "Antiseptic Solution", "Gauze Roll", "Thermometer",
     "Amoxicillin Capsule", "Saline Drip", "Face Mask", "ECG Machine", "Defibrillator",
-    "Scalpel", "Surgical Mask", "Bandage", "Wheelchair", "Crutches", "General Appointment",
-    "Specialized appointment",
+    "Scalpel", "Surgical Mask", "Bandage", "Wheelchair", "Crutches"
 ]
 
 MEDICAL_DESCRIPTIONS = [
