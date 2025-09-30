@@ -18,6 +18,6 @@ admin.site.register(Referral)
 @admin.register(Patient)
 class PatientAdmin(admin.ModelAdmin):
     list_display = (
-        'unique_id', 'first_name', 'second_name',
+        'id', 'unique_id', 'first_name', 'second_name',
         'date_of_birth', 'gender', 'phone', 'email',
         )
