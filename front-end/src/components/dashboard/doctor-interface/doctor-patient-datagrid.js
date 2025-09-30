@@ -151,7 +151,9 @@ const DoctorPatientDataGrid = () => {
       <>
         <CmtDropdownMenu
           sx={{ cursor: "pointer" }}
-          items={processFilter === 'lab' ?  actionsWhenOnResultedTrack : actionsWhenOnDoctorTrack }
+          items={processFilter === 'lab' ?  
+            !data.AttendanceProcess ? actionsWhenOnResultedTrack : actionsWhenOnResultedTrack.filter((action)=> action.action !== "admit") :
+            !data.AttendanceProcess ? actionsWhenOnDoctorTrack : actionsWhenOnDoctorTrack.filter((action)=> action.action !== "admit")}
           onItemClick={(menu) => onMenuClick(menu, data)}
           TriggerComponent={
             <LuMoreHorizontal className="cursor-pointer text-xl" />

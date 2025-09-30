@@ -1,5 +1,6 @@
 from django.utils import timezone
 from rest_framework import serializers
+
 from .models import (
     ContactDetails,
     Patient,
@@ -127,12 +128,15 @@ class TriageSerializer(serializers.ModelSerializer):
 
 
 class AttendanceProcessSerializer(serializers.ModelSerializer):
+    from inpatient.serializers import PatientAdmissionSerializer
+
     insurances = serializers.SerializerMethodField()
     invoice_items = serializers.SerializerMethodField()
     assigned_doctor = serializers.CharField(source='doctor.get_fullname', read_only=True)
     patient_name = serializers.SerializerMethodField()
     referral = ReferralSerializer(read_only=True)
     clinical_note = ConsultationSerializer(read_only=True)
+    AttendanceProcess = PatientAdmissionSerializer(read_only=True)
     class Meta:
         model = AttendanceProcess
         fields = '__all__'
