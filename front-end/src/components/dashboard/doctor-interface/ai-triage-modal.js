@@ -67,6 +67,7 @@ const AITriageModal = ({ open, setOpen, selectedRowData }) => {
     setIsLoading(true);
     setError('');
     setAiResponse(null);
+    setHasRequested(true);
 
     const axiosInstance = UseAxios(auth);
 
@@ -104,11 +105,13 @@ const AITriageModal = ({ open, setOpen, selectedRowData }) => {
     }
 
     try {
+      console.log('Polling for results, attempt:', attempts + 1);
       const response = await axiosInstance.get(
         `${APP_API_URL.AI_TRIAGE_RESULTS}?patient_id=${patientId}`
       );
 
       const result = response.data;
+      console.log('Polling response:', result);
       
       if (result.status === 'completed') {
         setAiResponse(result);
@@ -119,11 +122,14 @@ const AITriageModal = ({ open, setOpen, selectedRowData }) => {
         setIsLoading(false);
       } else {
         // Still processing, poll again after 3 seconds
+        console.log('Still processing, polling again in 3 seconds...');
         setTimeout(() => pollForResults(patientId, axiosInstance, attempts + 1), 3000);
       }
     } catch (err) {
+      console.log('Polling error:', err);
       if (err.response?.status === 404 || attempts < 3) {
         // Result not ready yet, continue polling
+        console.log('Result not ready yet, polling again in 3 seconds...');
         setTimeout(() => pollForResults(patientId, axiosInstance, attempts + 1), 3000);
       } else {
         console.error('Error fetching AI results:', err);
