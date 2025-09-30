@@ -50,6 +50,7 @@ export default function AddTriageModal({
     diastolic: patientTriage?.diastolic ? patientTriage?.diastolic : "",
     bmi:patientTriage?.bmi ? patientTriage?.bmi : "",
     notes: patientTriage?.notes ? patientTriage?.notes : "",
+    allergies: patientTriage?.allergies ? patientTriage?.allergies : "",
   };
 
   const validationSchema = Yup.object().shape({
@@ -252,6 +253,20 @@ export default function AddTriageModal({
                 />
                 <ErrorMessage
                   name="notes"
+                  component="div"
+                  className="text-warning text-xs"
+                />
+              </div>
+              <div className="w-full my-2">
+                <Field
+                  as="textarea"
+                  className="block border text-sm border-gray rounded-xl py-2 px-4 focus:outline-none w-full"
+                  type="text"
+                  placeholder="allergies"
+                  name="allergies"
+                />
+                <ErrorMessage
+                  name="allergies"
                   component="div"
                   className="text-warning text-xs"
                 />
