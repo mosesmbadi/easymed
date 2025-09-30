@@ -10,7 +10,7 @@ import ReferPatientModal from "../patient/refer-patient-modal";
 import ConsultPatientModal from "./consult-modal";
 import PrescribePatientModal from "./prescribe-patient-modal";
 import { BiTransferAlt } from "react-icons/bi";
-import { FaBed } from "react-icons/fa";
+import { FaBed, FaRobot } from "react-icons/fa";
 import { MdOutlineContactSupport } from "react-icons/md";
 import { useDispatch, useSelector } from "react-redux";
 import { getAllPatients, getAllProcesses } from "@/redux/features/patients";
@@ -23,6 +23,7 @@ import ViewAddedResults from "./ViewAddedResults";
 import ApproveResults from "../laboratory/add-result/ApproveResults";
 import ProcessFilter from "@/components/common/process/ProcessFilter";
 import AdmitModal from "./admit-modal";
+import AITriageModal from "./ai-triage-modal";
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
   ssr: false,
@@ -77,6 +78,7 @@ const DoctorPatientDataGrid = () => {
   const [prescribeOpen, setPrescribeOpen] = useState(false);
   const [labOpen, setLabOpen] = useState(false);
   const [admitOpen, setAdmitOpen] = useState(false);
+  const [aiTriageOpen, setAiTriageOpen] = useState(false);
   const userActions = getActions();
   const dispatch = useDispatch();
   const auth = useAuth();
@@ -143,7 +145,24 @@ const DoctorPatientDataGrid = () => {
     }else if (menu.action === "admit") {
       setSelectedRowData(data);
       setAdmitOpen(true);
-    } 
+    }
+  };
+
+  const handleAITriageClick = (data) => {
+    setSelectedRowData(data);
+    setAiTriageOpen(true);
+  };
+
+  const robotIconFunc = ({ data }) => {
+    return (
+      <div className="flex justify-center">
+        <FaRobot 
+          className="cursor-pointer text-purple-600 hover:text-purple-800 text-xl transition-colors duration-200" 
+          onClick={() => handleAITriageClick(data)}
+          title="AI Triage Analysis"
+        />
+      </div>
+    );
   };
 
   const actionsFunc = ({ data }) => {
@@ -235,6 +254,14 @@ const DoctorPatientDataGrid = () => {
         <Column dataField="reason" caption="Reason" width={200} />
         <Column
           dataField=""
+          caption="AI"
+          width={60}
+          cellRender={robotIconFunc}
+          allowFiltering={false}
+          allowSearch={false}
+        />
+        <Column
+          dataField=""
           caption="Action"
           cellRender={actionsFunc}
         />
@@ -254,6 +281,12 @@ const DoctorPatientDataGrid = () => {
       {resultOpen && (<ApproveResults selectedData={selectedRowData} approveOpen={resultOpen} setApproveOpen={setResultOpen}/>)}
       
       {admitOpen && (<AdmitModal admitOpen={admitOpen} setAdmitOpen={setAdmitOpen} selectedRowdata={selectedRowData} />)}
+      
+      {aiTriageOpen && (<AITriageModal
+        open={aiTriageOpen}
+        setOpen={setAiTriageOpen}
+        selectedRowData={selectedRowData}
+      />)}
     </section>
   );
 };
