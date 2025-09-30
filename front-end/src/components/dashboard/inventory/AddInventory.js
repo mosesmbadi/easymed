@@ -29,7 +29,7 @@ const AddInventory = () => {
     purchase_price: "",
     sale_price: "",
     item: "",
-    category_one:null,
+    category_one: "Resale", // Set Resale as default
     total_quantity: "",
     expiry_date: "",
   };

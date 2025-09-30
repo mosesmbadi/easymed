@@ -77,9 +77,9 @@ def process_triage_request(patient_id, **kwargs):
                 continue
             prompt_data["triage_records"].append({
                 "date": str(record.date_created),
-                "temperature-Degrees C": str(record.temperature),
-                "height-m": str(record.height),
-                "weight-kg": str(record.weight),
+                "temperature": str(record.temperature),
+                "height": str(record.height),
+                "weight": str(record.weight),
                 "pulse": str(record.pulse),
                 "diastolic": str(record.diastolic),
                 "systolic": str(record.systolic),
@@ -90,9 +90,9 @@ def process_triage_request(patient_id, **kwargs):
         for consultation in consultations:
             prompt_data["consultations"].append({
                 "date": str(consultation.date_created),
-                "note": consultation.note,
-                "complaint": consultation.complaint,
-                "disposition": consultation.disposition
+                "diagnosis": consultation.diagnosis,
+                "doctors_note": consultation.doctors_note,
+                "signs_and_symptoms": consultation.signs_and_symptoms
             })
 
         logger.info(f"Processing triage request for patient {patient_id} with populated prompt_data: {prompt_data}")
@@ -100,13 +100,13 @@ def process_triage_request(patient_id, **kwargs):
         # Construct the prompt for Gemini
         triage_records_str = ""
         for record in prompt_data["triage_records"]:
-            triage_records_str += f"- Date: {record['date']}, Temp: {record['temperature']}, Height: {record['height']}, Weight: {record['weight']}, Pulse: {record['pulse']}, BP: {record['systolic']}/{record['diastolic']}, BMI: {record['bmi']}, Notes: {record['notes']}\n"
+            triage_records_str += f"- Date: {record['date']}, Temp: {record['temperature']}°C, Height: {record['height']}m, Weight: {record['weight']}kg, Pulse: {record['pulse']}, BP: {record['systolic']}/{record['diastolic']}, BMI: {record['bmi']}, Notes: {record['notes']}\n"
 
         logger.info(f" Filtered triage records: {triage_records_str}")
 
         consultations_str = ""
         for consultation in prompt_data["consultations"]:
-            consultations_str += f"- Date: {consultation['date']}, Complaint: {consultation['complaint']}, Note: {consultation['note']}, Disposition: {consultation['disposition']}\n"
+            consultations_str += f"- Date: {consultation['date']}, Diagnosis: {consultation['diagnosis']}, Doctors Note: {consultation['doctors_note']}, Signs and Symptoms: {consultation['signs_and_symptoms']}\n"
 
         logger.info(f" Filtered triage consultation records: {consultations_str}")
 
@@ -118,10 +118,38 @@ def process_triage_request(patient_id, **kwargs):
         
         prompt = f"Analyze the following patient data and suggest the most likely disease or condition. \nPatient Info:{prompt_data['patient_info']}\nTriage Records:\n{triage_records_str}\nConsultations:\n{consultations_str}\n\nProvide a concise answer with the likely condition and a brief justification."
 
-        # Define our AI Model: 'gemini-1.5-flash'
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        response = model.generate_content(prompt)
-        gemini_response_content = response.text
+        # Define our AI Model - try different model names
+        model_names = [
+            'models/gemini-flash-latest',
+            'models/gemini-pro-latest',
+            'models/gemini-2.5-flash',
+            'models/gemini-2.5-pro',
+            'models/gemini-2.0-flash'
+        ]
+        gemini_response_content = None
+        
+        for model_name in model_names:
+            try:
+                logger.info(f"Trying model: {model_name}")
+                model = genai.GenerativeModel(model_name)
+                response = model.generate_content(prompt)
+                gemini_response_content = response.text
+                logger.info(f"Successfully used model: {model_name}")
+                break
+            except Exception as model_error:
+                logger.warning(f"Model {model_name} failed: {str(model_error)}")
+                continue
+        
+        if gemini_response_content is None:
+            # Try to list available models for debugging
+            try:
+                models = genai.list_models()
+                available_models = [model.name for model in models]
+                logger.error(f"Available models: {available_models}")
+                raise Exception(f"All model attempts failed. Available models: {available_models}")
+            except Exception as list_error:
+                logger.error(f"Failed to list models: {str(list_error)}")
+                raise Exception(f"All model attempts failed and couldn't list available models: {str(list_error)}")
 
         # Save the result
         TriageResult.objects.create(

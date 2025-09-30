@@ -68,10 +68,14 @@ export const fetchUserPermissions = (user_id) =>{
             }
         })
             .then((res) =>{
-                resolve(res.data)
+                // Ensure we always return an array
+                const permissions = Array.isArray(res.data) ? res.data : [];
+                resolve(permissions)
             })
             .catch((err) =>{
-                reject(err.message)
+                console.error("fetchUserPermissions error:", err.response?.data || err.message);
+                // Return empty array instead of rejecting to prevent crashes
+                resolve([]);
             })
     })
 }

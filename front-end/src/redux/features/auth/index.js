@@ -47,6 +47,8 @@ export const getAllUserPermissions = (user_id) => async (dispatch) => {
     dispatch(setUserPermissions(response));
   } catch (error) {
     console.log("USER_PERMISSIONS_ERROR ", error);
+    // Set empty array on error to prevent crashes
+    dispatch(setUserPermissions([]));
   }
 };
 

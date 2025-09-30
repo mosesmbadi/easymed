@@ -56,11 +56,26 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Function to check if token is valid and not expired
+  const isTokenValid = (token) => {
+    if (!token) return false;
+    
+    try {
+      const decoded = jwtDecode(token);
+      const currentTime = Date.now() / 1000; // Convert to seconds
+      return decoded.exp > currentTime; // Token is valid if not expired
+    } catch (error) {
+      console.error("Token decode error:", error);
+      return false; // If token can't be decoded, it's invalid
+    }
+  };
+
   // logout User
   const logoutUser = () => {
     // setAuthToken(null);
     setUser(null);
     localStorage.removeItem("token");
+    localStorage.removeItem("refresh");
     router.push("/auth/login");
   };
 
@@ -69,23 +84,41 @@ export const AuthProvider = ({ children }) => {
     message: message,
     logoutUser: logoutUser,
     user: user,
+    isTokenValid: isTokenValid,
   };
 
   // decode the token and set the user when a component mounts
   useEffect(() => {
     const storedToken = JSON.parse(localStorage.getItem("token"));
-    let decodedToken;
-    if (storedToken) {
-      decodedToken = jwtDecode(storedToken);
-
-      setUser({ ...decodedToken, token: storedToken });
-    }
-    const fetchPermissions = async () => {
-      if (decodedToken) {
-        await dispatch(getAllUserPermissions(decodedToken.user_id));
+    
+    if (storedToken && isTokenValid(storedToken)) {
+      // Token exists and is valid
+      try {
+        const decodedToken = jwtDecode(storedToken);
+        setUser({ ...decodedToken, token: storedToken });
+        
+        // Fetch permissions for valid token
+        const fetchPermissions = async () => {
+          try {
+            await dispatch(getAllUserPermissions(decodedToken.user_id));
+          } catch (error) {
+            console.error("Error fetching permissions:", error);
+            // If permissions fetch fails, logout user
+            logoutUser();
+          }
+        };
+        fetchPermissions();
+      } catch (error) {
+        console.error("Error decoding token:", error);
+        // If token decode fails, clear it
+        logoutUser();
       }
-    };
-    fetchPermissions();
+    } else if (storedToken) {
+      // Token exists but is invalid/expired
+      console.log("Token is expired or invalid, logging out");
+      logoutUser();
+    }
+    // If no token exists, do nothing (user stays null)
   }, []);
 
   return (
