@@ -318,7 +318,7 @@ export const fetchPatientPrescribeDrugs = (patient_id) =>{
     })
 }
 
-export const fetchAllAttendanceProcesses = (auth, process_id=null, processsFilter, selectedSearchFilter) =>{
+export const fetchAllAttendanceProcesses = (auth, process_id=null, processsFilter = { search: "", track: '', }, selectedSearchFilter={label: "", value: ""}) =>{
     const axiosInstance = UseAxios(auth);
     const params = {
         process_id: process_id,

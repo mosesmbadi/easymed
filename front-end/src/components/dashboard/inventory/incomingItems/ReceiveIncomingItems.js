@@ -172,7 +172,7 @@ const ReceiveIncomingItems = ({ open, setOpen, selectedRowData, setSelectedRowDa
                     <SupplierInvoice />
                 </div>
                 <div>
-                    <h2 className='text-lg font-bold'>Goods Received Note Details</h2>
+                    <h2 className='text-lg font-bold'>Goods Receipt Note Details</h2>
                     <GRNote/>
                 </div>
                 <ViewPOItemsModal 

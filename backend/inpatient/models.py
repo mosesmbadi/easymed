@@ -75,7 +75,7 @@ class ScheduledDrug(models.Model):
         return f"Schedule for {self.prescribed_drug.item.name} on {self.schedule_time.strftime('%Y-%m-%d %H:%M')}"
 
 class PatientAdmission(models.Model):
-    attendance_process = models.ForeignKey(
+    attendance_process = models.OneToOneField(
         AttendanceProcess,
         on_delete=models.CASCADE,
         related_name="AttendanceProcess",

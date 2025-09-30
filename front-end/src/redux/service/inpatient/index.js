@@ -128,7 +128,7 @@ export const dischargePatient = (auth, payload, admission_id) => {
     })
 }
 
-export const fetchAdmittedPatients = (auth, ward, admission_id='', processFilter, selectedSearchFilter) =>{
+export const fetchAdmittedPatients = (auth, ward, admission_id='',processFilter = { search: "" }, selectedSearchFilter={label: "", value: ""}) =>{
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve,reject) =>{
         axiosInstance.get(`${APP_API_URL.ADMIT_PATIENT}`, {

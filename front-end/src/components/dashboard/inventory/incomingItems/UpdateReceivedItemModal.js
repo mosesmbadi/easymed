@@ -209,7 +209,7 @@ const UpdateReceivedItemModal = ({ editOpen, setEditOpen, selectedEditRowData, s
                     <Grid item md={6} xs={12}>
                       <label htmlFor="expiry_date">Expiry Date</label>
                       <Field
-                        type="datetime-local"
+                        type="date"
                         id="expiry_date"
                         className="block border rounded-xl text-sm border-gray py-4 px-4 focus:outline-card w-full"
                         placeholder="Expiry Date"
@@ -230,6 +230,7 @@ const UpdateReceivedItemModal = ({ editOpen, setEditOpen, selectedEditRowData, s
                         maxWidth="sm"
                         placeholder="Quantity Approved"
                         name="quantity_approved"
+                        disabled={true}
                     />
                     <ErrorMessage
                         name="quantity_approved"

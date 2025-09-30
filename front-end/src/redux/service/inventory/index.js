@@ -309,12 +309,13 @@ export const addPurchaseOrdersItem = (payload) =>{
     })
 }
 
-export const fetchIncomingItems = (auth, filter={}, processFilter, selectedSearchFilter) =>{
+export const fetchIncomingItems = (auth, filter={}, processFilter={search: ""}, selectedSearchFilter={value: ""}) =>{
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve,reject) =>{
         axiosInstance.get(`${APP_API_URL.FETCH_INCOMING_ITEMS}`, {
             params: {
                 purchase_order: filter.purchase_order,
+                goods_receipt_note: filter.goods_receipt_note,
                 search_field: selectedSearchFilter.value ? selectedSearchFilter.value : null,
                 search_value: processFilter.search,
             }
@@ -384,6 +385,20 @@ export const createGRNote = (payload, auth) =>{
     })
 }
 
+export const FetchGRNote = (auth) =>{
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve,reject) =>{
+        axiosInstance.get(`${APP_API_URL.FETCH_GOODS_RECEIPT_NOTE}`)
+            .then((res) =>{
+                resolve(res.data)
+            })
+            .catch((err) =>{
+                reject(err.message)
+            })
+    })
+}
+
+
 export const fetchLowDrugs = (auth) => {
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve, reject) => {
@@ -433,27 +448,6 @@ export const fetchInvoice = async (auth, supplier_id) => {
         return response.data;
     } catch (error) {
         console.error("Error fetching invoice:", error.response?.status, error.response?.data);
-        throw error;
-    }
-};
-
-export const fetchGoods = async (auth, purchase_order_id) => {
-    if (!auth?.token) {
-        console.error("Auth token is missing");
-        throw new Error("Authentication token is required");
-     }
- 
-     const url = `${APP_API_URL.FETCH_GOODS_RECEIPT_NOTE}?purchase_order_id=${purchase_order_id}`;
-     try {
-        const response = await axios.get(url, {
-            headers: {
-                Authorization: `Bearer ${auth.token}`,
-            },
-            responseType: "arraybuffer",
-        });
-        return response.data;
-    } catch (error) {
-        console.error("Error fetching receipt", error.response?.status, error.response?.data);
         throw error;
     }
 };

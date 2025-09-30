@@ -119,6 +119,7 @@ class Triage(models.Model):
     notes = models.CharField(max_length=300, blank=True, null=True)
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name="triages", blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    allergies = models.CharField(max_length=300, null=True, blank=True)
 
     def __str__(self):
         return f'Triage #{self.id} PatientID: {self.patient}'

@@ -88,6 +88,12 @@ const PatientSlice = createSlice({
     clearPrescriptionItems: (state, action)=>{
       state.prescriptionItems = [];
     },
+    addAdmissionToAttendance: (state, action) => {
+      const newAdmission = action.payload;
+      state.processes = state.processes.map((process) =>
+        process.id === newAdmission.attendance_process ? {...process, AttendanceProcess: newAdmission} : process
+      );
+    }
   },
 });
 
@@ -105,7 +111,9 @@ export const {
   setOneProcess,
   setPrescriptionItem,
   updateAttendaceProcessStoreClinicalNotes,
-  updateAttendaceProcessStoreRefer
+  updateAttendaceProcessStoreRefer,
+  addAdmissionToAttendance
+
 } = PatientSlice.actions;
 
 export const getAllProcesses = (auth, process_id=null,  processsFilter, selectedSearchFilter) => async (dispatch) => {
@@ -118,6 +126,10 @@ export const getAllProcesses = (auth, process_id=null,  processsFilter, selected
     console.log("ATTENDANCE_PROCESSES_ERROR ", error);
   }
 };
+
+export const updateAttendanceWithAdmission = (response) => async (dispatch) => {
+  dispatch(addAdmissionToAttendance(response))  
+}
 
 export const updateAttendanceProcessStoreClinicalNotesData = (payload) => (dispatch) => {
   dispatch(updateAttendaceProcessStoreClinicalNotes(payload));

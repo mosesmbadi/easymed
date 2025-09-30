@@ -9,6 +9,7 @@ import { useAuth } from '@/assets/hooks/use-auth';
 import { toast } from 'react-toastify';
 import { admitPatient } from '@/redux/service/inpatient';
 import { fetchHospitalBeds, fetchHospitalWards } from '@/redux/features/inpatient';
+import { updateAttendanceWithAdmission } from '@/redux/features/patients';
 
 const AdmitModal = ({admitOpen, setAdmitOpen, selectedRowdata}) => {
   const auth = useAuth();
@@ -48,7 +49,8 @@ const AdmitModal = ({admitOpen, setAdmitOpen, selectedRowdata}) => {
         ...formValue,
       };
       setLoading(true);
-      await admitPatient(auth, formData);
+      const response = await admitPatient(auth, formData);
+      dispatch(updateAttendanceWithAdmission(response));
       setLoading(false);
       handleClose();
     } catch (err) {

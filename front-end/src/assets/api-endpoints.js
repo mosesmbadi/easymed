@@ -98,7 +98,7 @@ export const API_URL = {
   FETCH_INCOMING_ITEMS: "/inventory/incoming-item/",
   FETCH_SUPPLIER_INVOICE: "/inventory/supplier-invoice/",
   FETCH_INVOICE:"/inventory/supplier_invoice_pdf/",
-  FETCH_GOODS_RECEIPT_NOTE: "/inventory/receipt_note_pdf/",
+  FETCH_GOODS_RECEIPT_NOTE: "/inventory/goods-receipt-note/",
   FETCH_DEPARTMENTS: "/inventory/departments/",
   FETCH_LOW_QUANTITY: "/inventory/inventory_filter/",
 

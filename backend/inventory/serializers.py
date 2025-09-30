@@ -401,6 +401,8 @@ class InventoryArchiveSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class GoodsReceiptNoteSerializer(serializers.ModelSerializer):
+    po_number = serializers.CharField(source='purchase_order.PO_number', read_only=True)
+    requisition_number = serializers.CharField(source='purchase_order.requisition.requisition_number', read_only=True)
     class Meta:
         model = GoodsReceiptNote
         fields = '__all__'

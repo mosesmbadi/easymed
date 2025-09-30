@@ -23,14 +23,9 @@ const getActions = () => {
     let actions = [
       {
         action: "edit",
-        label: "Edit Item",
+        label: "Receive Item",
         icon: <CiSquareQuestion className="text-success text-xl mx-2" />,
-      },
-      {
-        action: "delete",
-        label: "Delete",
-        icon: <AiFillDelete className="text-warning text-xl mx-2" />,
-      },
+      }
     ];
   
     return actions;
@@ -67,8 +62,6 @@ const ViewPOItemsModal = ({ values, selectedRowData, setSelectedRowData, setSele
         if (menu.action === "edit") {
           setSelectedEditRowData(data);
           setEditOpen(true);
-        }else if(menu.action === "delete"){
-            // deleteReqItem(data)
         }
     };
 
