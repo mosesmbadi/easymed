@@ -214,6 +214,9 @@ export const APP_API_URL = {
 
   PATIENT_ATTENDANCE_PROCESS: "/api/patient/attendance-process",
 
+  /***************** AI TRIAGE APIS **********************/
+  AI_TRIAGE_REQUEST: "/api/ai-triage/request",
+  AI_TRIAGE_RESULTS: "/api/ai-triage/results",
 
   /***************** DOCTOR APIS **********************/
   CREATE_DOCTOR: "/api/doctor/create-doctor",

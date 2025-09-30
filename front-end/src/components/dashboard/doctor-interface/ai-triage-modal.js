@@ -14,8 +14,8 @@ import {
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { FaRobot } from 'react-icons/fa';
-import { API_URL } from '@/assets/api-endpoints';
-import { backendAxiosInstance } from '@/assets/backend-axios-instance';
+import { APP_API_URL } from '@/assets/api-endpoints';
+import UseAxios from '@/assets/hooks/use-axios';
 import { useAuth } from '@/assets/hooks/use-auth';
 import { toast } from 'react-toastify';
 
@@ -68,26 +68,23 @@ const AITriageModal = ({ open, setOpen, selectedRowData }) => {
     setError('');
     setAiResponse(null);
 
-    const config = {
-      headers: {
-        'Authorization': `Bearer ${auth?.token}`,
-      },
-    };
+    const axiosInstance = UseAxios(auth);
 
     try {
-      console.log('Making POST request to:', `${API_URL.AI_TRIAGE_REQUEST}${selectedRowData.patient}/`);
+      console.log('Making POST request to:', APP_API_URL.AI_TRIAGE_REQUEST);
       console.log('Auth token:', auth?.token ? 'Present' : 'Missing');
       
-      const response = await backendAxiosInstance.post(
-        `${API_URL.AI_TRIAGE_REQUEST}${selectedRowData.patient}/`,
-        {},
-        config
+      const response = await axiosInstance.post(
+        APP_API_URL.AI_TRIAGE_REQUEST,
+        {
+          patient_id: selectedRowData.patient
+        }
       );
 
       toast.success('AI analysis started! Please wait...');
       
       // Start polling for results
-      pollForResults(selectedRowData.patient, config);
+      pollForResults(selectedRowData.patient, axiosInstance);
       
     } catch (err) {
       console.error('Error starting AI analysis:', err);
@@ -97,7 +94,7 @@ const AITriageModal = ({ open, setOpen, selectedRowData }) => {
     }
   };
 
-    const pollForResults = async (patientId, config, attempts = 0) => {
+      const pollForResults = async (patientId, axiosInstance, attempts = 0) => {
     const maxAttempts = 20; // 20 attempts with 3 second intervals = 1 minute max
     
     if (attempts >= maxAttempts) {
@@ -107,9 +104,8 @@ const AITriageModal = ({ open, setOpen, selectedRowData }) => {
     }
 
     try {
-      const response = await backendAxiosInstance.get(
-        `${API_URL.AI_TRIAGE_RESULTS}${patientId}/`,
-        config
+      const response = await axiosInstance.get(
+        `${APP_API_URL.AI_TRIAGE_RESULTS}?patient_id=${patientId}`
       );
 
       const result = response.data;
@@ -123,12 +119,12 @@ const AITriageModal = ({ open, setOpen, selectedRowData }) => {
         setIsLoading(false);
       } else {
         // Still processing, poll again after 3 seconds
-        setTimeout(() => pollForResults(patientId, config, attempts + 1), 3000);
+        setTimeout(() => pollForResults(patientId, axiosInstance, attempts + 1), 3000);
       }
     } catch (err) {
       if (err.response?.status === 404 || attempts < 3) {
         // Result not ready yet, continue polling
-        setTimeout(() => pollForResults(patientId, config, attempts + 1), 3000);
+        setTimeout(() => pollForResults(patientId, axiosInstance, attempts + 1), 3000);
       } else {
         console.error('Error fetching AI results:', err);
         setError('Failed to fetch AI analysis results');
