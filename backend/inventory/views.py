@@ -57,6 +57,7 @@ from .serializers import (
 )
 
 from .filters import (
+    IncomingItemFilter,
     InventoryFilter,
     InventoryFilterSearch,
     ItemFilter,
@@ -74,11 +75,12 @@ class ItemViewSet(viewsets.ModelViewSet):
 class IncomingItemViewSet(viewsets.ModelViewSet):
     queryset = IncomingItem.objects.all()
     serializer_class = IncomingItemSerializer
-    filterset_fields = ['supplier_invoice', 'purchase_order', 'supplier']
-    filter_backends = [InventoryFilterSearch, DjangoFilterBackend]
-    search_fields = [
-        'lot_no', 'item__name', 'item__item_code', 'supplier__official_name'
-    ]
+    filterset_fields = ['supplier_invoice', 'purchase_order', 'supplier', 'goods_receipt_note']
+    filterset_class = IncomingItemFilter
+    # filter_backends = [InventoryFilterSearch, DjangoFilterBackend]
+    # search_fields = [
+    #     'lot_no', 'item__name', 'item__item_code', 'supplier__official_name'
+    # ]
 
     def perform_create(self, serializer):
         """

@@ -16,7 +16,7 @@ const InventoryNav = () => {
         Purchase Order
       </Link>
       <Link href='/dashboard/inventory/incoming-items' className={`${pathName === '/dashboard/inventory/incoming-items' || pathName === '/dashboard/inventory/incoming-items/new' ? 'bg-primary text-white' : 'bg-white shadow'}  text-sm rounded px-3 py-2 mb-1`}>
-        Incoming Items
+        Receive Items
       </Link>
       <Link href='/dashboard/inventory' className={`${ pathName === '/dashboard/inventory' || pathName === '/dashboard/inventory/add-inventory'  ? 'bg-primary text-white' : 'bg-white shadow'}  text-sm rounded px-3 py-2 mb-1`}>
         Inventory

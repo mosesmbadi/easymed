@@ -3,6 +3,7 @@ from rest_framework import filters
 
 # models
 from .models import (
+    IncomingItem,
     Inventory,
     Item,
     PurchaseOrder,
@@ -67,6 +68,11 @@ class PurchaseOrderItemFilter(django_filters.FilterSet):
     class Meta:
         model = PurchaseOrderItem
         fields = ( 'id', 'requisition_item')
+
+class IncomingItemFilter(django_filters.FilterSet):
+    class Meta:
+        model = IncomingItem
+        fields = ( 'supplier_invoice', 'purchase_order', 'supplier', 'goods_receipt_note')
 
 
 class SupplierFilter(django_filters.FilterSet):

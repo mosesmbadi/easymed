@@ -22,13 +22,14 @@ export default async function handler(req, res) {
 
             const query = req.query;
             const purchase_order = query.purchase_order ? query.purchase_order : ""
+            const goods_receipt_note = query.goods_receipt_note ? query.goods_receipt_note : ""
             const search_field = query.search_field
             const search_value = query.search_value
 
-            let url = `${API_URL.FETCH_INCOMING_ITEMS}?purchase_order=${purchase_order}&search=${search_value}`;            
+            let url = `${API_URL.FETCH_INCOMING_ITEMS}?goods_receipt_note=${goods_receipt_note}&purchase_order=${purchase_order}&search=${search_value}`;            
 
             if (search_field){
-                url = `${API_URL.FETCH_INCOMING_ITEMS}?purchase_order=${purchase_order}&search_field=${search_field}&search=${search_value}`
+                url = `${API_URL.FETCH_INCOMING_ITEMS}?goods_receipt_note=${goods_receipt_note}&purchase_order=${purchase_order}&search_field=${search_field}&search=${search_value}`
             }
     
             await backendAxiosInstance.get(url, config).then(response => {

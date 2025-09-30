@@ -1,6 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { fetchItem, fetchItems, fetchOrderBills, fetchSuppliers, fetchInventories, fetchRequisitions,
-   fetchPurchaseOrders, fetchIncomingItems, fetchAllRequisitionItems,fetchSupplierInvoice, fetchInvoice, fetchLowDrugs, } from "@/redux/service/inventory";
+   fetchPurchaseOrders, fetchIncomingItems, fetchAllRequisitionItems,fetchSupplierInvoice, fetchInvoice, fetchLowDrugs,
+   FetchGRNote, } from "@/redux/service/inventory";
 
 
 const initialState = {
@@ -18,6 +19,7 @@ const initialState = {
   supplierInvoice: [],
   invoice: [],
   drugs:[],
+  grns:[],
 };
 
 const InventorySlice = createSlice({
@@ -139,6 +141,9 @@ const InventorySlice = createSlice({
     },
     setGoods: (state, action) => {
       state.goods = action.payload;
+    }, 
+    setGrns: (state, action) => {
+      state.grns = action.payload;
     }
   },
 });
@@ -146,7 +151,8 @@ const InventorySlice = createSlice({
 export const { updateItem, setItems,setSuppliers,setOrderBills,setItem, setInventories, setRequisitions, 
   setPurchaseOrders, setInventoryItems, setInventoryItemsPdf, clearInventoryItemsPdf, 
   setPurchaseOrderItems, setPurchaseOrderItemsPdf, setRequisitionsAfterPoGenerate, setPoAfterDispatch,
-  clearPurchaseOrderItemsPdf, setIncoming, setRequisitionsItems,setSupplierInvoice, setInvoice, setDrugs } = InventorySlice.actions;
+  clearPurchaseOrderItemsPdf, setIncoming, setRequisitionsItems,setSupplierInvoice, setInvoice, setDrugs, 
+  setGrns } = InventorySlice.actions;
 
 
 export const getAllItems = (auth) => async (dispatch) => {
@@ -204,14 +210,23 @@ export const getAllPurchaseOrders = (auth, processFilter, selectedSearchFilter) 
   }
 };
 
-export const getAllIncomingItems = (auth, filter={}, processFilter, selectedSearchFilter) => async (dispatch) => {
+export const getAllIncomingItems = (auth, filter, processFilter, selectedSearchFilter) => async (dispatch) => {
   try {
-    const response = await fetchIncomingItems(auth, filter={}, processFilter, selectedSearchFilter);
+    const response = await fetchIncomingItems(auth, filter, processFilter, selectedSearchFilter);
     dispatch(setIncoming(response));
   } catch (error) {
-    console.log("PURCHASE_ORDERS_ERROR ", error);
+    console.log("INCOMING_ITEMS_RRROR ", error);
   }
 };
+
+export const getGoodRecieptNotes = (auth) => async (dispatch) => {
+  try {
+    const response = await FetchGRNote(auth);
+    dispatch(setGrns(response));
+  } catch (error) {
+    console.log("GRN_ERROR ", error);
+  }
+}
 
 export const getItems = (auth) => async (dispatch) => {
   try {
