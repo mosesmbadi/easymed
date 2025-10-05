@@ -1,4 +1,3 @@
-// components/defaultNavItems.tsx
 import React from "react";
 import { BiSolidDashboard } from "react-icons/bi";
 import { HiUsers } from "react-icons/hi";
@@ -21,36 +20,9 @@ import { LiaUserNurseSolid } from "react-icons/lia";
 import { FaUserDoctor } from "react-icons/fa6";
 import { BsCapsule } from "react-icons/bs";
 import { GiMicroscope } from "react-icons/gi";
-
+import { FaImage } from "react-icons/fa";
 
 export const menus = [
-  // {
-  //   label: "Dashboard",
-  //   href: "/dashboard",
-  //   icon: <BiSolidDashboard className="text-xl" />,
-  //   children: [
-  //     {
-  //       label: "General Dashboard",
-  //       href: "/dashboard",
-  //       icon: <GrAdd className="" />,
-  //     },
-  //     {
-  //       label: "Doctor Desk",
-  //       href: "/dashboard/doctor-desk",
-  //       icon: <FaWheelchair className="" />,
-  //     },
-  //     {
-  //       label: "Reception",
-  //       href: "/dashboard/reception-interface",
-  //       icon: <FaWheelchair className="" />,
-  //     },
-  //     {
-  //       label: "Nursing Station",
-  //       href: "/dashboard/nursing-station",
-  //       icon: <FaWheelchair className="" />,
-  //     },
-  //   ],
-  // },
   {
     label: "Registration",
     href: "/dashboard/patients",
@@ -61,11 +33,6 @@ export const menus = [
     href: "/dashboard",
     icon: <BiSolidDashboard className="text-xl" />,
   },
-  // {
-  //   label: "Reception",
-  //   href: "/dashboard/reception-interface",
-  //   icon: <BsReception4 className="" />,
-  // },
   {
     label: "Nursing Station",
     href: "/dashboard/nursing-station",
@@ -77,14 +44,24 @@ export const menus = [
     icon: <FaUserDoctor className="text-xl" />,
   },
   {
-    label: "In-patient",
-    href: "/dashboard/admit/patients",
-    icon: <FaBed className="text-xl" />,
-  },
-  {
     label: "Laboratory",
     href: "/dashboard/laboratory",
     icon: <GiMicroscope className="text-xl" />,
+  },
+  {
+    label: "Phamarcy",
+    href: "/dashboard/phamarcy",
+    icon: <BsCapsule className="text-xl" />,
+  },
+  {
+    label: "Radiology",
+    href: "/dashboard/radiology",
+    icon: <FaImage className="text-xl" />,
+  },
+  {
+    label: "In-patient",
+    href: "/dashboard/admit/patients",
+    icon: <FaBed className="text-xl" />,
   },
   {
     label: "Finance",
@@ -103,22 +80,7 @@ export const menus = [
       },
     ],
   },
-  // {
-  //   label: "AI Assistant",
-  //   href: "/dashboard/ai-assistant",
-  //   icon: <RiMessage2Fill className="text-xl" />,
-  // },
-  
-  // {
-  //   label: "Announcements",
-  //   href: "/dashboard/announcements",
-  //   icon: <BsCalendarEvent className="text-xl" />,
-  // },
-  {
-    label: "Phamarcy",
-    href: "/dashboard/phamarcy",
-    icon: <BsCapsule className="text-xl" />,
-  },
+
   {
     label: "Inventory",
     href: "/dashboard/inventory",
