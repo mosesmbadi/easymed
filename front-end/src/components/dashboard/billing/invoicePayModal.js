@@ -96,42 +96,42 @@ const InvoicePayModal = () => {
     return totalAmount;
   }
 
-  const payIndividualInvoices = (payload) => {
-    let paymentAmt = payload.payment_amount
+  const payIndividualInvoices = async (basePayload) => {
+    let paymentAmt = parseFloat(basePayload.payment_amount);
+    if(!selectedItems?.selectedRowsData?.length) return;
 
-    selectedItems?.selectedRowsData.forEach( async (invoice)=> {
-      // Get total cash required for invoice
-      let requiredCash = calculateInvoiceCash(invoice)
-      // Get total cash and insurance required for invoice
-      let totalRequired = calculateInvoiceCashAndInsurance(invoice)
-      // Get balance from cash paid
-      let balanceFromPaidCash = requiredCash - parseFloat(invoice.cash_paid)
-      // If payment amount is greater than or equal to balance from paid cash, pay the balance from paid cash
-      // Else pay the payment amount
+    for (const invoice of selectedItems.selectedRowsData) {
+      if(paymentAmt <= 0) break; // nothing more to allocate
+      const requiredCash = calculateInvoiceCash(invoice);
+      const balanceFromPaidCash = requiredCash - parseFloat(invoice.cash_paid);
+
+      let invoicePayment = 0;
       if(paymentAmt >= balanceFromPaidCash){
-        payload = {
-          ...payload,
-          invoice: invoice.id,
-          payment_amount: balanceFromPaidCash
-        }
-        paymentAmt-=balanceFromPaidCash;
-      }else {
-        payload = {
-          ...payload,
-          invoice: invoice.id,
-          payment_amount: paymentAmt
-        }
+        invoicePayment = balanceFromPaidCash;
+        paymentAmt -= balanceFromPaidCash;
+      } else {
+        invoicePayment = paymentAmt;
+        paymentAmt = 0;
       }
 
-      try{
-        await payInvoices(auth, payload);
-        toast.success("payment successfull");
-      }catch(error){
-        toast.error(err);
-        setLoading(false);
+      // Skip zero or negative (already fully paid scenario)
+      if(invoicePayment <= 0) continue;
+
+      const invoicePayload = {
+        ...basePayload,
+        invoice: invoice.id,
+        payment_amount: invoicePayment
+      };
+
+      try {
+        await payInvoices(auth, invoicePayload);
+        toast.success(`Payment applied to ${invoice.invoice_number}`);
+      } catch (error) {
+        toast.error(error?.message || 'Failed to apply payment');
+        throw error; // bubble up to stop further processing
       }
-    })
-  }
+    }
+  };
   
   const handlePay = async (formValue) => {
 
@@ -189,25 +189,37 @@ const InvoicePayModal = () => {
     }
 
     if(payMethod === 'cash'){
-      const paymode = paymodes.find((mode)=> mode?.payment_category?.toLowerCase() === 'cash')
+      if(!Array.isArray(paymodes) || !paymodes.length){
+        toast.error('Payment modes not loaded yet. Please wait and try again.');
+        return;
+      }
+      const paymode = paymodes.find((mode)=> mode?.payment_category?.toLowerCase() === 'cash');
+      if(!paymode?.id){
+        toast.error('Cash payment mode not configured. Contact administrator.');
+        return;
+      }
       payload = {
         ...formValue,
         payment_mode: paymode.id
+      };
+    } else if(payMethod === 'insurance') {
+      if(!selectedInsurance){
+        toast.error('Select an insurance provider');
+        return;
       }
-    }else{
       payload = {
         ...formValue,
-      }
+        insurance: selectedInsurance.value
+      };
     }
 
     try {
-
-      await payIndividualInvoices(payload)
-
+      setLoading(true);
+      await payIndividualInvoices(payload);
       dispatch(getPatientInvoices(auth, selectedPatient?.value));
-
     } catch (err) {
-      toast.error(err);
+      // error already toasted inside loop
+    } finally {
       setLoading(false);
     }
   };
