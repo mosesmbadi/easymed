@@ -117,9 +117,9 @@ export const getAllPatientBillingPrescribedDrug =
     }
   };
 
-export const getAllInvoices = (auth, processFilter, selectedSearchFilter) => async (dispatch) => {
+export const getAllInvoices = (auth, processFilter, selectedSearchFilter, status) => async (dispatch) => {
   try {
-    const response = await fetchInvoices(auth, processFilter, selectedSearchFilter);
+    const response = await fetchInvoices(auth, processFilter, selectedSearchFilter, status);
     dispatch(setAllInvoices(response));
   } catch (error) {
     console.log("BILLINGI_ERROR ", error);

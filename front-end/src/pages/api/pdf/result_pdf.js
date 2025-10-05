@@ -1,7 +1,6 @@
 import { API_URL, API_METHODS } from "@/assets/api-endpoints";
 import { backendAxiosInstance } from "@/assets/backend-axios-instance";
-import path from 'path';
-import fs from 'fs/promises';
+// Refactored: stream PDF bytes to client instead of writing to public/download.pdf
 
 export const config = {
     api: {
@@ -27,20 +26,18 @@ export default async function handler(req, res) {
 
             const body = req.query;
 
-            const response = await backendAxiosInstance.get(`${API_URL.DOWNLOAD_RESULT_PDF}${body.item_name}/${body.item_id}`, config);
+            const response = await backendAxiosInstance.get(`${API_URL.DOWNLOAD_RESULT_PDF}${body.item_name}/${body.item_id}`, {
+                ...config,
+                responseType: 'arraybuffer'
+            });
 
-            // Save the PDF file to the public directory
-            const filePath = path.join(process.cwd(), 'public', `download.pdf`);
-            console.log("PATH",filePath)
-            await fs.writeFile(filePath, response.data, 'binary');
-            
-
-            // Send the link to the PDF file as a response to the client
-            const publicURL = `/download.pdf`;
-            res.status(200).json({ link: publicURL });
+            res.setHeader('Content-Type', 'application/pdf');
+            const filename = `${body.item_name || 'lab_result'}.pdf`;
+            res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+            res.status(200).send(Buffer.from(response.data));
 
         } catch (e) {
-            res.status(500).json(e.message);
+            res.status(500).json({ message: e.message || 'Failed to fetch PDF' });
         }
     } else {
         res.status(404).json({ message: 'path not found!' });

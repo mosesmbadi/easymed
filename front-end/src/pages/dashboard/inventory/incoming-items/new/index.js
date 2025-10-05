@@ -1,26 +1,13 @@
-import React from 'react'
-import { Container } from '@mui/material';
+import React, { useEffect } from 'react';
+import { useRouter } from 'next/router';
 
-import AuthGuard from '@/assets/hoc/auth-guard';
-import NewItems from '@/components/dashboard/inventory/incomingItems/NewItems'
-import DashboardLayout from '@/components/layout/dashboard-layout';
-import InventoryNav from '@/components/dashboard/inventory/nav';
+// Legacy inventory path now redirects to finance/accounts-payable receive-items create page
+const LegacyNewIncomingItemRedirect = () => {
+  const router = useRouter();
+  useEffect(() => {
+    router.replace('/dashboard/finance/accounts-payable/receive-items/new');
+  }, [router]);
+  return null;
+};
 
-
-const NewIncomingItem = () => {
-  return (
-    <Container maxWidth="xl">
-        <InventoryNav />
-        <NewItems/>
-    </Container>
-  )
-}
-
-
-NewIncomingItem.getLayout = (page) => (
-    <AuthGuard>
-      <DashboardLayout>{page}</DashboardLayout>;
-    </AuthGuard>
-);
-
-export default NewIncomingItem
+export default LegacyNewIncomingItemRedirect;

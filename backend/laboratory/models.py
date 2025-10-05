@@ -4,7 +4,7 @@ from random import randrange, choices
 from django.conf import settings
 from datetime import datetime
 from django.utils import timezone
-from django.db import transaction
+from django.db import transaction, IntegrityError
 from django.core.validators import FileExtensionValidator
 
 from customuser.models import CustomUser
@@ -189,14 +189,34 @@ class PatientSample(models.Model):
             return sp_id
 
     def save(self, *args, **kwargs):
-        if not self.patient_sample_code:
-            self.patient_sample_code = self.generate_sample_code()
-        
-        # Check if the lab_test_request has a process and assign it to the patient sample
+        """Generate a unique patient_sample_code with retry to avoid race condition.
+        Multiple concurrent LabTestRequestPanel creations were producing the
+        same next sequence value leading to IntegrityError on unique constraint.
+        We retry a few times regenerating the code if a collision occurs.
+        """
+        # Ensure process set from related request (before code generation logic in case future depends on process)
         if self.lab_test_request and self.lab_test_request.process:
-            self.process = self.lab_test_request.process    
+            self.process = self.lab_test_request.process
 
-        super().save(*args, **kwargs)
+        max_attempts = 5
+        attempt = 0
+        while attempt < max_attempts:
+            if not self.patient_sample_code:
+                self.patient_sample_code = self.generate_sample_code()
+            try:
+                super().save(*args, **kwargs)
+                break  # success
+            except IntegrityError as e:
+                # If duplicate key on patient_sample_code, clear and retry
+                if 'patient_sample_code' in str(e):
+                    attempt += 1
+                    if attempt >= max_attempts:
+                        raise  # bubble up after exhausting retries
+                    # Clear code to force regeneration
+                    self.patient_sample_code = None
+                    continue
+                # Different integrity error, re-raise immediately
+                raise
 
     def __str__(self):
         return str(f"{self.patient_sample_code} - {self.specimen.name} - {self.process}")
@@ -239,23 +259,17 @@ class LabTestRequestPanel(models.Model):
         if not self.test_code:
             self.test_code = self.generate_test_code()
 
-        # Find or create a PatientSample for the current lab_test_request and specimen
-        try:
-            # Check if a matching PatientSample exists
-            matching_sample = PatientSample.objects.get(
-                process=self.lab_test_request.process, 
-                specimen=self.test_panel.specimen
-            )
-            print(f"Found matching sample: {matching_sample}")
-
-        except PatientSample.DoesNotExist:
-            # If not, create a new PatientSample
-            matching_sample = PatientSample.objects.create(
-                lab_test_request=self.lab_test_request,
-                specimen=self.test_panel.specimen,
-                # patient_sample_code=self.generate_sample_code()
-            )
-        self.patient_sample = matching_sample
+        # Atomically get or create PatientSample for the request/specimen pair
+        if self.lab_test_request and self.test_panel and self.lab_test_request.process:
+            with transaction.atomic():
+                matching_sample, created = PatientSample.objects.select_for_update().get_or_create(
+                    process=self.lab_test_request.process,
+                    specimen=self.test_panel.specimen,
+                    defaults={
+                        'lab_test_request': self.lab_test_request
+                    }
+                )
+                self.patient_sample = matching_sample
 
         # Set the category based on the related LabTestPanel
         if self.test_panel.is_qualitative:

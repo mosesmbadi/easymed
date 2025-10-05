@@ -1,26 +1,13 @@
-import React from 'react'
-import { Container } from '@mui/material';
-import AuthGuard from '@/assets/hoc/auth-guard';
-import ProtectedRoute from '@/assets/hoc/protected-route';
-import DashboardLayout from '@/components/layout/dashboard-layout';
-import BillingNav from '@/components/dashboard/billing/BillingNav';
-import OverdueInvoicesDatagrid from '@/components/dashboard/billing/overdue-invoices/OverdueInvoiceDatagrid';
+import { useEffect } from 'react';
+import { useRouter } from 'next/router';
 
-const OverdueInvoicesPage = () => {
-  return (
-    <Container className='my-8' maxWidth="xl">        
-        <BillingNav />
-        <OverdueInvoicesDatagrid/>
-    </Container>
-  )
-}
+// Legacy overdue invoices route now redirects to unified AR invoices listing
+const LegacyOverdueInvoicesRedirect = () => {
+  const router = useRouter();
+  useEffect(() => {
+    router.replace('/dashboard/finance/accounts-receivable/invoices');
+  }, []);
+  return null;
+};
 
-OverdueInvoicesPage.getLayout = (page) => (
-    <ProtectedRoute permission={'CAN_ACCESS_BILLING_DASHBOARD'}>
-      <AuthGuard>
-        <DashboardLayout>{page}</DashboardLayout>;
-      </AuthGuard>
-    </ProtectedRoute>
-  );
-
-export default OverdueInvoicesPage;
+export default LegacyOverdueInvoicesRedirect;

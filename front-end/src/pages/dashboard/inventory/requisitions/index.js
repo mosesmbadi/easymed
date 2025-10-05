@@ -1,23 +1,12 @@
-import React from 'react'
-import { Container } from "@mui/material";
-import InventoryNav from '@/components/dashboard/inventory/nav';
-import AuthGuard from "@/assets/hoc/auth-guard";
-import DashboardLayout from "@/components/layout/dashboard-layout";
-import RequisitionDatagrid from '@/components/dashboard/inventory/RequisitionDatagrid'
+import { useEffect } from 'react';
+import { useRouter } from 'next/router';
 
-const RequisitionsPage = () => {
-  return (
-    <Container maxWidth="xl">
-      <InventoryNav />
-      <RequisitionDatagrid />
-    </Container>
-  )
-}
+const LegacyRequisitionsRedirect = () => {
+  const router = useRouter();
+  useEffect(() => {
+    router.replace('/dashboard/finance/accounts-payable/requisitions');
+  }, [router]);
+  return null;
+};
 
-RequisitionsPage.getLayout = (page) => (
-  <AuthGuard>
-    <DashboardLayout>{page}</DashboardLayout>;
-  </AuthGuard>
-);
-
-export default RequisitionsPage
+export default LegacyRequisitionsRedirect;

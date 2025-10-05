@@ -1,7 +1,7 @@
 import React from "react";
 import DashboardLayout from "@/components/layout/dashboard-layout";
 import { Container } from "@mui/material";
-import DoctorPatientDataGrid from "@/components/dashboard/doctor-interface/doctor-patient-datagrid";
+import DoctorPatientDataGrid from "@/components/dashboard/doctor-desk/doctor-patient-datagrid";
 import AuthGuard from "@/assets/hoc/auth-guard";
 import ProtectedRoute from "@/assets/hoc/protected-route";
 

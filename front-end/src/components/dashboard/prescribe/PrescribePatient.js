@@ -17,7 +17,7 @@ import CmtDropdownMenu from "@/assets/DropdownMenu";
 import { SlMinus } from "react-icons/sl";
 import { LuMoreHorizontal } from "react-icons/lu";
 import DashboardLayout from '@/components/layout/dashboard-layout';
-import PrescriptionItemDialog from "@/components/dashboard/doctor-interface/prescriptionItemDialog";
+import PrescriptionItemDialog from "@/components/dashboard/doctor-desk/prescriptionItemDialog";
 import ProtectedRoute from "@/assets/hoc/protected-route";
 import AuthGuard from "@/assets/hoc/auth-guard";
 import { billingInvoiceItems } from "@/redux/service/billing";
@@ -156,7 +156,7 @@ const PrescribePatient = () => {
         setLoading(false);
         dispatch(clearAllPrescriptionItems())
         
-        router.push(`${pathname.includes('doctor-interface') ? '/dashboard/doctor-interface' : '/dashboard/patients' }`)
+        router.push(`${pathname.includes('doctor-desk') ? '/dashboard/doctor-desk' : '/dashboard/patients' }`)
       });
     } catch (err) {
       toast.error(err);

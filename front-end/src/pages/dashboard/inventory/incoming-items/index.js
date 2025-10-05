@@ -1,25 +1,12 @@
-import React from 'react'
-import { Container } from "@mui/material";
-import InventoryNav from '@/components/dashboard/inventory/nav';
-import AuthGuard from "@/assets/hoc/auth-guard";
-import DashboardLayout from "@/components/layout/dashboard-layout";
-import IncomingItemsGrid from '@/components/dashboard/inventory/incomingItems/IncomingItemsGrid';
+import { useEffect } from 'react';
+import { useRouter } from 'next/router';
 
+const LegacyIncomingItemsRedirect = () => {
+  const router = useRouter();
+  useEffect(() => {
+    router.replace('/dashboard/finance/accounts-payable/incoming-items');
+  }, [router]);
+  return null;
+};
 
-const IncomingItemsPage = () => {
-  return (
-    <Container maxWidth="xl">
-      <InventoryNav />
-      <IncomingItemsGrid />
-    </Container>
-    
-  )
-}
-
-IncomingItemsPage.getLayout = (page) => (
-  <AuthGuard>
-    <DashboardLayout>{page}</DashboardLayout>;
-  </AuthGuard>
-);
-
-export default IncomingItemsPage
+export default LegacyIncomingItemsRedirect;

@@ -133,7 +133,7 @@ const PharmacyDataGrid = () => {
     }else if (menu.action === "print"){
       handlePrint(data);
     }else if (menu.action === "prescribe") {
-      router.push(`/dashboard/doctor-interface/${data.id}/${data.prescription}`);
+      router.push(`/dashboard/doctor-desk/${data.id}/${data.prescription}`);
     }
   };
 

@@ -170,7 +170,7 @@ const PurchaseOrdersDatagrid = () => {
     <section className="my-8">
       <h3 className="text-xl mb-8">Purchase Orders</h3>
       <div className="w-full flex items-center justify-end text-white">
-        <Link className="mx-4 rounded-md p-2 bg-primary text-center" href='/dashboard/inventory/add-purchase'>
+        <Link className="mx-4 rounded-md p-2 bg-primary text-center" href='/dashboard/finance/accounts-payable/purchase-orders/new'>
           Create LPO
         </Link>
       </div>

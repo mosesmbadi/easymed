@@ -21,13 +21,21 @@ export default async function handler(req, res) {
             };
 
             const query = req.query;
-            const search_field = query.search_field
-            const search_value = query.search_value
+            const search_field = query.search_field;
+            const search_value = query.search_value;
+            const status = query.status; // expected values: 'pending' | 'paid' | undefined
 
-            let url = `${API_URL.FETCH_INVOICES}?search=${search_value}`;            
+            // Base URL with mandatory search (fallback to blank string so backend returns all)
+            let url = `${API_URL.FETCH_INVOICES}?search=${encodeURIComponent(search_value || '')}`;
 
+            // Add specific search field if provided
             if (search_field){
-                url = `${API_URL.FETCH_INVOICES}?search_field=${search_field}&search=${search_value}`
+                url = `${API_URL.FETCH_INVOICES}?search_field=${encodeURIComponent(search_field)}&search=${encodeURIComponent(search_value || '')}`;
+            }
+
+            // Append status filter only when explicitly provided and not 'all'
+            if (status && status !== 'all') {
+                url += `&status=${encodeURIComponent(status)}`;
             }
 
             await backendAxiosInstance.get(url, config).then(response => {

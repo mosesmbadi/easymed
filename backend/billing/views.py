@@ -16,7 +16,7 @@ from django.db.models import Sum, Q
 from rest_framework.views import APIView
 from django_filters.rest_framework import DjangoFilterBackend
 
-from billing.filters import InvoiceFilterSearch
+from billing.filters import InvoiceFilterSearch, InvoiceFilter
 from .models import InvoiceItem, Invoice, InvoicePayment
 from company.models import Company
 from inventory.models import InsuranceItemSalePrice
@@ -54,6 +54,7 @@ class InvoiceViewset(viewsets.ModelViewSet):
     serializer_class = InvoiceSerializer
     permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser,)
     filter_backends = [InvoiceFilterSearch, DjangoFilterBackend]
+    filterset_class = InvoiceFilter
     search_fields = [
         'patient__first_name', 'patient__second_name', 'invoice_number'
     ]

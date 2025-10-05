@@ -5,7 +5,7 @@ import { MdOutlineKeyboardBackspace } from "react-icons/md";
 import { useRouter } from "next/router";
 import * as Yup from "yup";
 import { Formik, Field, Form, ErrorMessage } from "formik";
-import AllPrescriptions from "@/components/dashboard/doctor-interface/prescriptions";
+import AllPrescriptions from "@/components/dashboard/doctor-desk/prescriptions";
 import Link from "next/link";
 
 const Prescription = () => {
@@ -45,7 +45,7 @@ const Prescription = () => {
 
   return (
     <Container maxWidth="xl" className="my-4">
-      <Link href="/dashboard/doctor-interface" className="flex font-semibold text-xl items-center gap-2">
+      <Link href="/dashboard/doctor-desk" className="flex font-semibold text-xl items-center gap-2">
         <div>
           <MdOutlineKeyboardBackspace />
         </div>

@@ -53,17 +53,21 @@ const MenuChild = ({ collapsed, menu, index }) => {
       )}
       {showChild && menu.children && (
         <ul className={`bg-[#F2F2F6] py-1 rounded mx-2 ${childMenuClasses}`}>
-          {menu?.children?.map((child, index) => (
-            <li key={index} className="px-4 text-xs">
-              <Link
-                className={`${currentPath === child.href ? 'bg-primary text-white rounded p-2' : 'py-2'} flex items-center gap-2`}
-                href={child.href}
-              >
-                {/* <span className="text-sm text-white">{child.icon}</span>{" "} */}
-                <span>{!collapsed && child.label}</span>
-              </Link>
-            </li>
-          ))}
+          {menu?.children?.map((child, index) => {
+            // Active when on the exact child route OR any nested path under it
+            const isActive = currentPath === child.href || currentPath.startsWith(child.href + '/');
+            return (
+              <li key={index} className="px-4 text-xs">
+                <Link
+                  className={`${isActive ? 'bg-primary text-white rounded p-2' : 'py-2'} flex items-center gap-2`}
+                  href={child.href}
+                >
+                  {/* <span className="text-sm text-white">{child.icon}</span>{" "} */}
+                  <span>{!collapsed && child.label}</span>
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       )}
     </li>

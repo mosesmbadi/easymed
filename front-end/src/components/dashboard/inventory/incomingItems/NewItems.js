@@ -11,7 +11,7 @@ import SeachableSelect from "@/components/select/Searchable";
 import { useAuth } from "@/assets/hooks/use-auth";
 import POListGrid from "./POListGrid";
 
-const NewItems = () => {
+const NewItems = ({ heading = 'Add New Incoming Item', redirectToList }) => {
 
     const [loading, setLoading] = useState(false);
     const dispatch = useDispatch();
@@ -62,7 +62,8 @@ const NewItems = () => {
            helpers.resetForm();
            toast.success("Item Added Successfully!");
            setLoading(false);
-           router.push('/dashboard/inventory/incoming-items')
+           // Prefer explicit redirect prop; fallback to legacy inventory path
+           router.push(redirectToList || '/dashboard/inventory/incoming-items')
         })
       } catch (err) {
         toast.error(err);
@@ -84,7 +85,7 @@ const NewItems = () => {
         <div className="flex items-center gap-4 mb-8">
         {/* <Link href='/dashboard/inventory'><img className="h-3 w-3" src="/images/svgs/back_arrow.svg" alt="return to inventory"/></Link> */}
         <img onClick={() => router.back()} className="h-3 w-3 cursor-pointer" src="/images/svgs/back_arrow.svg" alt="go back"/>
-        <h3 className="text-xl"> Add New Incoming Item </h3>
+  <h3 className="text-xl"> {heading} </h3>
         </div>
         <POListGrid/>
     </section>
