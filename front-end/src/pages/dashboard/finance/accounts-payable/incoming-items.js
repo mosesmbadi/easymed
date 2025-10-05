@@ -1,26 +1,13 @@
-import React from 'react';
-import { Container } from '@mui/material';
-import AuthGuard from '@/assets/hoc/auth-guard';
-import DashboardLayout from '@/components/layout/dashboard-layout';
-import ProtectedRoute from '@/assets/hoc/protected-route';
-import AccountsPayableNav from '@/components/dashboard/finance/AccountsPayableNav';
-import IncomingItemsGrid from '@/components/dashboard/inventory/incomingItems/IncomingItemsGrid';
+import React, { useEffect } from 'react';
+import { useRouter } from 'next/router';
 
-const APIncomingItemsPage = () => {
-  return (
-    <Container maxWidth="xl" className='my-8'>
-      <AccountsPayableNav />
-      <IncomingItemsGrid />
-    </Container>
-  );
+// Legacy path: redirect to the new receive-items route
+const LegacyIncomingItemsRedirect = () => {
+  const router = useRouter();
+  useEffect(() => {
+    router.replace('/dashboard/finance/accounts-payable/receive-items');
+  }, [router]);
+  return null;
 };
 
-APIncomingItemsPage.getLayout = (page) => (
-  <ProtectedRoute permission={'CAN_ACCESS_BILLING_DASHBOARD'}>
-    <AuthGuard>
-      <DashboardLayout>{page}</DashboardLayout>
-    </AuthGuard>
-  </ProtectedRoute>
-);
-
-export default APIncomingItemsPage;
+export default LegacyIncomingItemsRedirect;

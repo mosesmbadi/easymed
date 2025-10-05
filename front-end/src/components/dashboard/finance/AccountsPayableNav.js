@@ -9,7 +9,10 @@ const AccountsPayableNav = () => {
   const links = [
     { href: `${base}/requisitions`, label: 'Requisitions' },
     { href: `${base}/purchase-orders`, label: 'Purchase Orders' },
-    { href: `${base}/incoming-items`, label: 'Incoming Items' },
+    { href: `${base}/receive-items`, label: 'Receive Items' },
+    { href: `${base}/invoices`, label: 'Invoices' },
+    { href: `${base}/aging-statements`, label: 'Aging Statements' },
+    { href: `${base}/make-payments`, label: 'Make Payments' },
   ];
 
   return (

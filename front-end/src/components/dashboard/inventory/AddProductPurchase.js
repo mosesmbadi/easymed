@@ -33,7 +33,7 @@ const getActions = () => {
   return actions;
 };
 
-const AddProductPurchase = () => {
+const AddProductPurchase = ({ backPath = '/dashboard/inventory/purchase-orders' }) => {
 
   const pdfRef = useRef();
   const router = useRouter()
@@ -106,8 +106,8 @@ const AddProductPurchase = () => {
 
   return (
     <section ref={pdfRef}>
-      <div className="flex gap-4 mb-8 items-center">
-          <Link href='/dashboard/inventory/purchase-orders'><img className="h-3 w-3" src="/images/svgs/back_arrow.svg" alt="return to inventory"/></Link>
+    <div className="flex gap-4 mb-8 items-center">
+      <Link href={backPath}><img className="h-3 w-3" src="/images/svgs/back_arrow.svg" alt="return to purchase orders"/></Link>
           <h3 className="text-xl"> Purchase Product </h3>
       </div>
 
