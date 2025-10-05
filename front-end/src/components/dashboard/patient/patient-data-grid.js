@@ -21,7 +21,7 @@ import { BiEdit } from "react-icons/bi";
 import CreateAppointmentModal from "./create-appointment-modal";
 import EditPatientDetails from "../admin-interface/edit-patient-details-modal";
 import { GiMedicinePills } from "react-icons/gi";
-import LabModal from "../doctor-interface/lab-modal";
+import LabModal from "../doctor-desk/lab-modal";
 import { useAuth } from "@/assets/hooks/use-auth";
 import ShowInsurancesPopover from "./ShowInsurancesPopover";
 import PAtientSearch from "./PatientSearch";

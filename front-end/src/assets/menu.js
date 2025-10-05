@@ -35,8 +35,8 @@ export const menus = [
   //       icon: <GrAdd className="" />,
   //     },
   //     {
-  //       label: "Doctor",
-  //       href: "/dashboard/doctor-interface",
+  //       label: "Doctor Desk",
+  //       href: "/dashboard/doctor-desk",
   //       icon: <FaWheelchair className="" />,
   //     },
   //     {
@@ -45,8 +45,8 @@ export const menus = [
   //       icon: <FaWheelchair className="" />,
   //     },
   //     {
-  //       label: "Nursing",
-  //       href: "/dashboard/nursing-interface",
+  //       label: "Nursing Station",
+  //       href: "/dashboard/nursing-station",
   //       icon: <FaWheelchair className="" />,
   //     },
   //   ],
@@ -67,13 +67,13 @@ export const menus = [
   //   icon: <BsReception4 className="" />,
   // },
   {
-    label: "Nursing",
-    href: "/dashboard/nursing-interface",
+    label: "Nursing Station",
+    href: "/dashboard/nursing-station",
     icon: <LiaUserNurseSolid className="text-xl" />,
   },
   {
-    label: "Doctor",
-    href: "/dashboard/doctor-interface",
+    label: "Doctor Desk",
+    href: "/dashboard/doctor-desk",
     icon: <FaUserDoctor className="text-xl" />,
   },
   {

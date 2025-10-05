@@ -12,7 +12,7 @@ const InpatientTestResultsPanels = ({test}) => {
   const currentPath = router.pathname;
   const { labTestPanels } = useSelector((store) => store.laboratory);
 
-  const current_interface = currentPath.includes('doctor-interface') ? 'doctor' : 'lab'
+  const current_interface = currentPath.includes('doctor-desk') ? 'doctor' : 'lab'
 
   const getTestPanelsByTestReq = async (test, auth)=> {
     try {

@@ -16,7 +16,7 @@ import CmtDropdownMenu from "@/assets/DropdownMenu";
 import { SlMinus } from "react-icons/sl";
 import { LuMoreHorizontal } from "react-icons/lu";
 import DashboardLayout from '@/components/layout/dashboard-layout';
-import PrescriptionItemDialog from "@/components/dashboard/doctor-interface/prescriptionItemDialog";
+import PrescriptionItemDialog from "@/components/dashboard/doctor-desk/prescriptionItemDialog";
 import ProtectedRoute from "@/assets/hoc/protected-route";
 import AuthGuard from "@/assets/hoc/auth-guard";
 import PrescribePatient from "@/components/dashboard/prescribe/PrescribePatient";
@@ -126,7 +126,7 @@ const PrescribeDrug = () => {
         setLoading(false);
         dispatch(clearAllPrescriptionItems())
         
-        router.push('/dashboard/doctor-interface')
+        router.push('/dashboard/doctor-desk')
       });
     } catch (err) {
       toast.error(err);

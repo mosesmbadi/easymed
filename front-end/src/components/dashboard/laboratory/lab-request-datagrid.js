@@ -11,7 +11,7 @@ import CmtDropdownMenu from "@/assets/DropdownMenu";
 import EquipmentModal from "./equipment-modal";
 
 import RequestInfoModal from "./RequestInfoModal";
-import LabModal from "../doctor-interface/lab-modal";
+import LabModal from "../doctor-desk/lab-modal";
 import ProcessFilter from "@/components/common/process/ProcessFilter";
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {

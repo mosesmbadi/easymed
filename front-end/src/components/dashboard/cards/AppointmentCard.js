@@ -12,7 +12,7 @@ import AssignDoctorModal from '../reception-interface/assign-doctor-modal';
 import { LiaUserNurseSolid } from "react-icons/lia";
 import { BsCapsule } from "react-icons/bs";
 import { GiMicroscope } from "react-icons/gi";
-import DirectToTheLabModal from '../doctor-interface/DirectToTheLabModal';
+import DirectToTheLabModal from '../doctor-desk/DirectToTheLabModal';
 import { updateAttendanceProcesses } from '@/redux/service/patients';
 import { getAllProcesses } from '@/redux/features/patients';
 import { useAuth } from '@/assets/hooks/use-auth';
