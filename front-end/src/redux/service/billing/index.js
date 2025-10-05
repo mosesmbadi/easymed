@@ -162,13 +162,14 @@ export const payBillingInvoices = (auth,payload) =>{
 }
 
 
-export const fetchInvoices = (auth, processFilter, selectedSearchFilter) =>{
+export const fetchInvoices = (auth, processFilter, selectedSearchFilter, status) =>{
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve,reject) =>{
         axiosInstance.get(`${APP_API_URL.FETCH_INVOICES}`, {
             params: {
                 search_field: selectedSearchFilter.value ? selectedSearchFilter.value : null,
                 search_value: processFilter.search,
+                status: status && status !== 'all' ? status : undefined,
             }
         })
             .then((res) =>{

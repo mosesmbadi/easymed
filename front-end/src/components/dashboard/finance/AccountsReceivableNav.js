@@ -9,7 +9,7 @@ const AccountsReceivableNav = () => {
   const links = [
     { href: `${base}`, label: 'Bill Invoice', exact: true },
     { href: `${base}/payments`, label: 'Receive Payments' },
-    { href: `${base}/overdue-invoices`, label: 'Overdue Invoices' },
+  { href: `${base}/invoices`, label: 'Invoices' },
     { href: `${base}/report`, label: 'Reports' },
     { href: `${base}/settings`, label: 'Settings' },
   ];
