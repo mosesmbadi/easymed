@@ -87,6 +87,23 @@ export const menus = [
     icon: <GiMicroscope className="text-xl" />,
   },
   {
+    label: "Finance",
+    href: "/dashboard/finance",
+    icon: <FaMoneyBillAlt className="text-xl" />,
+    children: [
+      {
+        label: "Accounts Receivable",
+        href: "/dashboard/finance/accounts-receivable",
+        icon: <FaMoneyBillWave className="" />,
+      },
+      {
+        label: "Accounts Payable",
+        href: "/dashboard/finance/accounts-payable",
+        icon: <FaMoneyBillWave className="" />,
+      },
+    ],
+  },
+  {
     label: "Billing",
     href: "/dashboard/billing",
     icon: <FaMoneyBillWave className="text-xl" />,

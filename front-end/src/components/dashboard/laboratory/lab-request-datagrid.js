@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import dynamic from "next/dynamic";
 import { Column, Paging, Pager, Scrolling,
  } from "devextreme-react/data-grid";
@@ -13,6 +13,8 @@ import EquipmentModal from "./equipment-modal";
 import RequestInfoModal from "./RequestInfoModal";
 import LabModal from "../doctor-desk/lab-modal";
 import ProcessFilter from "@/components/common/process/ProcessFilter";
+import { getAllProcesses } from "@/redux/features/patients";
+import { useAuth } from "@/assets/hooks/use-auth";
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
   ssr: false,
@@ -65,6 +67,8 @@ const LabRequestDataGrid = ( ) => {
     ]
 
 
+  const dispatch = useDispatch();
+  const auth = useAuth();
   const { processes, patients } = useSelector((store)=> store.patient)
 
   const labTestsSchedules = processes.filter((process)=> process.track.includes(processFilter.track))
@@ -102,18 +106,14 @@ const LabRequestDataGrid = ( ) => {
     );
   };
 
+  // Debounced fetch of processes when the search input changes
   useEffect(() => {
-      // This effect handles the debouncing logic
-      const timerId = setTimeout(() => {
-          // Dispatch the action only after a 500ms delay
-          dispatch(getAllProcesses(auth, null, processFilter, selectedSearchFilter))
-      }, 500); // 500ms delay, adjust as needed
-
-      // Cleanup function: clears the timer if searchTerm changes before the delay is over
-      return () => {
-          clearTimeout(timerId);
-      };
-  }, [processFilter.search]); // The effect re-runs only when the local `searchTerm` state changes
+    if (!auth) return; // wait for auth context
+    const handler = setTimeout(() => {
+      dispatch(getAllProcesses(auth, null, processFilter, selectedSearchFilter));
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [auth, processFilter.search, processFilter.track, selectedSearchFilter?.value]);
 
   return (
     <>
