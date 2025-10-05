@@ -81,7 +81,10 @@ const InvoicesPage = () => {
     return () => clearTimeout(id);
   }, [fetchInvoicesDebounced]);
 
-  const filteredInvoices = allInvoices; // server already applied status filter
+  // Client-side fallback filtering: if statusFilter != 'all', narrow results locally
+  const filteredInvoices = statusFilter === 'all'
+    ? allInvoices
+    : allInvoices.filter(inv => inv.status === statusFilter);
 
   const handlePrint = async (data) => {
     try {

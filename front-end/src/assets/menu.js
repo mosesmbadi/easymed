@@ -103,11 +103,6 @@ export const menus = [
       },
     ],
   },
-  {
-    label: "Billing",
-    href: "/dashboard/billing",
-    icon: <FaMoneyBillWave className="text-xl" />,
-  },
   // {
   //   label: "AI Assistant",
   //   href: "/dashboard/ai-assistant",

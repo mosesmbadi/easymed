@@ -1,16 +1,27 @@
-import React from 'react';
-import { Container, Typography } from '@mui/material';
+import React, { useEffect } from 'react';
+import { Container } from '@mui/material';
 import DashboardLayout from '@/components/layout/dashboard-layout';
 import ProtectedRoute from '@/assets/hoc/protected-route';
 import AuthGuard from '@/assets/hoc/auth-guard';
 import AccountsReceivableNav from '@/components/dashboard/finance/AccountsReceivableNav';
+import Reports from '@/components/dashboard/billing/reports/Reports';
+import { useDispatch } from 'react-redux';
+import { getAllItems } from '@/redux/features/inventory';
+import { useAuth } from '@/assets/hooks/use-auth';
 
 const ARReports = () => {
+  const dispatch = useDispatch();
+  const auth = useAuth();
+  useEffect(() => {
+    if (auth.token) {
+      dispatch(getAllItems(auth));
+    }
+  }, [auth]);
+
   return (
     <Container maxWidth='xl' className='my-8'>
       <AccountsReceivableNav />
-      <Typography variant='h5' gutterBottom>Accounts Receivable Reports</Typography>
-      <Typography variant='body1'>Future implementation: aging summary, cash forecast, collection effectiveness index, and sales vs collections trend.</Typography>
+      <Reports />
     </Container>
   );
 };
