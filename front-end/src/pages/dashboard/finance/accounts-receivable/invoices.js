@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Container, ToggleButtonGroup, ToggleButton, Box } from '@mui/material';
 import DashboardLayout from '@/components/layout/dashboard-layout';
 import ProtectedRoute from '@/assets/hoc/protected-route';
@@ -61,21 +61,25 @@ const InvoicesPage = () => {
     { label: 'Invoice Number', value: 'patient_number' },
   ];
 
+  // Single debounced fetch effect covering search + status changes
+  const fetchInvoicesDebounced = useCallback(() => {
+    if (!auth?.token) return;
+    dispatch(getAllInvoices(auth, processFilter, selectedSearchFilter, statusFilter));
+  }, [auth, dispatch, processFilter, selectedSearchFilter, statusFilter]);
+
+  // Initial patients load (once when auth available)
   useEffect(() => {
-    if (auth) {
-      dispatch(getAllInvoices(auth, processFilter, selectedSearchFilter, statusFilter));
+    if (auth?.token) {
       dispatch(getAllPatients(auth));
     }
-  }, [auth, statusFilter]);
+  }, [auth?.token, dispatch]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (auth) {
-        dispatch(getAllInvoices(auth, processFilter, selectedSearchFilter, statusFilter));
-      }
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [processFilter.search, selectedSearchFilter, statusFilter, auth, dispatch]);
+    const id = setTimeout(() => {
+      fetchInvoicesDebounced();
+    }, 400);
+    return () => clearTimeout(id);
+  }, [fetchInvoicesDebounced]);
 
   const filteredInvoices = allInvoices; // server already applied status filter
 
@@ -97,7 +101,8 @@ const InvoicesPage = () => {
       }
       await updateInvoices(auth, data.id, { status: 'paid' });
       toast.success('Invoice marked as paid');
-      dispatch(getAllInvoices(auth, processFilter, selectedSearchFilter));
+      // Refresh respecting current status filter
+      dispatch(getAllInvoices(auth, processFilter, selectedSearchFilter, statusFilter));
     } catch (e) {
       toast.error('Failed to update invoice');
     }
