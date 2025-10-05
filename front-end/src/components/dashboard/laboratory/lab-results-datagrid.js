@@ -59,15 +59,14 @@ const LabResultDataGrid = () => {
   }
 
   const handlePrint = async (data) => {
-      try{
-          const response = await downloadResultPDF(data.process_test_req, `_labtestresult_pdf`, auth)
-          window.open(response.link, '_blank');
-          toast.success("got pdf successfully")
-
-      }catch(error){
-          console.log(error)
-          toast.error(error)
-      }      
+    try {
+      const response = await downloadResultPDF(data.process_test_req, `_labtestresult_pdf`, auth);
+      window.open(response.url, '_blank');
+      toast.success("PDF ready");
+    } catch (error) {
+      console.log(error);
+      toast.error(error);
+    }
   };
 
   const onMenuClick = async (menu, data) => {
