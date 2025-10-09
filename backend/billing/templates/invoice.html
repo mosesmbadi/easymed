@@ -1,133 +1,133 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Invoice Report</title>
     <style>
-        table {
-            border-collapse: collapse;
-            width: 100%;
-            margin-bottom: 10px;
-        }
-        th, td {
-            border: 1px solid black;
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .logo {
-            max-width: 150px;
-            max-height: 150px;
-        }
-        .footer {
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            text-align: center;
-            margin-top: 20px;
-            font-size: 12px;
-            font-style: italic;
-            color: gray;
-            font-weight: bold;
-        }
-        .summary-table {
-            border: 1px solid black;
-            border-collapse: collapse;
-            width: 30%;
-            float: right;
-            margin-top: -1px;
-        }
-        .summary-table th, .summary-table td {
-            padding: 8px;
-            text-align: right;
-        }
-        .summary-table th {
-            background-color: #f2f2f2;
-        }
-        .summary-table td {
-            text-align: left;
-        }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-bottom: 10px;
+      }
+      th,
+      td {
+        border: 1px solid black;
+        padding: 8px;
+        text-align: left;
+      }
+      th {
+        background-color: #f2f2f2;
+      }
+      .header {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      .logo {
+        max-width: 150px;
+        max-height: 150px;
+      }
+      .footer {
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+        text-align: center;
+        margin-top: 20px;
+        font-size: 12px;
+        font-style: italic;
+        color: gray;
+        font-weight: bold;
+      }
+      .summary-table {
+        border: 1px solid black;
+        border-collapse: collapse;
+        width: 30%;
+        float: right;
+        margin-top: -1px;
+      }
+      .summary-table th,
+      .summary-table td {
+        padding: 8px;
+        text-align: right;
+      }
+      .summary-table th {
+        background-color: #f2f2f2;
+      }
+      .summary-table td {
+        text-align: left;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="header">
-        <div class="logo-column">
-            <img src="{{ company_logo_url }}" alt="Company Logo" class="logo">
-        </div>
-        <h2>{{ company.name }}</h2>
-        <p>{{ company.address1 }}</p>
-        <p>{{ company.phone1 }} | {{ company.email1 }}</p>
+      <div class="logo-column">
+        <img src="{{ company_logo_url }}" alt="Company Logo" class="logo" />
+      </div>
+      <h2>{{ company.name }}</h2>
+      <p>{{ company.address1 }}</p>
+      <p>{{ company.phone1 }} | {{ company.email1 }}</p>
     </div>
 
     <h2>Invoice</h2>
     <p>Invoice Number: {{ invoice.invoice_number }}</p>
     <p>Invoice Date: {{ invoice.invoice_date }}</p>
-    <p>Invoiced to: {{ invoice.patient.first_name }} {{ invoice.patient.second_name }}</p>
+    <p>
+      Invoiced to: {{ invoice.patient.first_name }} {{
+      invoice.patient.second_name }}
+    </p>
 
     <table>
-        <thead>
-            <tr>
-                <th>Item Name</th>
-                <th>Total Amount</th>
-                <th>Insurance Sale Price</th>
-                <th>Co-Pay</th>
-                <th>MoP</th>
-                <th>Category</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for invoice_item in invoice_items %}
-            <tr>
-                <td>{{ invoice_item.item.name }}</td>
-                <td>{{ invoice_item.total_amount|floatformat:2 }}</td>
-                <td>
-                    {% if invoice_item.insurance_sale_price %}
-                        {{ invoice_item.insurance_sale_price|floatformat:2 }}
-                    {% else %}
-                        N/A
-                    {% endif %}
-                </td>
-                <td>
-                    {% if invoice_item.co_pay %}
-                        {{ invoice_item.co_pay|floatformat:2 }}
-                    {% else %}
-                        N/A
-                    {% endif %}
-                </td>
-                <td>{{ invoice_item.payment_mode.payment_mode }}</td>
-                <td>{{ invoice_item.item.category }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
+      <thead>
+        <tr>
+          <th>Item Name</th>
+          <th>Total Amount</th>
+          <th>Insurance Sale Price</th>
+          <th>Co-Pay</th>
+          <th>MoP</th>
+          <th>Category</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for invoice_item in invoice_items %}
+        <tr>
+          <td>{{ invoice_item.item.name }}</td>
+          <td>{{ invoice_item.total_amount|floatformat:2 }}</td>
+          <td>
+            {% if invoice_item.insurance_sale_price %} {{
+            invoice_item.insurance_sale_price|floatformat:2 }} {% else %} N/A {%
+            endif %}
+          </td>
+          <td>
+            {% if invoice_item.co_pay %} {{ invoice_item.co_pay|floatformat:2 }}
+            {% else %} N/A {% endif %}
+          </td>
+          <td>{{ invoice_item.payment_mode.payment_mode }}</td>
+          <td>{{ invoice_item.item.category }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
     </table>
 
     <table class="summary-table">
-        <tbody>
-            <tr>
-                <th>Subtotal:</th>
-                <td>{{ subtotal|floatformat:2 }}</td>
-            </tr>
-            <tr>
-                <th>Tax:</th>
-                <td>{{ tax|floatformat:2 }}</td>
-            </tr>
-            <tr>
-                <th>Total Amount:</th>
-                <td>{{ invoice.invoice_amount|floatformat:2 }}</td>
-            </tr>
-        </tbody>
+      <tbody>
+        <tr>
+          <th>Subtotal:</th>
+          <td>{{ subtotal|floatformat:2 }}</td>
+        </tr>
+        <tr>
+          <th>Tax:</th>
+          <td>{{ tax|floatformat:2 }}</td>
+        </tr>
+        <tr>
+          <th>Total Amount:</th>
+          <td>{{ invoice.invoice_amount|floatformat:2 }}</td>
+        </tr>
+      </tbody>
     </table>
 
     <section class="footer">
-        <span>Generated by: ME-HMIS</span>
-        <p>Email: hello@me-hmis.com</p>
+      <span>Generated by: EaSyMed-HMIS</span>
+      <p>Email: admin@proto-typesolution.com</p>
     </section>
-</body>
+  </body>
 </html>

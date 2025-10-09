@@ -1,101 +1,116 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Prescription Note</title>
-        <style>
-            body {
-                font-family: Arial, sans-serif;
-            }
-            table {
-                width: 100%;
-                border-collapse: collapse;
-                margin-bottom: 20px;
-            }
-            th, td {
-                border: 1px solid #dddddd;
-                padding: 8px;
-                text-align: left;
-            }
-            th {
-                background-color: #f2f2f2;
-            }
-            .report-header {
-                display: flex;
-                justify-content: space-between;
-                background-color: #e6edf7;
-                padding: 5px;
-                line-height: 1.4;
-            }
-            .header, .footer {
-                text-align: center;
-                margin-bottom: 20px;
-            }
-            .logo {
-                max-width: 150px;
-                max-height: 150px;
-            }
-            .footer {
-                position: fixed;
-                bottom: 0;
-                width: 100%;
-                text-align: center;
-                margin-top: 20px;
-                font-size: 12px;
-                font-style: italic;
-                color: gray;
-                font-weight: bold;
-            }
-            .report-footer {
-                column-count: 2;
-                column-gap: 20px;
-                line-height: 1.4;
-                font-size: 12px;
-            }
-            .report-footer p {
-                break-inside: avoid;
-            }
-        </style>
-    </head>
-<body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Prescription Note</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+      }
+      th,
+      td {
+        border: 1px solid #dddddd;
+        padding: 8px;
+        text-align: left;
+      }
+      th {
+        background-color: #f2f2f2;
+      }
+      .report-header {
+        display: flex;
+        justify-content: space-between;
+        background-color: #e6edf7;
+        padding: 5px;
+        line-height: 1.4;
+      }
+      .header,
+      .footer {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      .logo {
+        max-width: 150px;
+        max-height: 150px;
+      }
+      .footer {
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+        text-align: center;
+        margin-top: 20px;
+        font-size: 12px;
+        font-style: italic;
+        color: gray;
+        font-weight: bold;
+      }
+      .report-footer {
+        column-count: 2;
+        column-gap: 20px;
+        line-height: 1.4;
+        font-size: 12px;
+      }
+      .report-footer p {
+        break-inside: avoid;
+      }
+    </style>
+  </head>
+  <body>
     <div class="header">
-        <img src="https://static.vecteezy.com/system/resources/thumbnails/021/809/795/small/doctors-day-illustration-png.png" alt="Company Logo" class="logo">
-        <h2>{{ company.name }} </h2>
-        <p>{{ company.address1 }}</p>
-        <p>{{ company.phone1 }} | {{ company.email1 }}</p>
+      <img
+        src="https://static.vecteezy.com/system/resources/thumbnails/021/809/795/small/doctors-day-illustration-png.png"
+        alt="Company Logo"
+        class="logo"
+      />
+      <h2>{{ company.name }}</h2>
+      <p>{{ company.address1 }}</p>
+      <p>{{ company.phone1 }} | {{ company.email1 }}</p>
     </div>
 
     <div class="container">
-        <h1>Appointments Report</h1>
-        <p>Doctor: {{ appointments.first.assigned_doctor.first_name }} {{ appointments.first.assigned_doctor.last_name }}</p>
-        <p>Date Range: {{ appointments.first.appointment_date_time|date:"Y-m-d" }} - {{ appointments.last.appointment_date_time|date:"Y-m-d" }}</p>
-    
-        <table>
-            <thead>
-                <tr>
-                    <th>Appointment Date</th>
-                    <th>Patient Name</th>
-                    <th>Status</th>
-                    <th>Reason</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for appointment in appointments %}
-                <tr>
-                    <td>{{ appointment.appointment_date_time|date:"Y-m-d H:i" }}</td>
-                    <td>{{ appointment.patient.first_name }} {{ appointment.patient.second_name }}</td>
-                    <td>{{ appointment.status }}</td>
-                    <td>{{ appointment.reason }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>    
+      <h1>Appointments Report</h1>
+      <p>
+        Doctor: {{ appointments.first.assigned_doctor.first_name }} {{
+        appointments.first.assigned_doctor.last_name }}
+      </p>
+      <p>
+        Date Range: {{ appointments.first.appointment_date_time|date:"Y-m-d" }}
+        - {{ appointments.last.appointment_date_time|date:"Y-m-d" }}
+      </p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Appointment Date</th>
+            <th>Patient Name</th>
+            <th>Status</th>
+            <th>Reason</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for appointment in appointments %}
+          <tr>
+            <td>{{ appointment.appointment_date_time|date:"Y-m-d H:i" }}</td>
+            <td>
+              {{ appointment.patient.first_name }} {{
+              appointment.patient.second_name }}
+            </td>
+            <td>{{ appointment.status }}</td>
+            <td>{{ appointment.reason }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
 
     <section class="footer">
-        <span>Generated by: ME-HMIS</span>
-        <p>Email: hello@me-hmis.com</p>
+      <span>Generated by: EaSyMed-HMIS</span>
+      <p>Email: admin@proto-typesolution.com</p>
     </section>
-</body>
+  </body>
 </html>

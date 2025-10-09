@@ -1,106 +1,115 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Lab Tests Report</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-        th, td {
-            border: 1px solid #dddddd;
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-        .report-header {
-            display: flex;
-            justify-content: space-between;
-            background-color: #e6edf7;
-            padding: 5px;
-            line-height: 1.4;
-        }
-        .header, .footer {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .logo {
-            max-width: 150px;
-            max-height: 150px;
-        }
-        .footer {
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            text-align: center;
-            margin-top: 20px;
-            font-size: 12px;
-            font-style: italic;
-            color: gray;
-            font-weight: bold;
-        }
-        .report-footer {
-            column-count: 2;
-            column-gap: 20px;
-            line-height: 1.4;
-            font-size: 12px;
-        }
-        .report-footer p {
-            break-inside: avoid;
-        }
+      body {
+        font-family: Arial, sans-serif;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+      }
+      th,
+      td {
+        border: 1px solid #dddddd;
+        padding: 8px;
+        text-align: left;
+      }
+      th {
+        background-color: #f2f2f2;
+      }
+      .report-header {
+        display: flex;
+        justify-content: space-between;
+        background-color: #e6edf7;
+        padding: 5px;
+        line-height: 1.4;
+      }
+      .header,
+      .footer {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      .logo {
+        max-width: 150px;
+        max-height: 150px;
+      }
+      .footer {
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+        text-align: center;
+        margin-top: 20px;
+        font-size: 12px;
+        font-style: italic;
+        color: gray;
+        font-weight: bold;
+      }
+      .report-footer {
+        column-count: 2;
+        column-gap: 20px;
+        line-height: 1.4;
+        font-size: 12px;
+      }
+      .report-footer p {
+        break-inside: avoid;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="header">
-        <img src="https://static.vecteezy.com/system/resources/thumbnails/021/809/795/small/doctors-day-illustration-png.png" alt="Company Logo" class="logo">
-        <h2>{{ company.name }} </h2>
-        <p>{{ company.address1 }}</p>
-        <p>{{ company.phone1 }} | {{ company.email1 }}</p>
+      <img
+        src="https://static.vecteezy.com/system/resources/thumbnails/021/809/795/small/doctors-day-illustration-png.png"
+        alt="Company Logo"
+        class="logo"
+      />
+      <h2>{{ company.name }}</h2>
+      <p>{{ company.address1 }}</p>
+      <p>{{ company.phone1 }} | {{ company.email1 }}</p>
     </div>
 
     <div class="container">
-        <h1>Lab Test Requests Report</h1>
-        <p><strong>Doctor ID:</strong> {{ doctor_id }}</p>
-        <p><strong>Date Range:</strong> {% if start_date %}{{ start_date }} - {{ end_date }}{% else %}All Dates{% endif %}</p>
+      <h1>Lab Test Requests Report</h1>
+      <p><strong>Doctor ID:</strong> {{ doctor_id }}</p>
+      <p>
+        <strong>Date Range:</strong> {% if start_date %}{{ start_date }} - {{
+        end_date }}{% else %}All Dates{% endif %}
+      </p>
 
-        {% if lab_test_requests %}
-        <table>
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Test Profile</th>
-                    <th>Notes</th>
-                    <th>Requested On</th>
-                    <th>Has Result</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for request in lab_test_requests %}
-                <tr>
-                    <td>{{ forloop.counter }}</td>
-                    <td>{{ request.test_profile.name }}</td>
-                    <td>{{ request.note }}</td>
-                    <td>{{ request.created_on }}</td>
-                    <td>{{ request.has_result|yesno:"Yes,No" }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <p>No lab test requests found for the specified criteria.</p>
-        {% endif %}
-    </div>  
+      {% if lab_test_requests %}
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Test Profile</th>
+            <th>Notes</th>
+            <th>Requested On</th>
+            <th>Has Result</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for request in lab_test_requests %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ request.test_profile.name }}</td>
+            <td>{{ request.note }}</td>
+            <td>{{ request.created_on }}</td>
+            <td>{{ request.has_result|yesno:"Yes,No" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p>No lab test requests found for the specified criteria.</p>
+      {% endif %}
+    </div>
     <section class="footer">
-        <span>Generated by: ME-HMIS</span>
-        <p>Email: hello@me-hmis.com</p>
+      <span>Generated by: EaSyMed-HMIS</span>
+      <p>Email: admin@proto-typesolution.com</p>
     </section>
-</body>
+  </body>
 </html>
