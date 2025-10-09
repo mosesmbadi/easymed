@@ -24,7 +24,10 @@ const LabResults = () => {
   return (
     <Container maxWidth="xl">
       <LabNav/>
-      <h1 className="uppercase text-2xl my-4">Lab Requests</h1>
+      <div className="flex justify-between items-center my-4">
+        <h1 className="uppercase text-2xl">Lab Requests</h1>
+        <p className="text-gray-600 italic">Note: Only tests that have been billed are shown</p>
+      </div>
       <LabRequestDataGrid />
     </Container>
   );
