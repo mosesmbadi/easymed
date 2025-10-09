@@ -318,7 +318,8 @@ def download_labtestresult_pdf(request, processtestrequest_id):
         'company': company,
         'company_logo_url': company_logo_url,
         'attendance_process': attendance_process,
-        'approved_on': panels.first().approved_on if panels.exists() else None
+        'approved_on': panels.first().approved_on if panels.exists() else None,
+        'first_labtestrequest': labtestrequests.first() if labtestrequests.exists() else None,
     }
 
     for panel in panels:

@@ -262,14 +262,24 @@ class LabTestRequestPanel(models.Model):
         # Atomically get or create PatientSample for the request/specimen pair
         if self.lab_test_request and self.test_panel and self.lab_test_request.process:
             with transaction.atomic():
-                matching_sample, created = PatientSample.objects.select_for_update().get_or_create(
+                # Check if there are existing PatientSample objects
+                existing_samples = PatientSample.objects.filter(
                     process=self.lab_test_request.process,
                     specimen=self.test_panel.specimen,
-                    defaults={
-                        'lab_test_request': self.lab_test_request
-                    }
                 )
-                self.patient_sample = matching_sample
+                
+                if existing_samples.exists():
+                    # If there are multiple, use the first one
+                    if existing_samples.count() > 1:
+                        print(f"Warning: Multiple PatientSample objects found for process={self.lab_test_request.process.id}, specimen={self.test_panel.specimen.id}")
+                    self.patient_sample = existing_samples.first()
+                else:
+                    # Create a new one if none exist
+                    self.patient_sample = PatientSample.objects.create(
+                        process=self.lab_test_request.process,
+                        specimen=self.test_panel.specimen,
+                        lab_test_request=self.lab_test_request
+                    )
 
         # Set the category based on the related LabTestPanel
         if self.test_panel.is_qualitative:

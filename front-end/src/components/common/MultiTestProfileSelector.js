@@ -4,6 +4,7 @@ import { Checkbox, Grid } from "@mui/material";
 import { fetchLabTestPanelsByProfileId } from "@/redux/service/laboratory";
 import { getAllLabTestProfiles, getAllLabTestPanelsByProfile } from "@/redux/features/laboratory";
 import { useAuth } from "@/assets/hooks/use-auth";
+import { toast } from "react-toastify";
 
 const MultiTestProfileSelector = ({ 
   onSelectionChange, 
@@ -101,6 +102,18 @@ const MultiTestProfileSelector = ({
   };
 
   const handleTestProfileChange = (testProfileId, sectionId) => {
+    // Check if this test profile is already selected in another section
+    const isDuplicate = testProfileSections.some(
+      section => section.id !== sectionId && section.testProfile === testProfileId
+    );
+    
+    if (isDuplicate && testProfileId) {
+      // Find the name of the duplicate profile for a more informative message
+      const profileName = labTestProfiles.find(profile => profile.id === parseInt(testProfileId))?.name || 'This profile';
+      toast.warning(`${profileName} is already selected. Please choose a different profile.`);
+      return; // Prevent adding duplicate profile
+    }
+    
     setTestProfileSections(prevSections => 
       prevSections.map(section => {
         if (section.id === sectionId) {

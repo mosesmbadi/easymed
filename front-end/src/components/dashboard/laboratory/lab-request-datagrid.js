@@ -70,8 +70,23 @@ const LabRequestDataGrid = ( ) => {
   const dispatch = useDispatch();
   const auth = useAuth();
   const { processes, patients } = useSelector((store)=> store.patient)
+  const { labTestPanels } = useSelector((store) => store.laboratory)
 
-  const labTestsSchedules = processes.filter((process)=> process.track.includes(processFilter.track))
+  // Filter to only show processes related to lab tests that have been billed
+  const labTestsSchedules = processes.filter((process) => {
+    // Only include processes with track that includes lab
+    if (!process.track.includes(processFilter.track) || !process.process_test_req || !process.invoice_items) {
+      return false;
+    }
+    
+    // Check if any of the invoice items for lab tests have status "billed"
+    const hasBilledLabTests = process.invoice_items.some(item => 
+      item.category === "Lab Test" && item.status === "billed"
+    );
+    
+    return hasBilledLabTests;
+  });
+  
   const searchedProcesses = labTestsSchedules.filter((process)=> process.patient_number.includes(searchQuery))
 
 
