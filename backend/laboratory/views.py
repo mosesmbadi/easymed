@@ -257,55 +257,22 @@ def download_labtestresult_pdf(request, processtestrequest_id):
     '''
     This view gets the generated PDF and downloads it locally
     pdf accessed here http://127.0.0.1:8080/download_labtestresult_pdf/26/
+    Only displays lab test panels that have results
     '''
     processtestrequest = get_object_or_404(ProcessTestRequest, pk=processtestrequest_id)
     labtestrequests = LabTestRequest.objects.filter(process=processtestrequest)
-    panels = LabTestRequestPanel.objects.filter(lab_test_request__in=labtestrequests)
+    
+    # Filter panels to only include those with results
+    panels = LabTestRequestPanel.objects.filter(
+        lab_test_request__in=labtestrequests
+    ).exclude(result__isnull=True).exclude(result='')
+    
     company = Company.objects.first()
 
     # Retrieve the patient from the AttendanceProcess linked via ProcessTestRequest
     attendance_process = get_object_or_404(AttendanceProcess, process_test_req=processtestrequest)
     patient = attendance_process.patient
 
-    # Prepare data for the template
-    panel_data = []
-    for panel in panels:
-        # Fetch reference values based on the patient
-        reference_value = panel.test_panel.reference_values.filter(
-            sex=patient.gender,
-            age_min__lte=patient.age,
-            age_max__gte=patient.age
-        ).first()
-
-        if reference_value:
-            result = panel.result
-            if result:
-                if float(result) < reference_value.ref_value_low:
-                    flag = 'Low'
-                elif float(result) > reference_value.ref_value_high:
-                    flag = 'High'
-                else:
-                    flag = 'Normal'
-            else:
-                flag = 'N/A'
-
-            panel_data.append({
-                'test_panel_name': panel.test_panel.name,
-                'result': result,
-                'flag': flag,
-                'ref_value_low': reference_value.ref_value_low,
-                'ref_value_high': reference_value.ref_value_high,
-                'unit': panel.test_panel.unit
-            })
-        else:
-            panel_data.append({
-                'test_panel_name': panel.test_panel.name,
-                'result': panel.result,
-                'flag': 'N/A',
-                'ref_value_low': 'N/A',
-                'ref_value_high': 'N/A',
-                'unit': panel.test_panel.unit
-            })
     # Construct full logo URL for template
     company_logo_url = request.build_absolute_uri(company.logo.url) if company.logo else None
 
@@ -322,6 +289,7 @@ def download_labtestresult_pdf(request, processtestrequest_id):
         'first_labtestrequest': labtestrequests.first() if labtestrequests.exists() else None,
     }
 
+    # Only process panels that have results (already filtered in the query)
     for panel in panels:
         panel_data = {
             'test_panel_name': panel.test_panel.name,
@@ -332,7 +300,7 @@ def download_labtestresult_pdf(request, processtestrequest_id):
             'unit': panel.test_panel.unit
         }
 
-        if panel.test_panel.is_qualitative == True:
+        if panel.test_panel.is_qualitative:
             context['qualitative_panels'].append(panel_data)
         else:
             # Fetch reference values based on the patient
@@ -344,19 +312,20 @@ def download_labtestresult_pdf(request, processtestrequest_id):
 
             if reference_value:
                 result = panel.result
-                if result:
+                try:
                     if float(result) < reference_value.ref_value_low:
                         flag = 'Low'
                     elif float(result) > reference_value.ref_value_high:
                         flag = 'High'
                     else:
                         flag = 'Normal'
-                else:
-                    flag = 'N/A'
-
-                panel_data['flag'] = flag
-                panel_data['ref_value_low'] = reference_value.ref_value_low
-                panel_data['ref_value_high'] = reference_value.ref_value_high
+                    
+                    panel_data['flag'] = flag
+                    panel_data['ref_value_low'] = reference_value.ref_value_low
+                    panel_data['ref_value_high'] = reference_value.ref_value_high
+                except (ValueError, TypeError):
+                    # Handle non-numeric results
+                    pass
 
             context['quantitative_panels'].append(panel_data)
 
