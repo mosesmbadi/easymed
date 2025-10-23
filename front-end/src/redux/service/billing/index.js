@@ -131,6 +131,19 @@ export const payInvoices = (auth, payload) =>{
     })
 }
 
+export const allocatePayment = (auth, payload) =>{
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve,reject) =>{
+        axiosInstance.post(`/api/billing/allocate-payment`, payload)
+            .then((res) =>{
+                resolve(res.data)
+            })
+            .catch((err) =>{
+                reject(err.message)
+            })
+    })
+}
+
 export const updateInvoices = (auth, invoice, payload) =>{
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve,reject) =>{

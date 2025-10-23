@@ -28,7 +28,7 @@ const CategorizedItems = ({
   const [updatedInvoiceItem, setUpdatedInvoiceItem] = useState(invoiceItem);
 
   const patient_insurance_for_this_item = patient_insurance?.filter((mode) =>
-    mode.insurance === null || inventoryPrices[0]?.insurance_sale_prices.some(insurance => insurance.insurance === mode.insurance)
+    mode.insurance === null || inventoryPrices[0]?.insurance_sale_prices?.some(insurance => insurance.insurance === mode.insurance)
   );
 
   const fetchInventoryForPrices = async (item) => {
@@ -42,7 +42,8 @@ const CategorizedItems = ({
 
   useEffect(() => {
     setUpdatedInvoiceItem(invoiceItem)
-    fetchInventoryForPrices(updatedInvoiceItem?.item);
+    // Use the latest prop directly to avoid stale state when fetching prices
+    fetchInventoryForPrices(invoiceItem?.item);
   }, [invoiceItem]);
 
   const updateInvoiceTotals = (invoiceItem) => {
@@ -107,15 +108,23 @@ const CategorizedItems = ({
                   (mode) => mode.id === parseInt(e.target.value)
                 );
                 setSelectedPayMethod(selectedOption);
-                if (selectedOption?.payment_category.toLowerCase() !== 'insurance') {
-                  setSelectedPrice(inventoryPrices ? inventoryPrices[0].sale_price : 'NA');
-                  setSelectedCoPay(0)
+
+                const inv0 = Array.isArray(inventoryPrices) && inventoryPrices.length > 0 ? inventoryPrices[0] : null;
+
+                if ((selectedOption?.payment_category || '').toLowerCase() !== 'insurance') {
+                  // Cash-like category (cash, mpesa, cheque, direct_to_bank)
+                  const price = inv0?.sale_price ?? updatedInvoiceItem?.sale_price ?? updatedInvoiceItem?.item_amount ?? updatedInvoiceItem?.actual_total ?? 0;
+                  setSelectedPrice(price);
+                  setSelectedCoPay(0);
                 } else {
-                  const selectedInsurance = inventoryPrices[0].insurance_sale_prices?.find((mode) => 
+                  // Insurance: pick specific insurance price if available
+                  const selectedInsurance = inv0?.insurance_sale_prices?.find((mode) => 
                     mode.insurance === selectedOption?.insurance
                   );
-                  setSelectedPrice(selectedInsurance ? selectedInsurance.price : 'NA');
-                  setSelectedCoPay(selectedInsurance ? selectedInsurance.co_pay : 0)
+                  const price = selectedInsurance?.price ?? updatedInvoiceItem?.item_amount ?? updatedInvoiceItem?.actual_total ?? 0;
+                  const copay = selectedInsurance?.co_pay ?? 0;
+                  setSelectedPrice(price);
+                  setSelectedCoPay(copay);
                 }
               }}
             >

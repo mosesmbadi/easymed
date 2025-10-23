@@ -13,7 +13,7 @@ import { ErrorMessage, Field, Form, Formik } from "formik";
 import CmtDropdownMenu from '@/assets/DropdownMenu';
 import { LuMoreHorizontal } from 'react-icons/lu';
 import { CiMoneyCheck1 } from "react-icons/ci";
-import { payInvoices } from "@/redux/service/billing";
+import { allocatePayment } from "@/redux/service/billing";
 import { getPatientInvoices, getPaymentModes } from "@/redux/features/billing";
 import { getAllPatients } from "@/redux/features/patients";
 import ViewInvoiceItems from "./ViewInvoiceItemsModal";
@@ -39,7 +39,7 @@ const getActions = () => {
 
 const InvoicePayModal = () => {
   const [loading, setLoading] = useState(false);
-  const [payMethod, setPayMethod] = useState("cash")
+  const [selectedPayMode, setSelectedPayMode] = useState(null)
   const [selectedPatient, setSelectedPatient] = useState(null)
   const [selectedInsurance, setSelectedInsurance] = useState(null)
   const dispatch = useDispatch();
@@ -66,13 +66,13 @@ const InvoicePayModal = () => {
   };
 
   const initialValues = {
-    invoice: 1,
-    payment_mode: '',
     payment_amount: '',
+    reference_number: '',
   }
 
   const validationSchema = Yup.object().shape({
-    payment_amount: Yup.number().required("Amount is required !")
+    payment_amount: Yup.number().required("Amount is required !"),
+    reference_number: Yup.string().required("Reference number is required !"),
   });
 
   const calculateInvoiceCash = (data) => {
@@ -96,42 +96,10 @@ const InvoicePayModal = () => {
     return totalAmount;
   }
 
-  const payIndividualInvoices = async (basePayload) => {
-    let paymentAmt = parseFloat(basePayload.payment_amount);
-    if(!selectedItems?.selectedRowsData?.length) return;
-
-    for (const invoice of selectedItems.selectedRowsData) {
-      if(paymentAmt <= 0) break; // nothing more to allocate
-      const requiredCash = calculateInvoiceCash(invoice);
-      const balanceFromPaidCash = requiredCash - parseFloat(invoice.cash_paid);
-
-      let invoicePayment = 0;
-      if(paymentAmt >= balanceFromPaidCash){
-        invoicePayment = balanceFromPaidCash;
-        paymentAmt -= balanceFromPaidCash;
-      } else {
-        invoicePayment = paymentAmt;
-        paymentAmt = 0;
-      }
-
-      // Skip zero or negative (already fully paid scenario)
-      if(invoicePayment <= 0) continue;
-
-      const invoicePayload = {
-        ...basePayload,
-        invoice: invoice.id,
-        payment_amount: invoicePayment
-      };
-
-      try {
-        await payInvoices(auth, invoicePayload);
-        toast.success(`Payment applied to ${invoice.invoice_number}`);
-      } catch (error) {
-        toast.error(error?.message || 'Failed to apply payment');
-        throw error; // bubble up to stop further processing
-      }
-    }
-  };
+  const selectedInvoicesTotal = () => {
+    if (!selectedItems?.selectedRowsData?.length) return 0;
+    return selectedItems.selectedRowsData.reduce((sum, inv) => sum + parseFloat(calculateInvoiceCash(inv)), 0);
+  }
   
   const handlePay = async (formValue) => {
 
@@ -144,78 +112,47 @@ const InvoicePayModal = () => {
       toast.error("Select at least one invoice");
       return;
     }
-
-    let paymentAmt = formValue.payment_amount;
-    let hasInsufficientFunds = false;
-
-    selectedItems?.selectedRowsData.map((invoice) => {
-
-      if(paymentAmt <= 0){
-        hasInsufficientFunds=true
-        return;
-      }
-
-      let amountPaid = parseFloat(invoice.cash_paid)
-
-      invoice.invoice_items.forEach((invoiceItem)=> {
-        if(invoiceItem.payment_mode_name?.toLowerCase() === 'cash'){
-          let remainder = parseFloat(invoiceItem.actual_total) - amountPaid
-          if(remainder > 0){
-            paymentAmt -= parseFloat(remainder)
-            amountPaid = 0;
-          }else{
-            amountPaid -= parseFloat(invoiceItem.actual_total);
-          }
-        }else{
-          let co_pay = parseFloat(invoiceItem.item_amount) - parseFloat(invoiceItem.actual_total);
-          let remainder = parseFloat(co_pay) - amountPaid
-          if(remainder > 0){
-            paymentAmt -= parseFloat(co_pay)
-            amountPaid = 0;
-          }else{
-            amountPaid -= parseFloat(co_pay);
-          }
-        }
-      })
-    })
-
-    if(hasInsufficientFunds){
-      toast.error(`Amount cannot settle all these invoices.`);
+    if(!selectedPayMode){
+      toast.error('Select mode of payment');
       return;
     }
 
-    let payload = {
-      ...formValue,
-    }
-
-    if(payMethod === 'cash'){
-      if(!Array.isArray(paymodes) || !paymodes.length){
-        toast.error('Payment modes not loaded yet. Please wait and try again.');
-        return;
-      }
-      const paymode = paymodes.find((mode)=> mode?.payment_category?.toLowerCase() === 'cash');
-      if(!paymode?.id){
-        toast.error('Cash payment mode not configured. Contact administrator.');
-        return;
-      }
-      payload = {
-        ...formValue,
-        payment_mode: paymode.id
-      };
-    } else if(payMethod === 'insurance') {
-      if(!selectedInsurance){
-        toast.error('Select an insurance provider');
-        return;
-      }
-      payload = {
-        ...formValue,
-        insurance: selectedInsurance.value
-      };
+    const invoiceIds = selectedItems.selectedRowsData.map(inv => inv.id);
+    const payload = {
+      patient_id: selectedPatient.value,
+      invoice_ids: invoiceIds,
+      payment_mode: selectedPayMode.value,
+      amount: parseFloat(formValue.payment_amount),
+      reference_number: formValue.reference_number,
     }
 
     try {
       setLoading(true);
-      await payIndividualInvoices(payload);
+      const receipt = await allocatePayment(auth, payload);
+      toast.success('Payment allocated');
+      // Offer to print receipt
+      if (receipt?.id) {
+        // Fetch via API route including Authorization header, then open Blob in new tab
+        try {
+          const resp = await fetch(`/api/billing/payment-receipt?id=${receipt.id}` , {
+            headers: {
+              'Authorization': `Bearer ${auth?.token}`,
+            }
+          });
+          if (!resp.ok) {
+            const txt = await resp.text();
+            toast.error(txt || 'Failed to download receipt');
+          } else {
+            const blob = await resp.blob();
+            const url = URL.createObjectURL(blob);
+            window.open(url, '_blank');
+            // Cleanup after some time
+            setTimeout(() => URL.revokeObjectURL(url), 60000);
+          }
+        } catch (e) {
+          toast.error(e?.message || 'Error opening receipt');
+        }
+      }
       dispatch(getPatientInvoices(auth, selectedPatient?.value));
     } catch (err) {
       // error already toasted inside loop
@@ -288,24 +225,15 @@ const InvoicePayModal = () => {
   return (
     <section>
       <Grid container className="my-2" spacing={2}>
-          <Grid onClick={()=> { 
-            setPayMethod("cash")
-            setSelectedPatient(null)
-            setSelectedInsurance(null)
-          }
-        } 
-        item md={6} xs={12}>
-          <div className={`p-2 ${payMethod === "cash" ? "bg-card text-white" : "bg-background"} border border-gray rounded-lg text-center cursor-pointer`}>Cash</div>
-        </Grid>
-        
-        <Grid onClick={()=>{
-            setPayMethod("insurance")
-            setSelectedPatient(null)
-            setSelectedInsurance(null)
-          }
-        }
-           item md={6} xs={12}>
-          <div className={`p-2 ${payMethod === "insurance" ? "bg-orange text-white" : "bg-background"} border border-gray rounded-lg text-center cursor-pointer`}>Insurance</div>
+        <Grid item md={6} xs={12}>
+          <h2 className='text-xl rounded-lg text-primary'>Select Mode of Payment</h2>
+          <Select
+            value={selectedPayMode}
+            isSearchable
+            isClearable
+            onChange={(opt)=> setSelectedPayMode(opt)}
+            options={(paymodes||[]).map(pm => ({ value: pm.id, label: `${pm.payment_mode} (${pm.payment_category})` }))}
+          />
         </Grid>
       </Grid>
       <Formik
@@ -316,22 +244,14 @@ const InvoicePayModal = () => {
         <Form className="py-4">
           <Grid container className="flex items-end justify-center" spacing={2}>
             <Grid item md={6} xs={12}>
-              <h2 className='text-xl rounded-lg text-primary'>{ payMethod === "cash" ? "Select A Patient" : "Select Insurance"}</h2>
-              {payMethod === "cash" ? 
-                (<Select
-                  value={selectedPatient}
-                  isSearchable
-                  isClearable
-                  onChange={handleChange}
-                  options={patients.map((patient) => ({ value: patient.id, label: `${patient?.first_name} ${patient?.second_name}` }))}
-                />): (
-                <Select
-                  value={selectedInsurance}
-                  isSearchable
-                  isClearable
-                  onChange={handleChangeInsurance}
-                  options={insurance.map((insurance) => ({ value: insurance.id, label: `${insurance?.name}` }))}
-                />)}
+              <h2 className='text-xl rounded-lg text-primary'>Select A Patient</h2>
+              <Select
+                value={selectedPatient}
+                isSearchable
+                isClearable
+                onChange={handleChange}
+                options={patients.map((patient) => ({ value: patient.id, label: `${patient?.first_name} ${patient?.second_name}` }))}
+              />
             </Grid>
             
             <Grid item md={3} xs={12}>
@@ -344,6 +264,20 @@ const InvoicePayModal = () => {
               />
               <ErrorMessage
                 name="payment_amount"
+                component="div"
+                className="text-warning text-xs"
+              />                  
+            </Grid>
+            <Grid item md={3} xs={12}>
+              <label className='text-xl rounded-lg text-primary' htmlFor="reference_number">Reference Number</label>
+              <Field
+                className="block border rounded-md text-sm border-gray py-2 focus:outline-card w-full"
+                maxWidth="sm"
+                placeholder="Reference Number (Receipt/M-Pesa/Cheque/Bank)"
+                name="reference_number"
+              />
+              <ErrorMessage
+                name="reference_number"
                 component="div"
                 className="text-warning text-xs"
               />                  
@@ -376,6 +310,9 @@ const InvoicePayModal = () => {
               </button>
             </Grid>
           </Grid>
+          <div className="my-2 text-sm">
+            <strong>Total of selected invoices (cash portion):</strong> {selectedInvoicesTotal()}
+          </div>
         </Form>
       </Formik>
       <DataGrid
