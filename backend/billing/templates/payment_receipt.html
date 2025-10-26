@@ -5,18 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Payment Receipt</title>
     <style>
-      body {
-        font-family: Arial, sans-serif;
-        font-size: 14px;
-      }
       table {
-        width: 100%;
         border-collapse: collapse;
-        margin-bottom: 20px;
+        width: 100%;
+        margin-bottom: 10px;
       }
       th,
       td {
-        border: 1px solid #dddddd;
+        border: 1px solid black;
         padding: 8px;
         text-align: left;
       }
@@ -24,68 +20,140 @@
         background-color: #f2f2f2;
       }
       .header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+        text-align: center;
         margin-bottom: 20px;
       }
       .logo {
-        width: 100px;
-        height: auto;
+        max-width: 150px;
+        max-height: 150px;
       }
       .footer {
+        position: fixed;
+        bottom: 0;
+        width: 100%;
         text-align: center;
-        margin-top: 40px;
+        margin-top: 20px;
         font-size: 12px;
+        font-style: italic;
         color: gray;
+        font-weight: bold;
+      }
+      .info-section {
+        margin-bottom: 20px;
+      }
+      .info-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 5px;
+      }
+      .info-label {
+        font-weight: bold;
+        width: 40%;
+      }
+      .info-value {
+        width: 60%;
+      }
+      .summary-table {
+        border: 1px solid black;
+        border-collapse: collapse;
+        width: 35%;
+        float: right;
+        margin-top: -1px;
+      }
+      .summary-table th,
+      .summary-table td {
+        padding: 8px;
+        text-align: right;
+      }
+      .summary-table th {
+        background-color: #f2f2f2;
+      }
+      .summary-table td {
+        text-align: left;
+      }
+      .invoice-section {
+        margin-top: 20px;
+        margin-bottom: 20px;
+      }
+      .invoice-title {
+        background-color: #f2f2f2;
+        padding: 8px;
+        margin-top: 15px;
+        margin-bottom: 5px;
+        font-weight: bold;
+        border: 1px solid black;
       }
     </style>
   </head>
   <body>
     <div class="header">
-      <div>
-        <h2>Payment Receipt</h2>
-        <p><strong>Date:</strong> {{ receipt.created_at }}</p>
-        <p><strong>Reference:</strong> {{ receipt.reference_number }}</p>
-        <p>
-          <strong>Mode:</strong> {{ receipt.payment_mode.payment_mode }} ({{
-          receipt.payment_mode.payment_category }})
-        </p>
-        <p>
-          <strong>Patient:</strong> {{ receipt.patient.first_name }} {{
-          receipt.patient.second_name }}
-        </p>
-        <p><strong>Total Paid:</strong> {{ receipt.total_amount }}</p>
-      </div>
-      <div>
-        {% if company_logo_url %}
+      <div class="logo-column">
         <img src="{{ company_logo_url }}" alt="Company Logo" class="logo" />
-        {% endif %}
       </div>
+      <h2>{{ company.name }}</h2>
+      <p>{{ company.address1 }}</p>
+      <p>{{ company.phone1 }} | {{ company.email1 }}</p>
     </div>
 
-    {% for invoice, allocations in allocations_grouped.items %}
-    <h3>Invoice: {{ invoice.invoice_number }} ({{ invoice.invoice_date }})</h3>
-    <table>
-      <thead>
-        <tr>
-          <th>Item</th>
-          <th>Applied Amount</th>
-        </tr>
-      </thead>
+    <h2>Payment Receipt</h2>
+    <p><strong>Receipt Number:</strong> #{{ receipt.id }}</p>
+    <p><strong>Receipt Date:</strong> {{ receipt.created_at|date:"d/m/Y" }}</p>
+    {% if receipt.payment_date %}
+    <p>
+      <strong>Payment Date:</strong> {{ receipt.payment_date|date:"d/m/Y" }}
+    </p>
+    {% endif %}
+    <p>
+      <strong>Paid by:</strong>
+      {% if receipt.patient %} {{ receipt.patient.first_name }} {{
+      receipt.patient.second_name }} (Cash Payment) {% elif receipt.insurance %}
+      {{ receipt.insurance.insurance_name }} (Credit Payment) {% else %} N/A {%
+      endif %}
+    </p>
+    <p><strong>Payment Mode:</strong> {{ receipt.payment_mode.mode_name }}</p>
+    <p><strong>Reference Number:</strong> {{ receipt.reference_number }}</p>
+
+    <div class="invoice-section">
+      <h3 style="margin-bottom: 10px">Payment Allocation Details</h3>
+
+      {% for invoice, allocations in allocations_grouped.items %}
+      <div class="invoice-title">
+        Invoice #{{ invoice.invoice_number }} - {{
+        invoice.invoice_date|date:"d/m/Y" }}
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Item Name</th>
+            <th>Category</th>
+            <th>Amount Applied</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for alloc in allocations %}
+          <tr>
+            <td>{{ alloc.invoice_item.item.name }}</td>
+            <td>{{ alloc.invoice_item.item.category }}</td>
+            <td>KES {{ alloc.amount_applied|floatformat:2 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% endfor %}
+    </div>
+
+    <table class="summary-table">
       <tbody>
-        {% for alloc in allocations %}
         <tr>
-          <td>{{ alloc.invoice_item.item.name }}</td>
-          <td>{{ alloc.amount_applied }}</td>
+          <th>Total Amount Paid:</th>
+          <td>KES {{ receipt.total_amount|floatformat:2 }}</td>
         </tr>
-        {% endfor %}
       </tbody>
     </table>
-    {% endfor %}
 
-    <div class="footer">
-      <p>Generated by EaSyMed-HMIS</p>
-    </div>
+    <section class="footer">
+      <span>Generated by: EaSyMed-HMIS</span>
+      <p>Email: admin@proto-typesolution.com</p>
+    </section>
   </body>
 </html>
