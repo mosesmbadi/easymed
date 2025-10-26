@@ -37,13 +37,13 @@ function Reports() {
                 
                 const response = await saleByDateRangeAndItemPdf()
                 toast.success("got pdf successfully")
-                window.open(response.link, '_blank');
+                window.open(response.url, '_blank');
 
             }else if(checked === "Sale by Date Range"){
 
                 const response = await saleByDateRangePdf()
                 toast.success("got pdf successfully")
-                window.open(response.link, '_blank');
+                window.open(response.url, '_blank');
 
             }
 
