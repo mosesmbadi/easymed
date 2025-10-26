@@ -112,15 +112,44 @@ class PaymentAllocationSerializer(serializers.ModelSerializer):
 
 class PaymentReceiptSerializer(serializers.ModelSerializer):
     allocations = PaymentAllocationSerializer(many=True, read_only=True)
+    insurance_name = serializers.SerializerMethodField()
+    patient_name = serializers.SerializerMethodField()
 
     class Meta:
         model = PaymentReceipt
-        fields = ['id', 'patient', 'payment_mode', 'total_amount', 'reference_number', 'created_at', 'allocations']
+        fields = ['id', 'patient', 'patient_name', 'insurance', 'insurance_name', 
+                  'payment_mode', 'total_amount', 'reference_number', 'payment_date', 
+                  'created_at', 'allocations']
+
+    def get_insurance_name(self, obj):
+        return obj.insurance.name if obj.insurance else None
+    
+    def get_patient_name(self, obj):
+        return f"{obj.patient.first_name} {obj.patient.last_name}" if obj.patient else None
 
 
 class AllocatePaymentRequestSerializer(serializers.Serializer):
-    patient_id = serializers.IntegerField()
+    patient_id = serializers.IntegerField(required=False, allow_null=True)
+    insurance_id = serializers.IntegerField(required=False, allow_null=True)
     invoice_ids = serializers.ListField(child=serializers.IntegerField(), allow_empty=False)
     payment_mode = serializers.IntegerField()
     amount = serializers.DecimalField(max_digits=12, decimal_places=2)
     reference_number = serializers.CharField(max_length=100)
+    payment_date = serializers.DateField(required=False, allow_null=True)
+
+    def validate(self, data):
+        # Ensure either patient_id or insurance_id is provided, but not both
+        patient_id = data.get('patient_id')
+        insurance_id = data.get('insurance_id')
+        
+        if not patient_id and not insurance_id:
+            raise serializers.ValidationError(
+                "Either patient_id or insurance_id must be provided."
+            )
+        
+        if patient_id and insurance_id:
+            raise serializers.ValidationError(
+                "Cannot provide both patient_id and insurance_id."
+            )
+        
+        return data

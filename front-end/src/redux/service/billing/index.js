@@ -242,6 +242,19 @@ export const fetchPaymentModes = (auth) =>{
     })
 }
 
+export const fetchPaymentReceipts = (auth) =>{
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve,reject) =>{
+        axiosInstance.get(`/api/billing/payment-receipts/`)
+            .then((res) =>{
+                resolve(res.data)
+            })
+            .catch((err) =>{
+                reject(err.message)
+            })
+    })
+}
+
 export const createPaymentModes = (auth, payload) =>{
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve,reject) =>{

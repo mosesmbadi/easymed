@@ -120,6 +120,19 @@ class PaymentModeViewset(viewsets.ModelViewSet):
         serializer_class = PaymentModeSerializer
 
 
+class PaymentReceiptViewset(viewsets.ReadOnlyModelViewSet):
+    """
+    API ViewSet to list and retrieve payment receipts.
+    Read-only as receipts should not be edited or deleted.
+    """
+    queryset = PaymentReceipt.objects.all().select_related(
+        'patient', 'insurance', 'payment_mode'
+    ).order_by('-created_at')
+    serializer_class = PaymentReceiptSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['patient', 'insurance', 'payment_mode', 'payment_date']
+
+
 class PaymentBreakdownView(APIView):
     """
     API View to return the total payments breakdown per PaymentMode.
@@ -176,15 +189,29 @@ class AllocatePaymentView(APIView):
         req_ser.is_valid(raise_exception=True)
         data = req_ser.validated_data
 
-        patient_id = data['patient_id']
+        patient_id = data.get('patient_id')
+        insurance_id = data.get('insurance_id')
         invoice_ids = data['invoice_ids']
         payment_mode_id = data['payment_mode']
         amount = data['amount']
         reference_number = data['reference_number']
+        payment_date = data.get('payment_date')  # Optional field
 
-        invoices = Invoice.objects.filter(id__in=invoice_ids, patient_id=patient_id)
+        # Filter invoices based on whether it's patient or insurance payment
+        if patient_id:
+            invoices = Invoice.objects.filter(id__in=invoice_ids, patient_id=patient_id)
+        elif insurance_id:
+            # For insurance payments, we need to filter invoices that have items with this insurance
+            # This ensures the invoice belongs to the selected insurance company
+            invoices = Invoice.objects.filter(
+                id__in=invoice_ids,
+                invoice_items__payment_mode__insurance_id=insurance_id
+            ).distinct()
+        else:
+            return Response({"detail": "Either patient_id or insurance_id must be provided."}, status=status.HTTP_400_BAD_REQUEST)
+
         if not invoices.exists():
-            return Response({"detail": "No invoices found for patient/invoice selection."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "No invoices found for the selected customer/invoice selection."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             paymode = PaymentMode.objects.get(id=payment_mode_id)
@@ -194,9 +221,11 @@ class AllocatePaymentView(APIView):
         with transaction.atomic():
             receipt = PaymentReceipt.objects.create(
                 patient_id=patient_id,
+                insurance_id=insurance_id,
                 payment_mode=paymode,
                 total_amount=amount,
                 reference_number=reference_number,
+                payment_date=payment_date,
             )
 
             remaining = float(amount)

@@ -222,20 +222,25 @@ class PaymentReceipt(models.Model):
     """
     Represents a single payment event that may be allocated across multiple invoices/items.
     """
-    patient = models.ForeignKey('patient.Patient', on_delete=models.SET_NULL, null=True)
+    patient = models.ForeignKey('patient.Patient', on_delete=models.SET_NULL, null=True, blank=True)
+    insurance = models.ForeignKey('company.InsuranceCompany', on_delete=models.SET_NULL, null=True, blank=True)
     payment_mode = models.ForeignKey(PaymentMode, on_delete=models.PROTECT)
     total_amount = models.DecimalField(max_digits=12, decimal_places=2)
     reference_number = models.CharField(max_length=100)
+    payment_date = models.DateField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         indexes = [
             models.Index(fields=['created_at']),
             models.Index(fields=['patient']),
+            models.Index(fields=['insurance']),
+            models.Index(fields=['payment_date']),
         ]
 
     def __str__(self):
-        return f"Receipt #{self.id} - {self.patient} - {self.total_amount}"
+        customer = self.patient or self.insurance or "Unknown"
+        return f"Receipt #{self.id} - {customer} - {self.total_amount}"
 
 
 class PaymentAllocation(models.Model):
