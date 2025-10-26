@@ -103,49 +103,49 @@ jobs:
             -e NEXT_PUBLIC_HMIS_VERSION='v0.0.1-test' \
             backend-test:ci sh -c "python manage.py check && pytest -v"
 
-  deploy:
-    runs-on: ubuntu-latest
-    needs:
-      - test-backend
-      - build-nginx
-      - build-backend
-      - build-frontend
+  # deploy:
+  #   runs-on: ubuntu-latest
+  #   needs:
+  #     - test-backend
+  #     - build-nginx
+  #     - build-backend
+  #     - build-frontend
 
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
+  #   steps:
+  #     - name: Checkout Code
+  #       uses: actions/checkout@v3
 
-      - name: Set up SSH key
-        run: |
-          set -x
-          mkdir -p ~/.ssh
-          echo "${DEMO_SERVER_PRIVATE_KEY}" | tr -d '\r' > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H $DEMO_SERVER_IP >> ~/.ssh/known_hosts
+  #     - name: Set up SSH key
+  #       run: |
+  #         set -x
+  #         mkdir -p ~/.ssh
+  #         echo "${DEMO_SERVER_PRIVATE_KEY}" | tr -d '\r' > ~/.ssh/id_rsa
+  #         chmod 600 ~/.ssh/id_rsa
+  #         ssh-keyscan -H $DEMO_SERVER_IP >> ~/.ssh/known_hosts
 
-      - name: Transfer .env
-        run: |
-          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ./.env.sample $DEMO_SERVER_USERNAME@$DEMO_SERVER_IP:/home/$DEMO_SERVER_USERNAME/.env    
+  #     - name: Transfer .env
+  #       run: |
+  #         scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ./.env.sample $DEMO_SERVER_USERNAME@$DEMO_SERVER_IP:/home/$DEMO_SERVER_USERNAME/.env    
 
-      - name: Transfer Prometheus config files
-        run: |
-          ssh -o StrictHostKeyChecking=no $DEMO_SERVER_USERNAME@$DEMO_SERVER_IP "mkdir -p /home/$DEMO_SERVER_USERNAME/prometheus"
-          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ./prometheus/prometheus.yml $DEMO_SERVER_USERNAME@$DEMO_SERVER_IP:/home/$DEMO_SERVER_USERNAME/prometheus/prometheus.yml
-          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ./prometheus/rules.yml $DEMO_SERVER_USERNAME@$DEMO_SERVER_IP:/home/$DEMO_SERVER_USERNAME/prometheus/rules.yml
+  #     - name: Transfer Prometheus config files
+  #       run: |
+  #         ssh -o StrictHostKeyChecking=no $DEMO_SERVER_USERNAME@$DEMO_SERVER_IP "mkdir -p /home/$DEMO_SERVER_USERNAME/prometheus"
+  #         scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ./prometheus/prometheus.yml $DEMO_SERVER_USERNAME@$DEMO_SERVER_IP:/home/$DEMO_SERVER_USERNAME/prometheus/prometheus.yml
+  #         scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ./prometheus/rules.yml $DEMO_SERVER_USERNAME@$DEMO_SERVER_IP:/home/$DEMO_SERVER_USERNAME/prometheus/rules.yml
 
-      - name: Transfer docker-compose.yml
-        run: |
-          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa docker-compose.yml $DEMO_SERVER_USERNAME@$DEMO_SERVER_IP:/home/$DEMO_SERVER_USERNAME/docker-compose.yml    
+  #     - name: Transfer docker-compose.yml
+  #       run: |
+  #         scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa docker-compose.yml $DEMO_SERVER_USERNAME@$DEMO_SERVER_IP:/home/$DEMO_SERVER_USERNAME/docker-compose.yml    
 
-      - name: Deploy using remote Docker Compose
-        run: |
-          ssh -o StrictHostKeyChecking=no $DEMO_SERVER_USERNAME@$DEMO_SERVER_IP << 'EOF'
-            echo "Stopping and removing old containers..."
-            docker compose down --remove-orphans
+  #     - name: Deploy using remote Docker Compose
+  #       run: |
+  #         ssh -o StrictHostKeyChecking=no $DEMO_SERVER_USERNAME@$DEMO_SERVER_IP << 'EOF'
+  #           echo "Stopping and removing old containers..."
+  #           docker compose down --remove-orphans
 
-            echo "Pulling new images..."
-            docker compose pull
+  #           echo "Pulling new images..."
+  #           docker compose pull
 
-            echo "Starting containers..."
-            docker compose up --build -d
-          EOF
+  #           echo "Starting containers..."
+  #           docker compose up --build -d
+  #         EOF

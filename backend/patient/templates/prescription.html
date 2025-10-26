@@ -1,95 +1,108 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Prescription Note</title>
     <style>
-        /* Add your CSS styles here */
-        body {
-            font-family: Arial, sans-serif;
-        }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        h1, h2, h3, h4, h5, h6 {
-            color: #333;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        table, th, td {
-            border: 1px solid #333;
-            padding: 8px;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
+      /* Add your CSS styles here */
+      body {
+        font-family: Arial, sans-serif;
+      }
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6 {
+        color: #333;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+      }
+      table,
+      th,
+      td {
+        border: 1px solid #333;
+        padding: 8px;
+      }
+      th {
+        background-color: #f2f2f2;
+      }
 
-        .footer{
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            text-align: center;
-            margin-top: 20px;
-            font-size: 12px;
-            font-style: italic;
-            color: gray;
-            font-weight: bold;
-
-        }
+      .footer {
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+        text-align: center;
+        margin-top: 20px;
+        font-size: 12px;
+        font-style: italic;
+        color: gray;
+        font-weight: bold;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="header">
-        <img src="https://static.vecteezy.com/system/resources/thumbnails/021/809/795/small/doctors-day-illustration-png.png" alt="Company Logo" class="logo">
-        <h2>{{ company.name }} </h2>
-        <p>{{ company.address1 }}</p>
-        <p>{{ company.phone1 }} | {{ company.email1 }}</p>
+      <img
+        src="https://static.vecteezy.com/system/resources/thumbnails/021/809/795/small/doctors-day-illustration-png.png"
+        alt="Company Logo"
+        class="logo"
+      />
+      <h2>{{ company.name }}</h2>
+      <p>{{ company.address1 }}</p>
+      <p>{{ company.phone1 }} | {{ company.email1 }}</p>
     </div>
 
     <div class="container">
-        <h2>Prescription Note</h2>
-        <h3>Patient Information</h3>
-        <p><strong>Name:</strong> {{ patient.first_name }} {{ patient.second_name }}</p>
-        <p><strong>Date of Birth:</strong> {{ patient.date_of_birth }}</p>
-        <p><strong>Gender:</strong> {{ patient.get_gender_display }}</p>
-        <p><strong>Age:</strong> {{ patient.age }}</p>
-        <h3>Prescription Details</h3>
-        <p><strong>Prescription ID:</strong> {{ prescription.id }}</p>
-        <p><strong>Date Created:</strong> {{ prescription.date_created }}</p>
-        <p><strong>Status:</strong> {{ prescription.get_status_display }}</p>
-        <table>
-            <thead>
-                <tr>
-                    <th>Drug</th>
-                    <th>Dosage</th>
-                    <th>Frequency</th>
-                    <th>Duration</th>
-                    <th>Note</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for prescribed_drug in prescribed_drugs %}
-                <tr>
-                    <td>{{ prescribed_drug.item.name }}</td>
-                    <td>{{ prescribed_drug.dosage }}</td>
-                    <td>{{ prescribed_drug.frequency }}</td>
-                    <td>{{ prescribed_drug.duration }}</td>
-                    <td>{{ prescribed_drug.note }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+      <h2>Prescription Note</h2>
+      <h3>Patient Information</h3>
+      <p>
+        <strong>Name:</strong> {{ patient.first_name }} {{ patient.second_name
+        }}
+      </p>
+      <p><strong>Date of Birth:</strong> {{ patient.date_of_birth }}</p>
+      <p><strong>Gender:</strong> {{ patient.get_gender_display }}</p>
+      <p><strong>Age:</strong> {{ patient.age }}</p>
+      <h3>Prescription Details</h3>
+      <p><strong>Prescription ID:</strong> {{ prescription.id }}</p>
+      <p><strong>Date Created:</strong> {{ prescription.date_created }}</p>
+      <p><strong>Status:</strong> {{ prescription.get_status_display }}</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Drug</th>
+            <th>Dosage</th>
+            <th>Frequency</th>
+            <th>Duration</th>
+            <th>Note</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for prescribed_drug in prescribed_drugs %}
+          <tr>
+            <td>{{ prescribed_drug.item.name }}</td>
+            <td>{{ prescribed_drug.dosage }}</td>
+            <td>{{ prescribed_drug.frequency }}</td>
+            <td>{{ prescribed_drug.duration }}</td>
+            <td>{{ prescribed_drug.note }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
 
     <section class="footer">
-        <span>Generated by: ME-HMIS</span>
-        <p>Email: hello@me-hmis.com</p>
+      <span>Generated by: EaSyMed-HMIS</span>
+      <p>Email: admin@proto-typesolution.com</p>
     </section>
-</body>
+  </body>
 </html>

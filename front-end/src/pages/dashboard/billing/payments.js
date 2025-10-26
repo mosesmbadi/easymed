@@ -1,33 +1,15 @@
-import React, { useEffect } from 'react'
-import { useDispatch } from 'react-redux';
-import { Container } from "@mui/material";
-import AuthGuard from "@/assets/hoc/auth-guard";
-import DashboardLayout from "@/components/layout/dashboard-layout";
-import BillingNav from '@/components/dashboard/billing/BillingNav';
+import React, { useEffect } from 'react';
+import { useRouter } from 'next/router';
 
-import { getAllItems } from "@/redux/features/inventory";
-import { useAuth } from '@/assets/hooks/use-auth';
-import InvoicePayModal from '@/components/dashboard/billing/invoicePayModal';
+// Legacy Billing payments page now redirects to Finance > Accounts Receivable > Payments
+const LegacyBillingPaymentsRedirect = () => {
+  const router = useRouter();
+  useEffect(() => {
+    router.replace('/dashboard/finance/accounts-receivable/payments');
+  }, [router]);
+  return null; // Optionally could return a spinner
+};
 
-const ReceivePaymentsPage = () => {
-    const dispatch = useDispatch();
-    const auth = useAuth()
-    useEffect(()=> {
-        dispatch(getAllItems(auth));
-    }, [])
-  return (
-    <Container maxWidth="xl">
-      <BillingNav />
-      <InvoicePayModal/>
-    </Container>
-    
-  )
-}
+LegacyBillingPaymentsRedirect.getLayout = (page) => page; // Bare layout since we instantly redirect
 
-ReceivePaymentsPage.getLayout = (page) => (
-  <AuthGuard>
-    <DashboardLayout>{page}</DashboardLayout>;
-  </AuthGuard>
-);
-
-export default ReceivePaymentsPage
+export default LegacyBillingPaymentsRedirect;

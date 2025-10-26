@@ -1,5 +1,6 @@
 import django_filters
 from rest_framework import filters
+from .models import Invoice
     
 class InvoiceFilterSearch(filters.SearchFilter):
     def get_search_fields(self, view, request):
@@ -12,4 +13,13 @@ class InvoiceFilterSearch(filters.SearchFilter):
         
         # If the parameter is not provided or is invalid, use the view's default search fields
         return super().get_search_fields(view, request)
+
+class InvoiceFilter(django_filters.FilterSet):
+    class Meta:
+        model = Invoice
+        fields = {
+            'status': ['exact'],
+            'invoice_date': ['exact', 'gte', 'lte'],
+            'patient': ['exact'],
+        }
 

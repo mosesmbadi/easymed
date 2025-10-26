@@ -131,6 +131,19 @@ export const payInvoices = (auth, payload) =>{
     })
 }
 
+export const allocatePayment = (auth, payload) =>{
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve,reject) =>{
+        axiosInstance.post(`/api/billing/allocate-payment`, payload)
+            .then((res) =>{
+                resolve(res.data)
+            })
+            .catch((err) =>{
+                reject(err.message)
+            })
+    })
+}
+
 export const updateInvoices = (auth, invoice, payload) =>{
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve,reject) =>{
@@ -162,13 +175,14 @@ export const payBillingInvoices = (auth,payload) =>{
 }
 
 
-export const fetchInvoices = (auth, processFilter, selectedSearchFilter) =>{
+export const fetchInvoices = (auth, processFilter, selectedSearchFilter, status) =>{
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve,reject) =>{
         axiosInstance.get(`${APP_API_URL.FETCH_INVOICES}`, {
             params: {
                 search_field: selectedSearchFilter.value ? selectedSearchFilter.value : null,
                 search_value: processFilter.search,
+                status: status && status !== 'all' ? status : undefined,
             }
         })
             .then((res) =>{
@@ -219,6 +233,19 @@ export const fetchPaymentModes = (auth) =>{
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve,reject) =>{
         axiosInstance.get(`${APP_API_URL.PAYMENT_MODES}`)
+            .then((res) =>{
+                resolve(res.data)
+            })
+            .catch((err) =>{
+                reject(err.message)
+            })
+    })
+}
+
+export const fetchPaymentReceipts = (auth) =>{
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve,reject) =>{
+        axiosInstance.get(`/api/billing/payment-receipts/`)
             .then((res) =>{
                 resolve(res.data)
             })

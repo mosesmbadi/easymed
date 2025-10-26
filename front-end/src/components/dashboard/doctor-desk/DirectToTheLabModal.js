@@ -45,28 +45,41 @@ const DirectToTheLabModal = ({ labOpen, setLabOpen, selectedData }) => {
 
   const saveAllPanels = async (testReqPanelPayload) => {
     try{
-      const response = await sendLabRequestsPanels(testReqPanelPayload, auth)
-      toast.success("Lab Request Panels saved Successful!");
-      dispatch(getAllProcesses(auth))
-      const payload = {
-        invoice: selectedData.invoice,
-        item: parseInt(response.item)
+      const response = await sendLabRequestsPanels(testReqPanelPayload, auth);
+      // Only show toast on the first panel to avoid too many notifications
+      if (testReqPanelPayload.test_panel) {
+        toast.success("Lab Request Panel saved successfully!");
       }
-      billingInvoiceItems(auth, payload)
-    }catch(error){
-      console.log(error)
-      toast.error(error)
+      dispatch(getAllProcesses(auth));
+      // Only create invoice items if there's a valid response with an item
+      if (response && response.item) {
+        const payload = {
+          invoice: selectedData.invoice,
+          item: parseInt(response.item)
+        };
+        await billingInvoiceItems(auth, payload);
+      }
+      return response;
+    } catch(error){
+      console.log(error);
+      toast.error(error);
+      throw error; // Re-throw to handle in the calling function
     }
   }
 
-  const savePanels = (reqId, panelsToSave) => {
-    panelsToSave.forEach((panel)=> {
+  // Add delay helper function
+  const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+  
+  // Modified to be async and sequential to prevent transaction errors
+  const savePanels = async (reqId, panelsToSave) => {
+    for (const panel of panelsToSave) {
       const testReqPanelPayload = {    
         test_panel: panel.id,
         lab_test_request: reqId      
       }
-      saveAllPanels(testReqPanelPayload);
-    })
+      await saveAllPanels(testReqPanelPayload);
+      await delay(100); // Add small delay between requests
+    }
   }
 
   const handleSendLabRequest = async (formValue, helpers) => {

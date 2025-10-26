@@ -1,23 +1,13 @@
-import React from 'react'
-import { Container } from "@mui/material";
-import InventoryNav from '@/components/dashboard/inventory/nav';
-import AuthGuard from "@/assets/hoc/auth-guard";
-import DashboardLayout from "@/components/layout/dashboard-layout";
-import AddProductPurchase from '@/components/dashboard/inventory/AddProductPurchase'
+import { useEffect } from 'react';
+import { useRouter } from 'next/router';
 
-const AddProductPurchasePage = () => {
-  return (
-    <Container maxWidth="xl">
-      <InventoryNav />
-      <AddProductPurchase />
-    </Container>
-  )
-}
+// Legacy route redirecting to new Finance > Accounts Payable create purchase order page
+const LegacyAddPurchaseRedirect = () => {
+  const router = useRouter();
+  useEffect(() => {
+    router.replace('/dashboard/finance/accounts-payable/purchase-orders/new');
+  }, [router]);
+  return null;
+};
 
-AddProductPurchasePage.getLayout = (page) => (
-  <AuthGuard>
-    <DashboardLayout>{page}</DashboardLayout>;
-  </AuthGuard>
-);
-
-export default AddProductPurchasePage
+export default LegacyAddPurchaseRedirect;

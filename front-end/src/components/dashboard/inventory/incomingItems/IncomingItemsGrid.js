@@ -53,10 +53,9 @@ const IncomingItemsGrid = () => {
 
   return (
     <section className=" my-8">
-      <h3 className="text-xl mt-8"> Incoming Items </h3>
-      <div className="w-full flex items-center justify-end text-white">
-        <Link className="mx-4 rounded-md p-2 bg-primary text-center" href="/dashboard/inventory/incoming-items/new">
-          add New Item
+  <div className="w-full flex items-center justify-end text-white mt-4">
+  <Link className="mx-4 rounded-md p-2 bg-primary text-center" href="/dashboard/finance/accounts-payable/receive-items/new">
+          Add Received Item
         </Link>
       </div>
       <SearchOnlyFilter

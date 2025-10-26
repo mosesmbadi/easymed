@@ -1,114 +1,115 @@
 <!DOCTYPE html>
 <html>
-<head>
+  <head>
     <title>Supplier Invoice Report</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            font-size: 14px;
-        }
+      body {
+        font-family: Arial, sans-serif;
+        font-size: 14px;
+      }
 
-        .company-details {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-        .logo-column {
-            flex: 0 0 auto;
-            border-right: 2px solid #ddd;
-            padding-right: 20px;
-        }
-        .details-column {
-            flex: 1;
-            padding-left: 20px;
-        }
-        .logo {
-            width: 100px;
-            height: auto;
-        }
+      .company-details {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        margin-bottom: 20px;
+      }
+      .logo-column {
+        flex: 0 0 auto;
+        border-right: 2px solid #ddd;
+        padding-right: 20px;
+      }
+      .details-column {
+        flex: 1;
+        padding-left: 20px;
+      }
+      .logo {
+        width: 100px;
+        height: auto;
+      }
 
-        table {
-            border-collapse: collapse;
-            width: 100%;
-            margin-bottom: 30px;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 10px;
-            text-align: left;
-        }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-bottom: 30px;
+      }
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 10px;
+        text-align: left;
+      }
 
-        .footer {
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            text-align: center;
-            margin-top: 20px;
-            font-size: 12px;
-            font-style: italic;
-            color: gray;
-            font-weight: bold;
-        }
+      .footer {
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+        text-align: center;
+        margin-top: 20px;
+        font-size: 12px;
+        font-style: italic;
+        color: gray;
+        font-weight: bold;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="company-details">
-        <div class="logo-column">
-            <img src="{{ company_logo_url }}" alt="Company Logo" class="logo">
-        </div>
-        <div class="details-column">
-            <p><strong>{{ company.name }}</strong></p>
-            <p>Address: {{ company.address1 }}</p>
-            <p>{{ company.phone1 }} | {{ company.email1 }}</p>
-        </div>
+      <div class="logo-column">
+        <img src="{{ company_logo_url }}" alt="Company Logo" class="logo" />
+      </div>
+      <div class="details-column">
+        <p><strong>{{ company.name }}</strong></p>
+        <p>Address: {{ company.address1 }}</p>
+        <p>{{ company.phone1 }} | {{ company.email1 }}</p>
+      </div>
     </div>
 
     <h1>Supplier Invoice Report</h1>
     <p><strong>Supplier:</strong> {{ supplier.name }}</p>
 
     {% for invoice in supplier_invoices %}
-        <h2>Invoice: {{ invoice.invoice_no }}</h2>
-        <p>Date Created: {{ invoice.date_created }}</p>
-        <p>Amount: {{ invoice.amount }}</p>
-        <p>Status: {{ invoice.status }}</p>
+    <h2>Invoice: {{ invoice.invoice_no }}</h2>
+    <p>Date Created: {{ invoice.date_created }}</p>
+    <p>Amount: {{ invoice.amount }}</p>
+    <p>Status: {{ invoice.status }}</p>
 
-        <h3>Incoming Items for Invoice {{ invoice.invoice_no }}</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Item Name</th>
-                    <th>Purchase Price</th>
-                    <th>Sale Price</th>
-                    <th>Quantity</th>
-                    <th>Category</th>
-                    <th>Lot No</th>
-                    <th>Expiry Date</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in invoice.incomingitem_set.all %}
-                    <tr>
-                        <td>{{ item.item.name }}</td>
-                        <td>{{ item.purchase_price }}</td>
-                        <td>{{ item.sale_price }}</td>
-                        <td>{{ item.quantity }}</td>
-                        <td>{{ item.category_one }}</td>
-                        <td>{{ item.lot_no }}</td>
-                        <td>{{ item.expiry_date }}</td>
-                    </tr>
-                {% empty %}
-                    <tr>
-                        <td colspan="7">No Incoming Items for this invoice.</td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <h3>Incoming Items for Invoice {{ invoice.invoice_no }}</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Item Name</th>
+          <th>Purchase Price</th>
+          <th>Sale Price</th>
+          <th>Quantity</th>
+          <th>Category</th>
+          <th>Lot No</th>
+          <th>Expiry Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in invoice.incomingitem_set.all %}
+        <tr>
+          <td>{{ item.item.name }}</td>
+          <td>{{ item.purchase_price }}</td>
+          <td>{{ item.sale_price }}</td>
+          <td>{{ item.quantity }}</td>
+          <td>{{ item.category_one }}</td>
+          <td>{{ item.lot_no }}</td>
+          <td>{{ item.expiry_date }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7">No Incoming Items for this invoice.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
     {% endfor %}
 
     <div class="footer">
-        <span>Generated by: ME-HMIS</span>
-        <p>Email: hello@me-hmis.com</p>
+      <span>Generated by: EaSyMed-HMIS</span>
+      <p>Email: admin@proto-typesolution.com</p>
     </div>
-</body>
+  </body>
 </html>

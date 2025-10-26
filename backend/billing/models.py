@@ -136,6 +136,7 @@ class InvoicePayment(models.Model):
     payment_date = models.DateField(null=True)
     payment_created_at = models.DateTimeField(auto_now_add=True)
     payment_updated_at = models.DateTimeField(auto_now=True)
+    reference_number = models.CharField(max_length=100, null=True, blank=True)
 
     def __str__(self):
         return self.invoice.invoice_number
@@ -159,13 +160,50 @@ class InvoiceItem(models.Model):
 
     @property
     def sale_price(self):
-        Inventory = apps.get_model('inventory', 'Inventory') 
-        inventory = Inventory.objects.filter(item=self.item).first()
-        if inventory:
-            return inventory.sale_price
-        return 0
+        """Return the default cash price for this item from active Inventory.
+
+        Per simplified billing rules, pricing is determined elsewhere based on
+        selected PaymentMode. This property intentionally returns only the
+        Inventory.sale_price (or 0 if unavailable) for display/fallback uses.
+        """
+        Inventory = apps.get_model('inventory', 'Inventory')
+        inv = Inventory.objects.filter(item=self.item).order_by('-id').first()
+        return inv.sale_price if inv and inv.sale_price is not None else 0
     
     def save(self, *args, **kwargs):
+        """Persist InvoiceItem with amounts derived from simplified pricing logic.
+
+        Rule:
+        - If PaymentMode is insurance and an InsuranceItemSalePrice exists for
+          (item, insurance_company), set:
+              item_amount = insurance.sale_price
+              actual_total = insurance.co_pay
+        - Otherwise, use Inventory.sale_price for both item_amount and actual_total.
+        """
+        Inventory = apps.get_model('inventory', 'Inventory')
+        InsuranceItemSalePrice = apps.get_model('inventory', 'InsuranceItemSalePrice')
+
+        # Default to Inventory sale price
+        inv = Inventory.objects.filter(item=self.item).order_by('-id').first()
+        inventory_price = inv.sale_price if inv and inv.sale_price is not None else 0
+
+        if self.payment_mode and self.payment_mode.payment_category == 'insurance' and self.payment_mode.insurance_id:
+            ins_price = InsuranceItemSalePrice.objects.filter(
+                item=self.item, insurance_company_id=self.payment_mode.insurance_id
+            ).first()
+            if ins_price:
+                self.item_amount = ins_price.sale_price or 0
+                # Amount charged to patient at billing time is the co-pay
+                self.actual_total = ins_price.co_pay or 0
+            else:
+                # Fallback to inventory price when no insurance record exists for selected Payment Mode
+                self.item_amount = inventory_price
+                self.actual_total = inventory_price
+        else:
+            # Cash/MPesa/Cheque/Direct-to-bank etc.
+            self.item_amount = inventory_price
+            self.actual_total = inventory_price
+
         super().save(*args, **kwargs)
 
     class Meta:
@@ -178,3 +216,48 @@ class InvoiceItem(models.Model):
 
     def __str__(self):
         return self.status + '-' + self.item.name + ' - ' + str(self.item_created_at)
+
+
+class PaymentReceipt(models.Model):
+    """
+    Represents a single payment event that may be allocated across multiple invoices/items.
+    """
+    patient = models.ForeignKey('patient.Patient', on_delete=models.SET_NULL, null=True, blank=True)
+    insurance = models.ForeignKey('company.InsuranceCompany', on_delete=models.SET_NULL, null=True, blank=True)
+    payment_mode = models.ForeignKey(PaymentMode, on_delete=models.PROTECT)
+    total_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    reference_number = models.CharField(max_length=100)
+    payment_date = models.DateField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['created_at']),
+            models.Index(fields=['patient']),
+            models.Index(fields=['insurance']),
+            models.Index(fields=['payment_date']),
+        ]
+
+    def __str__(self):
+        customer = self.patient or self.insurance or "Unknown"
+        return f"Receipt #{self.id} - {customer} - {self.total_amount}"
+
+
+class PaymentAllocation(models.Model):
+    """
+    Allocation of part of a PaymentReceipt to a particular InvoiceItem.
+    Tracks exact amount applied for reconciliation and reporting.
+    """
+    receipt = models.ForeignKey(PaymentReceipt, on_delete=models.CASCADE, related_name='allocations')
+    invoice_item = models.ForeignKey(InvoiceItem, on_delete=models.CASCADE, related_name='allocations')
+    amount_applied = models.DecimalField(max_digits=12, decimal_places=2)
+    applied_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['applied_at']),
+            models.Index(fields=['invoice_item']),
+        ]
+
+    def __str__(self):
+        return f"Allocation {self.amount_applied} to {self.invoice_item_id} for receipt {self.receipt_id}"
