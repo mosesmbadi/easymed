@@ -1,5 +1,6 @@
 import os
 from rest_framework import viewsets, status
+from rest_framework.views import APIView
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.decorators import action
 from rest_framework.response import Response # type: ignore
@@ -12,7 +13,7 @@ from django.conf import settings
 from rest_framework.generics import ListAPIView
 from django.utils import timezone
 from django.db.models.functions import Now
-from django.db.models import F
+from django.db.models import F, Sum
 from datetime import timedelta
 
 
@@ -448,3 +449,92 @@ def download_supplier_invoice_pdf(request, supplier_id):
     response['Content-Disposition'] = f'filename="supplier_invoice_report_{supplier_id}.pdf"'
 
     return response
+
+
+class AllocateSupplierPaymentView(APIView):
+    """
+    Allocate a payment to supplier invoices, creating a SupplierPaymentReceipt and allocations.
+    """
+    def post(self, request, *args, **kwargs):
+        from .serializers import AllocateSupplierPaymentRequestSerializer, SupplierPaymentReceiptSerializer
+        from .models import SupplierPaymentReceipt, SupplierPaymentAllocation, SupplierInvoice
+        from billing.models import PaymentMode
+        from django.db import transaction
+
+        req_ser = AllocateSupplierPaymentRequestSerializer(data=request.data)
+        req_ser.is_valid(raise_exception=True)
+        data = req_ser.validated_data
+
+        supplier_id = data['supplier_id']
+        invoice_ids = data['invoice_ids']
+        payment_mode_id = data['payment_mode']
+        amount = data['amount']
+        reference_number = data['reference_number']
+        payment_date = data.get('payment_date')
+
+        # Get supplier invoices
+        invoices = SupplierInvoice.objects.filter(id__in=invoice_ids, supplier_id=supplier_id)
+        if not invoices.exists():
+            return Response({"detail": "No invoices found for the selected supplier."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Get payment mode
+        try:
+            paymode = PaymentMode.objects.get(id=payment_mode_id)
+        except PaymentMode.DoesNotExist:
+            return Response({"detail": "Invalid payment mode."}, status=status.HTTP_400_BAD_REQUEST)
+
+        with transaction.atomic():
+            # Create payment receipt
+            receipt = SupplierPaymentReceipt.objects.create(
+                supplier_id=supplier_id,
+                payment_mode=paymode,
+                total_amount=amount,
+                reference_number=reference_number,
+                payment_date=payment_date,
+            )
+
+            remaining = float(amount)
+
+            # Allocate to invoices (oldest first)
+            for invoice in invoices.order_by('date_created'):
+                if remaining <= 0:
+                    break
+
+                # Get outstanding amount
+                already_paid = float(invoice.payment_allocations.aggregate(total=Sum('amount_applied'))['total'] or 0)
+                outstanding = float(invoice.amount) - already_paid
+
+                if outstanding <= 0:
+                    continue
+
+                apply_now = min(remaining, outstanding)
+                if apply_now > 0:
+                    SupplierPaymentAllocation.objects.create(
+                        receipt=receipt,
+                        supplier_invoice=invoice,
+                        amount_applied=apply_now,
+                    )
+                    remaining -= apply_now
+
+                    # Update invoice status if fully paid
+                    if outstanding - apply_now <= 0.01:  # Account for floating point precision
+                        invoice.status = 'paid'
+                        invoice.save(update_fields=['status'])
+
+            ser = SupplierPaymentReceiptSerializer(receipt)
+            return Response(ser.data, status=status.HTTP_201_CREATED)
+
+
+class SupplierPaymentReceiptViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    ViewSet for listing and retrieving supplier payment receipts.
+    """
+    from .serializers import SupplierPaymentReceiptSerializer
+    from .models import SupplierPaymentReceipt
+    
+    queryset = SupplierPaymentReceipt.objects.all().select_related(
+        'supplier', 'payment_mode'
+    ).order_by('-created_at')
+    serializer_class = SupplierPaymentReceiptSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['supplier', 'payment_mode', 'payment_date']
