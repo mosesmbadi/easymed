@@ -14,6 +14,7 @@ import CmtDropdownMenu from '@/assets/DropdownMenu';
 import { LuMoreHorizontal } from 'react-icons/lu';
 import { MdLocalPrintshop, MdPayment } from 'react-icons/md';
 import { CiMoneyCheck1 } from 'react-icons/ci';
+import { FaPrint } from 'react-icons/fa';
 import { downloadPDF } from '@/redux/service/pdfs';
 import { updateInvoices } from '@/redux/service/billing';
 import { toast } from 'react-toastify';
@@ -111,6 +112,29 @@ const InvoicesPage = () => {
     }
   };
 
+  const handlePrintReceipt = async (receiptId) => {
+    try {
+      const resp = await fetch(`/api/billing/payment-receipt?id=${receiptId}`, {
+        headers: {
+          'Authorization': `Bearer ${auth?.token}`,
+        }
+      });
+      
+      if (!resp.ok) {
+        const txt = await resp.text();
+        toast.error(txt || 'Failed to download receipt');
+      } else {
+        const blob = await resp.blob();
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+      }
+    } catch (error) {
+      toast.error('Error downloading receipt');
+      console.error('Error:', error);
+    }
+  };
+
   const onMenuClick = (menu, data) => {
     if (menu.action === 'invoice_items') {
       setSelectedRowData(data);
@@ -141,6 +165,30 @@ const InvoicesPage = () => {
       <span className={`px-2 py-1 rounded-full text-xs font-medium ${isPaid ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
         {isPaid ? 'Paid' : 'Pending'}
       </span>
+    );
+  };
+
+  const receiptFunc = ({ data }) => {
+    // Check if invoice has payment receipts
+    if (!data.payment_receipts || data.payment_receipts.length === 0) {
+      return <span className="text-gray-400 text-sm">No receipts</span>;
+    }
+
+    return (
+      <div className="flex flex-col gap-1">
+        {data.payment_receipts.map((receipt) => (
+          <div key={receipt.id} className="flex items-center gap-2">
+            <span className="text-sm font-medium">#{receipt.id}</span>
+            <button
+              onClick={() => handlePrintReceipt(receipt.id)}
+              className="text-blue-600 hover:text-blue-800 transition-colors"
+              title="Print Receipt"
+            >
+              <FaPrint className="text-base" />
+            </button>
+          </div>
+        ))}
+      </div>
     );
   };
 
@@ -194,6 +242,7 @@ const InvoicesPage = () => {
         <Column dataField='patient_name' caption='Patient' />
         <Column dataField='invoice_amount' caption='Amount' />
         <Column dataField='status' caption='Status' cellRender={statusFunc} />
+        <Column caption='Receipt Number' cellRender={receiptFunc} width={150} />
         <Column dataField='' caption='' cellRender={actionsFunc} />
       </DataGrid>
       {open && <ViewInvoiceItems {...{ setOpen, open, selectedRowData }} />}
