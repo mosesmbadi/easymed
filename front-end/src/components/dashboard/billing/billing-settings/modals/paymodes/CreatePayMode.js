@@ -27,6 +27,8 @@ const CreatePaymodeModal = () => {
     {value: "cash", label: "Cash"},
     {value: "insurance", label: "Insurance"},
     {value: "mpesa", label: "Mpesa"},
+    {value: "cheque", label: "Cheque"},
+    {value: "direct_to_bank", label: "Direct to Bank"},
 
   ]
 
@@ -53,13 +55,19 @@ const CreatePaymodeModal = () => {
   const validationSchema = Yup.object().shape({
     payment_mode: Yup.string().required("Field is Required!"),
     payment_category: Yup.object().required("Field is Required!"),
+    insurance: Yup.mixed().when("payment_category", {
+      is: (val) => val && val.value === "insurance",
+      then: (schema) => schema.required("Insurance is required for Insurance category"),
+      otherwise: (schema) => schema.notRequired(),
+    }),
   });
 
   const paymentModesCreation = async (formValue, helpers) => {
+    const isInsurance = formValue?.payment_category?.value === "insurance";
     const formData = {
         ...formValue,
-        insurance: formValue.insurance.value,
-        payment_category: formValue.payment_category.value
+        insurance: isInsurance ? formValue?.insurance?.value : null,
+        payment_category: formValue?.payment_category?.value
     };
 
     console.log(formValue)
@@ -103,12 +111,13 @@ const CreatePaymodeModal = () => {
             <section className="flex items-center justify-center gap-8 overflow-hidden">
               <div className="w-full space-y-4 px-4">
                 <h1 className="text-xl text-center">Create New Payment Modes </h1>
-                <Formik
-                    initialValues={initialValues}
-                    validationSchema={validationSchema}
-                    onSubmit={paymentModesCreation}
-                    >
-                    <Form className="">
+        <Formik
+          initialValues={initialValues}
+          validationSchema={validationSchema}
+          onSubmit={paymentModesCreation}
+          >
+          {({ values }) => (
+          <Form className="">
                         <Grid container spacing={2}>
                         <Grid className='my-2 h-full' item md={6} xs={12}>
                             <SeachableSelect
@@ -122,18 +131,20 @@ const CreatePaymodeModal = () => {
                                 className="text-warning text-xs"
                             />
                         </Grid>
-                        <Grid className='my-2 h-full' item md={6} xs={12}>
-                            <SeachableSelect
-                                label="Select Insurance"
-                                name="insurance"
-                                options={insurance.map((insurance) => ({ value: insurance.id, label: `${insurance?.name}` }))}
-                            />
-                            <ErrorMessage
-                                name="insurance"
-                                component="div"
-                                className="text-warning text-xs"
-                            />
-                        </Grid>
+            {values?.payment_category?.value === 'insurance' && (
+            <Grid className='my-2 h-full' item md={6} xs={12}>
+              <SeachableSelect
+                label="Select Insurance"
+                name="insurance"
+                options={insurance.map((insurance) => ({ value: insurance.id, label: `${insurance?.name}` }))}
+              />
+              <ErrorMessage
+                name="insurance"
+                component="div"
+                className="text-warning text-xs"
+              />
+            </Grid>
+            )}
                         <Grid className='my-2' item md={12} xs={12}>
                         <label htmlFor="item_code"> Payment Mode Name</label>
                             <Field
@@ -180,6 +191,7 @@ const CreatePaymodeModal = () => {
                         </Grid>
                         </Grid>
                     </Form>
+          )}
                 </Formik>
               </div>
             </section>

@@ -10,6 +10,7 @@ from .views import (
     InvoiceViewset,
     InvoiceItemViewset,
     PaymentModeViewset,
+    PaymentReceiptViewset,
     InvoicesByPatientId,
     InvoiceItemsByInvoiceId,
     InvoiceItemsByInsuranceCompany,
@@ -22,6 +23,7 @@ router = DefaultRouter()
 router.register(r'invoices', InvoiceViewset)
 router.register(r'invoice-items', InvoiceItemViewset)
 router.register(r'payment-modes', PaymentModeViewset)
+router.register(r'payment-receipts', PaymentReceiptViewset)
 router.register(r'invoice-payments', InvoicePaymentViewset)
 
 urlpatterns = [

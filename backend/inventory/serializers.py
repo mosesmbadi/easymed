@@ -20,7 +20,9 @@ from .models import (
     Quotation,
     QuotationItem,
     QuotationCustomer,
-    InventoryArchive
+    InventoryArchive,
+    SupplierPaymentReceipt,
+    SupplierPaymentAllocation
 )
 
 from . validators import (
@@ -50,29 +52,38 @@ class DepartmentSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class SupplierSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(source='official_name', read_only=True)  # Add alias for compatibility
+    
     class Meta:
         model = Supplier
-        fields = ['id', 'official_name', 'common_name']
-        read_only_fields = ['id']
+        fields = ['id', 'official_name', 'common_name', 'name']
+        read_only_fields = ['id', 'name']
 
 
 class SupplierInvoiceSerializer(serializers.ModelSerializer):
     total_amount = serializers.DecimalField(source='amount', read_only=True, max_digits=10, decimal_places=2)
+    invoice_number = serializers.CharField(source='invoice_no', read_only=True)  # Add alias for frontend
     supplier_name = serializers.CharField(source='supplier.official_name', read_only=True)
     purchase_order_number = serializers.CharField(source='purchase_order.PO_number', read_only=True)
     requisition_number = serializers.SerializerMethodField()
+    paid_amount = serializers.SerializerMethodField()
     
     class Meta:
         model = SupplierInvoice
-        fields = ['id', 'invoice_no', 'supplier', 'supplier_name', 'purchase_order', 
+        fields = ['id', 'invoice_no', 'invoice_number', 'supplier', 'supplier_name', 'purchase_order', 
                  'purchase_order_number', 'requisition_number',
-                 'status', 'total_amount', 'date_created']
-        read_only_fields = ['total_amount', 'date_created', 'requisition_number']
+                 'status', 'total_amount', 'amount', 'paid_amount', 'date_created']
+        read_only_fields = ['total_amount', 'paid_amount', 'date_created', 'requisition_number', 'invoice_number']
 
     def get_requisition_number(self, obj):
         if obj.purchase_order and obj.purchase_order.requisition:
             return obj.purchase_order.requisition.requisition_number
         return None
+    
+    def get_paid_amount(self, obj):
+        """Calculate total paid amount from payment allocations"""
+        total_paid = obj.payment_allocations.aggregate(total=Sum('amount_applied'))['total']
+        return float(total_paid or 0)
 
 
 class ItemSerializer(serializers.ModelSerializer):
@@ -416,3 +427,31 @@ class QuotationItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = QuotationItem
         fields = '__all__'
+
+
+class SupplierPaymentAllocationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SupplierPaymentAllocation
+        fields = ['supplier_invoice', 'amount_applied', 'applied_at']
+
+
+class SupplierPaymentReceiptSerializer(serializers.ModelSerializer):
+    allocations = SupplierPaymentAllocationSerializer(many=True, read_only=True)
+    supplier_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = SupplierPaymentReceipt
+        fields = ['id', 'supplier', 'supplier_name', 'payment_mode', 'total_amount', 
+                  'reference_number', 'payment_date', 'created_at', 'allocations']
+
+    def get_supplier_name(self, obj):
+        return obj.supplier.name if obj.supplier else None
+
+
+class AllocateSupplierPaymentRequestSerializer(serializers.Serializer):
+    supplier_id = serializers.IntegerField(required=True)
+    invoice_ids = serializers.ListField(child=serializers.IntegerField(), required=True)
+    payment_mode = serializers.IntegerField(required=True)
+    amount = serializers.DecimalField(max_digits=12, decimal_places=2, required=True)
+    reference_number = serializers.CharField(max_length=100, required=True)
+    payment_date = serializers.DateField(required=False, allow_null=True)

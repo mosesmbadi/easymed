@@ -56,7 +56,7 @@ const POListGrid = () => {
   const handlePrint = async (data) => {
     try{
         const response = await downloadPDF(data.id, "_purchaseorder_pdf", auth)
-        window.open(response.link, '_blank');
+        window.open(response.url, '_blank');
         toast.success("got pdf successfully")
 
     }catch(error){

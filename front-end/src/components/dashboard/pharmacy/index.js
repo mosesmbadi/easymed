@@ -105,7 +105,7 @@ const PharmacyDataGrid = () => {
 
     try{
         const response = await downloadPDF(data.prescription, "_prescription_pdf", auth)
-        window.open(response.link, '_blank');
+        window.open(response.url, '_blank');
         toast.success("got pdf successfully")
 
     }catch(error){
