@@ -10,6 +10,12 @@ class Company(models.Model):
     phone2 = models.CharField(max_length=250, null=True, blank=True)
     email1 = models.EmailField(null=True, blank=True)
     email2 = models.EmailField(null=True, blank=True)
+    patient_id_prefix = models.CharField(
+        max_length=20, 
+        null=True, 
+        blank=True,
+        help_text="Prefix for patient IDs (e.g., ESMED-)"
+    )
     logo = models.FileField(
         upload_to="Company/company-logo",
         max_length=254,

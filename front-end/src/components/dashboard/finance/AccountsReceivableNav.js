@@ -7,9 +7,10 @@ const AccountsReceivableNav = () => {
   const { pathname } = useRouter();
   const base = '/dashboard/finance/accounts-receivable';
   const links = [
-    { href: `${base}`, label: 'Bill Invoice', exact: true },
+    { href: `${base}`, label: 'Billing', exact: true },
     { href: `${base}/payments`, label: 'Receive Payments' },
-  { href: `${base}/invoices`, label: 'Invoices' },
+    { href: `${base}/invoices`, label: 'Invoices' },
+    { href: `${base}/debtors`, label: 'Debtors' },
     { href: `${base}/report`, label: 'Reports' },
     { href: `${base}/settings`, label: 'Settings' },
   ];
