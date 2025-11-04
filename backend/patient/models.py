@@ -8,7 +8,7 @@ from django.db import models
 from customuser.models import CustomUser
 from inventory.models import Item
 from billing.models import Invoice
-from company.models import InsuranceCompany
+from company.models import InsuranceCompany, Company
 from laboratory.models import ProcessTestRequest
 
 
@@ -52,10 +52,35 @@ class Patient(models.Model):
         super(Patient, self).save(*args, **kwargs)
 
     def generate_unique_id(self):
-        while True:
-            unique_id = '{:08d}'.format(random.randint(0, 99999999))
-            if not Patient.objects.filter(unique_id=unique_id).exists():
-                return unique_id
+        # Get company prefix
+        try:
+            company = Company.objects.first()
+            prefix = company.patient_id_prefix if company and company.patient_id_prefix else "ESMED-"
+        except:
+            prefix = "ESMED-"
+        
+        # Get the highest existing patient number
+        if prefix:
+            # Look for patients with this prefix
+            existing_patients = Patient.objects.filter(unique_id__startswith=prefix).order_by('-id')
+            if existing_patients.exists():
+                # Extract the number part from the last patient ID
+                last_id = existing_patients.first().unique_id
+                try:
+                    number_part = int(last_id.replace(prefix, ''))
+                    next_number = number_part + 1
+                except (ValueError, AttributeError):
+                    next_number = 1
+            else:
+                next_number = 1
+            
+            return f"{prefix}{next_number}"
+        else:
+            # Fallback to old method if no prefix
+            while True:
+                unique_id = '{:08d}'.format(random.randint(0, 99999999))
+                if not Patient.objects.filter(unique_id=unique_id).exists():
+                    return unique_id
 
 
 class NextOfKin(models.Model):
