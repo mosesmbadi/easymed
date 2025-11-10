@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Container, Box, Typography, Card, CardContent, Grid, CircularProgress } from '@mui/material';
+import { Container, Box, Typography, Card, CardContent, Grid, CircularProgress, TextField, Button, ToggleButtonGroup, ToggleButton } from '@mui/material';
 import { toast } from 'react-toastify';
 import dynamic from 'next/dynamic';
 import { Column, Pager, Paging, Scrolling, Summary, TotalItem, Grouping, GroupPanel } from 'devextreme-react/data-grid';
@@ -16,12 +16,22 @@ const DataGrid = dynamic(() => import('devextreme-react/data-grid'), {
 
 const allowedPageSizes = [10, 20, 50, 'all'];
 
+const statusOptions = [
+  { value: 'all', label: 'All' },
+  { value: 'pending', label: 'Pending' },
+  { value: 'partially_paid', label: 'Partially Paid' },
+];
+
 const ARDebtorsPage = () => {
   const auth = useAuth();
   const [patients, setPatients] = useState([]);
   const [insurance, setInsurance] = useState([]);
   const [unpaidInvoices, setUnpaidInvoices] = useState([]);
+  const [allInvoices, setAllInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [summary, setSummary] = useState({
     totalDebtors: 0,
     totalInvoices: 0,
@@ -58,10 +68,13 @@ const ARDebtorsPage = () => {
         });
         if (invoicesRes.ok) {
           const invoicesData = await invoicesRes.json();
-          const allInvoices = invoicesData.results || invoicesData || [];
+          const allInvoicesData = invoicesData.results || invoicesData || [];
+          
+          // Store all invoices for filtering
+          setAllInvoices(allInvoicesData);
           
           // Filter for unpaid/partially paid invoices
-          const unpaid = allInvoices.filter(inv => {
+          const unpaid = allInvoicesData.filter(inv => {
             const totalPaid = parseFloat(inv.total_paid || 0);
             const invoiceAmount = parseFloat(inv.invoice_amount || 0);
             return totalPaid < invoiceAmount;
@@ -138,6 +151,42 @@ const ARDebtorsPage = () => {
     }
     return <span>-</span>;
   };
+
+  const handleClearFilters = () => {
+    setStatusFilter('all');
+    setDateFrom('');
+    setDateTo('');
+  };
+
+  // Apply filters to invoices
+  const filteredInvoices = unpaidInvoices.filter(inv => {
+    // Status filter
+    if (statusFilter !== 'all') {
+      const totalPaid = parseFloat(inv.total_paid || 0);
+      const invoiceAmount = parseFloat(inv.invoice_amount || 0);
+      
+      if (statusFilter === 'pending' && totalPaid > 0) return false;
+      if (statusFilter === 'partially_paid' && (totalPaid === 0 || totalPaid >= invoiceAmount)) return false;
+    }
+
+    // Date range filter
+    if (dateFrom || dateTo) {
+      const invoiceDate = new Date(inv.date_created);
+      
+      if (dateFrom) {
+        const startDate = new Date(dateFrom);
+        if (invoiceDate < startDate) return false;
+      }
+      
+      if (dateTo) {
+        const endDate = new Date(dateTo);
+        endDate.setHours(23, 59, 59, 999);
+        if (invoiceDate > endDate) return false;
+      }
+    }
+
+    return true;
+  });
 
   if (loading) {
     return (
@@ -248,6 +297,62 @@ const ARDebtorsPage = () => {
           </Grid>
         </Grid>
 
+        {/* Filters Section */}
+        <Box className='mb-4 p-4 bg-gray-50 rounded'>
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs={12} md={4}>
+              <Typography variant='subtitle2' className='mb-1'>Status</Typography>
+              <ToggleButtonGroup
+                value={statusFilter}
+                exclusive
+                onChange={(e, newValue) => newValue && setStatusFilter(newValue)}
+                size="small"
+                fullWidth
+              >
+                <ToggleButton value="all">All</ToggleButton>
+                <ToggleButton value="pending">Pending</ToggleButton>
+                <ToggleButton value="partially_paid">Partially Paid</ToggleButton>
+              </ToggleButtonGroup>
+            </Grid>
+
+            <Grid item xs={12} md={3}>
+              <Typography variant='subtitle2' className='mb-1'>From Date</Typography>
+              <TextField
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                size="small"
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+
+            <Grid item xs={12} md={3}>
+              <Typography variant='subtitle2' className='mb-1'>To Date</Typography>
+              <TextField
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                size="small"
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+
+            <Grid item xs={12} md={2}>
+              <Button
+                variant="outlined"
+                onClick={handleClearFilters}
+                fullWidth
+                size="small"
+                className='mt-5'
+              >
+                Clear Filters
+              </Button>
+            </Grid>
+          </Grid>
+        </Box>
+
         {/* Invoices DataGrid */}
         <Box className='bg-white shadow rounded p-4'>
           <div className='flex justify-between items-center mb-4'>
@@ -257,18 +362,18 @@ const ARDebtorsPage = () => {
             </Typography>
           </div>
           
-          {unpaidInvoices.length === 0 ? (
+          {filteredInvoices.length === 0 ? (
             <div className='text-center py-12 bg-gray-50 rounded'>
               <Typography variant='h6' color='textSecondary'>
-                🎉 No unpaid invoices!
+                🎉 No invoices match the filters!
               </Typography>
               <Typography variant='body2' color='textSecondary' className='mt-2'>
-                All invoices are paid or no invoices exist yet.
+                Adjust your filters or clear them to see all unpaid invoices.
               </Typography>
             </div>
           ) : (
             <DataGrid
-              dataSource={unpaidInvoices}
+              dataSource={filteredInvoices}
               showBorders={true}
               rowAlternationEnabled={true}
               allowColumnReordering={true}

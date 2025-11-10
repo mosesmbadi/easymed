@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Container, ToggleButtonGroup, ToggleButton, Box } from '@mui/material';
+import { Container, ToggleButtonGroup, ToggleButton, Box, Grid, TextField, Button } from '@mui/material';
 import DashboardLayout from '@/components/layout/dashboard-layout';
 import ProtectedRoute from '@/assets/hoc/protected-route';
 import AuthGuard from '@/assets/hoc/auth-guard';
@@ -47,6 +47,8 @@ const InvoicesPage = () => {
   const { allInvoices } = useSelector(({ billing }) => billing);
   const { patients } = useSelector(({ patient }) => patient);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [open, setOpen] = useState(false);
   const [selectedRowData, setSelectedRowData] = useState({});
   const [processFilter, setProcessFilter] = useState({ search: '' });
@@ -83,9 +85,35 @@ const InvoicesPage = () => {
   }, [fetchInvoicesDebounced]);
 
   // Client-side fallback filtering: if statusFilter != 'all', narrow results locally
-  const filteredInvoices = statusFilter === 'all'
-    ? allInvoices
-    : allInvoices.filter(inv => inv.status === statusFilter);
+  const filteredInvoices = allInvoices.filter(inv => {
+    // Status filter
+    if (statusFilter !== 'all' && inv.status !== statusFilter) {
+      return false;
+    }
+    
+    // Date range filter
+    if (dateFrom || dateTo) {
+      const invoiceDate = new Date(inv.date_created);
+      if (dateFrom && invoiceDate < new Date(dateFrom)) {
+        return false;
+      }
+      if (dateTo) {
+        const endDate = new Date(dateTo);
+        endDate.setHours(23, 59, 59, 999); // Include the entire end date
+        if (invoiceDate > endDate) {
+          return false;
+        }
+      }
+    }
+    
+    return true;
+  });
+
+  const handleClearFilters = () => {
+    setStatusFilter('all');
+    setDateFrom('');
+    setDateTo('');
+  };
 
   const handlePrint = async (data) => {
     try {
@@ -195,17 +223,75 @@ const InvoicesPage = () => {
   return (
     <Container maxWidth='xl' className='my-8'>
       <AccountsReceivableNav />
-      <Box mb={2}>
-        <ToggleButtonGroup
-          size='small'
-            value={statusFilter}
-            exclusive
-            onChange={(_, v) => v && setStatusFilter(v)}
-        >
-          {statusOptions.map(opt => (
-            <ToggleButton key={opt.value} value={opt.value}>{opt.label}</ToggleButton>
-          ))}
-        </ToggleButtonGroup>
+      
+      {/* Filters Section */}
+      <Box className='bg-white shadow rounded p-4 mb-4'>
+        <Grid container spacing={2} alignItems="center">
+          {/* Status Filter */}
+          <Grid item xs={12} md={4}>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Status Filter
+            </label>
+            <ToggleButtonGroup
+              size='small'
+              value={statusFilter}
+              exclusive
+              onChange={(_, v) => v && setStatusFilter(v)}
+              fullWidth
+            >
+              {statusOptions.map(opt => (
+                <ToggleButton key={opt.value} value={opt.value}>{opt.label}</ToggleButton>
+              ))}
+            </ToggleButtonGroup>
+          </Grid>
+
+          {/* Date From */}
+          <Grid item xs={12} md={3}>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              From Date
+            </label>
+            <TextField
+              type="date"
+              size="small"
+              fullWidth
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              InputLabelProps={{
+                shrink: true,
+              }}
+            />
+          </Grid>
+
+          {/* Date To */}
+          <Grid item xs={12} md={3}>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              To Date
+            </label>
+            <TextField
+              type="date"
+              size="small"
+              fullWidth
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              InputLabelProps={{
+                shrink: true,
+              }}
+            />
+          </Grid>
+
+          {/* Clear Filters Button */}
+          <Grid item xs={12} md={2}>
+            <Button
+              variant="outlined"
+              size="small"
+              fullWidth
+              onClick={handleClearFilters}
+              style={{ marginTop: '20px' }}
+            >
+              Clear Filters
+            </Button>
+          </Grid>
+        </Grid>
       </Box>
 
       <SearchOnlyFilter
