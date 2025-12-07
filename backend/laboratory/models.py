@@ -450,9 +450,14 @@ class LabTestRequestPanel(models.Model):
                 self.clinical_action = action
                 self.requires_attention = attention
 
-        # Check if result_approved is being set to True and set approved_on
-        if self.result_approved and not self.approved_on:
+        # Set approved_on timestamp when result is entered or approved
+        if self.result and not self.approved_on:
+            # Set timestamp when result is first entered
             self.approved_on = datetime.now()
+        elif self.result_approved and not self.approved_on:
+            # Also set if result_approved is set but approved_on wasn't set
+            self.approved_on = datetime.now()
+            
         super().save(*args, **kwargs)
 
     def __str__(self):
