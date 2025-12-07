@@ -134,6 +134,121 @@ class ReferenceValue(models.Model):
         return f"{self.lab_test_panel.name} - {self.sex} - {self.age_min}-{self.age_max}: {self.ref_value_low} - {self.ref_value_high}"
 
 
+class LabTestInterpretation(models.Model):
+    '''
+    Store interpretation ranges for lab test panels.
+    This allows automatic interpretation of results based on numeric values.
+    Example: Albumin < 2.0 = "Low albumin (hypoalbuminemia) - may indicate liver disease, malnutrition, or kidney disease"
+    '''
+    RANGE_TYPE_CHOICES = (
+        ('critical_low', 'Critical Low'),
+        ('low', 'Low'),
+        ('normal', 'Normal'),
+        ('high', 'High'),
+        ('critical_high', 'Critical High'),
+    )
+
+    SEX_CHOICES = (
+        ('M', 'Male'),
+        ('F', 'Female'),
+        ('B', 'Both'),  # Applies to all genders
+    )
+
+    lab_test_panel = models.ForeignKey(
+        LabTestPanel, 
+        on_delete=models.CASCADE, 
+        related_name="interpretations"
+    )
+    range_type = models.CharField(max_length=20, choices=RANGE_TYPE_CHOICES)
+    sex = models.CharField(max_length=1, choices=SEX_CHOICES, default='B')
+    age_min = models.IntegerField(null=True, blank=True, help_text="Minimum age in years (leave blank for all ages)")
+    age_max = models.IntegerField(null=True, blank=True, help_text="Maximum age in years (leave blank for all ages)")
+    
+    # Define the range boundaries
+    value_min = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        null=True, 
+        blank=True,
+        help_text="Minimum value for this range (leave blank for unbounded)"
+    )
+    value_max = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        null=True, 
+        blank=True,
+        help_text="Maximum value for this range (leave blank for unbounded)"
+    )
+    
+    # The interpretation text
+    interpretation = models.TextField(
+        help_text="Clinical interpretation for values in this range"
+    )
+    
+    # Optional recommendations or actions
+    clinical_action = models.TextField(
+        null=True, 
+        blank=True,
+        help_text="Recommended clinical actions or follow-up"
+    )
+    
+    # Priority flag for alerts
+    requires_immediate_attention = models.BooleanField(
+        default=False,
+        help_text="Mark as requiring immediate clinical attention"
+    )
+    
+    created_on = models.DateTimeField(auto_now_add=True)
+    updated_on = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['lab_test_panel', 'sex', 'age_min', 'value_min']
+        verbose_name = "Lab Test Interpretation"
+        verbose_name_plural = "Lab Test Interpretations"
+
+    def __str__(self):
+        range_str = f"{self.value_min or '-∞'} to {self.value_max or '+∞'}"
+        sex_display = self.get_sex_display()
+        age_str = ""
+        if self.age_min or self.age_max:
+            age_str = f" (Age: {self.age_min or '0'}-{self.age_max or '∞'})"
+        return f"{self.lab_test_panel.name} - {sex_display}{age_str}: {self.range_type} [{range_str}]"
+
+    def matches_criteria(self, value, patient_sex=None, patient_age=None):
+        """
+        Check if a given value and patient demographics match this interpretation's criteria.
+        
+        Args:
+            value: The test result value (numeric)
+            patient_sex: 'M', 'F', or None
+            patient_age: Patient age in years or None
+            
+        Returns:
+            Boolean indicating if this interpretation applies
+        """
+        # Check sex criteria
+        if self.sex != 'B' and patient_sex and self.sex != patient_sex:
+            return False
+        
+        # Check age criteria
+        if self.age_min is not None and patient_age is not None and patient_age < self.age_min:
+            return False
+        if self.age_max is not None and patient_age is not None and patient_age > self.age_max:
+            return False
+        
+        # Check value range
+        try:
+            value_decimal = float(value)
+        except (ValueError, TypeError):
+            return False
+        
+        if self.value_min is not None and value_decimal < float(self.value_min):
+            return False
+        if self.value_max is not None and value_decimal > float(self.value_max):
+            return False
+        
+        return True
+
 
 class ProcessTestRequest(models.Model):
     reference = models.CharField(max_length=40) # track_number of AttendanceProcess is stored here
@@ -167,22 +282,22 @@ class PatientSample(models.Model):
         current_year = timezone.now().year
 
         with transaction.atomic():
-            last_sample = PatientSample.objects.filter(
-                patient_sample_code__startswith=prefix
-            ).order_by('-id').select_for_update().first()
+            # Lock the table to prevent race conditions during code generation.
+            # Find the last sample created in the current year.
+            last_sample = PatientSample.objects.select_for_update().filter(
+                patient_sample_code__endswith=f"-{current_year}"
+            ).order_by('-patient_sample_code').first()
 
             if last_sample:
                 try:
-                    last_sample_year_str = last_sample.patient_sample_code.split('-')[1] 
-                    if last_sample_year_str == str(current_year): 
-                        last_number = int(last_sample.patient_sample_code[4:9])
-                        next_number = last_number + 1
-                    else:
-                        next_number = 1  
+                    # Extract the numeric part of the code, e.g., '00001' from 'DDLR00001-2025'
+                    last_number_str = last_sample.patient_sample_code.split('-')[0][len(prefix):]
+                    last_number = int(last_number_str)
+                    next_number = last_number + 1
                 except (ValueError, IndexError): 
-                    next_number = 1
+                    next_number = 1 # Fallback in case of unexpected format
             else:
-                next_number = 1
+                next_number = 1 # First sample of the year
 
             new_number_str = f"{next_number:05d}"
             sp_id = f"{prefix}{new_number_str}-{current_year}"  
@@ -233,6 +348,11 @@ class LabTestRequestPanel(models.Model):
     approved_on = models.DateTimeField(null=True, blank=True) 
     is_billed = models.BooleanField(default=False)
     
+    # Auto-generated interpretation based on result value
+    auto_interpretation = models.TextField(null=True, blank=True, help_text="Auto-generated interpretation based on result ranges")
+    clinical_action = models.TextField(null=True, blank=True, help_text="Recommended clinical action from interpretation")
+    requires_attention = models.BooleanField(default=False, help_text="Flagged for immediate attention")
+    
     def generate_test_code(self):
         while True:
             random_number = ''.join(choices('0123456789', k=4))
@@ -246,6 +366,38 @@ class LabTestRequestPanel(models.Model):
     def get_patient_info(self):
         patient = self.patient_sample.process.attendanceprocess.patient
         return f"{patient.first_name} {patient.second_name}, Age: {patient.age}, Sex: {patient.gender}"
+    
+    def generate_interpretation(self):
+        """
+        Auto-generate interpretation based on the result value and patient demographics.
+        Returns a tuple of (interpretation_text, clinical_action, requires_attention)
+        """
+        if not self.result or not self.test_panel:
+            return None, None, False
+        
+        try:
+            # Get patient demographics
+            patient = self.patient_sample.process.attendanceprocess.patient
+            patient_sex = patient.gender  # 'M', 'F', or other
+            patient_age = patient.age  # Age in years
+            
+            # Query matching interpretations
+            interpretations = self.test_panel.interpretations.all()
+            
+            # Find the matching interpretation
+            for interp in interpretations:
+                if interp.matches_criteria(self.result, patient_sex, patient_age):
+                    return (
+                        interp.interpretation,
+                        interp.clinical_action,
+                        interp.requires_immediate_attention
+                    )
+            
+            return None, None, False
+        except Exception as e:
+            # Log the error but don't break the save
+            print(f"Error generating interpretation: {e}")
+            return None, None, False
         
     def save(self, *args, **kwargs):
         ''''
@@ -254,6 +406,7 @@ class LabTestRequestPanel(models.Model):
         If no matching PatientSample is found, create a new one.
         Assign this PatientSample to the patient_sample field of the LabTestRequestPanel.
         Set Category: Determine the category (qualitative or quantitative) based on the LabTestPanel's boolean fields.
+        Auto-generate interpretation: If result is present, automatically generate interpretation based on defined ranges.
         Save the Model: Call the superclass's save method to ensure the object is saved to the database.
         '''
         if not self.test_code:
@@ -288,6 +441,14 @@ class LabTestRequestPanel(models.Model):
             self.category = 'quantitative'
         else:
             self.category = 'none'
+
+        # Auto-generate interpretation if result is present
+        if self.result and self.test_panel and self.patient_sample:
+            interpretation, action, attention = self.generate_interpretation()
+            if interpretation:
+                self.auto_interpretation = interpretation
+                self.clinical_action = action
+                self.requires_attention = attention
 
         # Check if result_approved is being set to True and set approved_on
         if self.result_approved and not self.approved_on:
@@ -329,4 +490,3 @@ class PublicLabTestRequest(models.Model):
             patient_age:int = (datetime.now().year - self.patient.date_of_birth.year)
             return patient_age
         return None
-

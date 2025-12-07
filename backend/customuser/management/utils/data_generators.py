@@ -24,6 +24,28 @@ MEDICAL_ITEM_NAMES = [
     "Scalpel", "Surgical Mask", "Bandage", "Wheelchair", "Crutches"
 ]
 
+# Map medical items to appropriate categories
+ITEM_CATEGORY_MAP = {
+    "Paracetamol Tablet": "Drug",
+    "Surgical Gloves": "SurgicalEquipment",
+    "Blood Pressure Monitor": "SurgicalEquipment",
+    "Stethoscope": "SurgicalEquipment",
+    "Insulin Pen": "Drug",
+    "Antiseptic Solution": "Drug",
+    "Gauze Roll": "SurgicalEquipment",
+    "Thermometer": "SurgicalEquipment",
+    "Amoxicillin Capsule": "Drug",
+    "Saline Drip": "Drug",
+    "Face Mask": "SurgicalEquipment",
+    "ECG Machine": "SurgicalEquipment",
+    "Defibrillator": "SurgicalEquipment",
+    "Scalpel": "SurgicalEquipment",
+    "Surgical Mask": "SurgicalEquipment",
+    "Bandage": "SurgicalEquipment",
+    "Wheelchair": "Furniture",
+    "Crutches": "Furniture",
+}
+
 MEDICAL_DESCRIPTIONS = [
     "Used for pain relief and fever reduction.",
     "Sterile gloves for surgical procedures.",
@@ -144,12 +166,14 @@ def create_dummy_insurance_companies(count=3):
 
 def create_dummy_items(count=50):
     items = []
-    categories = [c[0] for c in Item.CATEGORY_CHOICES]
+    # Exclude appointment categories from random assignment - these should be created separately
+    categories = [c[0] for c in Item.CATEGORY_CHOICES if c[0] not in ['General Appointment', 'Specialized Appointment']]
     units = [u[0] for u in Item.UNIT_CHOICES]
     for _ in range(count):
         name = random.choice(MEDICAL_ITEM_NAMES)
         desc = random.choice(MEDICAL_DESCRIPTIONS)
-        category = random.choice(categories)
+        # Use mapped category if available, otherwise pick random from valid categories
+        category = ITEM_CATEGORY_MAP.get(name, random.choice(categories))
         units_of_measure = random.choice(units)
         item = Item.objects.create(
             item_code=fake.unique.bothify(text='???-#####')[:255],
@@ -164,6 +188,69 @@ def create_dummy_items(count=50):
         )
         items.append(item)
     return items
+
+
+def create_appointment_items():
+    """
+    Create appointment-specific items with proper categories.
+    General Appointment has one item, Specialized Appointments have specific specialty items.
+    """
+    appointment_items = []
+    
+    # General Appointment - single item
+    general_appointment = Item.objects.create(
+        item_code='GEN-00001',
+        name='General Appointment',
+        desc='Standard general consultation appointment',
+        category='General Appointment',
+        units_of_measure='unit',
+        vat_rate=0.0,  # Appointments typically don't have VAT
+        packed='1',
+        subpacked='1',
+        slow_moving_period=30,
+    )
+    appointment_items.append(general_appointment)
+    
+    # Specialized Appointments - specific specialties
+    specialized_appointments = [
+        {
+            'code': 'SPEC-00001',
+            'name': 'Dentist Appointment',
+            'desc': 'Specialized dental consultation and treatment'
+        },
+        {
+            'code': 'SPEC-00002',
+            'name': 'Optician Appointment',
+            'desc': 'Eye examination and optical consultation'
+        },
+        {
+            'code': 'SPEC-00003',
+            'name': 'Gynecologist Appointment',
+            'desc': 'Gynecological consultation and examination'
+        },
+        {
+            'code': 'SPEC-00004',
+            'name': 'Pediatrician Appointment',
+            'desc': 'Pediatric consultation for children'
+        },
+    ]
+    
+    for appt in specialized_appointments:
+        item = Item.objects.create(
+            item_code=appt['code'],
+            name=appt['name'],
+            desc=appt['desc'],
+            category='Specialized Appointment',
+            units_of_measure='unit',
+            vat_rate=0.0,  # Appointments typically don't have VAT
+            packed='1',
+            subpacked='1',
+            slow_moving_period=30,
+        )
+        appointment_items.append(item)
+    
+    return appointment_items
+
 
 
 def create_dummy_permissions(count=20):
