@@ -276,6 +276,9 @@ def download_labtestresult_pdf(request, processtestrequest_id):
     # Construct full logo URL for template
     company_logo_url = request.build_absolute_uri(company.logo.url) if company.logo else None
 
+    first_request = labtestrequests.first() if labtestrequests.exists() else None
+    first_panel = panels.first() if panels.exists() else None
+    
     context = {
         'processtestrequest': processtestrequest,
         'labtestrequests': labtestrequests,
@@ -285,8 +288,11 @@ def download_labtestresult_pdf(request, processtestrequest_id):
         'company': company,
         'company_logo_url': company_logo_url,
         'attendance_process': attendance_process,
-        'approved_on': panels.first().approved_on if panels.exists() else None,
-        'first_labtestrequest': labtestrequests.first() if labtestrequests.exists() else None,
+        'approved_on': first_panel.approved_on if first_panel else None,
+        'first_labtestrequest': first_request,
+        'requested_date': first_request.created_on if first_request else None,
+        'requested_time': first_request.requested_on if first_request else None,
+        'result_entered_datetime': first_panel.approved_on if first_panel else None,
     }
 
     # Only process panels that have results (already filtered in the query)
@@ -297,7 +303,10 @@ def download_labtestresult_pdf(request, processtestrequest_id):
             'flag': 'N/A',
             'ref_value_low': 'N/A',
             'ref_value_high': 'N/A',
-            'unit': panel.test_panel.unit
+            'unit': panel.test_panel.unit,
+            'interpretation': panel.auto_interpretation,
+            'clinical_action': panel.clinical_action,
+            'requires_attention': panel.requires_attention,
         }
 
         if panel.test_panel.is_qualitative:
