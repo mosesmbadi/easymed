@@ -10,6 +10,7 @@ from django.core.validators import FileExtensionValidator
 from customuser.models import CustomUser
 
 
+# TODO: Redundant. Should be removed.
 class TestKit(models.Model):
     '''
     This model stores infrmation about a Test kit
@@ -25,17 +26,75 @@ class TestKit(models.Model):
 
 class TestKitCounter(models.Model):
     '''
-    The intention is to keep track of test kits, their respective number of 
-    tests then update this model with a counter of how many tests are remaining
-    signaled by LabTestRequest on billed. Deduct from TestKit, nearest expiry starting.
-    Will need to be updated manually everytime a kit is bought, or update with IncomingItem
-    '''
-    lab_test_kit = models.ForeignKey(TestKit, on_delete=models.CASCADE)
-    counter = models.IntegerField(default=0) # number os tests remaining
-
-    def __str__(self):
-        return f"{self.lab_test_kit.item.name} - {self.counter}"
+    Tracks available tests for lab reagents.
+    Updated when:
+    - Reagent kits are received (increase available_tests)
+    - Lab tests are performed and billed (decrease available_tests)
     
+    available_tests = total tests that can be run with current stock
+    Calculated as: (number of kits in stock) × (subpacked = tests per kit)
+    '''
+    reagent_item = models.ForeignKey('inventory.Item', on_delete=models.CASCADE, 
+                                      limit_choices_to={'category': 'LabReagent'},
+                                      related_name='test_counter',
+                                      null=True, blank=True)  # Temporary for migration
+    lab_test_kit = models.ForeignKey(TestKit, on_delete=models.CASCADE, null=True, blank=True)  # Keep for migration
+    available_tests = models.IntegerField(default=0, help_text="Total number of tests available across all kits in stock")
+    counter = models.IntegerField(default=0, null=True, blank=True)  # Old field, keep for migration
+    minimum_threshold = models.IntegerField(default=10, help_text="Alert when available tests fall below this number")
+    last_updated = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Reagent Test Counter"
+        verbose_name_plural = "Reagent Test Counters"
+    
+    def __str__(self):
+        if self.reagent_item:
+            return f"{self.reagent_item.name} - {self.available_tests} tests available"
+        elif self.lab_test_kit:
+            return f"{self.lab_test_kit.item.name} - {self.counter} tests (legacy)"
+        return "Test Counter"
+    
+    def is_low_stock(self):
+        """Check if reagent tests are below minimum threshold"""
+        return self.available_tests <= self.minimum_threshold
+    
+    def is_out_of_stock(self):
+        """Check if reagent tests are depleted"""
+        return self.available_tests <= 0
+    
+
+class ReagentConsumptionLog(models.Model):
+    """
+    Tracks every reagent consumption event for audit trail and reporting.
+    Created automatically when lab tests are billed.
+    """
+    reagent_item = models.ForeignKey('inventory.Item', on_delete=models.CASCADE, 
+                                      related_name='consumption_logs')
+    test_panel = models.ForeignKey('LabTestPanel', on_delete=models.CASCADE,
+                                    related_name='reagent_consumptions')
+    lab_test_request_panel = models.ForeignKey('LabTestRequestPanel', on_delete=models.CASCADE,
+                                                 related_name='reagent_consumptions')
+    tests_consumed = models.IntegerField(help_text="Number of tests consumed from reagent")
+    available_tests_before = models.IntegerField(help_text="Available tests before consumption")
+    available_tests_after = models.IntegerField(help_text="Available tests after consumption")
+    consumed_at = models.DateTimeField(auto_now_add=True)
+    patient_name = models.CharField(max_length=255, blank=True)
+    performed_by = models.ForeignKey('customuser.CustomUser', on_delete=models.SET_NULL, 
+                                      null=True, blank=True)
+    
+    class Meta:
+        verbose_name = "Reagent Consumption Log"
+        verbose_name_plural = "Reagent Consumption Logs"
+        ordering = ['-consumed_at']
+        indexes = [
+            models.Index(fields=['reagent_item', '-consumed_at']),
+            models.Index(fields=['test_panel', '-consumed_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.reagent_item.name} - {self.tests_consumed} tests - {self.consumed_at.strftime('%Y-%m-%d %H:%M')}"
+
 
 class LabEquipment(models.Model):
     COM_MODE_CHOICE = (
@@ -80,6 +139,24 @@ class Specimen(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class TestPanelReagent(models.Model):
+    """
+    Links test panels to the reagents they consume.
+    Example: Albumin test uses Reagent A and Reagent C
+    """
+    test_panel = models.ForeignKey('LabTestPanel', on_delete=models.CASCADE, related_name='reagent_links')
+    reagent_item = models.ForeignKey('inventory.Item', on_delete=models.CASCADE, limit_choices_to={'category': 'LabReagent'})
+    tests_consumed_per_run = models.IntegerField(default=1, help_text="Number of tests consumed from this reagent per lab test run")
+    
+    class Meta:
+        unique_together = ('test_panel', 'reagent_item')
+        verbose_name = "Test Panel Reagent"
+        verbose_name_plural = "Test Panel Reagents"
+    
+    def __str__(self):
+        return f"{self.test_panel.name} uses {self.reagent_item.name}"
 
 
 class LabTestPanel(models.Model):

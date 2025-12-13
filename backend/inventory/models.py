@@ -61,6 +61,7 @@ class Item(AbstractBaseModel):
     '''
     UNIT_CHOICES = [
         ('unit', 'Unit'),
+        ('kits', 'Kits'),
         ('mg', 'Milligram'),
         ('g', 'Gram'),
         ('kg', 'Kilogram'),

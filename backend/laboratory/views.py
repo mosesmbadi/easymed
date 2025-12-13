@@ -30,7 +30,8 @@ from .models import (
     PatientSample,
     Specimen,
     TestKit,
-    TestKitCounter
+    TestKitCounter,
+    ReagentConsumptionLog
 )
 
 from .serializers import (
@@ -45,7 +46,9 @@ from .serializers import (
     PatientSampleSerializer,
     SpecimenSerializer,
     TestKitCounterSerializer,
-    TestKitSerializer
+    TestKitSerializer,
+    ReagentConsumptionLogSerializer,
+    LowStockReagentSerializer
 )
 
 from authperms.permissions import (
@@ -347,3 +350,85 @@ def download_labtestresult_pdf(request, processtestrequest_id):
     response['Content-Disposition'] = f'attachment; filename="labtest_report_{processtestrequest_id}.pdf"'
 
     return response
+
+
+class ReagentConsumptionLogViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    ViewSet for reagent consumption logs.
+    Provides list and detail views for tracking reagent usage.
+    """
+    queryset = ReagentConsumptionLog.objects.select_related(
+        'reagent_item', 'test_panel', 'performed_by'
+    ).all()
+    serializer_class = ReagentConsumptionLogSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['reagent_item', 'test_panel', 'consumed_at']
+    
+    @action(detail=False, methods=['get'])
+    def summary(self, request):
+        """Get consumption summary grouped by reagent"""
+        from django.db.models import Sum, Count, Avg
+        from django.db.models.functions import TruncDate
+        
+        # Group by reagent
+        summary = ReagentConsumptionLog.objects.values(
+            'reagent_item__name'
+        ).annotate(
+            total_tests_consumed=Sum('tests_consumed'),
+            consumption_count=Count('id'),
+            avg_tests_per_use=Avg('tests_consumed')
+        ).order_by('-total_tests_consumed')
+        
+        return Response(summary)
+    
+    @action(detail=False, methods=['get'])
+    def daily_consumption(self, request):
+        """Get daily consumption trends"""
+        from django.db.models import Sum
+        from django.db.models.functions import TruncDate
+        
+        daily = ReagentConsumptionLog.objects.annotate(
+            date=TruncDate('consumed_at')
+        ).values('date', 'reagent_item__name').annotate(
+            tests_consumed=Sum('tests_consumed')
+        ).order_by('-date')[:30]  # Last 30 days
+        
+        return Response(daily)
+
+
+class LowStockReagentViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    ViewSet for low stock reagent alerts.
+    Returns reagents that are low or out of stock.
+    """
+    serializer_class = LowStockReagentSerializer
+    
+    def get_queryset(self):
+        queryset = TestKitCounter.objects.filter(
+            reagent_item__isnull=False
+        ).select_related('reagent_item')
+        
+        # Filter by stock status if provided
+        status_filter = self.request.query_params.get('status', None)
+        if status_filter == 'low':
+            queryset = [q for q in queryset if q.is_low_stock() and not q.is_out_of_stock()]
+        elif status_filter == 'out':
+            queryset = [q for q in queryset if q.is_out_of_stock()]
+        else:
+            # Return all low or out of stock
+            queryset = [q for q in queryset if q.is_low_stock() or q.is_out_of_stock()]
+        
+        return queryset
+    
+    @action(detail=False, methods=['get'])
+    def count(self, request):
+        """Get count of low/out of stock reagents"""
+        all_counters = TestKitCounter.objects.filter(reagent_item__isnull=False)
+        low_stock = sum(1 for c in all_counters if c.is_low_stock() and not c.is_out_of_stock())
+        out_of_stock = sum(1 for c in all_counters if c.is_out_of_stock())
+        
+        return Response({
+            'low_stock': low_stock,
+            'out_of_stock': out_of_stock,
+            'total_alerts': low_stock + out_of_stock
+        })

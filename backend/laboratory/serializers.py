@@ -18,7 +18,8 @@ from .models import (
     Specimen,
     TestKit,
     TestKitCounter,
-    LabTestInterpretation
+    LabTestInterpretation,
+    ReagentConsumptionLog
     )
 
 
@@ -240,3 +241,56 @@ class LabTestInterpretationSerializer(serializers.ModelSerializer):
             'updated_on',
         ]
         read_only_fields = ['created_on', 'updated_on']
+
+
+class ReagentConsumptionLogSerializer(serializers.ModelSerializer):
+    reagent_name = serializers.CharField(source='reagent_item.name', read_only=True)
+    test_panel_name = serializers.CharField(source='test_panel.name', read_only=True)
+    performed_by_name = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = ReagentConsumptionLog
+        fields = [
+            'id',
+            'reagent_item',
+            'reagent_name',
+            'test_panel',
+            'test_panel_name',
+            'tests_consumed',
+            'available_tests_before',
+            'available_tests_after',
+            'consumed_at',
+            'patient_name',
+            'performed_by',
+            'performed_by_name'
+        ]
+        read_only_fields = ['consumed_at']
+    
+    def get_performed_by_name(self, obj):
+        if obj.performed_by:
+            return f"{obj.performed_by.first_name} {obj.performed_by.last_name}"
+        return "N/A"
+
+
+class LowStockReagentSerializer(serializers.ModelSerializer):
+    reagent_name = serializers.CharField(source='reagent_item.name', read_only=True)
+    stock_status = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = TestKitCounter
+        fields = [
+            'id',
+            'reagent_item',
+            'reagent_name',
+            'available_tests',
+            'minimum_threshold',
+            'stock_status',
+            'last_updated'
+        ]
+    
+    def get_stock_status(self, obj):
+        if obj.is_out_of_stock():
+            return 'out_of_stock'
+        elif obj.is_low_stock():
+            return 'low_stock'
+        return 'in_stock'
