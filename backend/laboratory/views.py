@@ -394,6 +394,53 @@ class ReagentConsumptionLogViewSet(viewsets.ReadOnlyModelViewSet):
         ).order_by('-date')[:30]  # Last 30 days
         
         return Response(daily)
+    
+    @action(detail=False, methods=['get'])
+    def recent_usage(self, request):
+        """Get recently used reagents with their current stock levels"""
+        from django.db.models import Max
+        from datetime import timedelta
+        from django.utils import timezone
+        
+        # Get reagents used in the last 24 hours
+        recent_time = timezone.now() - timedelta(hours=24)
+        
+        recent_consumptions = ReagentConsumptionLog.objects.filter(
+            consumed_at__gte=recent_time
+        ).values('reagent_item').annotate(
+            last_used=Max('consumed_at')
+        ).order_by('-last_used')[:10]
+        
+        # Get full details for these reagents
+        reagent_ids = [item['reagent_item'] for item in recent_consumptions]
+        counters = TestKitCounter.objects.filter(
+            reagent_item_id__in=reagent_ids
+        ).select_related('reagent_item')
+        
+        # Build response with stock levels
+        result = []
+        for counter in counters:
+            # Find the last used time for this reagent
+            last_used = next(
+                (item['last_used'] for item in recent_consumptions if item['reagent_item'] == counter.reagent_item_id),
+                None
+            )
+            
+            result.append({
+                'reagent_name': counter.reagent_item.name,
+                'reagent_code': counter.reagent_item.item_code,
+                'available_tests': counter.available_tests,
+                'minimum_threshold': counter.minimum_threshold,
+                'is_low_stock': counter.is_low_stock(),
+                'is_out_of_stock': counter.is_out_of_stock(),
+                'stock_percentage': (counter.available_tests / counter.minimum_threshold * 100) if counter.minimum_threshold > 0 else 100,
+                'last_used': last_used
+            })
+        
+        # Sort by last_used descending
+        result.sort(key=lambda x: x['last_used'] if x['last_used'] else timezone.now(), reverse=True)
+        
+        return Response(result)
 
 
 class LowStockReagentViewSet(viewsets.ReadOnlyModelViewSet):

@@ -638,3 +638,48 @@ export const updatePhlebotomySamples = (payload, auth) =>{
             })
     })
 }
+
+// Reagent Stock Management
+export const fetchLowStockReagents = (auth) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+        axiosInstance.get(`${APP_API_URL.BASE_URL}/lab/reagent-stock/low-stock/`)
+            .then((res) => {
+                resolve(res.data)
+            })
+            .catch((err) => {
+                reject(err.message)
+            })
+    })
+}
+
+export const fetchRecentReagentUsage = (auth) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+        axiosInstance.get(APP_API_URL.RECENT_REAGENT_USAGE)
+            .then((res) => {
+                resolve(res.data)
+            })
+            .catch((err) => {
+                reject(err.message)
+            })
+    })
+}
+
+export const fetchReagentConsumptionReport = (startDate, endDate, auth) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+        axiosInstance.get(`${APP_API_URL.BASE_URL}/lab/reagent-consumption/report/`, {
+            params: {
+                start_date: startDate,
+                end_date: endDate
+            }
+        })
+            .then((res) => {
+                resolve(res.data)
+            })
+            .catch((err) => {
+                reject(err.message)
+            })
+    })
+}

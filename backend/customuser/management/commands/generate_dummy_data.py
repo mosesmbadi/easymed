@@ -12,7 +12,8 @@ from customuser.management.utils.data_generators import (
     create_reference_values,
     create_lab_test_interpretations,
     create_dummy_departments,
-    create_dummy_suppliers
+    create_dummy_suppliers,
+    create_real_world_lab_data
 )
 from customuser.models import CustomUser
 from company.models import Company, CompanyBranch, InsuranceCompany
@@ -137,5 +138,19 @@ class Command(BaseCommand):
         else:
             suppliers = create_dummy_suppliers(count=DEFAULT_COUNT)
             self.stdout.write(self.style.SUCCESS(f"Created {len(suppliers)} dummy suppliers."))
+        
+        # Create real-world lab data (test profiles, panels, reagents, and links)
+        from laboratory.models import TestPanelReagent, TestKitCounter
+        if TestPanelReagent.objects.exists() and TestKitCounter.objects.exists():
+            self.stdout.write(self.style.WARNING("Skipping real-world lab data: already exists."))
+        else:
+            lab_data = create_real_world_lab_data()
+            self.stdout.write(self.style.SUCCESS(
+                f"Created real-world lab data: "
+                f"{len(lab_data['reagents'])} reagents, "
+                f"{len(lab_data['panels'])} panels, "
+                f"{len(lab_data['links'])} reagent links, "
+                f"{len(lab_data['counters'])} stock counters"
+            ))
         
         # TODO  Inventory records

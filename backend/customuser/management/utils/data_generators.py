@@ -799,3 +799,333 @@ def create_dummy_suppliers(count=20):
         suppliers.append(supplier)
     
     return suppliers
+
+
+def create_real_world_lab_data():
+    """
+    Creates real-world lab test profiles, panels, reagents, and their relationships.
+    Based on actual laboratory testing standards.
+    """
+    from laboratory.models import (
+        LabTestProfile, LabTestPanel, Specimen, 
+        TestPanelReagent, TestKitCounter, ReferenceValue
+    )
+    from inventory.models import Item, Department
+    
+    created_data = {
+        'profiles': [],
+        'panels': [],
+        'reagents': [],
+        'links': [],
+        'counters': []
+    }
+    
+    # Get or create Lab department
+    lab_dept, _ = Department.objects.get_or_create(name='Lab')
+    
+    # Get or create specimens
+    blood_specimen, _ = Specimen.objects.get_or_create(name='Blood')
+    serum_specimen, _ = Specimen.objects.get_or_create(name='Serum')
+    urine_specimen, _ = Specimen.objects.get_or_create(name='Urine')
+    
+    # 1. COMPLETE BLOOD COUNT (CBC) PROFILE
+    cbc_profile, _ = LabTestProfile.objects.get_or_create(name='Complete Blood Count (CBC)')
+    
+    # Create reagent for CBC
+    cbc_reagent_item, _ = Item.objects.get_or_create(
+        name='Sysmex CBC Reagent Kit',
+        defaults={
+            'desc': 'Complete reagent kit for automated hematology analyzer - Sysmex XN Series',
+            'category': 'LabReagent',
+            'units_of_measure': 'kits',
+            'packed': '1',
+            'subpacked': '500',  # 500 tests per kit
+            'item_code': 'SYS-CBC-500',
+            'vat_rate': 16.0,
+        }
+    )
+    created_data['reagents'].append(cbc_reagent_item)
+    
+    # CBC Panels
+    cbc_panels_data = [
+        ('Hemoglobin', 'g/dL', False, True),
+        ('White Blood Cell Count', 'x10³/µL', False, True),
+        ('Red Blood Cell Count', 'x10⁶/µL', False, True),
+        ('Platelet Count', 'x10³/µL', False, True),
+        ('Hematocrit', '%', False, True),
+        ('Mean Corpuscular Volume (MCV)', 'fL', False, True),
+    ]
+    
+    for panel_name, unit, is_qual, is_quant in cbc_panels_data:
+        # Create item for billing
+        panel_item, _ = Item.objects.get_or_create(
+            name=panel_name,
+            defaults={
+                'desc': f'{panel_name} test',
+                'category': 'Lab Test',
+                'units_of_measure': 'unit',
+                'packed': '1',
+                'subpacked': '1',
+                'item_code': f'LAB-{panel_name[:10].upper().replace(" ", "-")}',
+                'vat_rate': 16.0,
+            }
+        )
+        
+        panel, created = LabTestPanel.objects.get_or_create(
+            name=panel_name,
+            test_profile=cbc_profile,
+            defaults={
+                'specimen': blood_specimen,
+                'unit': unit,
+                'item': panel_item,
+                'is_qualitative': is_qual,
+                'is_quantitative': is_quant,
+            }
+        )
+        if created:
+            created_data['panels'].append(panel)
+            
+            # Link to CBC reagent (1 test consumed per panel)
+            link, _ = TestPanelReagent.objects.get_or_create(
+                test_panel=panel,
+                reagent_item=cbc_reagent_item,
+                defaults={'tests_consumed_per_run': 1}
+            )
+            created_data['links'].append(link)
+    
+    # Initialize CBC reagent counter
+    cbc_counter, _ = TestKitCounter.objects.get_or_create(
+        reagent_item=cbc_reagent_item,
+        defaults={
+            'available_tests': 1000,  # 2 kits = 1000 tests
+            'minimum_threshold': 100,
+        }
+    )
+    created_data['counters'].append(cbc_counter)
+    
+    # 2. LIVER FUNCTION TEST (LFT) PROFILE
+    lft_profile, _ = LabTestProfile.objects.get_or_create(name='Liver Function Test (LFT)')
+    
+    # Create reagents for LFT (separate reagents for different tests)
+    alt_ast_reagent, _ = Item.objects.get_or_create(
+        name='Roche ALT/AST Reagent',
+        defaults={
+            'desc': 'Enzymatic colorimetric test for ALT and AST determination',
+            'category': 'LabReagent',
+            'units_of_measure': 'kits',
+            'packed': '1',
+            'subpacked': '200',  # 200 tests per kit
+            'item_code': 'ROCHE-ALT-AST-200',
+            'vat_rate': 16.0,
+        }
+    )
+    created_data['reagents'].append(alt_ast_reagent)
+    
+    alp_reagent, _ = Item.objects.get_or_create(
+        name='Roche Alkaline Phosphatase Reagent',
+        defaults={
+            'desc': 'Colorimetric test for ALP determination using p-nitrophenyl phosphate',
+            'category': 'LabReagent',
+            'units_of_measure': 'kits',
+            'packed': '1',
+            'subpacked': '200',
+            'item_code': 'ROCHE-ALP-200',
+            'vat_rate': 16.0,
+        }
+    )
+    created_data['reagents'].append(alp_reagent)
+    
+    bilirubin_reagent, _ = Item.objects.get_or_create(
+        name='Roche Total Bilirubin Reagent',
+        defaults={
+            'desc': 'Diazo method for total bilirubin determination',
+            'category': 'LabReagent',
+            'units_of_measure': 'kits',
+            'packed': '1',
+            'subpacked': '200',
+            'item_code': 'ROCHE-TBIL-200',
+            'vat_rate': 16.0,
+        }
+    )
+    created_data['reagents'].append(bilirubin_reagent)
+    
+    albumin_protein_reagent, _ = Item.objects.get_or_create(
+        name='Roche Albumin/Total Protein Reagent',
+        defaults={
+            'desc': 'BCG method for albumin and biuret method for total protein',
+            'category': 'LabReagent',
+            'units_of_measure': 'kits',
+            'packed': '1',
+            'subpacked': '250',
+            'item_code': 'ROCHE-ALB-TP-250',
+            'vat_rate': 16.0,
+        }
+    )
+    created_data['reagents'].append(albumin_protein_reagent)
+    
+    # LFT Panels with specific reagent links
+    lft_panels_config = [
+        ('Alanine Aminotransferase (ALT)', 'U/L', [alt_ast_reagent]),
+        ('Aspartate Aminotransferase (AST)', 'U/L', [alt_ast_reagent]),
+        ('Alkaline Phosphatase (ALP)', 'U/L', [alp_reagent]),
+        ('Total Bilirubin', 'mg/dL', [bilirubin_reagent]),
+        ('Albumin', 'g/dL', [albumin_protein_reagent]),
+        ('Total Protein', 'g/dL', [albumin_protein_reagent]),
+    ]
+    
+    for panel_name, unit, reagents in lft_panels_config:
+        panel_item, _ = Item.objects.get_or_create(
+            name=panel_name,
+            defaults={
+                'desc': f'{panel_name} test - Liver function marker',
+                'category': 'Lab Test',
+                'units_of_measure': 'unit',
+                'packed': '1',
+                'subpacked': '1',
+                'item_code': f'LAB-{panel_name[:10].upper().replace(" ", "-")}',
+                'vat_rate': 16.0,
+            }
+        )
+        
+        panel, created = LabTestPanel.objects.get_or_create(
+            name=panel_name,
+            test_profile=lft_profile,
+            defaults={
+                'specimen': serum_specimen,
+                'unit': unit,
+                'item': panel_item,
+                'is_qualitative': False,
+                'is_quantitative': True,
+            }
+        )
+        if created:
+            created_data['panels'].append(panel)
+        
+        # Link to appropriate reagents
+        for reagent in reagents:
+            link, _ = TestPanelReagent.objects.get_or_create(
+                test_panel=panel,
+                reagent_item=reagent,
+                defaults={'tests_consumed_per_run': 1}
+            )
+            created_data['links'].append(link)
+    
+    # Initialize counters for LFT reagents
+    for reagent in [alt_ast_reagent, alp_reagent, bilirubin_reagent, albumin_protein_reagent]:
+        counter, _ = TestKitCounter.objects.get_or_create(
+            reagent_item=reagent,
+            defaults={
+                'available_tests': 400,  # 2 kits
+                'minimum_threshold': 50,
+            }
+        )
+        created_data['counters'].append(counter)
+    
+    # 3. LIPID PROFILE
+    lipid_profile, _ = LabTestProfile.objects.get_or_create(name='Lipid Profile')
+    
+    # Lipid reagents
+    cholesterol_reagent, _ = Item.objects.get_or_create(
+        name='Abbott Cholesterol Reagent',
+        defaults={
+            'desc': 'Enzymatic endpoint method for cholesterol determination',
+            'category': 'LabReagent',
+            'units_of_measure': 'kits',
+            'packed': '1',
+            'subpacked': '300',
+            'item_code': 'ABB-CHOL-300',
+            'vat_rate': 16.0,
+        }
+    )
+    created_data['reagents'].append(cholesterol_reagent)
+    
+    triglycerides_reagent, _ = Item.objects.get_or_create(
+        name='Abbott Triglycerides Reagent',
+        defaults={
+            'desc': 'Enzymatic colorimetric test with lipase and glycerol kinase',
+            'category': 'LabReagent',
+            'units_of_measure': 'kits',
+            'packed': '1',
+            'subpacked': '300',
+            'item_code': 'ABB-TRIG-300',
+            'vat_rate': 16.0,
+        }
+    )
+    created_data['reagents'].append(triglycerides_reagent)
+    
+    hdl_ldl_reagent, _ = Item.objects.get_or_create(
+        name='Abbott HDL/LDL Reagent',
+        defaults={
+            'desc': 'Direct measurement of HDL and LDL cholesterol',
+            'category': 'LabReagent',
+            'units_of_measure': 'kits',
+            'packed': '1',
+            'subpacked': '250',
+            'item_code': 'ABB-HDL-LDL-250',
+            'vat_rate': 16.0,
+        }
+    )
+    created_data['reagents'].append(hdl_ldl_reagent)
+    
+    lipid_panels_config = [
+        ('Total Cholesterol', 'mg/dL', [cholesterol_reagent]),
+        ('Triglycerides', 'mg/dL', [triglycerides_reagent]),
+        ('HDL Cholesterol', 'mg/dL', [hdl_ldl_reagent]),
+        ('LDL Cholesterol', 'mg/dL', [hdl_ldl_reagent]),
+    ]
+    
+    for panel_name, unit, reagents in lipid_panels_config:
+        panel_item, _ = Item.objects.get_or_create(
+            name=panel_name,
+            defaults={
+                'desc': f'{panel_name} test - Cardiovascular risk assessment',
+                'category': 'Lab Test',
+                'units_of_measure': 'unit',
+                'packed': '1',
+                'subpacked': '1',
+                'item_code': f'LAB-{panel_name[:10].upper().replace(" ", "-")}',
+                'vat_rate': 16.0,
+            }
+        )
+        
+        panel, created = LabTestPanel.objects.get_or_create(
+            name=panel_name,
+            test_profile=lipid_profile,
+            defaults={
+                'specimen': serum_specimen,
+                'unit': unit,
+                'item': panel_item,
+                'is_qualitative': False,
+                'is_quantitative': True,
+            }
+        )
+        if created:
+            created_data['panels'].append(panel)
+        
+        for reagent in reagents:
+            link, _ = TestPanelReagent.objects.get_or_create(
+                test_panel=panel,
+                reagent_item=reagent,
+                defaults={'tests_consumed_per_run': 1}
+            )
+            created_data['links'].append(link)
+    
+    # Initialize counters for lipid reagents
+    for reagent in [cholesterol_reagent, triglycerides_reagent, hdl_ldl_reagent]:
+        counter, _ = TestKitCounter.objects.get_or_create(
+            reagent_item=reagent,
+            defaults={
+                'available_tests': 600,  # 2 kits
+                'minimum_threshold': 75,
+            }
+        )
+        created_data['counters'].append(counter)
+    
+    print(f"\n✅ Created Real-World Lab Data:")
+    print(f"   - {len(created_data['profiles'])} Profiles")
+    print(f"   - {len(created_data['panels'])} Test Panels")
+    print(f"   - {len(created_data['reagents'])} Reagent Items")
+    print(f"   - {len(created_data['links'])} Panel-Reagent Links")
+    print(f"   - {len(created_data['counters'])} Reagent Counters")
+    
+    return created_data

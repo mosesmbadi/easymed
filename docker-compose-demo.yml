@@ -1,0 +1,104 @@
+services:
+    postgres:
+        image: postgres:15
+        container_name: postgres
+        env_file:
+            - ./.env
+        ports:
+            - "5433:5432"
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+        networks:
+            - mks
+
+    redis:
+        image: redis:7.0-alpine
+        container_name: redis
+        command: redis-server --appendonly yes --replica-read-only no
+        volumes:
+            - redis:/etc/redis/
+        ports:
+            - 6379:6379
+        networks:
+            - mks
+        restart: unless-stopped
+
+    backend:
+        image: mosesmbadi/easymedbackend
+        container_name: api
+        command: uvicorn --host 0.0.0.0 --port 8080 easymed.asgi:application
+        ports:
+            - 8080:8080
+        env_file:
+            - ./.env
+        restart: unless-stopped
+        depends_on:
+            - redis
+            - postgres
+        networks:
+            - mks
+        labels:
+            - "service: backend"
+
+    worker:
+        image: mosesmbadi/easymedbackend
+        container_name: worker
+        command: celery -A easymed worker --loglevel=INFO
+        entrypoint: [] # Skip entrypoint to avoid running migrations
+        restart: unless-stopped
+        env_file:
+            - ./.env
+        depends_on:
+            - backend # Wait for backend to finish migrations
+            - redis
+            - postgres
+        networks:
+            - mks
+        labels:
+            - "service: worker"
+
+    frontend:
+        image: mosesmbadi/easymedfrontend
+        container_name: front-end
+        restart: unless-stopped
+        ports:
+            - 3000:3000
+        depends_on:
+            - backend
+        env_file:
+            - ./.env
+        networks:
+            - mks
+
+    lis_server:
+        image: mosesmbadi/hl7-astm-parser:latest
+        container_name: lis-server
+        ports:
+            - 9091:9091
+        env_file:
+            - ./.env
+        environment:
+            - PYTHONUNBUFFERED=1
+            - PYTHONPATH=/app/src
+        command:
+            [
+                "uvicorn",
+                "src.main:app",
+                "--host",
+                "0.0.0.0",
+                "--port",
+                "9091",
+                "--reload",
+            ]
+        restart: unless-stopped
+        networks:
+            - mks
+
+volumes:
+    postgres_data:
+    redis:
+
+networks:
+    mks:
+        name: mks
+        driver: bridge
