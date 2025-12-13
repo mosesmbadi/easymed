@@ -116,6 +116,40 @@ def update_last_deducted_on(sender, instance, **kwargs):
         if instance.quantity_at_hand < old_instance.quantity_at_hand:
             instance.last_deducted_on = timezone.now()
             instance.save()
+
+
+@receiver(post_save, sender=IncomingItem)
+def update_reagent_test_counter(sender, instance, created, **kwargs):
+    """
+    Update TestKitCounter when lab reagent kits are received.
+    Calculates available_tests based on: quantity (kits) × subpacked (tests per kit)
+    """
+    if created and instance.item.category == 'LabReagent':
+        try:
+            from laboratory.models import TestKitCounter
+            
+            with transaction.atomic():
+                # Get or create counter for this reagent
+                counter, counter_created = TestKitCounter.objects.get_or_create(
+                    reagent_item=instance.item,
+                    defaults={'available_tests': 0}
+                )
+                
+                # Calculate tests added: kits received × tests per kit
+                tests_per_kit = int(instance.item.subpacked) if instance.item.subpacked else 1
+                tests_added = instance.quantity * tests_per_kit
+                
+                # Update available tests
+                counter.available_tests += tests_added
+                counter.save()
+                
+                logger.info(
+                    f"Updated TestKitCounter for {instance.item.name}: "
+                    f"Added {tests_added} tests ({instance.quantity} kits × {tests_per_kit} tests/kit). "
+                    f"Total available: {counter.available_tests}"
+                )
+        except Exception as e:
+            logger.error(f"Error updating TestKitCounter for reagent {instance.item.name}: {str(e)}")
     
 
 @receiver(post_save, sender=Inventory)

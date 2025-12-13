@@ -163,8 +163,8 @@ const PatientsDataGrid = () => {
         />
         <Column 
           dataField="unique_id" 
-          caption="id" 
-          width={100}
+          caption="Patient ID" 
+          width={120}
         />
         <Column 
           dataField="" 

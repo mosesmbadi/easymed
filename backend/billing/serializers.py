@@ -74,16 +74,31 @@ class InvoiceItemSerializer(serializers.ModelSerializer):
 class InvoiceSerializer(serializers.ModelSerializer):
     invoice_items = InvoiceItemSerializer(many=True, read_only=True)
     patient_name = serializers.SerializerMethodField()
+    payment_receipts = serializers.SerializerMethodField()
 
     def get_patient_name(self, obj):
         return obj.patient.first_name
+
+    def get_payment_receipts(self, obj):
+        """
+        Get all unique payment receipts that have allocations to this invoice's items.
+        Returns a list of receipt IDs.
+        """
+        from billing.models import PaymentReceipt
+        
+        # Get all receipt IDs that have allocations to this invoice's items
+        receipt_ids = PaymentReceipt.objects.filter(
+            allocations__invoice_item__invoice=obj
+        ).distinct().values_list('id', flat=True)
+        
+        return [{'id': rid} for rid in receipt_ids]
 
     class Meta:
         model = Invoice
         fields = ['id', 'invoice_number', 'invoice_date', 'patient',
                 'invoice_items', 'cash_paid', 'total_cash', 'patient_name',
                 'invoice_amount', 'status', 'invoice_description',
-                'invoice_file', 'invoice_created_at', 'invoice_updated_at']
+                'invoice_file', 'invoice_created_at', 'invoice_updated_at', 'payment_receipts']
         read_only_fields = ['invoice_number']
 
 

@@ -10,6 +10,7 @@ from django.core.validators import FileExtensionValidator
 from customuser.models import CustomUser
 
 
+# TODO: Redundant. Should be removed.
 class TestKit(models.Model):
     '''
     This model stores infrmation about a Test kit
@@ -25,17 +26,75 @@ class TestKit(models.Model):
 
 class TestKitCounter(models.Model):
     '''
-    The intention is to keep track of test kits, their respective number of 
-    tests then update this model with a counter of how many tests are remaining
-    signaled by LabTestRequest on billed. Deduct from TestKit, nearest expiry starting.
-    Will need to be updated manually everytime a kit is bought, or update with IncomingItem
-    '''
-    lab_test_kit = models.ForeignKey(TestKit, on_delete=models.CASCADE)
-    counter = models.IntegerField(default=0) # number os tests remaining
-
-    def __str__(self):
-        return f"{self.lab_test_kit.item.name} - {self.counter}"
+    Tracks available tests for lab reagents.
+    Updated when:
+    - Reagent kits are received (increase available_tests)
+    - Lab tests are performed and billed (decrease available_tests)
     
+    available_tests = total tests that can be run with current stock
+    Calculated as: (number of kits in stock) × (subpacked = tests per kit)
+    '''
+    reagent_item = models.ForeignKey('inventory.Item', on_delete=models.CASCADE, 
+                                      limit_choices_to={'category': 'LabReagent'},
+                                      related_name='test_counter',
+                                      null=True, blank=True)  # Temporary for migration
+    lab_test_kit = models.ForeignKey(TestKit, on_delete=models.CASCADE, null=True, blank=True)  # Keep for migration
+    available_tests = models.IntegerField(default=0, help_text="Total number of tests available across all kits in stock")
+    counter = models.IntegerField(default=0, null=True, blank=True)  # Old field, keep for migration
+    minimum_threshold = models.IntegerField(default=10, help_text="Alert when available tests fall below this number")
+    last_updated = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Reagent Test Counter"
+        verbose_name_plural = "Reagent Test Counters"
+    
+    def __str__(self):
+        if self.reagent_item:
+            return f"{self.reagent_item.name} - {self.available_tests} tests available"
+        elif self.lab_test_kit:
+            return f"{self.lab_test_kit.item.name} - {self.counter} tests (legacy)"
+        return "Test Counter"
+    
+    def is_low_stock(self):
+        """Check if reagent tests are below minimum threshold"""
+        return self.available_tests <= self.minimum_threshold
+    
+    def is_out_of_stock(self):
+        """Check if reagent tests are depleted"""
+        return self.available_tests <= 0
+    
+
+class ReagentConsumptionLog(models.Model):
+    """
+    Tracks every reagent consumption event for audit trail and reporting.
+    Created automatically when lab tests are billed.
+    """
+    reagent_item = models.ForeignKey('inventory.Item', on_delete=models.CASCADE, 
+                                      related_name='consumption_logs')
+    test_panel = models.ForeignKey('LabTestPanel', on_delete=models.CASCADE,
+                                    related_name='reagent_consumptions')
+    lab_test_request_panel = models.ForeignKey('LabTestRequestPanel', on_delete=models.CASCADE,
+                                                 related_name='reagent_consumptions')
+    tests_consumed = models.IntegerField(help_text="Number of tests consumed from reagent")
+    available_tests_before = models.IntegerField(help_text="Available tests before consumption")
+    available_tests_after = models.IntegerField(help_text="Available tests after consumption")
+    consumed_at = models.DateTimeField(auto_now_add=True)
+    patient_name = models.CharField(max_length=255, blank=True)
+    performed_by = models.ForeignKey('customuser.CustomUser', on_delete=models.SET_NULL, 
+                                      null=True, blank=True)
+    
+    class Meta:
+        verbose_name = "Reagent Consumption Log"
+        verbose_name_plural = "Reagent Consumption Logs"
+        ordering = ['-consumed_at']
+        indexes = [
+            models.Index(fields=['reagent_item', '-consumed_at']),
+            models.Index(fields=['test_panel', '-consumed_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.reagent_item.name} - {self.tests_consumed} tests - {self.consumed_at.strftime('%Y-%m-%d %H:%M')}"
+
 
 class LabEquipment(models.Model):
     COM_MODE_CHOICE = (
@@ -80,6 +139,24 @@ class Specimen(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class TestPanelReagent(models.Model):
+    """
+    Links test panels to the reagents they consume.
+    Example: Albumin test uses Reagent A and Reagent C
+    """
+    test_panel = models.ForeignKey('LabTestPanel', on_delete=models.CASCADE, related_name='reagent_links')
+    reagent_item = models.ForeignKey('inventory.Item', on_delete=models.CASCADE, limit_choices_to={'category': 'LabReagent'})
+    tests_consumed_per_run = models.IntegerField(default=1, help_text="Number of tests consumed from this reagent per lab test run")
+    
+    class Meta:
+        unique_together = ('test_panel', 'reagent_item')
+        verbose_name = "Test Panel Reagent"
+        verbose_name_plural = "Test Panel Reagents"
+    
+    def __str__(self):
+        return f"{self.test_panel.name} uses {self.reagent_item.name}"
 
 
 class LabTestPanel(models.Model):
@@ -134,6 +211,121 @@ class ReferenceValue(models.Model):
         return f"{self.lab_test_panel.name} - {self.sex} - {self.age_min}-{self.age_max}: {self.ref_value_low} - {self.ref_value_high}"
 
 
+class LabTestInterpretation(models.Model):
+    '''
+    Store interpretation ranges for lab test panels.
+    This allows automatic interpretation of results based on numeric values.
+    Example: Albumin < 2.0 = "Low albumin (hypoalbuminemia) - may indicate liver disease, malnutrition, or kidney disease"
+    '''
+    RANGE_TYPE_CHOICES = (
+        ('critical_low', 'Critical Low'),
+        ('low', 'Low'),
+        ('normal', 'Normal'),
+        ('high', 'High'),
+        ('critical_high', 'Critical High'),
+    )
+
+    SEX_CHOICES = (
+        ('M', 'Male'),
+        ('F', 'Female'),
+        ('B', 'Both'),  # Applies to all genders
+    )
+
+    lab_test_panel = models.ForeignKey(
+        LabTestPanel, 
+        on_delete=models.CASCADE, 
+        related_name="interpretations"
+    )
+    range_type = models.CharField(max_length=20, choices=RANGE_TYPE_CHOICES)
+    sex = models.CharField(max_length=1, choices=SEX_CHOICES, default='B')
+    age_min = models.IntegerField(null=True, blank=True, help_text="Minimum age in years (leave blank for all ages)")
+    age_max = models.IntegerField(null=True, blank=True, help_text="Maximum age in years (leave blank for all ages)")
+    
+    # Define the range boundaries
+    value_min = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        null=True, 
+        blank=True,
+        help_text="Minimum value for this range (leave blank for unbounded)"
+    )
+    value_max = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        null=True, 
+        blank=True,
+        help_text="Maximum value for this range (leave blank for unbounded)"
+    )
+    
+    # The interpretation text
+    interpretation = models.TextField(
+        help_text="Clinical interpretation for values in this range"
+    )
+    
+    # Optional recommendations or actions
+    clinical_action = models.TextField(
+        null=True, 
+        blank=True,
+        help_text="Recommended clinical actions or follow-up"
+    )
+    
+    # Priority flag for alerts
+    requires_immediate_attention = models.BooleanField(
+        default=False,
+        help_text="Mark as requiring immediate clinical attention"
+    )
+    
+    created_on = models.DateTimeField(auto_now_add=True)
+    updated_on = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['lab_test_panel', 'sex', 'age_min', 'value_min']
+        verbose_name = "Lab Test Interpretation"
+        verbose_name_plural = "Lab Test Interpretations"
+
+    def __str__(self):
+        range_str = f"{self.value_min or '-∞'} to {self.value_max or '+∞'}"
+        sex_display = self.get_sex_display()
+        age_str = ""
+        if self.age_min or self.age_max:
+            age_str = f" (Age: {self.age_min or '0'}-{self.age_max or '∞'})"
+        return f"{self.lab_test_panel.name} - {sex_display}{age_str}: {self.range_type} [{range_str}]"
+
+    def matches_criteria(self, value, patient_sex=None, patient_age=None):
+        """
+        Check if a given value and patient demographics match this interpretation's criteria.
+        
+        Args:
+            value: The test result value (numeric)
+            patient_sex: 'M', 'F', or None
+            patient_age: Patient age in years or None
+            
+        Returns:
+            Boolean indicating if this interpretation applies
+        """
+        # Check sex criteria
+        if self.sex != 'B' and patient_sex and self.sex != patient_sex:
+            return False
+        
+        # Check age criteria
+        if self.age_min is not None and patient_age is not None and patient_age < self.age_min:
+            return False
+        if self.age_max is not None and patient_age is not None and patient_age > self.age_max:
+            return False
+        
+        # Check value range
+        try:
+            value_decimal = float(value)
+        except (ValueError, TypeError):
+            return False
+        
+        if self.value_min is not None and value_decimal < float(self.value_min):
+            return False
+        if self.value_max is not None and value_decimal > float(self.value_max):
+            return False
+        
+        return True
+
 
 class ProcessTestRequest(models.Model):
     reference = models.CharField(max_length=40) # track_number of AttendanceProcess is stored here
@@ -167,22 +359,22 @@ class PatientSample(models.Model):
         current_year = timezone.now().year
 
         with transaction.atomic():
-            last_sample = PatientSample.objects.filter(
-                patient_sample_code__startswith=prefix
-            ).order_by('-id').select_for_update().first()
+            # Lock the table to prevent race conditions during code generation.
+            # Find the last sample created in the current year.
+            last_sample = PatientSample.objects.select_for_update().filter(
+                patient_sample_code__endswith=f"-{current_year}"
+            ).order_by('-patient_sample_code').first()
 
             if last_sample:
                 try:
-                    last_sample_year_str = last_sample.patient_sample_code.split('-')[1] 
-                    if last_sample_year_str == str(current_year): 
-                        last_number = int(last_sample.patient_sample_code[4:9])
-                        next_number = last_number + 1
-                    else:
-                        next_number = 1  
+                    # Extract the numeric part of the code, e.g., '00001' from 'DDLR00001-2025'
+                    last_number_str = last_sample.patient_sample_code.split('-')[0][len(prefix):]
+                    last_number = int(last_number_str)
+                    next_number = last_number + 1
                 except (ValueError, IndexError): 
-                    next_number = 1
+                    next_number = 1 # Fallback in case of unexpected format
             else:
-                next_number = 1
+                next_number = 1 # First sample of the year
 
             new_number_str = f"{next_number:05d}"
             sp_id = f"{prefix}{new_number_str}-{current_year}"  
@@ -233,6 +425,11 @@ class LabTestRequestPanel(models.Model):
     approved_on = models.DateTimeField(null=True, blank=True) 
     is_billed = models.BooleanField(default=False)
     
+    # Auto-generated interpretation based on result value
+    auto_interpretation = models.TextField(null=True, blank=True, help_text="Auto-generated interpretation based on result ranges")
+    clinical_action = models.TextField(null=True, blank=True, help_text="Recommended clinical action from interpretation")
+    requires_attention = models.BooleanField(default=False, help_text="Flagged for immediate attention")
+    
     def generate_test_code(self):
         while True:
             random_number = ''.join(choices('0123456789', k=4))
@@ -246,6 +443,38 @@ class LabTestRequestPanel(models.Model):
     def get_patient_info(self):
         patient = self.patient_sample.process.attendanceprocess.patient
         return f"{patient.first_name} {patient.second_name}, Age: {patient.age}, Sex: {patient.gender}"
+    
+    def generate_interpretation(self):
+        """
+        Auto-generate interpretation based on the result value and patient demographics.
+        Returns a tuple of (interpretation_text, clinical_action, requires_attention)
+        """
+        if not self.result or not self.test_panel:
+            return None, None, False
+        
+        try:
+            # Get patient demographics
+            patient = self.patient_sample.process.attendanceprocess.patient
+            patient_sex = patient.gender  # 'M', 'F', or other
+            patient_age = patient.age  # Age in years
+            
+            # Query matching interpretations
+            interpretations = self.test_panel.interpretations.all()
+            
+            # Find the matching interpretation
+            for interp in interpretations:
+                if interp.matches_criteria(self.result, patient_sex, patient_age):
+                    return (
+                        interp.interpretation,
+                        interp.clinical_action,
+                        interp.requires_immediate_attention
+                    )
+            
+            return None, None, False
+        except Exception as e:
+            # Log the error but don't break the save
+            print(f"Error generating interpretation: {e}")
+            return None, None, False
         
     def save(self, *args, **kwargs):
         ''''
@@ -254,6 +483,7 @@ class LabTestRequestPanel(models.Model):
         If no matching PatientSample is found, create a new one.
         Assign this PatientSample to the patient_sample field of the LabTestRequestPanel.
         Set Category: Determine the category (qualitative or quantitative) based on the LabTestPanel's boolean fields.
+        Auto-generate interpretation: If result is present, automatically generate interpretation based on defined ranges.
         Save the Model: Call the superclass's save method to ensure the object is saved to the database.
         '''
         if not self.test_code:
@@ -289,9 +519,22 @@ class LabTestRequestPanel(models.Model):
         else:
             self.category = 'none'
 
-        # Check if result_approved is being set to True and set approved_on
-        if self.result_approved and not self.approved_on:
+        # Auto-generate interpretation if result is present
+        if self.result and self.test_panel and self.patient_sample:
+            interpretation, action, attention = self.generate_interpretation()
+            if interpretation:
+                self.auto_interpretation = interpretation
+                self.clinical_action = action
+                self.requires_attention = attention
+
+        # Set approved_on timestamp when result is entered or approved
+        if self.result and not self.approved_on:
+            # Set timestamp when result is first entered
             self.approved_on = datetime.now()
+        elif self.result_approved and not self.approved_on:
+            # Also set if result_approved is set but approved_on wasn't set
+            self.approved_on = datetime.now()
+            
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -329,4 +572,3 @@ class PublicLabTestRequest(models.Model):
             patient_age:int = (datetime.now().year - self.patient.date_of_birth.year)
             return patient_age
         return None
-

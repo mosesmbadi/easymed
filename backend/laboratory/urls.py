@@ -19,7 +19,9 @@ from .views import (
     LabTestRequestPanelBySampleView,
     SpecimenViewSet,
     TestKitViewSet,
-    TestKitCounterViewSet
+    TestKitCounterViewSet,
+    ReagentConsumptionLogViewSet,
+    LowStockReagentViewSet
 )
 
 router = DefaultRouter()
@@ -35,6 +37,8 @@ router.register(r'patient-samples', PatientSampleViewSet)
 router.register(r'specimens', SpecimenViewSet)
 router.register(r'testkits', TestKitViewSet)
 router.register(r'testkitcounters', TestKitCounterViewSet)
+router.register(r'reagent-consumption', ReagentConsumptionLogViewSet, basename='reagent-consumption')
+router.register(r'low-stock-reagents', LowStockReagentViewSet, basename='low-stock-reagents')
 
 
 

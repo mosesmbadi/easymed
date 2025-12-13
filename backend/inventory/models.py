@@ -61,6 +61,7 @@ class Item(AbstractBaseModel):
     '''
     UNIT_CHOICES = [
         ('unit', 'Unit'),
+        ('kits', 'Kits'),
         ('mg', 'Milligram'),
         ('g', 'Gram'),
         ('kg', 'Kilogram'),
@@ -383,6 +384,50 @@ class QuotationItem(models.Model):
 
     def __str__(self):
         return f"{self.item.name} - {self.quantity}"
+
+
+class SupplierPaymentReceipt(AbstractBaseModel):
+    """
+    Records payments made to suppliers for their invoices.
+    Similar to PaymentReceipt but for outgoing payments.
+    """
+    supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE, related_name='payment_receipts')
+    payment_mode = models.ForeignKey('billing.PaymentMode', on_delete=models.PROTECT)
+    total_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    reference_number = models.CharField(max_length=100)
+    payment_date = models.DateField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['created_at']),
+            models.Index(fields=['supplier']),
+            models.Index(fields=['payment_date']),
+        ]
+
+    def __str__(self):
+        return f"Payment Receipt #{self.id} - {self.supplier.name} - KES {self.total_amount}"
+
+
+class SupplierPaymentAllocation(models.Model):
+    """
+    Tracks how a supplier payment is allocated across supplier invoices.
+    """
+    receipt = models.ForeignKey(SupplierPaymentReceipt, on_delete=models.CASCADE, related_name='allocations')
+    supplier_invoice = models.ForeignKey(SupplierInvoice, on_delete=models.CASCADE, related_name='payment_allocations')
+    amount_applied = models.DecimalField(max_digits=12, decimal_places=2)
+    applied_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['applied_at']),
+            models.Index(fields=['supplier_invoice']),
+        ]
+
+    def __str__(self):
+        return f"Allocation {self.amount_applied} to Invoice {self.supplier_invoice.invoice_no}"
+
 
 
 

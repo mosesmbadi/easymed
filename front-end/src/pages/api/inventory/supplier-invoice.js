@@ -20,7 +20,11 @@ export default async function handler(req, res) {
                 }
             };
     
-            await backendAxiosInstance.get(`${API_URL.FETCH_SUPPLIER_INVOICE}`, config).then(response => {
+            // Build query string from req.query
+            const queryParams = new URLSearchParams(req.query).toString();
+            const url = queryParams ? `${API_URL.FETCH_SUPPLIER_INVOICE}?${queryParams}` : API_URL.FETCH_SUPPLIER_INVOICE;
+
+            await backendAxiosInstance.get(url, config).then(response => {
                 res.status(200).json(response.data);
 
             }).catch(e => {

@@ -23,6 +23,7 @@ const CompanyDetails = () => {
         phone2: companyInfo?.phone2,
         email1: companyInfo?.email1,
         email2: companyInfo?.email2,
+        patient_id_prefix: companyInfo?.patient_id_prefix || '',
         logo: null,
     };
     
@@ -146,6 +147,25 @@ const CompanyDetails = () => {
                                 component="div"
                                 className="text-warning text-xs"
                             />
+                        </Grid>
+                        <Grid item md={12} xs={12}>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Patient ID Prefix (e.g., ESMED-)
+                            </label>
+                            <Field
+                                className="block border border-gray py-3 px-4 focus:outline-none w-full"
+                                type="text"
+                                placeholder="Enter patient ID prefix (e.g., ESMED-)"
+                                name="patient_id_prefix"
+                            />
+                            <ErrorMessage
+                                name="patient_id_prefix"
+                                component="div"
+                                className="text-warning text-xs"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                                This prefix will be added to all new patient IDs (e.g., ESMED-1, ESMED-2, etc.)
+                            </p>
                         </Grid>
                     </Grid>
                 </div>

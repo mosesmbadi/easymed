@@ -5,9 +5,12 @@ from customuser.management.utils.data_generators import (
     create_dummy_insurance_companies,
     create_dummy_company_branches,
     create_dummy_items,
+    create_appointment_items,
     create_permissions_and_groups,
     create_dummy_patients,
     create_demo_lab_profiles_and_panels,
+    create_reference_values,
+    create_lab_test_interpretations,
     create_dummy_departments,
     create_dummy_suppliers
 )
@@ -61,6 +64,13 @@ class Command(BaseCommand):
         else:
             items = create_dummy_items(count=DEFAULT_COUNT)
             self.stdout.write(self.style.SUCCESS(f"Created {len(items)} dummy inventory items."))
+        
+        # Create appointment items separately
+        if Item.objects.filter(category__in=['General Appointment', 'Specialized Appointment']).exists():
+            self.stdout.write(self.style.WARNING("Skipping appointment items: already exist."))
+        else:
+            appointment_items = create_appointment_items()
+            self.stdout.write(self.style.SUCCESS(f"Created {len(appointment_items)} appointment items (1 General, 4 Specialized)."))
 
         if Group.objects.filter(name__in=[
                 "SYS_ADMIN", "PATIENT", "DOCTOR", "PHARMACIST", "RECEPTIONIST", "LAB_TECH", "NURSE"
@@ -96,7 +106,23 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING("Skipping lab test profiles/panels: already exist."))
         else:
             profiles, panels = create_demo_lab_profiles_and_panels()
-            self.stdout.write(self.style.SUCCESS(f"Created {len(profiles)} lab test profiles and {len(panels)} panels."))    
+            self.stdout.write(self.style.SUCCESS(f"Created {len(profiles)} lab test profiles and {len(panels)} panels."))
+        
+        # Create reference values for lab test panels
+        from laboratory.models import ReferenceValue
+        if ReferenceValue.objects.exists():
+            self.stdout.write(self.style.WARNING("Skipping reference values: already exist."))
+        else:
+            reference_values = create_reference_values()
+            self.stdout.write(self.style.SUCCESS(f"Created {len(reference_values)} reference values for lab test panels."))
+        
+        # Create lab test interpretations
+        from laboratory.models import LabTestInterpretation
+        if LabTestInterpretation.objects.exists():
+            self.stdout.write(self.style.WARNING("Skipping lab test interpretations: already exist."))
+        else:
+            interpretations = create_lab_test_interpretations()
+            self.stdout.write(self.style.SUCCESS(f"Created {len(interpretations)} lab test interpretations for common tests."))
 
         # create departments
         if Department.objects.exists():

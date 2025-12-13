@@ -7,13 +7,10 @@ import { getPatientInvoices, getPaymentModes } from "@/redux/features/billing";
 import { getAllPatients } from "@/redux/features/patients";
 import ViewInvoiceItems from "./ViewInvoiceItemsModal";
 import { getAllInsurance } from "@/redux/features/insurance";
-import PaymentCategoryStep from "./PaymentCategoryStep";
-import PaymentModeStep from "./PaymentModeStep";
+import UnifiedPaymentForm from "./UnifiedPaymentForm";
 
 const InvoicePayModal = () => {
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState(1); // 1 = Category Step, 2 = Mode Step
-  const [stepOneData, setStepOneData] = useState(null);
   const [selectedRowData, setSelectedRowData] = useState({});
   const [open, setOpen] = useState(false);
   
@@ -32,48 +29,28 @@ const InvoicePayModal = () => {
     }
   }, [auth, dispatch]);
 
-  // Fetch invoices when customer is selected in Step 1
-  useEffect(() => {
-    if (stepOneData?.customer) {
-      if (stepOneData.paymentCategory === 'cash') {
-        // Fetch patient invoices
-        dispatch(getPatientInvoices(auth, stepOneData.customer.value));
-      } else if (stepOneData.paymentCategory === 'credit') {
-        // For insurance/credit: fetch patient invoices for now
-        // Backend doesn't have a direct "invoices by insurance" endpoint yet
-        // You may need to implement backend filtering or show all invoices
-        // and filter client-side by insurance company in invoice items
-        // For now, we'll fetch all invoices and filter in the component
-        console.log('Insurance invoices - implement backend endpoint or filter client-side');
-        // Placeholder: you could dispatch a getAllInvoices action here
-      }
-    }
-  }, [stepOneData?.customer, stepOneData?.paymentCategory, auth, dispatch]);
+  // Fetch invoices when needed - this could be triggered by customer selection
+  // For now, we'll handle it in the component or via a separate effect
 
-  const handleStepOneUpdate = (data) => {
-    setStepOneData(data);
-    setStep(2);
-  };
-
-  const handleStepTwoConfirm = async (stepTwoData) => {
+  const handlePaymentSubmit = async (formData) => {
     // Build payload without null values
     const payload = {
-      invoice_ids: stepOneData.invoiceIds,
-      payment_mode: stepTwoData.payment_mode,
-      amount: stepOneData.payAmount,
-      reference_number: stepTwoData.reference_number,
+      invoice_ids: formData.invoiceIds,
+      payment_mode: formData.payment_mode,
+      amount: formData.payAmount,
+      reference_number: formData.reference_number,
     };
 
     // Add payment_date only if provided
-    if (stepTwoData.payment_date) {
-      payload.payment_date = stepTwoData.payment_date;
+    if (formData.payment_date) {
+      payload.payment_date = formData.payment_date;
     }
 
     // Add either patient_id or insurance_id based on category
-    if (stepOneData.paymentCategory === 'cash') {
-      payload.patient_id = stepOneData.customer.value;
+    if (formData.paymentCategory === 'cash') {
+      payload.patient_id = formData.customer.value;
     } else {
-      payload.insurance_id = stepOneData.customer.value;
+      payload.insurance_id = formData.customer.value;
     }
 
     try {
@@ -104,13 +81,12 @@ const InvoicePayModal = () => {
       }
 
       // Refresh invoices
-      if (stepOneData.paymentCategory === 'cash') {
-        dispatch(getPatientInvoices(auth, stepOneData.customer.value));
+      if (formData.paymentCategory === 'cash') {
+        dispatch(getPatientInvoices(auth, formData.customer.value));
       }
 
-      // Reset to step 1
-      setStep(1);
-      setStepOneData(null);
+      // Optionally reload the page or reset form state
+      window.location.reload();
     } catch (err) {
       toast.error(err?.message || 'Payment allocation failed');
     } finally {
@@ -118,37 +94,29 @@ const InvoicePayModal = () => {
     }
   };
 
-  const handleStepTwoCancel = () => {
-    setStep(1);
-  };
-
   const handleViewInvoiceItems = (data) => {
     setSelectedRowData(data);
     setOpen(true);
   };
 
+  // Effect to fetch invoices when customer changes
+  useEffect(() => {
+    // This will be handled by the UnifiedPaymentForm internally
+    // or you can expose a customer state and fetch here
+  }, []);
+
   
   return (
     <section className="p-6">
-      {step === 1 && (
-        <PaymentCategoryStep
-          patients={patients}
-          insurance={insurance}
-          invoices={invoices}
-          onUpdate={handleStepOneUpdate}
-          onViewInvoiceItems={handleViewInvoiceItems}
-        />
-      )}
-
-      {step === 2 && stepOneData && (
-        <PaymentModeStep
-          stepOneData={stepOneData}
-          paymodes={paymodes}
-          onConfirm={handleStepTwoConfirm}
-          onCancel={handleStepTwoCancel}
-          loading={loading}
-        />
-      )}
+      <UnifiedPaymentForm
+        patients={patients}
+        insurance={insurance}
+        invoices={invoices}
+        paymodes={paymodes}
+        onSubmit={handlePaymentSubmit}
+        onViewInvoiceItems={handleViewInvoiceItems}
+        loading={loading}
+      />
 
       {open && <ViewInvoiceItems {...{ setOpen, open, selectedRowData }} />}
     </section>

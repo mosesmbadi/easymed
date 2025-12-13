@@ -20,6 +20,8 @@ from .views import (
     GoodsReceiptNoteViewSet,
     QuotationViewSet,
     QuotationItemViewSet,
+    AllocateSupplierPaymentView,
+    SupplierPaymentReceiptViewSet,
 
     download_requisition_pdf,
     download_purchaseorder_pdf,
@@ -42,6 +44,7 @@ router.register(r'supplier-invoice', SupplierInvoiceViewSet, basename='supplier-
 router.register(r'goods-receipt-note', GoodsReceiptNoteViewSet, basename='goods-receipt-note')
 router.register(r'quotation', QuotationViewSet, basename='quotation')
 router.register(r'quotationitem', QuotationItemViewSet, basename='quotationitems')
+router.register(r'supplier-payment-receipts', SupplierPaymentReceiptViewSet, basename='supplier-payment-receipts')
 
 requisition_url = NestedDefaultRouter(router, 'requisition', lookup='requisition')
 requisition_url.register(r'requisitionitems', RequisitionItemViewSet, basename='requisitionitems')
@@ -59,7 +62,8 @@ urlpatterns = [
 
     path('inventory_filter/', InventoryFilterView.as_view(), name='inventory-filter'),
     path('purchase-orders/all_purchase_orders/', PurchaseOrderViewSet.as_view({'get': 'all_purchase_orders'}), name='all_purchase_orders'),
-
+    
+    path('allocate-supplier-payment/', AllocateSupplierPaymentView.as_view(), name='allocate-supplier-payment'),
     
     path('purchase_order_pdf/<int:purchaseorder_id>/', download_purchaseorder_pdf, name='download_purchaseorder_pdf'),
     path('receipt_note_pdf/<int:purchase_order_id>/', download_goods_receipt_note_pdf, name='incoming_items_pdf'),
