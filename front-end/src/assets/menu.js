@@ -21,18 +21,26 @@ import { FaUserDoctor } from "react-icons/fa6";
 import { BsCapsule } from "react-icons/bs";
 import { GiMicroscope } from "react-icons/gi";
 import { FaImage } from "react-icons/fa";
+import { MdPersonAddAlt1 } from "react-icons/md";
+
+// Side NavBar
 
 export const menus = [
   {
-    label: "Registration",
+    label: "Check-In",
+    href: "/dashboard/reception/check-in",
+    icon: <MdPersonAddAlt1 className="text-xl" />,
+  },
+  {
+    label: "Patients",
     href: "/dashboard/patients",
     icon: <HiUsers className="text-xl" />,
   },
-  {
-    label: "Reception",
-    href: "/dashboard",
-    icon: <BiSolidDashboard className="text-xl" />,
-  },
+  // {
+  //   label: "Reception",
+  //   href: "/dashboard",
+  //   icon: <BiSolidDashboard className="text-xl" />,
+  // },
   {
     label: "Nursing Station",
     href: "/dashboard/nursing-station",
