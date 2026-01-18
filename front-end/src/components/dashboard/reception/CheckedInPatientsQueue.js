@@ -17,8 +17,9 @@ import {
   ListItemIcon,
   ListItemText
 } from '@mui/material';
-import { MoreVert, PersonAdd, LocalHospital, Science, Medication } from '@mui/icons-material';
+import { MoreVert, PersonAdd, LocalHospital, Science, Edit } from '@mui/icons-material';
 import { format } from 'date-fns';
+import { useRouter } from 'next/navigation';
 import AssignDoctorModal from '../reception-interface/assign-doctor-modal';
 import DirectToTheLabModal from '../doctor-desk/DirectToTheLabModal';
 import { updateAttendanceProcesses } from '@/redux/service/patients';
@@ -31,6 +32,7 @@ const CheckedInPatientsQueue = ({ processes, patients, onUpdate }) => {
   const [assignDoctorOpen, setAssignDoctorOpen] = useState(false);
   const [labModalOpen, setLabModalOpen] = useState(false);
   const auth = useAuth();
+  const router = useRouter();
 
   const handleMenuOpen = (event, process) => {
     const patient = patients.find(p => p.id === process.patient);
@@ -56,16 +58,12 @@ const CheckedInPatientsQueue = ({ processes, patients, onUpdate }) => {
     handleMenuClose();
   };
 
-  const handleSendToPharmacy = async () => {
-    try {
-      await updateAttendanceProcesses({ track: 'pharmacy' }, selectedProcess.id, auth);
-      toast.success('Patient sent to pharmacy');
-      handleMenuClose();
-      if (onUpdate) onUpdate();
-    } catch (error) {
-      console.error('Error sending to pharmacy:', error);
-      toast.error('Error sending patient to pharmacy');
+  const handlePrescribe = () => {
+    const patient = patients.find(p => p.id === selectedProcess.patient);
+    if (patient) {
+      router.push(`/dashboard/patients/prescribe/${patient.id}`);
     }
+    handleMenuClose();
   };
 
   const handleActionComplete = () => {
@@ -222,17 +220,17 @@ const CheckedInPatientsQueue = ({ processes, patients, onUpdate }) => {
           </ListItemIcon>
           <ListItemText>Send to Doctor</ListItemText>
         </MenuItem>
+        <MenuItem onClick={handlePrescribe}>
+          <ListItemIcon>
+            <Edit fontSize="small" color="info" />
+          </ListItemIcon>
+          <ListItemText>Prescribe</ListItemText>
+        </MenuItem>
         <MenuItem onClick={handleSendToLab}>
           <ListItemIcon>
             <Science fontSize="small" color="success" />
           </ListItemIcon>
-          <ListItemText>Send to Lab</ListItemText>
-        </MenuItem>
-        <MenuItem onClick={handleSendToPharmacy}>
-          <ListItemIcon>
-            <Medication fontSize="small" color="info" />
-          </ListItemIcon>
-          <ListItemText>Send to Pharmacy</ListItemText>
+          <ListItemText>Send To Lab</ListItemText>
         </MenuItem>
       </Menu>
 
