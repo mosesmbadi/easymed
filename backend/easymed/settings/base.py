@@ -136,6 +136,16 @@ USE_I18N = True
 USE_TZ = True
 
 
+# Currency / Money formatting (deployment-configurable)
+# Example:
+#   CURRENCY_CODE=UGX
+#   CURRENCY_SYMBOL=USh
+#   CURRENCY_FRACTION_DIGITS=0
+EASYMED_CURRENCY_CODE = config('CURRENCY_CODE', default='KES')
+EASYMED_CURRENCY_SYMBOL = config('CURRENCY_SYMBOL', default='')
+EASYMED_CURRENCY_FRACTION_DIGITS = config('CURRENCY_FRACTION_DIGITS', default=2, cast=int)
+
+
 
 STATIC_URL = '/static/'
 MEDIA_URL = '/images/'

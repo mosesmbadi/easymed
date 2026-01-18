@@ -2,6 +2,7 @@ import uuid
 import random
 from datetime import datetime
 from django.db import models
+from django.conf import settings
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError, status
 
@@ -407,7 +408,10 @@ class SupplierPaymentReceipt(AbstractBaseModel):
         ]
 
     def __str__(self):
-        return f"Payment Receipt #{self.id} - {self.supplier.name} - KES {self.total_amount}"
+        currency_label = (getattr(settings, 'EASYMED_CURRENCY_SYMBOL', '') or getattr(settings, 'EASYMED_CURRENCY_CODE', '') or '').strip()
+        if currency_label:
+            return f"Payment Receipt #{self.id} - {self.supplier.name} - {currency_label} {self.total_amount}"
+        return f"Payment Receipt #{self.id} - {self.supplier.name} - {self.total_amount}"
 
 
 class SupplierPaymentAllocation(models.Model):
