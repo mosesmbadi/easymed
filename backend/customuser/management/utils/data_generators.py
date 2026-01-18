@@ -810,18 +810,40 @@ def create_real_world_lab_data():
         LabTestProfile, LabTestPanel, Specimen, 
         TestPanelReagent, TestKitCounter, ReferenceValue
     )
-    from inventory.models import Item, Department
+    from inventory.models import Item, Department, Inventory
+    from decimal import Decimal
+    from datetime import date, timedelta
     
     created_data = {
         'profiles': [],
         'panels': [],
         'reagents': [],
         'links': [],
-        'counters': []
+        'counters': [],
+        'inventory_records': []
     }
     
     # Get or create Lab department
     lab_dept, _ = Department.objects.get_or_create(name='Lab')
+    
+    # Helper function to create inventory for reagent items
+    def create_reagent_inventory(reagent_item, purchase_price, sale_price, quantity_kits):
+        """Create inventory record for a reagent item"""
+        inv, created = Inventory.objects.get_or_create(
+            item=reagent_item,
+            lot_number=f'LOT-{reagent_item.item_code}-2026',
+            defaults={
+                'department': lab_dept,
+                'purchase_price': Decimal(str(purchase_price)),
+                'sale_price': Decimal(str(sale_price)),
+                'quantity_at_hand': int(reagent_item.subpacked) * quantity_kits,  # total tests
+                'category_one': 'Resale',
+                'expiry_date': date.today() + timedelta(days=365 * 2),  # 2 years from now
+            }
+        )
+        if created:
+            created_data['inventory_records'].append(inv)
+        return inv
     
     # Get or create specimens
     blood_specimen, _ = Specimen.objects.get_or_create(name='Blood')
@@ -845,6 +867,14 @@ def create_real_world_lab_data():
         }
     )
     created_data['reagents'].append(cbc_reagent_item)
+    
+    # Create inventory for CBC reagent: 2 kits in stock
+    create_reagent_inventory(
+        reagent_item=cbc_reagent_item,
+        purchase_price=15000.00,  # KES 15,000 per kit
+        sale_price=18000.00,      # KES 18,000 per kit
+        quantity_kits=2           # 2 kits = 1000 tests
+    )
     
     # CBC Panels
     cbc_panels_data = [
@@ -920,6 +950,7 @@ def create_real_world_lab_data():
         }
     )
     created_data['reagents'].append(alt_ast_reagent)
+    create_reagent_inventory(alt_ast_reagent, 8000.00, 10000.00, 2)
     
     alp_reagent, _ = Item.objects.get_or_create(
         name='Roche Alkaline Phosphatase Reagent',
@@ -934,6 +965,7 @@ def create_real_world_lab_data():
         }
     )
     created_data['reagents'].append(alp_reagent)
+    create_reagent_inventory(alp_reagent, 7500.00, 9500.00, 2)
     
     bilirubin_reagent, _ = Item.objects.get_or_create(
         name='Roche Total Bilirubin Reagent',
@@ -948,6 +980,7 @@ def create_real_world_lab_data():
         }
     )
     created_data['reagents'].append(bilirubin_reagent)
+    create_reagent_inventory(bilirubin_reagent, 8500.00, 10500.00, 2)
     
     albumin_protein_reagent, _ = Item.objects.get_or_create(
         name='Roche Albumin/Total Protein Reagent',
@@ -962,6 +995,7 @@ def create_real_world_lab_data():
         }
     )
     created_data['reagents'].append(albumin_protein_reagent)
+    create_reagent_inventory(albumin_protein_reagent, 9000.00, 11500.00, 2)
     
     # LFT Panels with specific reagent links
     lft_panels_config = [
@@ -1038,6 +1072,7 @@ def create_real_world_lab_data():
         }
     )
     created_data['reagents'].append(cholesterol_reagent)
+    create_reagent_inventory(cholesterol_reagent, 10000.00, 12500.00, 2)
     
     triglycerides_reagent, _ = Item.objects.get_or_create(
         name='Abbott Triglycerides Reagent',
@@ -1052,6 +1087,7 @@ def create_real_world_lab_data():
         }
     )
     created_data['reagents'].append(triglycerides_reagent)
+    create_reagent_inventory(triglycerides_reagent, 9500.00, 12000.00, 2)
     
     hdl_ldl_reagent, _ = Item.objects.get_or_create(
         name='Abbott HDL/LDL Reagent',
@@ -1066,6 +1102,7 @@ def create_real_world_lab_data():
         }
     )
     created_data['reagents'].append(hdl_ldl_reagent)
+    create_reagent_inventory(hdl_ldl_reagent, 11000.00, 14000.00, 2)
     
     lipid_panels_config = [
         ('Total Cholesterol', 'mg/dL', [cholesterol_reagent]),
@@ -1125,6 +1162,7 @@ def create_real_world_lab_data():
     print(f"   - {len(created_data['profiles'])} Profiles")
     print(f"   - {len(created_data['panels'])} Test Panels")
     print(f"   - {len(created_data['reagents'])} Reagent Items")
+    print(f"   - {len(created_data['inventory_records'])} Reagent Inventory Records")
     print(f"   - {len(created_data['links'])} Panel-Reagent Links")
     print(f"   - {len(created_data['counters'])} Reagent Counters")
     

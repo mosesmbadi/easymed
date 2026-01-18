@@ -7,6 +7,7 @@ import { Column, Paging, Pager, Scrolling,
 import { labData } from "@/assets/dummy-data/laboratory";
 import { Grid } from "@mui/material";
 import { MdLocalPrintshop } from "react-icons/md";
+import { IoEyeOutline } from "react-icons/io5";
 
 import { downloadResultPDF } from "@/redux/service/pdfs";
 import { useAuth } from "@/assets/hooks/use-auth";
@@ -23,6 +24,11 @@ const allowedPageSizes = [5, 10, 'all'];
 
 const getActions = () => {
   let actions = [
+    {
+      action: "preview",
+      label: "Preview Results",
+      icon: <IoEyeOutline className="text-primary text-xl mx-2" />,
+    },
     {
       action: "approve",
       label: "Approve Results",
@@ -69,10 +75,23 @@ const LabResultDataGrid = () => {
     }
   };
 
+  const handlePreview = async (data) => {
+    try {
+      const response = await downloadResultPDF(data.process_test_req, `_labtestresult_pdf`, auth);
+      window.open(response.url, '_blank');
+      toast.success("Preview ready");
+    } catch (error) {
+      console.log(error);
+      toast.error(error);
+    }
+  };
+
   const onMenuClick = async (menu, data) => {
     if (menu.action === "print"){
       handlePrint(data);
-    }else if (menu.action === "approve"){
+    } else if (menu.action === "preview"){
+      handlePreview(data);
+    } else if (menu.action === "approve"){
       setSelectedData(data);
       setApproveOpen(true)
     }

@@ -148,9 +148,40 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS(
                 f"Created real-world lab data: "
                 f"{len(lab_data['reagents'])} reagents, "
+                f"{len(lab_data['inventory_records'])} inventory records, "
                 f"{len(lab_data['panels'])} panels, "
                 f"{len(lab_data['links'])} reagent links, "
                 f"{len(lab_data['counters'])} stock counters"
             ))
         
-        # TODO  Inventory records
+        # Ensure all service items (lab tests, appointments) have inventory
+        self.stdout.write(self.style.NOTICE("\nEnsuring service items have inventory records..."))
+        from inventory.models import Inventory
+        from decimal import Decimal
+        from datetime import date, timedelta
+        
+        service_dept, _ = Department.objects.get_or_create(name='General')
+        service_categories = ['Lab Test', 'General Appointment', 'Specialized Appointment']
+        created_service_inv = 0
+        
+        for category in service_categories:
+            items = Item.objects.filter(category=category)
+            for item in items:
+                if not Inventory.objects.filter(item=item).exists():
+                    default_price = Decimal('1000.00') if 'Appointment' in category else Decimal('500.00')
+                    Inventory.objects.create(
+                        item=item,
+                        department=service_dept,
+                        purchase_price=Decimal('0.00'),
+                        sale_price=default_price,
+                        quantity_at_hand=9999,
+                        category_one='Internal',
+                        lot_number='SERVICE-001',
+                        expiry_date=date.today() + timedelta(days=365 * 2)
+                    )
+                    created_service_inv += 1
+        
+        if created_service_inv > 0:
+            self.stdout.write(self.style.SUCCESS(f"Created {created_service_inv} service inventory records"))
+        else:
+            self.stdout.write(self.style.WARNING("Service items already have inventory"))
