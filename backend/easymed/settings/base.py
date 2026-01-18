@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'weasyprint',
     'django_filters',
+    'corsheaders',
     'channels',
     'django_extensions',
     'django_celery_beat',
@@ -66,6 +67,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django_prometheus.middleware.PrometheusBeforeMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -134,6 +136,16 @@ USE_I18N = True
 USE_TZ = True
 
 
+# Currency / Money formatting (deployment-configurable)
+# Example:
+#   CURRENCY_CODE=UGX
+#   CURRENCY_SYMBOL=USh
+#   CURRENCY_FRACTION_DIGITS=0
+EASYMED_CURRENCY_CODE = config('CURRENCY_CODE', default='KES')
+EASYMED_CURRENCY_SYMBOL = config('CURRENCY_SYMBOL', default='')
+EASYMED_CURRENCY_FRACTION_DIGITS = config('CURRENCY_FRACTION_DIGITS', default=2, cast=int)
+
+
 
 STATIC_URL = '/static/'
 MEDIA_URL = '/images/'
@@ -170,6 +182,25 @@ REST_FRAMEWORK = {
     
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
+
+# CORS Configuration
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://192.168.100.46:3000",
+]
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
 
 SESSION_COOKIE_AGE = 30000
 AUTH_USER_MODEL = 'customuser.CustomUser'

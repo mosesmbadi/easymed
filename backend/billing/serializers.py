@@ -14,6 +14,7 @@ class InvoiceItemSerializer(serializers.ModelSerializer):
     payment_mode_name = serializers.SerializerMethodField()
     insurance_company_id = serializers.SerializerMethodField()
     sale_price = serializers.SerializerMethodField()
+    price_source = serializers.SerializerMethodField()
 
     class Meta:
         model = InvoiceItem
@@ -38,6 +39,10 @@ class InvoiceItemSerializer(serializers.ModelSerializer):
     def get_insurance_company_id(self, obj):
         payment_mode = obj.payment_mode
         return payment_mode.insurance_id if payment_mode  else None
+    
+    def get_price_source(self, obj):
+        """Return the source of pricing: 'insurance', 'cash', or 'cash_fallback'."""
+        return obj.price_source
 
     def get_sale_price(self, obj):
         """Compute effective sale_price for display purposes.
@@ -63,6 +68,23 @@ class InvoiceItemSerializer(serializers.ModelSerializer):
             return inv.sale_price if inv and inv.sale_price is not None else 0
         except Exception:
             return 0
+    
+    def create(self, validated_data):
+        """Auto-assign default payment mode if not provided."""
+        if not validated_data.get('payment_mode'):
+            # Try to get the default payment mode (cash)
+            default_payment_mode = PaymentMode.objects.filter(is_default=True).first()
+            
+            if not default_payment_mode:
+                # Fallback to any cash category payment mode
+                default_payment_mode = PaymentMode.objects.filter(
+                    payment_category='cash'
+                ).first()
+            
+            if default_payment_mode:
+                validated_data['payment_mode'] = default_payment_mode
+        
+        return super().create(validated_data)
     
     def save(self, **kwargs):
         try:

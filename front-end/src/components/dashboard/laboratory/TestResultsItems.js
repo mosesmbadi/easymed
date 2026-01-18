@@ -70,32 +70,72 @@ const TestResultsPanels = ({test}) => {
     if(foundPanel && current_interface === 'lab'){
       const flag = checkRange(foundPanel.ref_value_low,foundPanel.ref_value_high,item.result)
       return(
-        <li key={`${foundPanel.id}_panel`} className='flex justify-between items-center'>
-            <span className='w-full py-2'>{foundPanel.name}</span>
-            <span className='w-full text-center py-2'>{item.result}</span>
-            <span className={`w-full text-center py-2 ${flag === 'high' ? 'text-warning': 'text-orange'}`}>{flag}</span>
-            <span className='w-full text-center py-2'>{foundPanel.ref_value_low}</span>
-            <span className='w-full text-center py-2'>{foundPanel.ref_value_high}</span>
-            <span className='w-full text-center py-2'>{foundPanel.unit}</span>
-            {current_interface === 'lab' && (   
-            <div className='w-full text-center py-2 flex justify-end' >
-              {item.result && (
-                <button className="bg-primary text-white px-3 py-2 text-xs rounded-xl" onClick={()=> approveLabResults(item)}>{item.result_approved === false ? 'approve': 'approved'}</button>
+        <div key={`${foundPanel.id}_panel`} className='mb-4'>
+          <li className='flex justify-between items-center'>
+              <span className='w-full py-2'>{foundPanel.name}</span>
+              <span className='w-full text-center py-2'>{item.result}</span>
+              <span className={`w-full text-center py-2 ${flag === 'high' ? 'text-warning': 'text-orange'}`}>{flag}</span>
+              <span className='w-full text-center py-2'>{foundPanel.ref_value_low}</span>
+              <span className='w-full text-center py-2'>{foundPanel.ref_value_high}</span>
+              <span className='w-full text-center py-2'>{foundPanel.unit}</span>
+              {current_interface === 'lab' && (   
+              <div className='w-full text-center py-2 flex justify-end' >
+                {item.result && (
+                  <button className="bg-primary text-white px-3 py-2 text-xs rounded-xl" onClick={()=> approveLabResults(item)}>{item.result_approved === false ? 'approve': 'approved'}</button>
+                )}
+              </div>)}
+          </li>
+          {/* Display interpretation if available */}
+          {item.auto_interpretation && (
+            <div className={`mt-2 p-3 rounded ${item.requires_attention ? 'bg-red-50 border-l-4 border-red-500' : 'bg-blue-50 border-l-4 border-blue-500'}`}>
+              {item.requires_attention && (
+                <span className="inline-block bg-red-500 text-white px-2 py-1 text-xs rounded mb-2">⚠ URGENT</span>
               )}
-            </div>)}
-        </li>
+              <div className="text-sm">
+                <p className="font-semibold text-gray-700 mb-1">Interpretation:</p>
+                <p className="text-gray-600 mb-2">{item.auto_interpretation}</p>
+                {item.clinical_action && (
+                  <>
+                    <p className="font-semibold text-gray-700 mb-1">Recommended Action:</p>
+                    <p className="text-gray-600 italic">{item.clinical_action}</p>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       )
     }else if (foundPanel && current_interface === 'doctor'){
       const flag = checkRange(foundPanel.ref_value_low,foundPanel.ref_value_high,item.result)
       return(
-        <li key={`${foundPanel.id}_panel`} className='flex justify-between items-center'>
-          <span className='w-full py-2'>{foundPanel.name}</span>
-          <span className='w-full text-center py-2'>{item.result_approved ? item.result : ""}</span>
-          <span className={`w-full text-center py-2 ${flag === 'high' ? 'text-warning': 'text-orange'}`}>{item.result_approved ? flag : ""}</span>
-          <span className='w-full text-center py-2'>{foundPanel.ref_value_low}</span>
-          <span className='w-full text-center py-2'>{foundPanel.ref_value_high}</span>
-          <span className='w-full text-center py-2'>{foundPanel.unit}</span>
-        </li>
+        <div key={`${foundPanel.id}_panel`} className='mb-4'>
+          <li className='flex justify-between items-center'>
+            <span className='w-full py-2'>{foundPanel.name}</span>
+            <span className='w-full text-center py-2'>{item.result_approved ? item.result : ""}</span>
+            <span className={`w-full text-center py-2 ${flag === 'high' ? 'text-warning': 'text-orange'}`}>{item.result_approved ? flag : ""}</span>
+            <span className='w-full text-center py-2'>{foundPanel.ref_value_low}</span>
+            <span className='w-full text-center py-2'>{foundPanel.ref_value_high}</span>
+            <span className='w-full text-center py-2'>{foundPanel.unit}</span>
+          </li>
+          {/* Display interpretation if available for doctor view */}
+          {item.result_approved && item.auto_interpretation && (
+            <div className={`mt-2 p-3 rounded ${item.requires_attention ? 'bg-red-50 border-l-4 border-red-500' : 'bg-blue-50 border-l-4 border-blue-500'}`}>
+              {item.requires_attention && (
+                <span className="inline-block bg-red-500 text-white px-2 py-1 text-xs rounded mb-2">⚠ URGENT</span>
+              )}
+              <div className="text-sm">
+                <p className="font-semibold text-gray-700 mb-1">Interpretation:</p>
+                <p className="text-gray-600 mb-2">{item.auto_interpretation}</p>
+                {item.clinical_action && (
+                  <>
+                    <p className="font-semibold text-gray-700 mb-1">Recommended Action:</p>
+                    <p className="text-gray-600 italic">{item.clinical_action}</p>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       )
     }
   })

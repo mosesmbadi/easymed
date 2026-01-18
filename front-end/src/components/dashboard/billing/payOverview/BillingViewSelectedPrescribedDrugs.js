@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { formatMoney } from '@/functions/money'
 
 const BillingViewSelectedPrescribedDrugs = ({selectedPrescribedDrugs, setSelectedPrescribedDrugs}) => {
 
@@ -49,7 +50,7 @@ const BillingViewSelectedPrescribedDrugs = ({selectedPrescribedDrugs, setSelecte
                         <input onClick={() => handleToggle(drug.id, 'insurance')} type='checkbox' checked={drug.payMethod === 'insurance'} />
                         </div>
                     </div>
-                    <span className='w-full flex justify-end'>{`ksh ${drug.sale_price}`}</span>
+                    <span className='w-full flex justify-end'>{formatMoney(drug.sale_price)}</span>
                 </li>
             ))}
         </ul>

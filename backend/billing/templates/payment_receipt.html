@@ -1,4 +1,5 @@
-<!DOCTYPE html>
+<!doctype html>
+{% load money %}
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -134,7 +135,7 @@
           <tr>
             <td>{{ alloc.invoice_item.item.name }}</td>
             <td>{{ alloc.invoice_item.item.category }}</td>
-            <td>KES {{ alloc.amount_applied|floatformat:2 }}</td>
+            <td>{{ alloc.amount_applied|money }}</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -146,7 +147,7 @@
       <tbody>
         <tr>
           <th>Total Amount Paid:</th>
-          <td>KES {{ receipt.total_amount|floatformat:2 }}</td>
+          <td>{{ receipt.total_amount|money }}</td>
         </tr>
       </tbody>
     </table>

@@ -46,6 +46,36 @@ const CategorizedItems = ({
     fetchInventoryForPrices(invoiceItem?.item);
   }, [invoiceItem]);
 
+  // Auto-select default payment mode (cash) when inventory and payment modes are loaded
+  useEffect(() => {
+    if (!selectedPayMethod && patient_insurance_for_this_item?.length > 0 && inventoryPrices?.length > 0) {
+      // Find default payment mode (cash or marked as default)
+      const defaultMode = patient_insurance_for_this_item.find(
+        mode => mode.is_default || mode.payment_category === 'cash'
+      );
+      
+      if (defaultMode && updatedInvoiceItem?.status !== 'billed') {
+        setSelectedPayMethod(defaultMode);
+        
+        // Auto-populate with cash price from inventory
+        const inv0 = inventoryPrices[0];
+        // Prefer inventory sale_price, then fall back to existing invoice item values
+        let price = 0;
+        
+        if (inv0?.sale_price && inv0.sale_price > 0) {
+          price = inv0.sale_price;
+        } else if (updatedInvoiceItem?.sale_price && updatedInvoiceItem.sale_price > 0) {
+          price = updatedInvoiceItem.sale_price;
+        } else if (updatedInvoiceItem?.item_amount && updatedInvoiceItem.item_amount > 0) {
+          price = updatedInvoiceItem.item_amount;
+        }
+        
+        setSelectedPrice(price);
+        setSelectedCoPay(0);
+      }
+    }
+  }, [patient_insurance_for_this_item, inventoryPrices, selectedPayMethod, updatedInvoiceItem]);
+
   const updateInvoiceTotals = (invoiceItem) => {
     if(invoiceItem.category.toLowerCase().includes("appointment")){
       setAppointmentSum((prevSum) => prevSum + parseInt(invoiceItem.item_amount));
@@ -100,41 +130,91 @@ const CategorizedItems = ({
       </Grid>
       <Grid item xs={4}>
         {updatedInvoiceItem?.status !== 'billed' ? (
-          <select
-            className='p-2 focus:outline-none'
+          <div className="relative">
+            <select
+              className='p-2 focus:outline-none w-full'
               name={updatedInvoiceItem?.item_name}
+              value={selectedPayMethod?.id || ""}
               onChange={(e) => {
-                const selectedOption = patient_insurance_for_this_item.find(
-                  (mode) => mode.id === parseInt(e.target.value)
-                );
-                setSelectedPayMethod(selectedOption);
+              const selectedOption = patient_insurance_for_this_item.find(
+                (mode) => mode.id === parseInt(e.target.value)
+              );
+              setSelectedPayMethod(selectedOption);
 
-                const inv0 = Array.isArray(inventoryPrices) && inventoryPrices.length > 0 ? inventoryPrices[0] : null;
+              const inv0 = Array.isArray(inventoryPrices) && inventoryPrices.length > 0 ? inventoryPrices[0] : null;
 
-                if ((selectedOption?.payment_category || '').toLowerCase() !== 'insurance') {
-                  // Cash-like category (cash, mpesa, cheque, direct_to_bank)
-                  const price = inv0?.sale_price ?? updatedInvoiceItem?.sale_price ?? updatedInvoiceItem?.item_amount ?? updatedInvoiceItem?.actual_total ?? 0;
-                  setSelectedPrice(price);
-                  setSelectedCoPay(0);
-                } else {
-                  // Insurance: pick specific insurance price if available
-                  const selectedInsurance = inv0?.insurance_sale_prices?.find((mode) => 
-                    mode.insurance === selectedOption?.insurance
-                  );
-                  const price = selectedInsurance?.price ?? updatedInvoiceItem?.item_amount ?? updatedInvoiceItem?.actual_total ?? 0;
-                  const copay = selectedInsurance?.co_pay ?? 0;
-                  setSelectedPrice(price);
-                  setSelectedCoPay(copay);
+              if ((selectedOption?.payment_category || '').toLowerCase() !== 'insurance') {
+                // Cash-like category (cash, mpesa, cheque, direct_to_bank)
+                // Prefer inventory sale_price (if > 0), then fall back to existing values
+                let price = 0;
+                if (inv0?.sale_price && inv0.sale_price > 0) {
+                  price = inv0.sale_price;
+                } else if (updatedInvoiceItem?.sale_price && updatedInvoiceItem.sale_price > 0) {
+                  price = updatedInvoiceItem.sale_price;
+                } else if (updatedInvoiceItem?.item_amount && updatedInvoiceItem.item_amount > 0) {
+                  price = updatedInvoiceItem.item_amount;
+                } else if (updatedInvoiceItem?.actual_total && updatedInvoiceItem.actual_total > 0) {
+                  price = updatedInvoiceItem.actual_total;
                 }
-              }}
-            >
-            <option value="" disabled selected>Payment Method</option>
+                setSelectedPrice(price);
+                setSelectedCoPay(0);
+              } else {
+                // Insurance: pick specific insurance price if available
+                const selectedInsurance = inv0?.insurance_sale_prices?.find((mode) => 
+                  mode.insurance === selectedOption?.insurance
+                );
+                
+                let price = 0;
+                if (selectedInsurance?.price && selectedInsurance.price > 0) {
+                  price = selectedInsurance.price;
+                } else if (inv0?.sale_price && inv0.sale_price > 0) {
+                  // Fallback to cash price if insurance price not found
+                  price = inv0.sale_price;
+                } else if (updatedInvoiceItem?.item_amount && updatedInvoiceItem.item_amount > 0) {
+                  price = updatedInvoiceItem.item_amount;
+                } else if (updatedInvoiceItem?.actual_total && updatedInvoiceItem.actual_total > 0) {
+                  price = updatedInvoiceItem.actual_total;
+                }
+                
+                const copay = selectedInsurance?.co_pay ?? 0;
+                setSelectedPrice(price);
+                setSelectedCoPay(copay);
+              }
+            }}
+          >
+            <option value="" disabled>Payment Method</option>
             {patient_insurance_for_this_item?.map((mode) => (
               <option key={mode.id} value={mode.id}>
                 {mode.payment_mode}
               </option>
             ))}
           </select>
+          {/* Visual indicator for payment mode type */}
+          {selectedPayMethod && (
+            <div className="mt-1">
+              {selectedPayMethod.payment_category === 'cash' || selectedPayMethod.is_default ? (
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                  💵 Cash Price
+                </span>
+              ) : selectedPayMethod.payment_category === 'insurance' ? (
+                <div className="space-y-1">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                    🏥 Insurance: {selectedPayMethod.payment_mode}
+                  </span>
+                  {inventoryPrices[0]?.insurance_sale_prices?.some(ins => ins.insurance === selectedPayMethod.insurance) ? null : (
+                    <span className="block text-xs text-amber-600">
+                      ⚠️ Using cash price (no insurance price set)
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                  {selectedPayMethod.payment_mode}
+                </span>
+              )}
+            </div>
+          )}
+          </div>
         ) : (<div className='p-2'>{updatedInvoiceItem.payment_mode_name}</div>)}
       </Grid>
       {updatedInvoiceItem?.status !== 'billed' ? (

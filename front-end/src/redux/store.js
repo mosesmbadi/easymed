@@ -30,6 +30,6 @@ export const store = configureStore({
         announcement: AnnouncementReducer,
         menu: MenuReducer,
         company: CompanyReducer,
-        inpatient: InpatientSlice
-    }
+        inpatient: InpatientSlice,
+    },
 })

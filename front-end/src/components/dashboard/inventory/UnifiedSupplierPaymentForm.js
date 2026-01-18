@@ -7,6 +7,7 @@ import { Column, Pager, Paging, Scrolling, Selection } from "devextreme-react/da
 import CmtDropdownMenu from '@/assets/DropdownMenu';
 import { LuMoreHorizontal } from 'react-icons/lu';
 import { CiMoneyCheck1 } from "react-icons/ci";
+import { formatMoney } from "@/functions/money";
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
   ssr: false,
@@ -252,7 +253,7 @@ const UnifiedSupplierPaymentForm = ({
                 format="currency"
                 width={120}
                 cellRender={(data) => (
-                  <span>KES {parseFloat(data.value || 0).toFixed(2)}</span>
+                  <span>{formatMoney(data.value || 0)}</span>
                 )}
               />
               <Column
@@ -262,7 +263,7 @@ const UnifiedSupplierPaymentForm = ({
                 format="currency"
                 width={120}
                 cellRender={(data) => (
-                  <span>KES {parseFloat(data.value || 0).toFixed(2)}</span>
+                  <span>{formatMoney(data.value || 0)}</span>
                 )}
               />
               <Column
@@ -270,7 +271,7 @@ const UnifiedSupplierPaymentForm = ({
                 width={120}
                 cellRender={(data) => {
                   const outstanding = getOutstandingAmount(data.data);
-                  return <span>KES {outstanding.toFixed(2)}</span>;
+                  return <span>{formatMoney(outstanding)}</span>;
                 }}
               />
               <Column
@@ -369,13 +370,13 @@ const UnifiedSupplierPaymentForm = ({
               <div className="flex justify-between">
                 <span className="text-gray-600">Total Owed:</span>
                 <span className="font-semibold text-lg">
-                  KES {totalOwed.toFixed(2)}
+                  {formatMoney(totalOwed)}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Payment Amount:</span>
                 <span className="font-semibold text-lg">
-                  KES {parseFloat(payAmount || 0).toFixed(2)}
+                  {formatMoney(payAmount || 0)}
                 </span>
               </div>
               <div className="flex justify-between border-t pt-2">
@@ -383,7 +384,7 @@ const UnifiedSupplierPaymentForm = ({
                 <span className={`font-bold text-lg ${
                   balance > 0 ? 'text-green-600' : balance < 0 ? 'text-red-600' : 'text-gray-900'
                 }`}>
-                  KES {Math.abs(balance).toFixed(2)}
+                  {formatMoney(Math.abs(balance))}
                   {balance > 0 && ' (Overpayment)'}
                   {balance < 0 && ' (Underpayment)'}
                 </span>

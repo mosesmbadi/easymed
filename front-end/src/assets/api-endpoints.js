@@ -169,7 +169,10 @@ export const API_URL = {
 
 //------------------------ Application APIs ----------------------//
 export const APP_API_URL = {
+  BASE_URL: ((typeof window !== 'undefined' && typeof process !== 'undefined' && process.env.NEXT_PUBLIC_BACKEND_URL) || "http://localhost:8000").replace(/\/$/, ''),
+  
   /***************** AUTH **********************/
+
   REGISTER_USER: "/api/register",
   CREATE_USER: "/api/auth/create-user",
   LOGIN: "/api/register/login",
@@ -323,6 +326,7 @@ export const APP_API_URL = {
   /***************** PATIENTS USERS ENDPOINTS **********************/
   /***************** LABORATORY **********************/
   PATIENTLABTESTREQUEST: "/api/patient-profile/patientlabtestrequest",
+  RECENT_REAGENT_USAGE: "/api/laboratory/recent-reagent-usage",
 
   /***************** PRESCRIPTION **********************/
   PATIENTPRESCRIPTIONREQUEST: "/api/patient-profile/patientprescriptionrequest",

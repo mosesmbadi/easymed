@@ -10,6 +10,7 @@ import { CiMoneyCheck1 } from "react-icons/ci";
 import { useDispatch } from "react-redux";
 import { useAuth } from "@/assets/hooks/use-auth";
 import { getPatientInvoices } from "@/redux/features/billing";
+import { formatMoney } from "@/functions/money";
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
   ssr: false,
@@ -301,7 +302,7 @@ const UnifiedPaymentForm = ({
               <div className="bg-blue-50 rounded-lg p-4">
                 <span className="text-sm text-gray-600">Total Owed:</span>
                 <div className="text-xl font-bold text-blue-700">
-                  KES {totalOwed.toFixed(2)}
+                  {formatMoney(totalOwed)}
                 </div>
               </div>
             </Grid>
@@ -320,7 +321,7 @@ const UnifiedPaymentForm = ({
               <div className={`rounded-lg p-4 ${balance > 0 ? 'bg-red-50' : balance < 0 ? 'bg-green-50' : 'bg-gray-50'}`}>
                 <span className="text-sm text-gray-600">Balance:</span>
                 <div className={`text-xl font-bold ${balance > 0 ? 'text-red-600' : balance < 0 ? 'text-green-600' : 'text-gray-700'}`}>
-                  KES {Math.abs(balance).toFixed(2)}
+                  {formatMoney(Math.abs(balance))}
                 </div>
                 <div className="text-xs mt-1">
                   {balance > 0 ? '(Underpayment)' : balance < 0 ? '(Overpayment)' : '(Exact)'}

@@ -30,7 +30,8 @@ from .models import (
     PatientSample,
     Specimen,
     TestKit,
-    TestKitCounter
+    TestKitCounter,
+    ReagentConsumptionLog
 )
 
 from .serializers import (
@@ -45,7 +46,9 @@ from .serializers import (
     PatientSampleSerializer,
     SpecimenSerializer,
     TestKitCounterSerializer,
-    TestKitSerializer
+    TestKitSerializer,
+    ReagentConsumptionLogSerializer,
+    LowStockReagentSerializer
 )
 
 from authperms.permissions import (
@@ -276,6 +279,9 @@ def download_labtestresult_pdf(request, processtestrequest_id):
     # Construct full logo URL for template
     company_logo_url = request.build_absolute_uri(company.logo.url) if company.logo else None
 
+    first_request = labtestrequests.first() if labtestrequests.exists() else None
+    first_panel = panels.first() if panels.exists() else None
+    
     context = {
         'processtestrequest': processtestrequest,
         'labtestrequests': labtestrequests,
@@ -285,8 +291,11 @@ def download_labtestresult_pdf(request, processtestrequest_id):
         'company': company,
         'company_logo_url': company_logo_url,
         'attendance_process': attendance_process,
-        'approved_on': panels.first().approved_on if panels.exists() else None,
-        'first_labtestrequest': labtestrequests.first() if labtestrequests.exists() else None,
+        'approved_on': first_panel.approved_on if first_panel else None,
+        'first_labtestrequest': first_request,
+        'requested_date': first_request.created_on if first_request else None,
+        'requested_time': first_request.requested_on if first_request else None,
+        'result_entered_datetime': first_panel.approved_on if first_panel else None,
     }
 
     # Only process panels that have results (already filtered in the query)
@@ -297,7 +306,10 @@ def download_labtestresult_pdf(request, processtestrequest_id):
             'flag': 'N/A',
             'ref_value_low': 'N/A',
             'ref_value_high': 'N/A',
-            'unit': panel.test_panel.unit
+            'unit': panel.test_panel.unit,
+            'interpretation': panel.auto_interpretation,
+            'clinical_action': panel.clinical_action,
+            'requires_attention': panel.requires_attention,
         }
 
         if panel.test_panel.is_qualitative:
@@ -338,3 +350,132 @@ def download_labtestresult_pdf(request, processtestrequest_id):
     response['Content-Disposition'] = f'attachment; filename="labtest_report_{processtestrequest_id}.pdf"'
 
     return response
+
+
+class ReagentConsumptionLogViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    ViewSet for reagent consumption logs.
+    Provides list and detail views for tracking reagent usage.
+    """
+    queryset = ReagentConsumptionLog.objects.select_related(
+        'reagent_item', 'test_panel', 'performed_by'
+    ).all()
+    serializer_class = ReagentConsumptionLogSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['reagent_item', 'test_panel', 'consumed_at']
+    
+    @action(detail=False, methods=['get'])
+    def summary(self, request):
+        """Get consumption summary grouped by reagent"""
+        from django.db.models import Sum, Count, Avg
+        from django.db.models.functions import TruncDate
+        
+        # Group by reagent
+        summary = ReagentConsumptionLog.objects.values(
+            'reagent_item__name'
+        ).annotate(
+            total_tests_consumed=Sum('tests_consumed'),
+            consumption_count=Count('id'),
+            avg_tests_per_use=Avg('tests_consumed')
+        ).order_by('-total_tests_consumed')
+        
+        return Response(summary)
+    
+    @action(detail=False, methods=['get'])
+    def daily_consumption(self, request):
+        """Get daily consumption trends"""
+        from django.db.models import Sum
+        from django.db.models.functions import TruncDate
+        
+        daily = ReagentConsumptionLog.objects.annotate(
+            date=TruncDate('consumed_at')
+        ).values('date', 'reagent_item__name').annotate(
+            tests_consumed=Sum('tests_consumed')
+        ).order_by('-date')[:30]  # Last 30 days
+        
+        return Response(daily)
+    
+    @action(detail=False, methods=['get'])
+    def recent_usage(self, request):
+        """Get recently used reagents with their current stock levels"""
+        from django.db.models import Max
+        from datetime import timedelta
+        from django.utils import timezone
+        
+        # Get reagents used in the last 24 hours
+        recent_time = timezone.now() - timedelta(hours=24)
+        
+        recent_consumptions = ReagentConsumptionLog.objects.filter(
+            consumed_at__gte=recent_time
+        ).values('reagent_item').annotate(
+            last_used=Max('consumed_at')
+        ).order_by('-last_used')[:10]
+        
+        # Get full details for these reagents
+        reagent_ids = [item['reagent_item'] for item in recent_consumptions]
+        counters = TestKitCounter.objects.filter(
+            reagent_item_id__in=reagent_ids
+        ).select_related('reagent_item')
+        
+        # Build response with stock levels
+        result = []
+        for counter in counters:
+            # Find the last used time for this reagent
+            last_used = next(
+                (item['last_used'] for item in recent_consumptions if item['reagent_item'] == counter.reagent_item_id),
+                None
+            )
+            
+            result.append({
+                'reagent_name': counter.reagent_item.name,
+                'reagent_code': counter.reagent_item.item_code,
+                'available_tests': counter.available_tests,
+                'minimum_threshold': counter.minimum_threshold,
+                'is_low_stock': counter.is_low_stock(),
+                'is_out_of_stock': counter.is_out_of_stock(),
+                'stock_percentage': (counter.available_tests / counter.minimum_threshold * 100) if counter.minimum_threshold > 0 else 100,
+                'last_used': last_used
+            })
+        
+        # Sort by last_used descending
+        result.sort(key=lambda x: x['last_used'] if x['last_used'] else timezone.now(), reverse=True)
+        
+        return Response(result)
+
+
+class LowStockReagentViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    ViewSet for low stock reagent alerts.
+    Returns reagents that are low or out of stock.
+    """
+    serializer_class = LowStockReagentSerializer
+    
+    def get_queryset(self):
+        queryset = TestKitCounter.objects.filter(
+            reagent_item__isnull=False
+        ).select_related('reagent_item')
+        
+        # Filter by stock status if provided
+        status_filter = self.request.query_params.get('status', None)
+        if status_filter == 'low':
+            queryset = [q for q in queryset if q.is_low_stock() and not q.is_out_of_stock()]
+        elif status_filter == 'out':
+            queryset = [q for q in queryset if q.is_out_of_stock()]
+        else:
+            # Return all low or out of stock
+            queryset = [q for q in queryset if q.is_low_stock() or q.is_out_of_stock()]
+        
+        return queryset
+    
+    @action(detail=False, methods=['get'])
+    def count(self, request):
+        """Get count of low/out of stock reagents"""
+        all_counters = TestKitCounter.objects.filter(reagent_item__isnull=False)
+        low_stock = sum(1 for c in all_counters if c.is_low_stock() and not c.is_out_of_stock())
+        out_of_stock = sum(1 for c in all_counters if c.is_out_of_stock())
+        
+        return Response({
+            'low_stock': low_stock,
+            'out_of_stock': out_of_stock,
+            'total_alerts': low_stock + out_of_stock
+        })

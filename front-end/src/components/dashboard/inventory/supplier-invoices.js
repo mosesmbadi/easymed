@@ -7,6 +7,7 @@ import { Grid } from "@mui/material";
 import { months } from "@/assets/dummy-data/laboratory";
 import { useAuth } from "@/assets/hooks/use-auth";
 import { getAllSupplierInvoice, getInvoice } from "@/redux/features/inventory";
+import { formatMoney } from "@/functions/money";
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
   ssr: false,
@@ -46,10 +47,7 @@ function SupplierInvoicesDatagrid() {
   );
 
   const formatCurrency = (value) => {
-    return parseFloat(value).toLocaleString("en-KE", {
-      style: "currency",
-      currency: "KES",
-    });
+    return formatMoney(value);
   };
 
   const formatDate = (dateString) => {

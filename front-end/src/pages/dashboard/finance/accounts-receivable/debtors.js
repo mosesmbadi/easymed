@@ -9,6 +9,7 @@ import ProtectedRoute from '@/assets/hoc/protected-route';
 import AccountsReceivableNav from '@/components/dashboard/finance/AccountsReceivableNav';
 import { useAuth } from '@/assets/hooks/use-auth';
 import { FaMoneyBillWave, FaFileInvoiceDollar, FaUsers, FaClock } from 'react-icons/fa';
+import { formatMoney } from '@/functions/money';
 
 const DataGrid = dynamic(() => import('devextreme-react/data-grid'), {
   ssr: false,
@@ -263,7 +264,7 @@ const ARDebtorsPage = () => {
                       Total Outstanding
                     </Typography>
                     <Typography variant='h4' className='mt-2 text-green-600'>
-                      KES {summary.totalOwed.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {formatMoney(summary.totalOwed)}
                     </Typography>
                     <Typography variant='caption' color='textSecondary'>
                       Amount receivable
@@ -284,7 +285,7 @@ const ARDebtorsPage = () => {
                       Partial Payments
                     </Typography>
                     <Typography variant='h4' className='mt-2 text-blue-600'>
-                      KES {summary.totalPaid.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {formatMoney(summary.totalPaid)}
                     </Typography>
                     <Typography variant='caption' color='textSecondary'>
                       Already received
@@ -358,7 +359,7 @@ const ARDebtorsPage = () => {
           <div className='flex justify-between items-center mb-4'>
             <Typography variant='h6'>Unpaid Invoices</Typography>
             <Typography variant='body2' color='textSecondary'>
-              Total Receivable: <span className='font-bold text-green-600'>KES {summary.totalOwed.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              Total Receivable: <span className='font-bold text-green-600'>{formatMoney(summary.totalOwed)}</span>
             </Typography>
           </div>
           
@@ -443,7 +444,7 @@ const ARDebtorsPage = () => {
                 width={150}
                 cellRender={(data) => (
                   <span className='font-semibold'>
-                    KES {parseFloat(data.value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {formatMoney(data.value || 0)}
                   </span>
                 )}
               />
@@ -456,7 +457,7 @@ const ARDebtorsPage = () => {
                 width={130}
                 cellRender={(data) => (
                   <span className='text-blue-600'>
-                    KES {parseFloat(data.value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {formatMoney(data.value || 0)}
                   </span>
                 )}
               />
@@ -468,7 +469,7 @@ const ARDebtorsPage = () => {
                   const outstanding = getOutstandingAmount(data.data);
                   return (
                     <span className='font-bold text-green-600'>
-                      KES {outstanding.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {formatMoney(outstanding)}
                     </span>
                   );
                 }}
@@ -501,7 +502,7 @@ const ARDebtorsPage = () => {
                   summaryType="sum"
                   valueFormat="currency"
                   customizeText={(data) => {
-                    return `Total: KES ${data.value?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                    return `Total: ${formatMoney(data.value || 0)}`;
                   }}
                 />
                 <TotalItem
@@ -509,7 +510,7 @@ const ARDebtorsPage = () => {
                   summaryType="sum"
                   valueFormat="currency"
                   customizeText={(data) => {
-                    return `Paid: KES ${data.value?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                    return `Paid: ${formatMoney(data.value || 0)}`;
                   }}
                 />
               </Summary>

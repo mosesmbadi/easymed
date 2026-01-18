@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { formatMoney } from '@/functions/money'
 
 const BillingViewSelectedLabtests = ({selectedLabRequests, setSelectedLabRequests}) => {
     const [selectedPayMethodOptions, setSelectedPayMethodOptions] = useState({});
@@ -50,7 +51,7 @@ const BillingViewSelectedLabtests = ({selectedLabRequests, setSelectedLabRequest
                     <input onClick={() => handleToggle(testReq.id, 'insurance')} type='checkbox' checked={testReq.payMethod === 'insurance'} />
                     </div>
                 </div>
-                <span className='w-full flex justify-end'>{`ksh ${testReq.sale_price}`}</span>
+                <span className='w-full flex justify-end'>{formatMoney(testReq.sale_price)}</span>
                 </li>
             ))}
         </ul>

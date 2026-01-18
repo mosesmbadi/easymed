@@ -5,11 +5,16 @@ from customuser.management.utils.data_generators import (
     create_dummy_insurance_companies,
     create_dummy_company_branches,
     create_dummy_items,
+    create_appointment_items,
     create_permissions_and_groups,
     create_dummy_patients,
     create_demo_lab_profiles_and_panels,
+    create_reference_values,
+    create_lab_test_interpretations,
     create_dummy_departments,
-    create_dummy_suppliers
+    create_dummy_suppliers,
+    create_real_world_lab_data,
+    create_hospital_wards_and_beds
 )
 from customuser.models import CustomUser
 from company.models import Company, CompanyBranch, InsuranceCompany
@@ -61,6 +66,13 @@ class Command(BaseCommand):
         else:
             items = create_dummy_items(count=DEFAULT_COUNT)
             self.stdout.write(self.style.SUCCESS(f"Created {len(items)} dummy inventory items."))
+        
+        # Create appointment items separately
+        if Item.objects.filter(category__in=['General Appointment', 'Specialized Appointment']).exists():
+            self.stdout.write(self.style.WARNING("Skipping appointment items: already exist."))
+        else:
+            appointment_items = create_appointment_items()
+            self.stdout.write(self.style.SUCCESS(f"Created {len(appointment_items)} appointment items (1 General, 4 Specialized)."))
 
         if Group.objects.filter(name__in=[
                 "SYS_ADMIN", "PATIENT", "DOCTOR", "PHARMACIST", "RECEPTIONIST", "LAB_TECH", "NURSE"
@@ -96,7 +108,23 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING("Skipping lab test profiles/panels: already exist."))
         else:
             profiles, panels = create_demo_lab_profiles_and_panels()
-            self.stdout.write(self.style.SUCCESS(f"Created {len(profiles)} lab test profiles and {len(panels)} panels."))    
+            self.stdout.write(self.style.SUCCESS(f"Created {len(profiles)} lab test profiles and {len(panels)} panels."))
+        
+        # Create reference values for lab test panels
+        from laboratory.models import ReferenceValue
+        if ReferenceValue.objects.exists():
+            self.stdout.write(self.style.WARNING("Skipping reference values: already exist."))
+        else:
+            reference_values = create_reference_values()
+            self.stdout.write(self.style.SUCCESS(f"Created {len(reference_values)} reference values for lab test panels."))
+        
+        # Create lab test interpretations
+        from laboratory.models import LabTestInterpretation
+        if LabTestInterpretation.objects.exists():
+            self.stdout.write(self.style.WARNING("Skipping lab test interpretations: already exist."))
+        else:
+            interpretations = create_lab_test_interpretations()
+            self.stdout.write(self.style.SUCCESS(f"Created {len(interpretations)} lab test interpretations for common tests."))
 
         # create departments
         if Department.objects.exists():
@@ -112,4 +140,60 @@ class Command(BaseCommand):
             suppliers = create_dummy_suppliers(count=DEFAULT_COUNT)
             self.stdout.write(self.style.SUCCESS(f"Created {len(suppliers)} dummy suppliers."))
         
-        # TODO  Inventory records
+        # Create real-world lab data (test profiles, panels, reagents, and links)
+        from laboratory.models import TestPanelReagent, TestKitCounter
+        if TestPanelReagent.objects.exists() and TestKitCounter.objects.exists():
+            self.stdout.write(self.style.WARNING("Skipping real-world lab data: already exists."))
+        else:
+            lab_data = create_real_world_lab_data()
+            self.stdout.write(self.style.SUCCESS(
+                f"Created real-world lab data: "
+                f"{len(lab_data['reagents'])} reagents, "
+                f"{len(lab_data['inventory_records'])} inventory records, "
+                f"{len(lab_data['panels'])} panels, "
+                f"{len(lab_data['links'])} reagent links, "
+                f"{len(lab_data['counters'])} stock counters"
+            ))
+        
+        # Ensure all service items (lab tests, appointments) have inventory
+        self.stdout.write(self.style.NOTICE("\nEnsuring service items have inventory records..."))
+        from inventory.models import Inventory
+        from decimal import Decimal
+        from datetime import date, timedelta
+        
+        service_dept, _ = Department.objects.get_or_create(name='General')
+        service_categories = ['Lab Test', 'General Appointment', 'Specialized Appointment']
+        created_service_inv = 0
+        
+        for category in service_categories:
+            items = Item.objects.filter(category=category)
+            for item in items:
+                if not Inventory.objects.filter(item=item).exists():
+                    default_price = Decimal('1000.00') if 'Appointment' in category else Decimal('500.00')
+                    Inventory.objects.create(
+                        item=item,
+                        department=service_dept,
+                        purchase_price=Decimal('0.00'),
+                        sale_price=default_price,
+                        quantity_at_hand=9999,
+                        category_one='Internal',
+                        lot_number='SERVICE-001',
+                        expiry_date=date.today() + timedelta(days=365 * 2)
+                    )
+                    created_service_inv += 1
+        
+        if created_service_inv > 0:
+            self.stdout.write(self.style.SUCCESS(f"Created {created_service_inv} service inventory records"))
+        else:
+            self.stdout.write(self.style.WARNING("Service items already have inventory"))        
+        # Create hospital wards and beds
+        from inpatient.models import Ward, Bed
+        if Ward.objects.exists() and Bed.objects.exists():
+            self.stdout.write(self.style.WARNING("Skipping wards and beds: already exist."))
+        else:
+            ward_data = create_hospital_wards_and_beds()
+            self.stdout.write(self.style.SUCCESS(
+                f"Created hospital infrastructure: "
+                f"{len(ward_data['wards'])} wards, "
+                f"{len(ward_data['beds'])} beds"
+            ))
