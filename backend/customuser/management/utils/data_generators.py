@@ -8,6 +8,7 @@ from authperms.models import Permission, Group
 from patient.models import Patient
 
 from laboratory.models import LabTestProfile, Specimen, LabTestPanel, LabTestInterpretation, ReferenceValue
+from inpatient.models import Ward, Bed
 
 
 fake = Faker()
@@ -1676,3 +1677,99 @@ def create_real_world_lab_data():
     print(f"   - {len(created_data['counters'])} Reagent Counters")
     
     return created_data
+
+
+def create_hospital_wards_and_beds():
+    """
+    Create realistic hospital wards and beds for inpatient management.
+    Creates wards with appropriate bed types and capacity.
+    """
+    
+    wards_data = [
+        # General Wards
+        {"name": "Male General Ward A", "ward_type": "general", "gender": "male", "capacity": 20},
+        {"name": "Male General Ward B", "ward_type": "general", "gender": "male", "capacity": 20},
+        {"name": "Female General Ward A", "ward_type": "general", "gender": "female", "capacity": 20},
+        {"name": "Female General Ward B", "ward_type": "general", "gender": "female", "capacity": 20},
+        
+        # Pediatrics Wards
+        {"name": "Pediatrics Ward A", "ward_type": "pediatrics", "gender": "male", "capacity": 15},
+        {"name": "Pediatrics Ward B", "ward_type": "pediatrics", "gender": "female", "capacity": 15},
+        
+        # Maternity Ward
+        {"name": "Maternity Ward", "ward_type": "maternity", "gender": "female", "capacity": 25},
+        
+        # Amenity/Private Wards
+        {"name": "Private Ward - Male", "ward_type": "amenity", "gender": "male", "capacity": 8},
+        {"name": "Private Ward - Female", "ward_type": "amenity", "gender": "female", "capacity": 8},
+    ]
+    
+    bed_types_by_ward = {
+        "general": ["manual", "semi_electric"],
+        "pediatrics": ["manual", "semi_electric"],
+        "maternity": ["semi_electric", "fully_electric"],
+        "amenity": ["fully_electric", "fully_electric"],  # More electric beds in private
+    }
+    
+    created_wards = []
+    created_beds = []
+    
+    print("\n🏥 Creating Hospital Wards and Beds...")
+    
+    for ward_data in wards_data:
+        # Create or get the ward
+        ward, ward_created = Ward.objects.get_or_create(
+            name=ward_data["name"],
+            defaults={
+                "ward_type": ward_data["ward_type"],
+                "gender": ward_data["gender"],
+                "capacity": ward_data["capacity"]
+            }
+        )
+        
+        if ward_created:
+            created_wards.append(ward)
+            print(f"   ✓ Created ward: {ward.name} ({ward.capacity} beds)")
+        
+        # Create beds for this ward if they don't exist
+        existing_beds_count = Bed.objects.filter(ward=ward).count()
+        
+        if existing_beds_count == 0:
+            bed_types = bed_types_by_ward[ward_data["ward_type"]]
+            
+            for bed_num in range(1, ward_data["capacity"] + 1):
+                # Alternate between bed types for variety
+                bed_type = bed_types[bed_num % len(bed_types)]
+                
+                # Create bed number (e.g., "A-01", "A-02", etc.)
+                bed_number = f"{ward.name.split()[0][0]}{ward.name.split()[-1][0] if len(ward.name.split()) > 1 else ''}-{bed_num:02d}"
+                
+                bed = Bed.objects.create(
+                    ward=ward,
+                    bed_type=bed_type,
+                    bed_number=bed_number,
+                    status="available"
+                )
+                created_beds.append(bed)
+    
+    print(f"\n✅ Created Hospital Infrastructure:")
+    print(f"   - {len(created_wards)} Wards")
+    print(f"   - {len(created_beds)} Beds")
+    print(f"   - Total Capacity: {sum(w.capacity for w in created_wards)} beds")
+    
+    # Summary by ward type
+    ward_types = {}
+    for ward in created_wards:
+        if ward.ward_type not in ward_types:
+            ward_types[ward.ward_type] = {"count": 0, "beds": 0}
+        ward_types[ward.ward_type]["count"] += 1
+        ward_types[ward.ward_type]["beds"] += ward.capacity
+    
+    print("\n   Ward Types Summary:")
+    for ward_type, stats in ward_types.items():
+        print(f"   - {ward_type.title()}: {stats['count']} ward(s), {stats['beds']} beds")
+    
+    return {
+        "wards": created_wards,
+        "beds": created_beds
+    }

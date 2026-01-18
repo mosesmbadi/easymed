@@ -13,7 +13,8 @@ from customuser.management.utils.data_generators import (
     create_lab_test_interpretations,
     create_dummy_departments,
     create_dummy_suppliers,
-    create_real_world_lab_data
+    create_real_world_lab_data,
+    create_hospital_wards_and_beds
 )
 from customuser.models import CustomUser
 from company.models import Company, CompanyBranch, InsuranceCompany
@@ -184,4 +185,15 @@ class Command(BaseCommand):
         if created_service_inv > 0:
             self.stdout.write(self.style.SUCCESS(f"Created {created_service_inv} service inventory records"))
         else:
-            self.stdout.write(self.style.WARNING("Service items already have inventory"))
+            self.stdout.write(self.style.WARNING("Service items already have inventory"))        
+        # Create hospital wards and beds
+        from inpatient.models import Ward, Bed
+        if Ward.objects.exists() and Bed.objects.exists():
+            self.stdout.write(self.style.WARNING("Skipping wards and beds: already exist."))
+        else:
+            ward_data = create_hospital_wards_and_beds()
+            self.stdout.write(self.style.SUCCESS(
+                f"Created hospital infrastructure: "
+                f"{len(ward_data['wards'])} wards, "
+                f"{len(ward_data['beds'])} beds"
+            ))

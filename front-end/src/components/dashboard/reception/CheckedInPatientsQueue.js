@@ -17,11 +17,12 @@ import {
   ListItemIcon,
   ListItemText
 } from '@mui/material';
-import { MoreVert, PersonAdd, LocalHospital, Science, Edit } from '@mui/icons-material';
+import { MoreVert, PersonAdd, LocalHospital, Science, Edit, Hotel } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import AssignDoctorModal from '../reception-interface/assign-doctor-modal';
 import DirectToTheLabModal from '../doctor-desk/DirectToTheLabModal';
+import AdmitModal from '../doctor-desk/admit-modal';
 import { updateAttendanceProcesses } from '@/redux/service/patients';
 import { useAuth } from '@/assets/hooks/use-auth';
 import { toast } from 'react-toastify';
@@ -31,6 +32,7 @@ const CheckedInPatientsQueue = ({ processes, patients, onUpdate }) => {
   const [selectedProcess, setSelectedProcess] = useState(null);
   const [assignDoctorOpen, setAssignDoctorOpen] = useState(false);
   const [labModalOpen, setLabModalOpen] = useState(false);
+  const [admitOpen, setAdmitOpen] = useState(false);
   const auth = useAuth();
   const router = useRouter();
 
@@ -63,6 +65,11 @@ const CheckedInPatientsQueue = ({ processes, patients, onUpdate }) => {
     if (patient) {
       router.push(`/dashboard/patients/prescribe/${patient.id}`);
     }
+    handleMenuClose();
+  };
+
+  const handleAdmit = () => {
+    setAdmitOpen(true);
     handleMenuClose();
   };
 
@@ -232,6 +239,12 @@ const CheckedInPatientsQueue = ({ processes, patients, onUpdate }) => {
           </ListItemIcon>
           <ListItemText>Send To Lab</ListItemText>
         </MenuItem>
+        <MenuItem onClick={handleAdmit}>
+          <ListItemIcon>
+            <Hotel fontSize="small" color="error" />
+          </ListItemIcon>
+          <ListItemText>Admit Patient</ListItemText>
+        </MenuItem>
       </Menu>
 
       {/* Modals */}
@@ -248,6 +261,14 @@ const CheckedInPatientsQueue = ({ processes, patients, onUpdate }) => {
           labOpen={labModalOpen}
           setLabOpen={setLabModalOpen}
           selectedData={selectedProcess}
+        />
+      )}
+
+      {admitOpen && selectedProcess && (
+        <AdmitModal
+          admitOpen={admitOpen}
+          setAdmitOpen={setAdmitOpen}
+          selectedRowdata={selectedProcess}
         />
       )}
     </>
