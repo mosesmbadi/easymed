@@ -4,6 +4,7 @@ import Select from 'react-select';
 import { toast } from "react-toastify";
 import { ErrorMessage, Field, Form, Formik } from "formik";
 import * as Yup from "yup";
+import { formatMoney } from "@/functions/money";
 
 const PaymentModeStep = ({ 
   stepOneData, 
@@ -70,13 +71,13 @@ const PaymentModeStep = ({
             <Grid item md={2} xs={4}>
               <div>
                 <span className="text-sm text-gray-600">Total Owed:</span>
-                <div className="font-semibold text-gray-900">KES {stepOneData.totalOwed.toFixed(2)}</div>
+                <div className="font-semibold text-gray-900">{formatMoney(stepOneData.totalOwed)}</div>
               </div>
             </Grid>
             <Grid item md={2} xs={4}>
               <div>
                 <span className="text-sm text-gray-600">Pay Amount:</span>
-                <div className="font-semibold text-green-700">KES {stepOneData.payAmount.toFixed(2)}</div>
+                <div className="font-semibold text-green-700">{formatMoney(stepOneData.payAmount)}</div>
               </div>
             </Grid>
             <Grid item md={2} xs={4}>
@@ -86,7 +87,7 @@ const PaymentModeStep = ({
                   stepOneData.balance < 0 ? 'text-green-600' : 
                   stepOneData.balance > 0 ? 'text-red-600' : 'text-gray-600'
                 }`}>
-                  KES {stepOneData.balance.toFixed(2)}
+                  {formatMoney(stepOneData.balance)}
                 </div>
               </div>
             </Grid>

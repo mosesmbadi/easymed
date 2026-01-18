@@ -20,46 +20,6 @@ Frontend will be running on `http://127.0.0.1:3000` and backend on `http://127.0
 This will set up all the services you need including celery and redis.
 After the steps above, jump to Adding Permissions and add permissions. You can also check notifications while at it.
 
-## ii. Running Manually
-
-I highly suggest you use docker as explained above. However, if for some reason or the other you're not able to use docker, follow the steps below to run manually.
-
-### Backend
-
-First rename the `./backend/.env.local` to `.env` with the sample code inside
-
-### i) Windows
-
-[Install](https://medium.com/analytics-vidhya/virtual-environment-6ad5d9b6af59) python and virtualenv.
-Next, in the project directory run:
-
-```
-virtualenv venv
-venv\scripts\activate
-cd backend
-pip install -r requirements.txt
-python manage.py makemigrations customuser authperms patient pharmacy inventory laboratory company receptions billing announcement
-python manage.py migrate
-python manage.py runserver
-```
-
-### ii) Linux
-
-```
-virtualenv venv
-source venv/bin/activate
-cd backend
-pip install -r requirements.txt
-
-python manage.py makemigrations customuser authperms patient pharmacy inventory laboratory company receptions billing announcement
-
-python manage.py migrate
-python manage.py runserver
-```
-
-All looks good if you can see the djago admin panel at `127.0.0.1:8080/admin`
-Kill the server for now and create a superuser with `python manage.py createsuperuser`
-You'll use this account to log into the dashboard in frontend
 
 To register patients using landing page, create a group in django Admin called PATIENT, but we'll dive deeper in this in the permissions section.
 
@@ -204,28 +164,18 @@ Each process starting form Appointment, should be billed first before it's actio
 For Billing to work, these should be updated in order:
 
 1. Patient must have Insurance if not, cash will be picked by default.
-2. Payment Modes should be updated in that regard
+2. Payment Modes should be updated in that regard ()
 3. Items must exist
 4. Inventory for items must be present
 5. InsuranceSalePrise for specific Items depending on the Insurance (a signal handle this for now. Refer to Inventory signals)
 
 ## Invoicing process
 
-For Invoicing to work appropriately, you need to create an Item, then add the item to the inventory
-and an InsuranceSalePrice for that item.
+For Invoicing to work properly, you need to:
+1. create an Item, 
+2. Add the item to the inventory Inventory>Items>Add New Item
+33. Create an InsuranceSalePrice for that item. Finance>Accounts Receivable>Settings>Insurance Prices
 
-InvoiceItem
---> post_save - update_item_price_on_invoice()
---> post_save - update_is_billed_status() -> update_service_billed_status()
---> pre_save - check_quantity_before_billing() -> check_quantity_availability()
-
-check_quantity_availability()
--> get_available_stock()
--> get_available_stock()
--> update_stock_quantity_if_stock_is_available()
--> update_stock_quantity_if_stock_is_available()
-
----
 
 # 5. Reporting
 

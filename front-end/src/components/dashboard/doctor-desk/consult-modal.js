@@ -39,9 +39,9 @@ const ConsultPatientModal = ({
   };
 
   const validationSchema = Yup.object().shape({
-    diagnosis: Yup.string().required("This field is required!"),
-    doctors_note: Yup.string().required("This field is required!"),
-    signs_and_symptoms: Yup.string().required("This field is required!"),
+    diagnosis: Yup.string().required("This field is required!").max(500, "Maximum 500 characters allowed"),
+    doctors_note: Yup.string().required("This field is required!").max(2000, "Maximum 2000 characters allowed"),
+    signs_and_symptoms: Yup.string().required("This field is required!").max(500, "Maximum 500 characters allowed"),
   });
 
   const handleConsultPatient = async (formValue, helpers) => {
@@ -104,6 +104,7 @@ const ConsultPatientModal = ({
             validationSchema={validationSchema}
             onSubmit={handleConsultPatient}
           >
+            {({ values }) => (
             <Form>
               <section className="space-y-2">
                 <h1 className="">Triage Information</h1>
@@ -150,13 +151,17 @@ const ConsultPatientModal = ({
                     <section className="space-y-3">
                       
                       <div>
-                        <label className="bold" htmlFor="gender">Diagnosis</label>
+                        <div className="flex justify-between items-center">
+                          <label className="bold" htmlFor="diagnosis">Diagnosis</label>
+                          <span className="text-xs text-gray-500">{values.diagnosis?.length || 0}/500</span>
+                        </div>
                         <Field
                           as="textarea"
                           className="block border border-gray rounded-xl py-2 text-sm px-4 focus:outline-none w-full"
                           type="text"
                           placeholder="Diagnosis"
                           name="diagnosis"
+                          rows="3"
                         />
                         <ErrorMessage
                           name="diagnosis"
@@ -166,13 +171,17 @@ const ConsultPatientModal = ({
                       </div>
                       
                       <div>
-                        <label className="bold" htmlFor="gender">Signs and Symptoms</label>
+                        <div className="flex justify-between items-center">
+                          <label className="bold" htmlFor="signs_and_symptoms">Signs and Symptoms</label>
+                          <span className="text-xs text-gray-500">{values.signs_and_symptoms?.length || 0}/500</span>
+                        </div>
                         <Field
                           as="textarea"
                           className="block border border-gray rounded-xl text-sm py-3 px-4 focus:outline-none w-full"
                           type="text"
                           placeholder="Signs and Symptoms"
                           name="signs_and_symptoms"
+                          rows="3"
                         />
                         <ErrorMessage
                           name="signs_and_symptoms"
@@ -183,13 +192,17 @@ const ConsultPatientModal = ({
                     
                                          
                       <div>
-                         <label className="bold" htmlFor="gender">Doctors Clinical Notes</label>
+                        <div className="flex justify-between items-center">
+                          <label className="bold" htmlFor="doctors_note">Doctors Clinical Notes</label>
+                          <span className="text-xs text-gray-500">{values.doctors_note?.length || 0}/2000</span>
+                        </div>
                         <Field
                           as="textarea"
                           className="block border border-gray rounded-xl py-2 text-sm px-4 focus:outline-none w-full"
                           type="text"
                           placeholder="Doctors Clinical Notes"
                           name="doctors_note"
+                          rows="5"
                         />
                         <ErrorMessage
                           name="doctors_note"
@@ -238,6 +251,7 @@ const ConsultPatientModal = ({
                 </div>
               </section>
             </Form>
+            )}
           </Formik>
         </DialogContent>
       </Dialog>

@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogTitle } from '@mui/material'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
 import { CiMoneyCheck1 } from 'react-icons/ci'
 import FormButton from '@/components/common/button/FormButton'
+import { formatMoney } from '@/functions/money'
 
 const MpesaPayModal = ({patient_id, amount}) => {
     const [open, setOpen]=useState(false)
@@ -56,7 +57,7 @@ const MpesaPayModal = ({patient_id, amount}) => {
             aria-labelledby="alert-dialog-title"
             aria-describedby="alert-dialog-description"
         >
-        <DialogTitle id="alert-dialog-slide-title">{`Pay ksh ${amount} with mpesa ?`}</DialogTitle>
+        <DialogTitle id="alert-dialog-slide-title">{`Pay ${formatMoney(amount)} with mpesa ?`}</DialogTitle>
         <DialogContent>
             <Formik
                 initialValues={initialValues}

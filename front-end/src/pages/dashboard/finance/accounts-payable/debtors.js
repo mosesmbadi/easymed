@@ -9,6 +9,7 @@ import ProtectedRoute from '@/assets/hoc/protected-route';
 import AccountsPayableNav from '@/components/dashboard/finance/AccountsPayableNav';
 import { useAuth } from '@/assets/hooks/use-auth';
 import { FaMoneyBillWave, FaFileInvoiceDollar, FaUsers } from 'react-icons/fa';
+import { formatMoney, getCurrencyLabel } from '@/functions/money';
 
 const DataGrid = dynamic(() => import('devextreme-react/data-grid'), {
   ssr: false,
@@ -155,7 +156,7 @@ const APDebtorsPage = () => {
                       Total Amount Owed
                     </Typography>
                     <Typography variant='h4' className='mt-2 text-red-600'>
-                      KES {summary.totalOwed.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {formatMoney(summary.totalOwed)}
                     </Typography>
                   </div>
                   <FaMoneyBillWave className='text-4xl text-red-500' />
@@ -234,7 +235,7 @@ const APDebtorsPage = () => {
                 width={140}
                 cellRender={(data) => (
                   <span className='font-semibold'>
-                    KES {parseFloat(data.value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {formatMoney(data.value || 0)}
                   </span>
                 )}
               />
@@ -247,7 +248,7 @@ const APDebtorsPage = () => {
                 width={140}
                 cellRender={(data) => (
                   <span className='text-green-600'>
-                    KES {parseFloat(data.value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {formatMoney(data.value || 0)}
                   </span>
                 )}
               />
@@ -259,7 +260,7 @@ const APDebtorsPage = () => {
                   const outstanding = getOutstandingAmount(data.data);
                   return (
                     <span className='font-bold text-red-600'>
-                      KES {outstanding.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {formatMoney(outstanding)}
                     </span>
                   );
                 }}
@@ -285,18 +286,18 @@ const APDebtorsPage = () => {
                   column="amount"
                   summaryType="sum"
                   valueFormat="currency"
-                  displayFormat="Total: KES {0}"
+                  displayFormat={`Total: ${getCurrencyLabel()} {0}`}
                   customizeText={(data) => {
-                    return `Total: KES ${data.value?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                    return `Total: ${formatMoney(data.value || 0)}`;
                   }}
                 />
                 <TotalItem
                   column="paid_amount"
                   summaryType="sum"
                   valueFormat="currency"
-                  displayFormat="Total Paid: KES {0}"
+                  displayFormat={`Total Paid: ${getCurrencyLabel()} {0}`}
                   customizeText={(data) => {
-                    return `Paid: KES ${data.value?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                    return `Paid: ${formatMoney(data.value || 0)}`;
                   }}
                 />
               </Summary>

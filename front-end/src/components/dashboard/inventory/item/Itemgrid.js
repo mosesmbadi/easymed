@@ -91,7 +91,7 @@ const ItemsGrid = () => {
         </Grid>
         <Grid className="w-full bg-primary rounded-md flex items-center text-white" item md={4} xs={4}>
           <Link className="mx-4 w-full text-center" href="/dashboard/inventory/items/new">
-            add New Item
+            Add New Item
           </Link>
         </Grid>
       </Grid>

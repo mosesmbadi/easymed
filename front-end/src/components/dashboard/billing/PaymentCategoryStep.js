@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Grid } from "@mui/material";
 import Select from 'react-select';
 import { toast } from "react-toastify";
+import { formatMoney } from "@/functions/money";
 import dynamic from "next/dynamic";
 import { Column, Pager, Paging, Scrolling, Selection } from "devextreme-react/data-grid";
 import CmtDropdownMenu from '@/assets/DropdownMenu';
@@ -244,7 +245,7 @@ const PaymentCategoryStep = ({
                   Total Owed
                 </label>
                 <div className="text-2xl font-bold text-primary">
-                  KES {totalOwed.toFixed(2)}
+                  {formatMoney(totalOwed)}
                 </div>
               </div>
             </Grid>
@@ -274,7 +275,7 @@ const PaymentCategoryStep = ({
                     balance > 0 ? 'text-red-600' : balance < 0 ? 'text-green-600' : 'text-gray-600'
                   }`}
                 >
-                  KES {Math.abs(balance).toFixed(2)}
+                  {formatMoney(Math.abs(balance))}
                 </div>
                 {balance > 0 && (
                   <div className="text-xs text-red-600 mt-1">Underpayment (Amount Due)</div>

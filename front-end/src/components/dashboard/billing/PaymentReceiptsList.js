@@ -21,6 +21,7 @@ import { Print as PrintIcon, Refresh as RefreshIcon } from '@mui/icons-material'
 import { useAuth } from '@/assets/hooks/use-auth';
 import { fetchPaymentReceipts } from '@/redux/service/billing';
 import { toast } from 'react-toastify';
+import { formatMoney } from '@/functions/money';
 
 const PaymentReceiptsList = () => {
   const auth = useAuth();
@@ -101,10 +102,7 @@ const PaymentReceiptsList = () => {
   };
 
   const renderAmount = (cellData) => {
-    return `KES ${parseFloat(cellData.value || 0).toLocaleString('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`;
+    return formatMoney(cellData.value || 0);
   };
 
   const renderDate = (cellData) => {

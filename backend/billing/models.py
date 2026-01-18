@@ -12,7 +12,10 @@ def invoice_file_path(instance, filename):
 class PaymentMode(models.Model):
     '''
     For total_cash under Invoice to work,
-    Cash PaymentMode.payment_category should be cash
+    Cash PaymentMode.payment_category should be cash.
+    
+    is_default: Marks the default payment mode (typically cash) to be used
+    when no payment mode is explicitly selected or when patient has no insurance.
     '''
     PAYMENT_CATEGORY_CHOICES = (
         ('cash', 'Cash'),
@@ -30,10 +33,12 @@ class PaymentMode(models.Model):
             )
     payment_category = models.CharField(
         max_length=20, choices=PAYMENT_CATEGORY_CHOICES, default='cash')
+    is_default = models.BooleanField(default=False, help_text="Default payment mode for cash payments")
     
     class Meta:
         indexes = [
             models.Index(fields=['payment_category']),
+            models.Index(fields=['is_default']),
         ]
     
     def __str__(self):
@@ -170,40 +175,78 @@ class InvoiceItem(models.Model):
         inv = Inventory.objects.filter(item=self.item).order_by('-id').first()
         return inv.sale_price if inv and inv.sale_price is not None else 0
     
-    def save(self, *args, **kwargs):
-        """Persist InvoiceItem with amounts derived from simplified pricing logic.
-
-        Rule:
-        - If PaymentMode is insurance and an InsuranceItemSalePrice exists for
-          (item, insurance_company), set:
-              item_amount = insurance.sale_price
-              actual_total = insurance.co_pay
-        - Otherwise, use Inventory.sale_price for both item_amount and actual_total.
+    @property
+    def price_source(self):
+        """Return the source of the pricing: 'insurance', 'cash', or 'unknown'."""
+        if self.payment_mode and self.payment_mode.payment_category == 'insurance':
+            InsuranceItemSalePrice = apps.get_model('inventory', 'InsuranceItemSalePrice')
+            if self.payment_mode.insurance_id:
+                ins_price = InsuranceItemSalePrice.objects.filter(
+                    item=self.item, 
+                    insurance_company_id=self.payment_mode.insurance_id
+                ).exists()
+                return 'insurance' if ins_price else 'cash_fallback'
+        elif self.payment_mode:
+            return 'cash'
+        return 'unknown'
+    
+    def get_pricing_for_item(self):
+        """
+        Centralized pricing logic with explicit fallback chain.
+        
+        Returns a dict with:
+        - item_amount: The price to display/bill
+        - actual_total: The amount patient pays (after insurance/co-pay)
+        - price_source: Where the price came from ('insurance', 'cash', 'cash_fallback')
         """
         Inventory = apps.get_model('inventory', 'Inventory')
         InsuranceItemSalePrice = apps.get_model('inventory', 'InsuranceItemSalePrice')
 
-        # Default to Inventory sale price
+        # Get base cash price from inventory
         inv = Inventory.objects.filter(item=self.item).order_by('-id').first()
-        inventory_price = inv.sale_price if inv and inv.sale_price is not None else 0
+        base_price = inv.sale_price if inv and inv.sale_price is not None else 0
 
-        if self.payment_mode and self.payment_mode.payment_category == 'insurance' and self.payment_mode.insurance_id:
-            ins_price = InsuranceItemSalePrice.objects.filter(
-                item=self.item, insurance_company_id=self.payment_mode.insurance_id
-            ).first()
-            if ins_price:
-                self.item_amount = ins_price.sale_price or 0
-                # Amount charged to patient at billing time is the co-pay
-                self.actual_total = ins_price.co_pay or 0
-            else:
-                # Fallback to inventory price when no insurance record exists for selected Payment Mode
-                self.item_amount = inventory_price
-                self.actual_total = inventory_price
-        else:
-            # Cash/MPesa/Cheque/Direct-to-bank etc.
-            self.item_amount = inventory_price
-            self.actual_total = inventory_price
+        # If insurance payment mode
+        if self.payment_mode and self.payment_mode.payment_category == 'insurance':
+            if self.payment_mode.insurance_id:
+                ins_price = InsuranceItemSalePrice.objects.filter(
+                    item=self.item, 
+                    insurance_company_id=self.payment_mode.insurance_id
+                ).first()
+                
+                if ins_price:
+                    return {
+                        'item_amount': ins_price.sale_price or 0,
+                        'actual_total': ins_price.co_pay or 0,
+                        'price_source': 'insurance'
+                    }
+                
+                # Insurance selected but no price configured - fallback to cash
+                return {
+                    'item_amount': base_price,
+                    'actual_total': base_price,
+                    'price_source': 'cash_fallback'
+                }
+        
+        # Default to cash price (Cash/MPesa/Cheque/Direct-to-bank etc.)
+        return {
+            'item_amount': base_price,
+            'actual_total': base_price,
+            'price_source': 'cash'
+        }
+    
+    def save(self, *args, **kwargs):
+        """Persist InvoiceItem with amounts derived from centralized pricing logic.
 
+        Uses get_pricing_for_item() to determine prices with explicit fallback chain:
+        1. If PaymentMode is insurance and InsuranceItemSalePrice exists: use insurance price
+        2. If PaymentMode is insurance but no InsuranceItemSalePrice: fallback to cash price
+        3. Otherwise: use Inventory.sale_price (cash price)
+        """
+        pricing = self.get_pricing_for_item()
+        self.item_amount = pricing['item_amount']
+        self.actual_total = pricing['actual_total']
+        
         super().save(*args, **kwargs)
 
     class Meta:
