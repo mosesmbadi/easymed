@@ -1158,9 +1158,518 @@ def create_real_world_lab_data():
         )
         created_data['counters'].append(counter)
     
+    # 4. KIDNEY FUNCTION TEST (RFT/KFT) PROFILE
+    kft_profile, _ = LabTestProfile.objects.get_or_create(name='Kidney Function Test (RFT)')
+    
+    # Kidney function reagents
+    creatinine_reagent, _ = Item.objects.get_or_create(
+        name='Roche Creatinine Reagent',
+        defaults={
+            'desc': 'Jaffe kinetic method for creatinine determination',
+            'category': 'LabReagent',
+            'units_of_measure': 'kits',
+            'packed': '1',
+            'subpacked': '300',
+            'item_code': 'ROCHE-CREAT-300',
+            'vat_rate': 16.0,
+        }
+    )
+    created_data['reagents'].append(creatinine_reagent)
+    create_reagent_inventory(creatinine_reagent, 8500.00, 11000.00, 2)
+    
+    urea_reagent, _ = Item.objects.get_or_create(
+        name='Roche Urea/BUN Reagent',
+        defaults={
+            'desc': 'Urease/GLDH enzymatic method for urea determination',
+            'category': 'LabReagent',
+            'units_of_measure': 'kits',
+            'packed': '1',
+            'subpacked': '300',
+            'item_code': 'ROCHE-UREA-300',
+            'vat_rate': 16.0,
+        }
+    )
+    created_data['reagents'].append(urea_reagent)
+    create_reagent_inventory(urea_reagent, 7500.00, 9500.00, 2)
+    
+    uric_acid_reagent, _ = Item.objects.get_or_create(
+        name='Roche Uric Acid Reagent',
+        defaults={
+            'desc': 'Uricase enzymatic colorimetric method',
+            'category': 'LabReagent',
+            'units_of_measure': 'kits',
+            'packed': '1',
+            'subpacked': '250',
+            'item_code': 'ROCHE-URIC-250',
+            'vat_rate': 16.0,
+        }
+    )
+    created_data['reagents'].append(uric_acid_reagent)
+    create_reagent_inventory(uric_acid_reagent, 8000.00, 10000.00, 2)
+    
+    kft_panels_config = [
+        ('Creatinine', 'mg/dL', [creatinine_reagent]),
+        ('Urea', 'mg/dL', [urea_reagent]),
+        ('Blood Urea Nitrogen (BUN)', 'mg/dL', [urea_reagent]),
+        ('Uric Acid', 'mg/dL', [uric_acid_reagent]),
+    ]
+    
+    for panel_name, unit, reagents in kft_panels_config:
+        panel_item, _ = Item.objects.get_or_create(
+            name=panel_name,
+            defaults={
+                'desc': f'{panel_name} test - Kidney function marker',
+                'category': 'Lab Test',
+                'units_of_measure': 'unit',
+                'packed': '1',
+                'subpacked': '1',
+                'item_code': f'LAB-{panel_name[:10].upper().replace(" ", "-")}',
+                'vat_rate': 16.0,
+            }
+        )
+        
+        panel, created = LabTestPanel.objects.get_or_create(
+            name=panel_name,
+            test_profile=kft_profile,
+            defaults={
+                'specimen': serum_specimen,
+                'unit': unit,
+                'item': panel_item,
+                'is_qualitative': False,
+                'is_quantitative': True,
+            }
+        )
+        if created:
+            created_data['panels'].append(panel)
+        
+        for reagent in reagents:
+            link, _ = TestPanelReagent.objects.get_or_create(
+                test_panel=panel,
+                reagent_item=reagent,
+                defaults={'tests_consumed_per_run': 1}
+            )
+            created_data['links'].append(link)
+    
+    for reagent in [creatinine_reagent, urea_reagent, uric_acid_reagent]:
+        counter, _ = TestKitCounter.objects.get_or_create(
+            reagent_item=reagent,
+            defaults={
+                'available_tests': 600,
+                'minimum_threshold': 75,
+            }
+        )
+        created_data['counters'].append(counter)
+    
+    # 5. THYROID FUNCTION TEST (TFT) PROFILE
+    tft_profile, _ = LabTestProfile.objects.get_or_create(name='Thyroid Function Test (TFT)')
+    
+    # Thyroid reagents
+    thyroid_reagent, _ = Item.objects.get_or_create(
+        name='Roche Thyroid Panel Reagent',
+        defaults={
+            'desc': 'Electrochemiluminescence immunoassay (ECLIA) for thyroid hormones',
+            'category': 'LabReagent',
+            'units_of_measure': 'kits',
+            'packed': '1',
+            'subpacked': '100',
+            'item_code': 'ROCHE-THYROID-100',
+            'vat_rate': 16.0,
+        }
+    )
+    created_data['reagents'].append(thyroid_reagent)
+    create_reagent_inventory(thyroid_reagent, 18000.00, 23000.00, 2)
+    
+    tft_panels_config = [
+        ('Thyroid Stimulating Hormone (TSH)', 'mIU/L'),
+        ('Free T3 (FT3)', 'pg/mL'),
+        ('Free T4 (FT4)', 'ng/dL'),
+        ('Total T3', 'ng/dL'),
+        ('Total T4', 'µg/dL'),
+    ]
+    
+    for panel_name, unit in tft_panels_config:
+        panel_item, _ = Item.objects.get_or_create(
+            name=panel_name,
+            defaults={
+                'desc': f'{panel_name} test - Thyroid function assessment',
+                'category': 'Lab Test',
+                'units_of_measure': 'unit',
+                'packed': '1',
+                'subpacked': '1',
+                'item_code': f'LAB-{panel_name[:10].upper().replace(" ", "-")}',
+                'vat_rate': 16.0,
+            }
+        )
+        
+        panel, created = LabTestPanel.objects.get_or_create(
+            name=panel_name,
+            test_profile=tft_profile,
+            defaults={
+                'specimen': serum_specimen,
+                'unit': unit,
+                'item': panel_item,
+                'is_qualitative': False,
+                'is_quantitative': True,
+            }
+        )
+        if created:
+            created_data['panels'].append(panel)
+        
+        link, _ = TestPanelReagent.objects.get_or_create(
+            test_panel=panel,
+            reagent_item=thyroid_reagent,
+            defaults={'tests_consumed_per_run': 1}
+        )
+        created_data['links'].append(link)
+    
+    counter, _ = TestKitCounter.objects.get_or_create(
+        reagent_item=thyroid_reagent,
+        defaults={
+            'available_tests': 200,
+            'minimum_threshold': 30,
+        }
+    )
+    created_data['counters'].append(counter)
+    
+    # 6. ELECTROLYTES PROFILE
+    electrolytes_profile, _ = LabTestProfile.objects.get_or_create(name='Electrolytes Panel')
+    
+    # Electrolytes reagent
+    electrolytes_reagent, _ = Item.objects.get_or_create(
+        name='Roche ISE Electrolytes Reagent',
+        defaults={
+            'desc': 'Ion-selective electrode (ISE) method for sodium, potassium, chloride',
+            'category': 'LabReagent',
+            'units_of_measure': 'kits',
+            'packed': '1',
+            'subpacked': '500',
+            'item_code': 'ROCHE-ELEC-500',
+            'vat_rate': 16.0,
+        }
+    )
+    created_data['reagents'].append(electrolytes_reagent)
+    create_reagent_inventory(electrolytes_reagent, 12000.00, 15000.00, 2)
+    
+    electrolytes_panels_config = [
+        ('Sodium (Na+)', 'mmol/L'),
+        ('Potassium (K+)', 'mmol/L'),
+        ('Chloride (Cl-)', 'mmol/L'),
+        ('Bicarbonate (HCO3-)', 'mmol/L'),
+    ]
+    
+    for panel_name, unit in electrolytes_panels_config:
+        panel_item, _ = Item.objects.get_or_create(
+            name=panel_name,
+            defaults={
+                'desc': f'{panel_name} test - Electrolyte balance assessment',
+                'category': 'Lab Test',
+                'units_of_measure': 'unit',
+                'packed': '1',
+                'subpacked': '1',
+                'item_code': f'LAB-{panel_name[:10].upper().replace(" ", "-")}',
+                'vat_rate': 16.0,
+            }
+        )
+        
+        panel, created = LabTestPanel.objects.get_or_create(
+            name=panel_name,
+            test_profile=electrolytes_profile,
+            defaults={
+                'specimen': serum_specimen,
+                'unit': unit,
+                'item': panel_item,
+                'is_qualitative': False,
+                'is_quantitative': True,
+            }
+        )
+        if created:
+            created_data['panels'].append(panel)
+        
+        link, _ = TestPanelReagent.objects.get_or_create(
+            test_panel=panel,
+            reagent_item=electrolytes_reagent,
+            defaults={'tests_consumed_per_run': 1}
+        )
+        created_data['links'].append(link)
+    
+    counter, _ = TestKitCounter.objects.get_or_create(
+        reagent_item=electrolytes_reagent,
+        defaults={
+            'available_tests': 1000,
+            'minimum_threshold': 150,
+        }
+    )
+    created_data['counters'].append(counter)
+    
+    # 7. BLOOD GLUCOSE PROFILE
+    glucose_profile, _ = LabTestProfile.objects.get_or_create(name='Blood Glucose Profile')
+    
+    glucose_reagent, _ = Item.objects.get_or_create(
+        name='Roche Glucose Reagent',
+        defaults={
+            'desc': 'Hexokinase enzymatic method for glucose determination',
+            'category': 'LabReagent',
+            'units_of_measure': 'kits',
+            'packed': '1',
+            'subpacked': '500',
+            'item_code': 'ROCHE-GLUC-500',
+            'vat_rate': 16.0,
+        }
+    )
+    created_data['reagents'].append(glucose_reagent)
+    create_reagent_inventory(glucose_reagent, 9000.00, 11500.00, 2)
+    
+    hba1c_reagent, _ = Item.objects.get_or_create(
+        name='Abbott HbA1c Reagent',
+        defaults={
+            'desc': 'HPLC method for hemoglobin A1c determination',
+            'category': 'LabReagent',
+            'units_of_measure': 'kits',
+            'packed': '1',
+            'subpacked': '100',
+            'item_code': 'ABB-HBA1C-100',
+            'vat_rate': 16.0,
+        }
+    )
+    created_data['reagents'].append(hba1c_reagent)
+    create_reagent_inventory(hba1c_reagent, 15000.00, 19000.00, 2)
+    
+    glucose_panels_config = [
+        ('Fasting Blood Sugar (FBS)', 'mg/dL', [glucose_reagent]),
+        ('Random Blood Sugar (RBS)', 'mg/dL', [glucose_reagent]),
+        ('Hemoglobin A1c (HbA1c)', '%', [hba1c_reagent]),
+    ]
+    
+    for panel_name, unit, reagents in glucose_panels_config:
+        panel_item, _ = Item.objects.get_or_create(
+            name=panel_name,
+            defaults={
+                'desc': f'{panel_name} test - Diabetes monitoring',
+                'category': 'Lab Test',
+                'units_of_measure': 'unit',
+                'packed': '1',
+                'subpacked': '1',
+                'item_code': f'LAB-{panel_name[:10].upper().replace(" ", "-")}',
+                'vat_rate': 16.0,
+            }
+        )
+        
+        panel, created = LabTestPanel.objects.get_or_create(
+            name=panel_name,
+            test_profile=glucose_profile,
+            defaults={
+                'specimen': serum_specimen if 'HbA1c' not in panel_name else blood_specimen,
+                'unit': unit,
+                'item': panel_item,
+                'is_qualitative': False,
+                'is_quantitative': True,
+            }
+        )
+        if created:
+            created_data['panels'].append(panel)
+        
+        for reagent in reagents:
+            link, _ = TestPanelReagent.objects.get_or_create(
+                test_panel=panel,
+                reagent_item=reagent,
+                defaults={'tests_consumed_per_run': 1}
+            )
+            created_data['links'].append(link)
+    
+    for reagent in [glucose_reagent, hba1c_reagent]:
+        tests = 1000 if reagent == glucose_reagent else 200
+        counter, _ = TestKitCounter.objects.get_or_create(
+            reagent_item=reagent,
+            defaults={
+                'available_tests': tests,
+                'minimum_threshold': tests // 10,
+            }
+        )
+        created_data['counters'].append(counter)
+    
+    # ==== ADD REFERENCE VALUES FOR EXISTING PANELS ====
+    created_data['reference_values'] = []
+    
+    # CBC Reference Values (gender-specific where applicable)
+    cbc_ref_values = {
+        'Hemoglobin': [
+            {'sex': 'M', 'age_min': 18, 'age_max': 120, 'low': 13.0, 'high': 17.0},
+            {'sex': 'F', 'age_min': 18, 'age_max': 120, 'low': 12.0, 'high': 15.0},
+        ],
+        'White Blood Cell Count': [
+            {'sex': 'B', 'age_min': 18, 'age_max': 120, 'low': 4.0, 'high': 11.0},
+        ],
+        'Red Blood Cell Count': [
+            {'sex': 'M', 'age_min': 18, 'age_max': 120, 'low': 4.5, 'high': 5.9},
+            {'sex': 'F', 'age_min': 18, 'age_max': 120, 'low': 4.1, 'high': 5.1},
+        ],
+        'Platelet Count': [
+            {'sex': 'B', 'age_min': 18, 'age_max': 120, 'low': 150, 'high': 400},
+        ],
+        'Hematocrit': [
+            {'sex': 'M', 'age_min': 18, 'age_max': 120, 'low': 38.0, 'high': 50.0},
+            {'sex': 'F', 'age_min': 18, 'age_max': 120, 'low': 35.0, 'high': 45.0},
+        ],
+        'Mean Corpuscular Volume (MCV)': [
+            {'sex': 'B', 'age_min': 18, 'age_max': 120, 'low': 80.0, 'high': 100.0},
+        ],
+    }
+    
+    # LFT Reference Values
+    lft_ref_values = {
+        'Alanine Aminotransferase (ALT)': [
+            {'sex': 'B', 'age_min': 18, 'age_max': 120, 'low': 7, 'high': 56},
+        ],
+        'Aspartate Aminotransferase (AST)': [
+            {'sex': 'B', 'age_min': 18, 'age_max': 120, 'low': 10, 'high': 40},
+        ],
+        'Alkaline Phosphatase (ALP)': [
+            {'sex': 'B', 'age_min': 18, 'age_max': 120, 'low': 44, 'high': 147},
+        ],
+        'Total Bilirubin': [
+            {'sex': 'B', 'age_min': 18, 'age_max': 120, 'low': 0.3, 'high': 1.2},
+        ],
+        'Albumin': [
+            {'sex': 'B', 'age_min': 18, 'age_max': 120, 'low': 3.5, 'high': 5.5},
+        ],
+        'Total Protein': [
+            {'sex': 'B', 'age_min': 18, 'age_max': 120, 'low': 6.0, 'high': 8.3},
+        ],
+    }
+    
+    # Lipid Profile Reference Values
+    lipid_ref_values = {
+        'Total Cholesterol': [
+            {'sex': 'B', 'age_min': 18, 'age_max': 120, 'low': 0, 'high': 200},  # <200 desirable
+        ],
+        'Triglycerides': [
+            {'sex': 'B', 'age_min': 18, 'age_max': 120, 'low': 0, 'high': 150},  # <150 normal
+        ],
+        'HDL Cholesterol': [
+            {'sex': 'M', 'age_min': 18, 'age_max': 120, 'low': 40, 'high': 999},  # >40 for men
+            {'sex': 'F', 'age_min': 18, 'age_max': 120, 'low': 50, 'high': 999},  # >50 for women
+        ],
+        'LDL Cholesterol': [
+            {'sex': 'B', 'age_min': 18, 'age_max': 120, 'low': 0, 'high': 100},  # <100 optimal
+        ],
+    }
+    
+    # Kidney Function Test Reference Values
+    kft_ref_values = {
+        'Creatinine': [
+            {'sex': 'M', 'age_min': 18, 'age_max': 120, 'low': 0.7, 'high': 1.3},
+            {'sex': 'F', 'age_min': 18, 'age_max': 120, 'low': 0.6, 'high': 1.1},
+        ],
+        'Urea': [
+            {'sex': 'B', 'age_min': 18, 'age_max': 120, 'low': 15, 'high': 40},
+        ],
+        'Blood Urea Nitrogen (BUN)': [
+            {'sex': 'B', 'age_min': 18, 'age_max': 120, 'low': 7, 'high': 20},
+        ],
+        'Uric Acid': [
+            {'sex': 'M', 'age_min': 18, 'age_max': 120, 'low': 3.4, 'high': 7.0},
+            {'sex': 'F', 'age_min': 18, 'age_max': 120, 'low': 2.4, 'high': 6.0},
+        ],
+    }
+    
+    # Thyroid Function Test Reference Values
+    tft_ref_values = {
+        'Thyroid Stimulating Hormone (TSH)': [
+            {'sex': 'B', 'age_min': 18, 'age_max': 120, 'low': 0.4, 'high': 4.0},
+        ],
+        'Free T3 (FT3)': [
+            {'sex': 'B', 'age_min': 18, 'age_max': 120, 'low': 2.0, 'high': 4.4},
+        ],
+        'Free T4 (FT4)': [
+            {'sex': 'B', 'age_min': 18, 'age_max': 120, 'low': 0.8, 'high': 1.8},
+        ],
+        'Total T3': [
+            {'sex': 'B', 'age_min': 18, 'age_max': 120, 'low': 80, 'high': 200},
+        ],
+        'Total T4': [
+            {'sex': 'B', 'age_min': 18, 'age_max': 120, 'low': 5.0, 'high': 12.0},
+        ],
+    }
+    
+    # Electrolytes Reference Values
+    electrolytes_ref_values = {
+        'Sodium (Na+)': [
+            {'sex': 'B', 'age_min': 18, 'age_max': 120, 'low': 136, 'high': 145},
+        ],
+        'Potassium (K+)': [
+            {'sex': 'B', 'age_min': 18, 'age_max': 120, 'low': 3.5, 'high': 5.1},
+        ],
+        'Chloride (Cl-)': [
+            {'sex': 'B', 'age_min': 18, 'age_max': 120, 'low': 98, 'high': 107},
+        ],
+        'Bicarbonate (HCO3-)': [
+            {'sex': 'B', 'age_min': 18, 'age_max': 120, 'low': 22, 'high': 29},
+        ],
+    }
+    
+    # Blood Glucose Reference Values
+    glucose_ref_values = {
+        'Fasting Blood Sugar (FBS)': [
+            {'sex': 'B', 'age_min': 18, 'age_max': 120, 'low': 70, 'high': 100},  # Normal fasting
+        ],
+        'Random Blood Sugar (RBS)': [
+            {'sex': 'B', 'age_min': 18, 'age_max': 120, 'low': 70, 'high': 140},  # Normal random
+        ],
+        'Hemoglobin A1c (HbA1c)': [
+            {'sex': 'B', 'age_min': 18, 'age_max': 120, 'low': 4.0, 'high': 5.6},  # <5.7% normal
+        ],
+    }
+    
+    # Create reference values for all panels
+    all_ref_values = {
+        **cbc_ref_values, 
+        **lft_ref_values, 
+        **lipid_ref_values,
+        **kft_ref_values,
+        **tft_ref_values,
+        **electrolytes_ref_values,
+        **glucose_ref_values
+    }
+    
+    for panel_name, ref_ranges in all_ref_values.items():
+        # Find all panels with this name (may be in different profiles)
+        panels = LabTestPanel.objects.filter(name=panel_name)
+        for panel in panels:
+            for ref_range in ref_ranges:
+                sex_value = ref_range['sex'] if ref_range['sex'] != 'B' else None
+                if sex_value:
+                    ref_val, created = ReferenceValue.objects.get_or_create(
+                        lab_test_panel=panel,
+                        sex=sex_value,
+                        age_min=ref_range['age_min'],
+                        age_max=ref_range['age_max'],
+                        defaults={
+                            'ref_value_low': Decimal(str(ref_range['low'])),
+                            'ref_value_high': Decimal(str(ref_range['high'])),
+                        }
+                    )
+                    if created:
+                        created_data['reference_values'].append(ref_val)
+                else:
+                    # Create for both Male and Female when sex='B'
+                    for sex_choice in ['M', 'F']:
+                        ref_val, created = ReferenceValue.objects.get_or_create(
+                            lab_test_panel=panel,
+                            sex=sex_choice,
+                            age_min=ref_range['age_min'],
+                            age_max=ref_range['age_max'],
+                            defaults={
+                                'ref_value_low': Decimal(str(ref_range['low'])),
+                                'ref_value_high': Decimal(str(ref_range['high'])),
+                            }
+                        )
+                        if created:
+                            created_data['reference_values'].append(ref_val)
+    
     print(f"\n✅ Created Real-World Lab Data:")
     print(f"   - {len(created_data['profiles'])} Profiles")
     print(f"   - {len(created_data['panels'])} Test Panels")
+    print(f"   - {len(created_data['reference_values'])} Reference Values")
     print(f"   - {len(created_data['reagents'])} Reagent Items")
     print(f"   - {len(created_data['inventory_records'])} Reagent Inventory Records")
     print(f"   - {len(created_data['links'])} Panel-Reagent Links")
