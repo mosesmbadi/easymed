@@ -321,6 +321,14 @@ def download_labtestresult_pdf(request, processtestrequest_id):
                 age_min__lte=patient.age,
                 age_max__gte=patient.age
             ).first()
+            
+            # If no exact match for gender (e.g., gender 'O'), try male reference values as fallback
+            if not reference_value and patient.gender not in ['M', 'F']:
+                reference_value = panel.test_panel.reference_values.filter(
+                    sex='M',
+                    age_min__lte=patient.age,
+                    age_max__gte=patient.age
+                ).first()
 
             if reference_value:
                 result = panel.result

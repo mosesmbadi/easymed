@@ -14,7 +14,8 @@ from customuser.management.utils.data_generators import (
     create_dummy_departments,
     create_dummy_suppliers,
     create_real_world_lab_data,
-    create_hospital_wards_and_beds
+    create_hospital_wards_and_beds,
+    create_pharmaceutical_inventory
 )
 from customuser.models import CustomUser
 from company.models import Company, CompanyBranch, InsuranceCompany
@@ -185,7 +186,8 @@ class Command(BaseCommand):
         if created_service_inv > 0:
             self.stdout.write(self.style.SUCCESS(f"Created {created_service_inv} service inventory records"))
         else:
-            self.stdout.write(self.style.WARNING("Service items already have inventory"))        
+            self.stdout.write(self.style.WARNING("Service items already have inventory"))
+        
         # Create hospital wards and beds
         from inpatient.models import Ward, Bed
         if Ward.objects.exists() and Bed.objects.exists():
@@ -196,4 +198,21 @@ class Command(BaseCommand):
                 f"Created hospital infrastructure: "
                 f"{len(ward_data['wards'])} wards, "
                 f"{len(ward_data['beds'])} beds"
+            ))
+        
+        # Create comprehensive pharmaceutical inventory
+        from inventory.models import Inventory
+        pharmacy_items_count = Inventory.objects.filter(
+            department__name='Pharmacy',
+            item__category__in=['Drug', 'SurgicalEquipment']
+        ).count()
+        
+        if pharmacy_items_count >= 50:
+            self.stdout.write(self.style.WARNING("Skipping pharmaceutical inventory: already have sufficient stock."))
+        else:
+            pharma_data = create_pharmaceutical_inventory()
+            self.stdout.write(self.style.SUCCESS(
+                f"Created pharmaceutical inventory: "
+                f"{len(pharma_data['items'])} items, "
+                f"{len(pharma_data['inventory_records'])} inventory records"
             ))

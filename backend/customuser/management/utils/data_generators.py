@@ -493,34 +493,164 @@ def create_reference_values():
             ('M', 18, 120, 4.5, 8.0),
             ('F', 18, 120, 4.5, 8.0),
         ],
+        
+        # Additional panels from real-world lab data
+        "Red Blood Cell Count": [
+            ('M', 18, 120, 4.5, 5.9),
+            ('F', 18, 120, 4.1, 5.1),
+            ('M', 1, 17, 3.8, 5.5),
+            ('F', 1, 17, 3.8, 5.5),
+        ],
+        
+        "Hematocrit": [
+            ('M', 18, 120, 40.0, 54.0),
+            ('F', 18, 120, 36.0, 46.0),
+            ('M', 1, 17, 32.0, 48.0),
+            ('F', 1, 17, 32.0, 48.0),
+        ],
+        
+        "Mean Corpuscular Volume (MCV)": [
+            ('M', 18, 120, 80.0, 100.0),
+            ('F', 18, 120, 80.0, 100.0),
+            ('M', 1, 17, 70.0, 90.0),
+            ('F', 1, 17, 70.0, 90.0),
+        ],
+        
+        "Alanine Aminotransferase (ALT)": [
+            ('M', 18, 120, 7.0, 55.0),
+            ('F', 18, 120, 7.0, 45.0),
+        ],
+        
+        "Aspartate Aminotransferase (AST)": [
+            ('M', 18, 120, 8.0, 48.0),
+            ('F', 18, 120, 8.0, 40.0),
+        ],
+        
+        "Alkaline Phosphatase (ALP)": [
+            ('M', 18, 120, 40.0, 129.0),
+            ('F', 18, 120, 35.0, 104.0),
+            ('M', 1, 17, 100.0, 390.0),
+            ('F', 1, 17, 100.0, 320.0),
+        ],
+        
+        "Total Bilirubin": [
+            ('M', 18, 120, 0.1, 1.2),
+            ('F', 18, 120, 0.1, 1.2),
+        ],
+        
+        "Albumin": [
+            ('M', 18, 120, 3.5, 5.0),
+            ('F', 18, 120, 3.5, 5.0),
+        ],
+        
+        "Total Protein": [
+            ('M', 18, 120, 6.0, 8.3),
+            ('F', 18, 120, 6.0, 8.3),
+        ],
+        
+        "Total Cholesterol": [
+            ('M', 18, 120, 125.0, 200.0),
+            ('F', 18, 120, 125.0, 200.0),
+        ],
+        
+        "Triglycerides": [
+            ('M', 18, 120, 40.0, 150.0),
+            ('F', 18, 120, 40.0, 150.0),
+        ],
+        
+        "HDL Cholesterol": [
+            ('M', 18, 120, 40.0, 60.0),
+            ('F', 18, 120, 50.0, 70.0),
+        ],
+        
+        "LDL Cholesterol": [
+            ('M', 18, 120, 0.0, 100.0),
+            ('F', 18, 120, 0.0, 100.0),
+        ],
+        
+        "Blood Urea Nitrogen (BUN)": [
+            ('M', 18, 120, 7.0, 20.0),
+            ('F', 18, 120, 7.0, 20.0),
+        ],
+        
+        "Uric Acid": [
+            ('M', 18, 120, 3.5, 7.2),
+            ('F', 18, 120, 2.6, 6.0),
+        ],
+        
+        "Thyroid Stimulating Hormone (TSH)": [
+            ('M', 18, 120, 0.4, 4.0),
+            ('F', 18, 120, 0.4, 4.0),
+        ],
+        
+        "Free T3 (FT3)": [
+            ('M', 18, 120, 2.3, 4.2),
+            ('F', 18, 120, 2.3, 4.2),
+        ],
+        
+        "Free T4 (FT4)": [
+            ('M', 18, 120, 0.8, 1.8),
+            ('F', 18, 120, 0.8, 1.8),
+        ],
+        
+        "Total T3": [
+            ('M', 18, 120, 80.0, 200.0),
+            ('F', 18, 120, 80.0, 200.0),
+        ],
+        
+        "Total T4": [
+            ('M', 18, 120, 4.5, 12.0),
+            ('F', 18, 120, 4.5, 12.0),
+        ],
+        
+        "Fasting Blood Glucose": [
+            ('M', 18, 120, 70.0, 100.0),
+            ('F', 18, 120, 70.0, 100.0),
+        ],
+        
+        "Random Blood Glucose": [
+            ('M', 18, 120, 70.0, 140.0),
+            ('F', 18, 120, 70.0, 140.0),
+        ],
+        
+        "HbA1c": [
+            ('M', 18, 120, 4.0, 5.6),
+            ('F', 18, 120, 4.0, 5.6),
+        ],
     }
     
     # Create reference values
     for test_name, ranges in reference_ranges.items():
         try:
-            # Find the lab test panel
-            lab_panel = LabTestPanel.objects.get(name=test_name)
+            # Find all lab test panels with this name (there may be duplicates)
+            lab_panels = LabTestPanel.objects.filter(name=test_name)
             
-            for range_data in ranges:
-                sex, age_min, age_max, ref_low, ref_high = range_data
-                
-                # Create or get the reference value
-                ref_val, created = ReferenceValue.objects.get_or_create(
-                    lab_test_panel=lab_panel,
-                    sex=sex,
-                    age_min=age_min,
-                    age_max=age_max,
-                    defaults={
-                        'ref_value_low': ref_low,
-                        'ref_value_high': ref_high,
-                    }
-                )
-                
-                if created:
-                    reference_values_created.append(ref_val)
+            if not lab_panels.exists():
+                print(f"Warning: Lab test panel '{test_name}' not found. Skipping reference values.")
+                continue
+            
+            # Create reference values for each matching panel
+            for lab_panel in lab_panels:
+                for range_data in ranges:
+                    sex, age_min, age_max, ref_low, ref_high = range_data
                     
-        except LabTestPanel.DoesNotExist:
-            print(f"Warning: Lab test panel '{test_name}' not found. Skipping reference values.")
+                    # Create or get the reference value
+                    ref_val, created = ReferenceValue.objects.get_or_create(
+                        lab_test_panel=lab_panel,
+                        sex=sex,
+                        age_min=age_min,
+                        age_max=age_max,
+                        defaults={
+                            'ref_value_low': ref_low,
+                            'ref_value_high': ref_high,
+                        }
+                    )
+                    
+                    if created:
+                        reference_values_created.append(ref_val)
+                    
+        except Exception as e:
+            print(f"Error creating reference values for '{test_name}': {e}")
             continue
     
     return reference_values_created
@@ -1773,3 +1903,194 @@ def create_hospital_wards_and_beds():
         "wards": created_wards,
         "beds": created_beds
     }
+
+
+def create_pharmaceutical_inventory():
+    """
+    Create comprehensive pharmaceutical inventory with realistic drugs across all categories.
+    Includes medications, medical supplies, and consumables with proper pricing and quantities.
+    """
+    from inventory.models import Inventory
+    from decimal import Decimal
+    from datetime import date, timedelta
+    
+    created_data = {
+        'items': [],
+        'inventory_records': []
+    }
+    
+    # Get or create Pharmacy department
+    pharmacy_dept, _ = Department.objects.get_or_create(name='Pharmacy')
+    
+    print("\n💊 Creating Pharmaceutical Inventory...")
+    
+    # Define comprehensive pharmaceutical categories with realistic drugs
+    pharmaceuticals = {
+        # ANTIBIOTICS
+        "Antibiotics": [
+            {"name": "Amoxicillin 500mg Capsules", "unit": "capsules", "pack": "1000", "subpack": "10", "purchase": 50.00, "sale": 80.00, "qty": 500},
+            {"name": "Amoxicillin-Clavulanate 625mg Tablets", "unit": "tablets", "pack": "500", "subpack": "10", "purchase": 120.00, "sale": 180.00, "qty": 300},
+            {"name": "Azithromycin 500mg Tablets", "unit": "tablets", "pack": "500", "subpack": "6", "purchase": 200.00, "sale": 300.00, "qty": 250},
+            {"name": "Ciprofloxacin 500mg Tablets", "unit": "tablets", "pack": "1000", "subpack": "10", "purchase": 80.00, "sale": 120.00, "qty": 400},
+            {"name": "Doxycycline 100mg Capsules", "unit": "capsules", "pack": "1000", "subpack": "10", "purchase": 60.00, "sale": 95.00, "qty": 300},
+            {"name": "Metronidazole 400mg Tablets", "unit": "tablets", "pack": "1000", "subpack": "10", "purchase": 40.00, "sale": 65.00, "qty": 400},
+            {"name": "Ceftriaxone 1g Injection", "unit": "vials", "pack": "100", "subpack": "1", "purchase": 150.00, "sale": 250.00, "qty": 200},
+            {"name": "Gentamicin 80mg Injection", "unit": "ampoules", "pack": "100", "subpack": "1", "purchase": 80.00, "sale": 130.00, "qty": 150},
+        ],
+        
+        # ANALGESICS & ANTIPYRETICS
+        "Analgesics": [
+            {"name": "Paracetamol 500mg Tablets", "unit": "tablets", "pack": "2000", "subpack": "10", "purchase": 20.00, "sale": 35.00, "qty": 1000},
+            {"name": "Ibuprofen 400mg Tablets", "unit": "tablets", "pack": "1000", "subpack": "10", "purchase": 45.00, "sale": 70.00, "qty": 600},
+            {"name": "Diclofenac 50mg Tablets", "unit": "tablets", "pack": "1000", "subpack": "10", "purchase": 50.00, "sale": 80.00, "qty": 500},
+            {"name": "Tramadol 50mg Capsules", "unit": "capsules", "pack": "500", "subpack": "10", "purchase": 100.00, "sale": 160.00, "qty": 250},
+            {"name": "Morphine 10mg Injection", "unit": "ampoules", "pack": "50", "subpack": "1", "purchase": 200.00, "sale": 350.00, "qty": 100},
+        ],
+        
+        # ANTIHYPERTENSIVES & CARDIOVASCULAR
+        "Cardiovascular": [
+            {"name": "Amlodipine 5mg Tablets", "unit": "tablets", "pack": "1000", "subpack": "10", "purchase": 70.00, "sale": 110.00, "qty": 500},
+            {"name": "Atenolol 50mg Tablets", "unit": "tablets", "pack": "1000", "subpack": "10", "purchase": 60.00, "sale": 95.00, "qty": 400},
+            {"name": "Lisinopril 10mg Tablets", "unit": "tablets", "pack": "1000", "subpack": "10", "purchase": 90.00, "sale": 140.00, "qty": 350},
+            {"name": "Hydrochlorothiazide 25mg Tablets", "unit": "tablets", "pack": "1000", "subpack": "10", "purchase": 45.00, "sale": 70.00, "qty": 400},
+            {"name": "Furosemide 40mg Tablets", "unit": "tablets", "pack": "1000", "subpack": "10", "purchase": 50.00, "sale": 80.00, "qty": 350},
+            {"name": "Aspirin 75mg Tablets", "unit": "tablets", "pack": "1000", "subpack": "10", "purchase": 30.00, "sale": 50.00, "qty": 600},
+            {"name": "Atorvastatin 20mg Tablets", "unit": "tablets", "pack": "500", "subpack": "10", "purchase": 150.00, "sale": 230.00, "qty": 300},
+        ],
+        
+        # ANTIDIABETICS
+        "Antidiabetics": [
+            {"name": "Metformin 500mg Tablets", "unit": "tablets", "pack": "1000", "subpack": "10", "purchase": 60.00, "sale": 95.00, "qty": 600},
+            {"name": "Glibenclamide 5mg Tablets", "unit": "tablets", "pack": "1000", "subpack": "10", "purchase": 55.00, "sale": 85.00, "qty": 400},
+            {"name": "Insulin NPH 100IU/ml", "unit": "vials", "pack": "50", "subpack": "1", "purchase": 400.00, "sale": 600.00, "qty": 100},
+            {"name": "Insulin Regular 100IU/ml", "unit": "vials", "pack": "50", "subpack": "1", "purchase": 400.00, "sale": 600.00, "qty": 100},
+        ],
+        
+        # ANTIMALARIALS
+        "Antimalarials": [
+            {"name": "Artemether-Lumefantrine 20/120mg Tablets", "unit": "tablets", "pack": "500", "subpack": "24", "purchase": 180.00, "sale": 280.00, "qty": 300},
+            {"name": "Quinine 300mg Tablets", "unit": "tablets", "pack": "1000", "subpack": "10", "purchase": 70.00, "sale": 110.00, "qty": 400},
+            {"name": "Artesunate 60mg Injection", "unit": "vials", "pack": "100", "subpack": "1", "purchase": 200.00, "sale": 320.00, "qty": 150},
+        ],
+        
+        # GASTROINTESTINAL
+        "Gastrointestinal": [
+            {"name": "Omeprazole 20mg Capsules", "unit": "capsules", "pack": "1000", "subpack": "10", "purchase": 80.00, "sale": 125.00, "qty": 500},
+            {"name": "Ranitidine 150mg Tablets", "unit": "tablets", "pack": "1000", "subpack": "10", "purchase": 60.00, "sale": 95.00, "qty": 400},
+            {"name": "Oral Rehydration Salts (ORS)", "unit": "sachets", "pack": "500", "subpack": "1", "purchase": 10.00, "sale": 20.00, "qty": 1000},
+            {"name": "Loperamide 2mg Capsules", "unit": "capsules", "pack": "500", "subpack": "10", "purchase": 50.00, "sale": 80.00, "qty": 300},
+        ],
+        
+        # RESPIRATORY
+        "Respiratory": [
+            {"name": "Salbutamol 100mcg Inhaler", "unit": "inhalers", "pack": "50", "subpack": "1", "purchase": 150.00, "sale": 250.00, "qty": 100},
+            {"name": "Prednisolone 5mg Tablets", "unit": "tablets", "pack": "1000", "subpack": "10", "purchase": 70.00, "sale": 110.00, "qty": 400},
+            {"name": "Cetirizine 10mg Tablets", "unit": "tablets", "pack": "1000", "subpack": "10", "purchase": 40.00, "sale": 65.00, "qty": 500},
+            {"name": "Chlorpheniramine 4mg Tablets", "unit": "tablets", "pack": "1000", "subpack": "10", "purchase": 30.00, "sale": 50.00, "qty": 500},
+        ],
+        
+        # IV FLUIDS & SOLUTIONS
+        "IV Fluids": [
+            {"name": "Normal Saline 0.9% 1000ml", "unit": "bags", "pack": "20", "subpack": "1", "purchase": 800.00, "sale": 1200.00, "qty": 200},
+            {"name": "Dextrose 5% 1000ml", "unit": "bags", "pack": "20", "subpack": "1", "purchase": 850.00, "sale": 1250.00, "qty": 200},
+            {"name": "Ringer's Lactate 1000ml", "unit": "bags", "pack": "20", "subpack": "1", "purchase": 900.00, "sale": 1300.00, "qty": 150},
+            {"name": "Dextrose 5% in Saline 1000ml", "unit": "bags", "pack": "20", "subpack": "1", "purchase": 950.00, "sale": 1400.00, "qty": 150},
+        ],
+        
+        # VACCINES
+        "Vaccines": [
+            {"name": "BCG Vaccine", "unit": "vials", "pack": "50", "subpack": "1", "purchase": 200.00, "sale": 350.00, "qty": 100},
+            {"name": "DPT Vaccine", "unit": "vials", "pack": "50", "subpack": "1", "purchase": 250.00, "sale": 400.00, "qty": 100},
+            {"name": "Hepatitis B Vaccine", "unit": "vials", "pack": "50", "subpack": "1", "purchase": 350.00, "sale": 550.00, "qty": 80},
+            {"name": "Tetanus Toxoid", "unit": "ampoules", "pack": "100", "subpack": "1", "purchase": 150.00, "sale": 250.00, "qty": 150},
+        ],
+        
+        # MEDICAL SUPPLIES & CONSUMABLES
+        "Medical Supplies": [
+            {"name": "Sterile Gloves Medium", "unit": "pairs", "pack": "100", "subpack": "2", "purchase": 1500.00, "sale": 2200.00, "qty": 200},
+            {"name": "Sterile Gloves Large", "unit": "pairs", "pack": "100", "subpack": "2", "purchase": 1500.00, "sale": 2200.00, "qty": 200},
+            {"name": "Surgical Masks", "unit": "pieces", "pack": "500", "subpack": "50", "purchase": 500.00, "sale": 800.00, "qty": 1000},
+            {"name": "N95 Respirators", "unit": "pieces", "pack": "200", "subpack": "20", "purchase": 2000.00, "sale": 3000.00, "qty": 400},
+            {"name": "Syringes 5ml", "unit": "pieces", "pack": "500", "subpack": "100", "purchase": 800.00, "sale": 1200.00, "qty": 1000},
+            {"name": "Syringes 10ml", "unit": "pieces", "pack": "500", "subpack": "100", "purchase": 900.00, "sale": 1350.00, "qty": 800},
+            {"name": "IV Cannula 18G", "unit": "pieces", "pack": "200", "subpack": "50", "purchase": 1500.00, "sale": 2300.00, "qty": 500},
+            {"name": "IV Cannula 20G", "unit": "pieces", "pack": "200", "subpack": "50", "purchase": 1400.00, "sale": 2200.00, "qty": 500},
+            {"name": "Gauze Swabs 10x10cm", "unit": "pieces", "pack": "1000", "subpack": "100", "purchase": 500.00, "sale": 800.00, "qty": 2000},
+            {"name": "Cotton Wool 500g", "unit": "rolls", "pack": "20", "subpack": "1", "purchase": 1000.00, "sale": 1500.00, "qty": 100},
+            {"name": "Bandages 10cm", "unit": "rolls", "pack": "100", "subpack": "10", "purchase": 800.00, "sale": 1200.00, "qty": 300},
+            {"name": "Surgical Tape", "unit": "rolls", "pack": "100", "subpack": "10", "purchase": 600.00, "sale": 950.00, "qty": 300},
+            {"name": "Alcohol Swabs", "unit": "pieces", "pack": "1000", "subpack": "100", "purchase": 400.00, "sale": 650.00, "qty": 2000},
+            {"name": "Blood Collection Tubes EDTA", "unit": "pieces", "pack": "500", "subpack": "100", "purchase": 1200.00, "sale": 1800.00, "qty": 1000},
+            {"name": "Urine Collection Containers", "unit": "pieces", "pack": "500", "subpack": "50", "purchase": 800.00, "sale": 1200.00, "qty": 1000},
+        ],
+        
+        # ANTISEPTICS & DISINFECTANTS
+        "Antiseptics": [
+            {"name": "Hydrogen Peroxide 3% 500ml", "unit": "bottles", "pack": "20", "subpack": "1", "purchase": 600.00, "sale": 950.00, "qty": 100},
+            {"name": "Betadine Solution 500ml", "unit": "bottles", "pack": "20", "subpack": "1", "purchase": 1500.00, "sale": 2300.00, "qty": 80},
+            {"name": "Methylated Spirit 500ml", "unit": "bottles", "pack": "20", "subpack": "1", "purchase": 400.00, "sale": 650.00, "qty": 120},
+            {"name": "Hand Sanitizer 500ml", "unit": "bottles", "pack": "20", "subpack": "1", "purchase": 800.00, "sale": 1200.00, "qty": 200},
+            {"name": "Chlorhexidine 4% 500ml", "unit": "bottles", "pack": "20", "subpack": "1", "purchase": 1200.00, "sale": 1800.00, "qty": 80},
+        ],
+    }
+    
+    # Create items and inventory records
+    for category, drugs in pharmaceuticals.items():
+        for drug in drugs:
+            # Create or get the item
+            item, item_created = Item.objects.get_or_create(
+                name=drug["name"],
+                defaults={
+                    'desc': f'{drug["name"]} - {category}',
+                    'category': 'Drug' if category not in ['Medical Supplies', 'Antiseptics'] else 'SurgicalEquipment',
+                    'units_of_measure': drug["unit"],
+                    'packed': drug["pack"],
+                    'subpacked': drug["subpack"],
+                    'item_code': f'PHARM-{drug["name"][:8].upper().replace(" ", "")}-{random.randint(100, 999)}',
+                    'vat_rate': 0.0,  # Most pharmaceuticals are VAT-exempt
+                    'slow_moving_period': 90,
+                }
+            )
+            
+            if item_created:
+                created_data['items'].append(item)
+            
+            # Create inventory record if it doesn't exist
+            if not Inventory.objects.filter(item=item, department=pharmacy_dept).exists():
+                # Generate realistic expiry dates based on drug type
+                if category in ['Vaccines', 'IV Fluids']:
+                    expiry_months = random.randint(12, 24)  # Shorter shelf life
+                elif category == 'Medical Supplies':
+                    expiry_months = random.randint(24, 60)  # Longer shelf life
+                else:
+                    expiry_months = random.randint(18, 36)  # Standard shelf life
+                
+                inventory = Inventory.objects.create(
+                    item=item,
+                    department=pharmacy_dept,
+                    purchase_price=Decimal(str(drug["purchase"])),
+                    sale_price=Decimal(str(drug["sale"])),
+                    quantity_at_hand=drug["qty"],
+                    category_one='Resale',
+                    lot_number=f'LOT-{date.today().year}-{random.randint(1000, 9999)}',
+                    expiry_date=date.today() + timedelta(days=expiry_months * 30)
+                )
+                created_data['inventory_records'].append(inventory)
+    
+    print(f"\n✅ Created Pharmaceutical Inventory:")
+    print(f"   - {len(created_data['items'])} Drug Items")
+    print(f"   - {len(created_data['inventory_records'])} Inventory Records")
+    
+    # Category summary
+    category_counts = {}
+    for category, drugs in pharmaceuticals.items():
+        category_counts[category] = len(drugs)
+    
+    print("\n   Items by Category:")
+    for category, count in category_counts.items():
+        print(f"   - {category}: {count} items")
+    
+    total_value = sum(inv.purchase_price * inv.quantity_at_hand for inv in created_data['inventory_records'])
+    print(f"\n   Total Inventory Value: KES {total_value:,.2f}")
+    
+    return created_data
