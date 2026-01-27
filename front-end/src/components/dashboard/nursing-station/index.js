@@ -105,7 +105,13 @@ const NursePatientDataGrid = () => {
   const filteredProcesses = processes.filter((process) => process.track.includes(processFilter.track));
 
   const billedDocSchedules = filteredProcesses.filter(schedule => {
-    const hasAppointment = schedule.invoice_items.some(item =>  
+    // Show all triage patients regardless of billing status
+    if (schedule.track === 'triage') {
+      return true;
+    }
+    
+    // For other tracks, check if they have billed appointment items
+    const hasAppointment = schedule.invoice_items?.some(item =>  
         item.category.toLowerCase().includes('appointment') && item.status.toLowerCase() === "billed"
     );
     
