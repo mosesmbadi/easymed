@@ -1,4 +1,4 @@
-import { AddAdmittedPatientsVitals, fetchAdmittedPatients, fetchAdmittedPatientsVitals, fetchFacilityBeds, fetchFacilityWards, fetchNursesDuties, fetchAdmittedPatientSchedules, updateSheduledDrug } from "@/redux/service/inpatient";
+import { AddAdmittedPatientsVitals, fetchAdmittedPatients, fetchAdmittedPatientsVitals, fetchFacilityBeds, fetchFacilityWards, fetchNursesDuties, fetchAdmittedPatientSchedules, updateSheduledDrug, createScheduledDrug, createScheduledLabTest } from "@/redux/service/inpatient";
 import { fetchPatientTriage } from "@/redux/service/patients";
 import { createSlice } from "@reduxjs/toolkit";
 
@@ -55,10 +55,48 @@ const InpatientSlice = createSlice({
     setSchedules: (state, action) => {
       state.schedules = action.payload;
     },
+    appendScheduledDrug: (state, action) => {
+      if (!state.schedules || state.schedules.length === 0) {
+        state.schedules = [
+          {
+            scheduled_drugs: [action.payload],
+            scheduled_lab_tests: [],
+          },
+        ];
+        return;
+      }
+
+      if (!state.schedules[0].scheduled_drugs) {
+        state.schedules[0].scheduled_drugs = [];
+      }
+
+      state.schedules[0].scheduled_drugs.push(action.payload);
+    },
+    appendScheduledLabTest: (state, action) => {
+      if (!state.schedules || state.schedules.length === 0) {
+        state.schedules = [
+          {
+            scheduled_drugs: [],
+            scheduled_lab_tests: [action.payload],
+          },
+        ];
+        return;
+      }
+
+      if (!state.schedules[0].scheduled_lab_tests) {
+        state.schedules[0].scheduled_lab_tests = [];
+      }
+
+      state.schedules[0].scheduled_lab_tests.push(action.payload);
+    },
     setUpdatedScheduledDrug: (state, action) => {
       const updatedScheduledDrug = action.payload;
-      
-      state.schedules[0].scheduled_drugs = state.schedules[0].scheduled_drugs.map((sched) => {
+
+      if (!state.schedules || state.schedules.length === 0) {
+        return;
+      }
+
+      state.schedules[0].scheduled_drugs = (state.schedules[0].scheduled_drugs ?? []).map((sched) => {
         return sched.id === updatedScheduledDrug.id ? updatedScheduledDrug : sched;
       });
     },
@@ -85,7 +123,8 @@ export const {
   addBedToStore, addWardToStore,
   updateWardInStore, updateBedInStore, 
   admittedPatients, updateAdmissionInStore, updateAdmissionStoreDischargeData,
-  assignedNurses, oneAdmission, setVitals, setNewVital, setSchedules, setUpdatedScheduledDrug
+  assignedNurses, oneAdmission, setVitals, setNewVital, setSchedules, setUpdatedScheduledDrug,
+  appendScheduledDrug, appendScheduledLabTest
  } = InpatientSlice.actions;
 
 export const fetchHospitalBeds = (auth, ward_id) => async (dispatch) => {
@@ -192,6 +231,24 @@ export const updateInpatientScheduledDrug = (auth, admission_id, scheduled_drug_
     dispatch(setUpdatedScheduledDrug(response));
   } catch (error) {
     console.log("SCHEDULES ", error);
+  }
+};
+
+export const addScheduledDrug = (auth, admission_id, payload) => async (dispatch) => {
+  try {
+    const response = await createScheduledDrug(auth, admission_id, payload);
+    dispatch(appendScheduledDrug(response));
+  } catch (error) {
+    console.log("ADD_SCHEDULE_ERROR ", error);
+  }
+};
+
+export const addScheduledLabTest = (auth, admission_id, payload) => async (dispatch) => {
+  try {
+    const response = await createScheduledLabTest(auth, admission_id, payload);
+    dispatch(appendScheduledLabTest(response));
+  } catch (error) {
+    console.log("ADD_SCHEDULE_ERROR ", error);
   }
 };
 

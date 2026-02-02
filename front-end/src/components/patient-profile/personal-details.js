@@ -61,7 +61,7 @@ const PersonalDetails = () => {
         helpers.resetForm();
         toast.success("Profile Created Successfully!");
         setLoading(false);
-        dispatch(getPatientProfile(auth.user_id));
+        dispatch(getPatientProfile(auth, auth.user_id));
         dispatch(getAllPatients(auth));
         handleClose();
       });

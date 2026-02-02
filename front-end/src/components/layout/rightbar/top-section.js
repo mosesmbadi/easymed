@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, {useEffect, useState} from "react";
 import Link from "next/link"
 import { AiOutlineSearch } from "react-icons/ai";
 import { RiMessage2Fill } from "react-icons/ri";
@@ -28,12 +28,17 @@ import WebSocketComponent from "@/components/notifications/Notifications";
 
 const TopSection = () => {
   const [notification, setNotification] = useState([]);
+  const [mounted, setMounted] = useState(false);
   const { logoutUser } = useContext(authContext);
   const [anchorEl, setAnchorEl] = React.useState(null);
   const [anchorEl2, setAnchorEl2] = React.useState(null);
   const [anchorEl3, setAnchorEl3] = useState(null)
   const [viewNotifications, setViewNotification]=useState(false)
   const token = useAuth();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const toggleViewNotifications = () => {
     setViewNotification(!viewNotifications)
@@ -93,7 +98,9 @@ const TopSection = () => {
               />
             </div>
             <div className="text-xs">
-              <p className="font-semibold">{token?.first_name}</p>
+              <p className="font-semibold" suppressHydrationWarning>
+                {mounted ? token?.first_name : ""}
+              </p>
               {/* <p>Surgeon</p> */}
             </div>
           </div>

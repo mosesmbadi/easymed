@@ -11,21 +11,22 @@ export const config = {
 export default async function handler(req, res) {
     if (req.method === API_METHODS.PATCH) {
         try {
-            // if (!req.headers?.authorization){
-            //     res.status(401).send('Unauthorized');
-            // }
             const config = {
                 headers: {
                     'Authorization': req.headers.authorization,
                 }
             };
 
-
             const query = req.query;
             const body = req.body;
-            let url = `${API_URL.ADMITTED_PATIENT_SCHEDULED_DRUGS}`;
+            let url = `${API_URL.ADMITTED_PATIENT_SCHEDULES}`;
 
-            await backendAxiosInstance.patch(`${url}${query.admission_id}/scheduled_drug/${query.scheduled_drug_id}/`, body, config).then(response => {
+            // Note: The previous one was ADMITTED_PATIENT_SCHEDULED_DRUGS pointing to /inpatient/patient-admissions/
+            // The URL structure in backend is ../patient-admissions/{admission_pk}/scheduled_lab_test/
+            
+            // Wait, let's check api-endpoints.js again for backend URLs
+            
+            await backendAxiosInstance.patch(`${url}${query.admission_id}/scheduled_lab_test/${query.scheduled_id}/`, body, config).then(response => {
                 res.status(200).json(response.data);
 
             }).catch(e => {
@@ -46,9 +47,9 @@ export default async function handler(req, res) {
 
             const query = req.query;
             const body = req.body;
-            let url = `${API_URL.ADMITTED_PATIENT_SCHEDULED_DRUGS}`;
+            let url = `${API_URL.ADMITTED_PATIENT_SCHEDULES}`;
 
-            await backendAxiosInstance.post(`${url}${query.admission_id}/scheduled_drug/`, body, config).then(response => {
+            await backendAxiosInstance.post(`${url}${query.admission_id}/scheduled_lab_test/`, body, config).then(response => {
                 res.status(201).json(response.data);
             }).catch(e => {
                 res.status(e.response?.status ?? 500).json(e.response?.data)

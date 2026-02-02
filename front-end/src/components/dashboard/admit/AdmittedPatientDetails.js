@@ -13,10 +13,10 @@ const AdmittedPatientDetails = ({patient}) => {
   const auth = useAuth();
 
   useEffect(() => {
-    if(auth.token){
+    if (auth.token && patient) {
       dispatch(getPatientProfile(auth, patient));
     }
-  }, [patient]);
+  }, [auth.token, dispatch, patient]);
 
   return (
     <div className='w-full p-4 bg-white shadow-md rounded-lg'>

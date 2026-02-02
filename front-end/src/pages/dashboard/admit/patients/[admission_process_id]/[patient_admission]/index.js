@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react'
-import { useParams } from 'next/navigation';
 
 import AuthGuard from '@/assets/hoc/auth-guard';
 import DashboardLayout from '@/components/layout/dashboard-layout';
@@ -27,20 +26,19 @@ const tabs = [
   {label: 'Invoices', value: 6}
 ];
 
-const AdmittedPatient = () => {
+const AdmittedPatient = ({ admission_process_id, patient_admission }) => {
   const [currentTab, setCurrentTab] = useState(0)
-  const params = useParams();
   const { processDetails } = useSelector((store) => store.patient);
   const { oneAdmission } = useSelector((store) => store.inpatient);
   const dispatch = useDispatch();
   const auth = useAuth();
 
   useEffect(() => {
-    if(auth.token){
-      dispatch(getOneProcess(auth, params?.admission_process_id));
-      dispatch(fetchOneAdmission(auth, "", params?.patient_admission));
+    if (auth?.token && admission_process_id && patient_admission) {
+      dispatch(getOneProcess(auth, admission_process_id));
+      dispatch(fetchOneAdmission(auth, "", patient_admission));
     }
-  }, [params?.admission_process_id, params?.patient_admission]);
+  }, [auth?.token, admission_process_id, dispatch, patient_admission]);
 
   const tabsJsx = tabs.map((tab) => (
     <div key={tab.value}>
@@ -68,12 +66,13 @@ const AdmittedPatient = () => {
       </section>
       <div className="mt-2">
         {currentTab === 0 && <AdmittedPatientDetails patient={processDetails.patient}/>}
-        {currentTab === 1 && <AdmissionDetails admission_id={params.patient_admission} />}
-        {currentTab === 2 && <AdmissionVitals patient={`${oneAdmission.patient_first_name} ${oneAdmission.patient_second_name}`} admission_id={params.patient_admission} triage={processDetails.triage}/>}
+        {currentTab === 1 && <AdmissionDetails admission_id={patient_admission} />}
+        {currentTab === 2 && <AdmissionVitals patient={`${oneAdmission.patient_first_name} ${oneAdmission.patient_second_name}`} admission_id={patient_admission} triage={processDetails.triage}/>}
         {currentTab === 3 && 
                 <Schedules 
                   patient={`${oneAdmission.patient_first_name} ${oneAdmission.patient_second_name}`} 
-                  admission_id={params.patient_admission} 
+                  admission_id={patient_admission} 
+                  process={processDetails}
                 />
         }
         {currentTab === 4 && <AdmittedTests patient={`${oneAdmission.patient_first_name} ${oneAdmission.patient_second_name}`} process={processDetails} />}
@@ -91,3 +90,13 @@ AdmittedPatient.getLayout = (page) => (
 );
 
 export default AdmittedPatient
+
+export async function getServerSideProps(context) {
+  const { admission_process_id, patient_admission } = context.params || {};
+  return {
+    props: {
+      admission_process_id: admission_process_id ?? null,
+      patient_admission: patient_admission ?? null,
+    },
+  };
+}

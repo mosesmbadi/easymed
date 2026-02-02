@@ -21,8 +21,28 @@ export default async function handler(req, res) {
             };
 
             const userId = req.query.userId;
+            if (!userId) {
+                return res.status(400).json({ message: 'userId query param is required' });
+            }
 
-            await backendAxiosInstance.get(`${API_URL.GET_PATIENT_PROFILE}/${userId}`, config).then(response => {
+            // This endpoint is used in two different ways across the app:
+            // - sometimes `userId` is actually a Patient.id (e.g. inpatient admission flow)
+            // - sometimes it is a CustomUser.id (patient profile flow)
+            // We try Patient detail first, then fall back to the user-based profile endpoint.
+            try {
+                const patientDetail = await backendAxiosInstance.get(`/patients/patients/${userId}/`, config);
+                return res.status(200).json(patientDetail.data);
+            } catch (e) {
+                const statusCode = e.response?.status;
+                if (statusCode !== 404) {
+                    return res.status(statusCode ?? 500).json(e.response?.data ?? { message: e.message });
+                }
+            }
+
+            await backendAxiosInstance.get(`/patients/patient-profile/`, {
+                ...config,
+                params: { userId }
+            }).then(response => {
                 res.status(200).json(response.data);
             }).catch(e => {
                     res.status(e.response?.status ?? 500).json(e.response?.data)

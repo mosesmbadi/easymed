@@ -15,11 +15,21 @@ const secretKey = new SimpleCrypto("c2FubGFta2VueWFAZ21haWwuY29t");
 export const AuthProvider = ({ children }) => {
   const dispatch = useDispatch();
   const router = useRouter();
-  const [user, setUser] = useState(() =>
-    typeof window !== "undefined" && localStorage.getItem("token")
-      ? JSON.parse(localStorage.getItem("token"))
-      : null
-  );
+  const [user, setUser] = useState(() => {
+    if (typeof window !== "undefined" && localStorage.getItem("token")) {
+      const token = JSON.parse(localStorage.getItem("token"));
+      if (token) {
+        try {
+          const decodedToken = jwtDecode(token);
+          return { ...decodedToken, token };
+        } catch (error) {
+          console.error("Error decoding token:", error);
+          return null;
+        }
+      }
+    }
+    return null;
+  });
 
   const [message, setMessage] = useState("");
 
@@ -97,17 +107,19 @@ export const AuthProvider = ({ children }) => {
         const decodedToken = jwtDecode(storedToken);
         setUser({ ...decodedToken, token: storedToken });
         
-        // Fetch permissions for valid token
-        const fetchPermissions = async () => {
-          try {
-            await dispatch(getAllUserPermissions(decodedToken.user_id));
-          } catch (error) {
-            console.error("Error fetching permissions:", error);
-            // If permissions fetch fails, logout user
-            logoutUser();
-          }
-        };
-        fetchPermissions();
+        // Only fetch permissions for non-patient users
+        if (decodedToken.role !== 'patient') {
+          const fetchPermissions = async () => {
+            try {
+              await dispatch(getAllUserPermissions(decodedToken.user_id));
+            } catch (error) {
+              console.error("Error fetching permissions:", error);
+              // If permissions fetch fails, logout user
+              logoutUser();
+            }
+          };
+          fetchPermissions();
+        }
       } catch (error) {
         console.error("Error decoding token:", error);
         // If token decode fails, clear it

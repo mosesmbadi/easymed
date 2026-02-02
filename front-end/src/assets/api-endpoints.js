@@ -338,6 +338,7 @@ export const APP_API_URL = {
   ADMITTED_PATIENT_VITALS: "/api/inpatient/vitals/",
   ADMITTED_PATIENT_SCHEDULES: "/api/inpatient/schedules/",
   ADMITTED_PATIENT_SCHEDULED_DRUGS: "/api/inpatient/scheduled_drug/",
+  ADMITTED_PATIENT_SCHEDULED_LAB_TEST: "/api/inpatient/scheduled_lab_test/",
   INPATIENT_BEDS: "/api/inpatient/bed",
   INPATIENT_WARDS: "/api/inpatient/wards",
   INPATIENT_NURSE_DUTIES: "/api/inpatient/nurse-duties",

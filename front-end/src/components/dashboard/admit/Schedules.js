@@ -9,6 +9,7 @@ import { Column, Paging, Pager, HeaderFilter, Scrolling } from "devextreme-react
 import { useAuth } from '@/assets/hooks/use-auth';
 import { admittedPatientSchedules, fetchAdmissionVitals } from '@/redux/features/inpatient';
 import MedicatePatient from './modals/MedicatePatient';
+import AddScheduleModal from './modals/AddScheduleModal';
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
   ssr: false,
@@ -29,7 +30,7 @@ const getActions = () => {
 };
 
 
-const Schedules = ({admission_id, patient}) => {
+const Schedules = ({admission_id, patient, process}) => {
   const showPageSizeSelector = true;
   const showInfo = true;
   const [showNavButtons, setShowNavButtons] = useState(true);
@@ -49,11 +50,15 @@ const Schedules = ({admission_id, patient}) => {
   };
 
   const actionsFunc = ({ data }) => {
+    const actions = data.type === 'Medication' ? userActions : [];
+    
+    if (actions.length === 0) return null;
+
     return (
       <>
         <CmtDropdownMenu
           sx={{ cursor: "pointer" }}
-          items={userActions}
+          items={actions}
           onItemClick={(menu) => onMenuClick(menu, data)}
           TriggerComponent={
             <LuMoreHorizontal className="cursor-pointer text-xl" />
@@ -107,13 +112,19 @@ const Schedules = ({admission_id, patient}) => {
 
   }
 
+  const combinedSchedules = [
+      ...(schedules[0]?.scheduled_drugs || []).map(d => ({...d, type: 'Medication', name: d.drug_name})),
+      ...(schedules[0]?.scheduled_lab_tests || []).map(t => ({...t, type: 'Lab Test', name: t.test_profile_name, note: t.note}))
+  ];
+
   return (
     <div className='w-full p-4 bg-white shadow-md rounded-lg'>
       <div className='w-full flex items-center justify-between mb-4'>
         <h2 className='text-xl font-semibold mb-4'>{patient}</h2>
+        <AddScheduleModal process={process} admission_id={admission_id} />
       </div>
       <DataGrid
-        dataSource={schedules[0]?.scheduled_drugs}
+        dataSource={combinedSchedules}
         allowColumnReordering={true}
         rowAlternationEnabled={true}
         showBorders={true}
@@ -135,20 +146,27 @@ const Schedules = ({admission_id, patient}) => {
           showNavigationButtons={showNavButtons}
         />
         <Column
-          dataField="drug_name"
-          caption="Drug Name"
+          dataField="name"
+          caption="Item"
+          allowFiltering={true}
+          allowSearch={true}
+        />
+        <Column
+          dataField="type"
+          caption="Type"
           allowFiltering={true}
           allowSearch={true}
         />
         <Column
           dataField="frequency"
           caption="Frequency"
-          cellRender={renderDosage}
+          cellRender={(row) => row.data.type === 'Medication' ? renderDosage(row) : '-'}
         />
 
         <Column
           dataField="duration"
-          caption="Duration (Days)"
+          caption="Duration"
+           cellRender={(row) => row.data.type === 'Medication' ? `${row.data.duration} Days` : '-'}
         />
 
         <Column
