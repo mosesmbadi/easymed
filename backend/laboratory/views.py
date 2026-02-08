@@ -57,7 +57,8 @@ from authperms.permissions import (
     IsLabTechUser,
     IsNurseUser,
     IsSystemsAdminUser,
-    IsPatientUser
+    IsPatientUser,
+    IsReceptionistUser
 )
 
 # filters
@@ -96,7 +97,7 @@ class SpecimenViewSet(viewsets.ModelViewSet):
 class LabTestProfileViewSet(viewsets.ModelViewSet):
     queryset = LabTestProfile.objects.all()
     serializer_class = LabTestProfileSerializer
-    permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser | IsPatientUser,)
+    permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser | IsPatientUser | IsReceptionistUser,)
 
 
 class LabTestPanelViewSet(viewsets.ModelViewSet):
@@ -106,7 +107,7 @@ class LabTestPanelViewSet(viewsets.ModelViewSet):
     '''
     queryset = LabTestPanel.objects.all()
     serializer_class = LabTestPanelSerializer
-    permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser,)
+    permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser | IsReceptionistUser,)
 
     @action(detail=False, methods=['get'], url_path='labtestpanels-byprofile-id/(?P<profile_id>[^/.]+)')
     def by_test_profile(self, request, profile_id=None):
@@ -136,7 +137,7 @@ class LabTestPanelViewSet(viewsets.ModelViewSet):
 class LabTestRequestViewSet(viewsets.ModelViewSet):
     queryset = LabTestRequest.objects.all().order_by('-id')
     serializer_class = LabTestRequestSerializer
-    permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser,)
+    permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser | IsReceptionistUser,)
     filter_backends = (DjangoFilterBackend,)
     filterset_class = LabTestRequestFilter
 
@@ -170,7 +171,7 @@ class LabTestRequestByPatientIdAPIView(APIView):
 class LabTestRequestPanelViewSet(viewsets.ModelViewSet):
     queryset = LabTestRequestPanel.objects.all()
     serializer_class = LabTestRequestPanelSerializer
-    permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser | IsSystemsAdminUser,)
+    permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser | IsSystemsAdminUser | IsReceptionistUser,)
 
     def get_serializer_context(self):
         context = super().get_serializer_context()

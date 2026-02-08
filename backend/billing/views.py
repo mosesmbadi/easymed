@@ -25,6 +25,7 @@ from authperms.permissions import (
     IsDoctorUser,
     IsLabTechUser,
     IsNurseUser,
+    IsReceptionistUser,
 )
 from .serializers import (
     InvoiceItemSerializer, InvoiceSerializer,
@@ -39,7 +40,7 @@ class InvoiceItemsByInsuranceCompany(generics.ListAPIView):
     Expected URL format: /billing/invoice-items/insurance-company/?insurance_company_id=5
     """
     serializer_class = InvoiceItemSerializer
-    permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser,)
+    permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser | IsReceptionistUser,)
 
     def get_queryset(self):
         insurance_company_id = self.request.query_params.get('insurance_company_id')
@@ -54,7 +55,7 @@ class InvoiceItemsByInsuranceCompany(generics.ListAPIView):
 class InvoiceViewset(viewsets.ModelViewSet):
     queryset = Invoice.objects.all().order_by('-id')
     serializer_class = InvoiceSerializer
-    permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser,)
+    permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser | IsReceptionistUser,)
     filter_backends = [InvoiceFilterSearch, DjangoFilterBackend]
     filterset_class = InvoiceFilter
     search_fields = [
@@ -72,7 +73,7 @@ class InvoicesByPatientId(generics.ListAPIView):
 class InvoiceItemViewset(viewsets.ModelViewSet):
     queryset = InvoiceItem.objects.all().order_by('-id')
     serializer_class = InvoiceItemSerializer
-    permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser,)
+    permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser | IsReceptionistUser,)
 
     def partial_update(self, request, *args, **kwargs):
         try:

@@ -123,8 +123,10 @@
         <p><strong>{{ company.name }}</strong></p>
         <p>Address: {{ company.address1 }}</p>
         <p>
-          {{ company.phone1 }} {% if company.email1 %} | {{ company.email1 }} {%
-          endif %}
+          {{ company.phone1 }}
+          {% if company.email1 %}
+          | {{ company.email1 }}
+          {% endif %}
         </p>
       </div>
     </div>
@@ -146,18 +148,27 @@
         <p><strong>Request Details</strong></p>
         <p>
           <strong>Requested Date:</strong>
-          {% if requested_date %} {{ requested_date|date:"d M Y" }} {% else %}
-          N/A {% endif %}
+          {% if requested_date %}
+          {{ requested_date|date:"d M Y" }}
+          {% else %}
+          N/A
+          {% endif %}
         </p>
         <p>
           <strong>Requested Time:</strong>
-          {% if requested_time %} {{ requested_time|time:"H:i" }} {% else %} N/A
+          {% if requested_time %}
+          {{ requested_time|time:"H:i" }}
+          {% else %}
+          N/A
           {% endif %}
         </p>
         <p>
           <strong>Results Entered:</strong>
-          {% if result_entered_datetime %} {{ result_entered_datetime|date:"d M
-          Y H:i" }} {% else %} Pending {% endif %}
+          {% if result_entered_datetime %}
+          {{ result_entered_datetime|date:"d M Y H:i" }}
+          {% else %}
+          Pending
+          {% endif %}
         </p>
       </div>
     </div>
@@ -193,7 +204,9 @@
         {% endfor %}
       </tbody>
     </table>
-    {% endif %} {% if qualitative_panels %}
+    {% endif %}
+
+    {% if qualitative_panels %}
     <table>
       <thead>
         <tr>
@@ -210,20 +223,23 @@
         {% endfor %}
       </tbody>
     </table>
-    {% endif %} {% if first_labtestrequest and first_labtestrequest.note %}
+    {% endif %}
+
+    {% if first_labtestrequest and first_labtestrequest.note %}
     <p><strong>Notes:</strong></p>
     <p>{{ first_labtestrequest.note }}</p>
-    {% endif %} {% if quantitative_panels or qualitative_panels %}
+    {% endif %}
+
+    {% if quantitative_panels or qualitative_panels %}
     <div class="interpretation-section">
       <div class="interpretation-title">Clinical Interpretations</div>
 
-      {% for panel in quantitative_panels %} {% if panel.interpretation %}
-      <div
-        class="interpretation-item {% if panel.requires_attention %}critical{% endif %}"
-      >
+      {% for panel in quantitative_panels %}
+      {% if panel.interpretation %}
+      <div class="interpretation-item {% if panel.requires_attention %}critical{% endif %}">
         <div class="interpretation-test-name">
-          {{ panel.test_panel_name }} ({{ panel.result }} {{ panel.unit }}) {%
-          if panel.requires_attention %}
+          {{ panel.test_panel_name }} ({{ panel.result }} {{ panel.unit }})
+          {% if panel.requires_attention %}
           <span class="attention-flag">⚠ URGENT</span>
           {% endif %}
         </div>
@@ -236,14 +252,15 @@
         </div>
         {% endif %}
       </div>
-      {% endif %} {% endfor %} {% for panel in qualitative_panels %} {% if
-      panel.interpretation %}
-      <div
-        class="interpretation-item {% if panel.requires_attention %}critical{% endif %}"
-      >
+      {% endif %}
+      {% endfor %}  
+    
+      {% for panel in qualitative_panels %}
+      {% if panel.interpretation %}
+      <div class="interpretation-item {% if panel.requires_attention %}critical{% endif %}">
         <div class="interpretation-test-name">
-          {{ panel.test_panel_name }} ({{ panel.result }}) {% if
-          panel.requires_attention %}
+          {{ panel.test_panel_name }} ({{ panel.result }})
+          {% if panel.requires_attention %}
           <span class="attention-flag">⚠ URGENT</span>
           {% endif %}
         </div>
@@ -256,7 +273,8 @@
         </div>
         {% endif %}
       </div>
-      {% endif %} {% endfor %}
+      {% endif %}
+      {% endfor %}
     </div>
     {% endif %}
 
@@ -264,20 +282,28 @@
       <p><strong>Date Posted:</strong> {{ approved_on }}</p>
       <p>
         <strong>Requested By:</strong>
-        {% if attendance_process.doctor %} {{
-        attendance_process.doctor.first_name }} {% else %} N/A {% endif %}
+        {% if attendance_process.doctor %}
+        {{ attendance_process.doctor.first_name }}
+        {% else %}
+        N/A
+        {% endif %}
       </p>
       <p>
         <strong>Done By:</strong>
-        {% if attendance_process.lab_tech %} {{
-        attendance_process.lab_tech.first_name }} {% else %} _______________ {%
-        endif %}
+        {% if attendance_process.lab_tech %}
+        {{ attendance_process.lab_tech.first_name }}
+        {% else %}
+        _______________
+        {% endif %}
       </p>
       <p><strong>Approved By:</strong> ____________________________</p>
       <p>
         <strong>Equipment:</strong>
-        {% if first_labtestrequest %} {{ first_labtestrequest.equipment }} {%
-        else %} _______________ {% endif %}
+        {% if first_labtestrequest %}
+        {{ first_labtestrequest.equipment }}
+        {% else %}
+        _______________
+        {% endif %}
       </p>
     </div>
 
