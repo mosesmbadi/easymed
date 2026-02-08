@@ -11,8 +11,11 @@ const ProtectedRoute = ({ permission, children }) => {
     const { isTokenValid } = useContext(authContext);
 
     // Check if user is authenticated and has valid token
-    if (!auth?.token || !auth?.user_id || !isTokenValid(auth.token)) {
-        return <NotAuthorized />
+    const isAuthenticated = auth?.token && auth?.user_id && isTokenValid(auth.token);
+    
+    if (!isAuthenticated) {
+        // User is not authenticated or token is invalid/expired
+        return <NotAuthorized isAuthenticated={false} requiredPermission={permission} />
     }
 
     // Ensure userPermissions is an array before using array methods
@@ -22,7 +25,8 @@ const ProtectedRoute = ({ permission, children }) => {
     const isAuthorized = permissions.find((perm) => perm === permission)
 
     if (!isAuthorized) {
-        return <NotAuthorized />
+        // User is authenticated but lacks required permission
+        return <NotAuthorized isAuthenticated={true} requiredPermission={permission} userRole={auth?.role} />
     }
 
     return (

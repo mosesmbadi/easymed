@@ -30,11 +30,13 @@ export const menus = [
     label: "Check-In",
     href: "/dashboard/reception/check-in",
     icon: <MdPersonAddAlt1 className="text-xl" />,
+    requiredPermission: "CAN_ACCESS_RECEPTION_DASHBOARD",
   },
   {
     label: "Patients",
     href: "/dashboard/patients",
     icon: <HiUsers className="text-xl" />,
+    requiredPermission: "CAN_ACCESS_PATIENTS_DASHBOARD",
   },
   // {
   //   label: "Reception",
@@ -45,46 +47,55 @@ export const menus = [
     label: "Nursing Station",
     href: "/dashboard/nursing-station",
     icon: <LiaUserNurseSolid className="text-xl" />,
+    requiredPermission: "CAN_ACCESS_NURSING_DASHBOARD",
   },
   {
     label: "Doctor Desk",
     href: "/dashboard/doctor-desk",
     icon: <FaUserDoctor className="text-xl" />,
+    requiredPermission: "CAN_ACCESS_DOCTOR_DASHBOARD",
   },
   {
     label: "Laboratory",
     href: "/dashboard/laboratory",
     icon: <GiMicroscope className="text-xl" />,
+    requiredPermission: "CAN_ACCESS_LABORATORY_DASHBOARD",
   },
   {
     label: "Phamarcy",
     href: "/dashboard/phamarcy",
     icon: <BsCapsule className="text-xl" />,
+    requiredPermission: "CAN_ACCESS_PHARMACY_DASHBOARD",
   },
   {
     label: "Radiology",
     href: "/dashboard/radiology",
     icon: <FaImage className="text-xl" />,
+    requiredPermission: "CAN_ACCESS_GENERAL_DASHBOARD", // Adjust as needed
   },
   {
     label: "In-patient",
     href: "/dashboard/admit/patients",
     icon: <FaBed className="text-xl" />,
+    requiredPermission: "CAN_ACCESS_NURSING_DASHBOARD", // Adjust as needed
   },
   {
     label: "Finance",
     href: "/dashboard/finance",
     icon: <FaMoneyBillAlt className="text-xl" />,
+    requiredPermission: "CAN_ACCESS_BILLING_DASHBOARD",
     children: [
       {
         label: "Accounts Receivable",
         href: "/dashboard/finance/accounts-receivable",
         icon: <FaMoneyBillWave className="" />,
+        requiredPermission: "CAN_ACCESS_BILLING_DASHBOARD",
       },
       {
         label: "Accounts Payable",
         href: "/dashboard/finance/accounts-payable",
         icon: <FaMoneyBillWave className="" />,
+        requiredPermission: "CAN_ACCESS_BILLING_DASHBOARD",
       },
     ],
   },
@@ -93,6 +104,7 @@ export const menus = [
     label: "Inventory",
     href: "/dashboard/inventory",
     icon: <MdInventory2 className="text-xl" />,
+    requiredPermission: "CAN_ACCESS_INVENTORY_DASHBOARD",
   },
 ];
 
