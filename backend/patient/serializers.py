@@ -1,3 +1,4 @@
+from django.db import IntegrityError, transaction
 from django.utils import timezone
 from rest_framework import serializers
 from .models import (
@@ -105,6 +106,55 @@ class PrescribedDrugSerializer(serializers.ModelSerializer):
     class Meta:
         model = PrescribedDrug
         fields = '__all__'
+
+    def validate(self, attrs):
+        """Enforce unique (prescription, item) at the API layer.
+
+        The DB has a unique constraint; without this, duplicate submissions can
+        surface as a 500 IntegrityError instead of a clean 4xx response.
+        """
+
+        prescription = attrs.get("prescription") or getattr(self.instance, "prescription", None)
+        item = attrs.get("item") or getattr(self.instance, "item", None)
+
+        if prescription and item:
+            qs = PrescribedDrug.objects.filter(prescription=prescription, item=item)
+            if self.instance is not None:
+                qs = qs.exclude(pk=self.instance.pk)
+
+            if qs.exists():
+                raise serializers.ValidationError(
+                    {"non_field_errors": ["This drug is already added to this prescription."]}
+                )
+
+        return attrs
+
+    def create(self, validated_data):
+        """Create a prescribed drug, returning a friendly 4xx on duplicates."""
+
+        try:
+            with transaction.atomic():
+                return super().create(validated_data)
+        except IntegrityError:
+            prescription = validated_data.get("prescription")
+            item = validated_data.get("item")
+
+            existing = None
+            if prescription and item:
+                existing = PrescribedDrug.objects.filter(
+                    prescription=prescription,
+                    item=item,
+                ).only("id").first()
+
+            if existing is not None:
+                raise serializers.ValidationError(
+                    {
+                        "non_field_errors": ["This drug is already added to this prescription."],
+                        "existing_id": existing.id,
+                    }
+                )
+
+            raise
 
     def get_sale_price(self, obj):
         inventory = Inventory.objects.filter(item=obj.item).order_by('expiry_date').first()

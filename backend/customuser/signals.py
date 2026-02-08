@@ -8,6 +8,7 @@ from .models import (
     NurseProfile,
     SysadminProfile,
     ReceptionistProfile,
+    PharmacistProfile,
 )
 
 
@@ -46,6 +47,13 @@ def create_user_profile(sender: CustomUser, instance: CustomUser, created: bool,
     if instance.role == CustomUser.SYS_ADMIN:
         try:
             SysadminProfile.objects.create(user=instance)
+            return
+        except Exception as e:
+            return
+
+    if instance.role == CustomUser.PHARMACIST:
+        try:
+            PharmacistProfile.objects.create(user=instance)
             return
         except Exception as e:
             return

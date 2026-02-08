@@ -202,37 +202,9 @@ class PrescribedDrug(models.Model):
         unique_together = ("prescription_id", "item")    
 
     def save(self, *args, **kwargs):
-            from inpatient.models import ScheduledDrug
-            """
-            Saves the PrescribedDrug instance and creates a Schedule if an
-            AttendanceProcess is linked to the prescription.
-            """
-            # Save the instance first. This is crucial for a new instance to have a primary key.
-            super().save(*args, **kwargs)
-
-            # Check for the existence of the related prescription and its attendance_prescription.
-            if hasattr(self, 'prescription') and hasattr(self.prescription, 'attendace_prescription'):
-                try:
-                    # Use select_related to fetch the AttendanceProcess in a single query.
-                    attendance_process = self.prescription.attendace_prescription.AttendanceProcess.first()
-
-                    # If the attendance_process exists and has a schedule, create the ScheduledDrug.
-                    if attendance_process and attendance_process.schedules:
-                        ScheduledDrug.objects.create(
-                            prescribed_drug=self,
-                            schedule_time=self.created_at,
-                            prescription_schedule=attendance_process.schedules,
-                            comment=self.note,
-                        )
-                        print("INFO: AttendanceProcess exists, a new Schedule has been created.")
-                    else:
-                        print("INFO: AttendanceProcess or its schedule does not exist, skipping schedule creation.")
-
-                except Exception as e:
-                    # Catch a more general exception for safety or refine it based on your models.
-                    print(f"INFO: An error occurred: {e}. Skipping schedule creation.")
-            else:
-                print("INFO: No prescription or attendance_prescription found, skipping schedule creation.")
+        # Scheduling is time-driven and must be created explicitly.
+        # Do not create inpatient schedules implicitly when a drug is prescribed.
+        super().save(*args, **kwargs)
 
     
 

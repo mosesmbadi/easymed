@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import (
-    UserListViewSet, DoctorsAPIView, NurseAPIView, LabTechAPIView, ReceptionistAPIView,
+    UserListViewSet, DoctorsAPIView, NurseAPIView, LabTechAPIView, PharmacistAPIView, ReceptionistAPIView,
     RegistrationAPIView, LoginAPIView, PasswordResetRequestView, PasswordResetConfirmView,
     AdminInitiatePasswordResetView, AdminInitiatePasswordResetByEmailView
 )
@@ -19,6 +19,7 @@ urlpatterns = [
     path('doctors/', DoctorsAPIView.as_view(), name='doctors'),
     path('nurses/', NurseAPIView.as_view(), name='nurses'),
     path('labtechs/', LabTechAPIView.as_view(), name='labtechs'),
+    path('pharmacists/', PharmacistAPIView.as_view(), name='pharmacists'),
     path('receptionists', ReceptionistAPIView.as_view(), name='receptionists'),
     path('register/', RegistrationAPIView.as_view(), name='register'),
     path('login/', LoginAPIView.as_view(), name='login'),

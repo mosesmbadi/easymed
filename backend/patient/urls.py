@@ -37,6 +37,7 @@ router.register(r'initiate-attendance-process', AttendanceProcessViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('patient-profile/', PatientByUserIdAPIView.as_view(), name="patient-profile"),
     path('patients/<int:user_id>/', PatientByUserIdAPIView.as_view(), name="patient-by-userid"),
     
     # path('appointments/by_patient_id/<int:patient_id>/', AppointmentsByPatientIdAPIView.as_view(), name="appointment-by-patientid"),

@@ -15,9 +15,9 @@ from authperms.permissions import IsDoctorUser, IsSeniorNurseUser, IsSystemsAdmi
 
 from .utils import (generate_discharge_summary_pdf)
 from .filters import InpatientFilterSearch, WardFilter, PatientAdmissionFilter, WardNurseAssignmentFilter
-from .models import (Bed, PatientAdmission, PatientDischarge, Schedule, ScheduledDrug, Ward, WardNurseAssignment, InPatientTriage)
+from .models import (Bed, PatientAdmission, PatientDischarge, Schedule, ScheduledDrug, ScheduledLabTest, Ward, WardNurseAssignment, InPatientTriage)
 from .serializers import (BedSerializer, PatientAdmissionSerializer,
-                        PatientDischargeSerializer, ScheduledDrugSerializer,
+                        PatientDischargeSerializer, ScheduledDrugSerializer, ScheduledLabTestSerializer,
                         WardNurseAssignmentSerializer, WardSerializer, InPatientTriageSerializer,
                         ScheduleSerializer)
 
@@ -233,6 +233,101 @@ class ScheduledDrugViewSet(viewsets.ModelViewSet):
     queryset = ScheduledDrug.objects.all()
     serializer_class = ScheduledDrugSerializer
     permission_classes = [IsDoctorUser | IsSeniorNurseUser | IsSystemsAdminUser]
+
+    def get_queryset(self):
+        admission_id = self.kwargs.get('admission_pk')
+        if admission_id is None:
+            return super().get_queryset()
+
+        return ScheduledDrug.objects.select_related('prescribed_drug', 'prescribed_drug__item').filter(
+            prescription_schedule__admission__id=admission_id
+        )
+
+    def perform_create(self, serializer):
+        admission_id = self.kwargs.get('admission_pk')
+        if admission_id is None:
+            serializer.save()
+            return
+
+        admission = get_object_or_404(PatientAdmission, pk=admission_id)
+        if admission.schedules is None:
+            admission.schedules = Schedule.objects.create()
+            admission.save(update_fields=['schedules'])
+
+        serializer.save(prescription_schedule=admission.schedules)
+
+class ScheduledLabTestViewSet(viewsets.ModelViewSet):
+    queryset = ScheduledLabTest.objects.all()
+    serializer_class = ScheduledLabTestSerializer
+    permission_classes = [IsDoctorUser | IsSeniorNurseUser | IsSystemsAdminUser]
+
+    def get_queryset(self):
+        admission_id = self.kwargs.get('admission_pk')
+        if admission_id is None:
+            return super().get_queryset()
+
+        return ScheduledLabTest.objects.select_related(
+            'schedule',
+            'lab_test_profile',
+            'lab_test_request',
+            'lab_test_request__test_profile',
+        ).filter(
+            schedule__admission__id=admission_id
+        )
+
+    def perform_create(self, serializer):
+        admission_id = self.kwargs.get('admission_pk')
+        if admission_id is None:
+            # Non-nested usage; fallback to default behavior.
+            serializer.save()
+            return
+
+        admission = get_object_or_404(PatientAdmission, pk=admission_id)
+
+        # Backfill schedules for older admissions if needed.
+        if admission.schedules is None:
+            admission.schedules = Schedule.objects.create()
+            admission.save(update_fields=['schedules'])
+
+        # If client passed a LabTestRequest, use it.
+        lab_test_request = serializer.validated_data.get('lab_test_request')
+        lab_test_profile = serializer.validated_data.get('lab_test_profile')
+
+        if lab_test_request is not None:
+            # Backfill profile for legacy consumers
+            if lab_test_profile is None and getattr(lab_test_request, 'test_profile', None):
+                lab_test_profile = lab_test_request.test_profile
+            serializer.save(schedule=admission.schedules, lab_test_profile=lab_test_profile)
+            return
+
+        # Otherwise, if client only passed a profile, create the canonical LabTestRequest
+        if lab_test_profile is not None:
+            from django.db import transaction
+            from laboratory.models import LabTestRequest
+
+            attendance_process = admission.attendance_process
+            process_test_req = getattr(attendance_process, 'process_test_req', None) if attendance_process else None
+
+            with transaction.atomic():
+                lab_req = LabTestRequest.objects.create(
+                    process=process_test_req,
+                    test_profile=lab_test_profile,
+                    note=serializer.validated_data.get('note'),
+                    requested_by=self.request.user,
+                )
+                serializer.save(
+                    schedule=admission.schedules,
+                    lab_test_request=lab_req,
+                    lab_test_profile=lab_test_profile,
+                )
+            return
+
+        # Neither lab_test_request nor lab_test_profile provided
+        from rest_framework import serializers as drf_serializers
+        raise drf_serializers.ValidationError({
+            'lab_test_request': ['This field is required when lab_test_profile is not provided.'],
+            'lab_test_profile': ['This field is required when lab_test_request is not provided.'],
+        })
     
 class ScheduleViewSet(viewsets.ModelViewSet):
     queryset = Schedule.objects.all()

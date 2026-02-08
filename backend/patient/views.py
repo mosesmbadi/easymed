@@ -90,12 +90,18 @@ class PatientByUserIdAPIView(APIView):
         responses=PatientSerializer,
     )
     def get(self, request: Request, user_id: int = None, *args, **kwargs):
+        if user_id is None:
+            user_id = request.query_params.get('userId')
+        
+        if user_id is None:
+            return Response({"error_message": "User ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+
         user = self.get_object(user_id)
 
         if user is None:
             return Response({"error_message": f"user id {user_id} doesn't exist"})
 
-        patient = Patient.objects.filter(user_id__pk=user.pk)
+        patient = Patient.objects.filter(user=user)
         if not patient.exists():
             return Response(status=status.HTTP_404_NOT_FOUND)
 

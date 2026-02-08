@@ -6,6 +6,7 @@ from .models import (
     NurseProfile,
     SysadminProfile,
     LabTechProfile,
+    PharmacistProfile,
     ReceptionistProfile,
 )
 
@@ -43,6 +44,13 @@ class LabTechProfileAdmin(admin.ModelAdmin):
 
 
 admin.site.register(LabTechProfile)
+
+
+class PharmacistProfileAdmin(admin.ModelAdmin):
+    pass
+
+
+admin.site.register(PharmacistProfile, PharmacistProfileAdmin)
 
 
 class ReceptionistProfileAdmin(admin.ModelAdmin):

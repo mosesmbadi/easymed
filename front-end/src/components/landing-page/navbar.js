@@ -39,7 +39,7 @@ const Navbar = () => {
         </ul>
       </div>
       {auth?.first_name ? (
-        <section className="flex items-center gap-2">
+        <div className="flex items-center gap-2">
           <p className="">{auth.first_name}</p>
           <IoChevronDownOutline
             onClick={handleClick}
@@ -65,7 +65,7 @@ const Navbar = () => {
             <MenuItem onClick={handleClose}><Link href="/patient-profile">Profile</Link></MenuItem>
             <MenuItem onClick={logoutUser}>Logout</MenuItem>
           </Menu>
-        </section>
+        </div>
       ) : (
         <div className="md:block hidden">
           <Link

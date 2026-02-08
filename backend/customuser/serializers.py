@@ -11,6 +11,7 @@ from .models import (
     Doctor,
     Nurse,
     LabTech,
+    Pharmacist,
     Receptionist,
 
 )
@@ -134,4 +135,10 @@ class LabTechSerializer(serializers.ModelSerializer):
 class ReceptionistSerializer(serializers.ModelSerializer):
     class Meta:
         model = Receptionist
+        fields = "__all__"
+
+
+class PharmacistSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Pharmacist
         fields = "__all__"

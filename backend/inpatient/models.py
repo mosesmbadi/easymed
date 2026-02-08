@@ -74,6 +74,35 @@ class ScheduledDrug(models.Model):
     def __str__(self):
         return f"Schedule for {self.prescribed_drug.item.name} on {self.schedule_time.strftime('%Y-%m-%d %H:%M')}"
 
+class ScheduledLabTest(models.Model):
+    schedule = models.ForeignKey(Schedule, on_delete=models.CASCADE, related_name="scheduled_lab_tests")
+    # Canonical order object (matches existing lab-test-request workflow)
+    lab_test_request = models.ForeignKey(
+        'laboratory.LabTestRequest',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='scheduled_occurrences',
+    )
+    # Backward compatibility: older scheduled records only stored the profile
+    lab_test_profile = models.ForeignKey('laboratory.LabTestProfile', on_delete=models.CASCADE, null=True, blank=True)
+    schedule_time = models.DateTimeField()
+    note = models.TextField(blank=True, null=True)
+    status = models.CharField(max_length=20, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        profile_name = None
+        if self.lab_test_request and self.lab_test_request.test_profile:
+            profile_name = self.lab_test_request.test_profile.name
+        elif self.lab_test_profile:
+            profile_name = self.lab_test_profile.name
+        else:
+            profile_name = 'Lab Test'
+
+        return f"Schedule for {profile_name} on {self.schedule_time.strftime('%Y-%m-%d %H:%M')}"
+
 class PatientAdmission(models.Model):
     attendance_process = models.ForeignKey(
         AttendanceProcess,

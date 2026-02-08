@@ -40,6 +40,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     NURSE = 'nurse'
     SENIOR_NURSE = 'senior_nurse'
     LAB_TECH = 'labtech'
+    PHARMACIST = 'pharmacist'
     RECEPTIONIST = 'receptionist'
     SYS_ADMIN = 'sysadmin'
 
@@ -51,6 +52,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         (NURSE, 'Nurse'),
         (SENIOR_NURSE, 'Senior Nurse'),
         (LAB_TECH, 'Lab Technician'),
+        (PHARMACIST, 'Pharmacist'),
         (RECEPTIONIST, 'Receptionist'),
         (SYS_ADMIN, 'Sysadmin'),
     )
@@ -143,6 +145,13 @@ class ReceptionistProfile(models.Model):
         return self.user.email
 
 
+class PharmacistProfile(models.Model):
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.user.email
+
+
 class ReceptionistManager(BaseUserManager):
     def get_queryset(self, *args, **kwargs):
         users = super().get_queryset(*args, **kwargs)
@@ -202,6 +211,20 @@ class LabTech(CustomUser):
 
     objects = LabTechManager()
     BASE_ROLE = CustomUser.LAB_TECH
+
+
+class PharmacistManager(BaseUserManager):
+    def get_queryset(self, *args, **kwargs):
+        users = super().get_queryset(*args, **kwargs)
+        return users.filter(role=CustomUser.PHARMACIST)
+
+
+class Pharmacist(CustomUser):
+    class Meta:
+        proxy = True
+
+    objects = PharmacistManager()
+    BASE_ROLE = CustomUser.PHARMACIST
 
 
 class PatientManager(BaseUserManager):

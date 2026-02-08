@@ -35,6 +35,7 @@ from .models import (
     PasswordHistory,
     Doctor,
     Nurse,
+    Pharmacist,
     Receptionist,
     LabTech,
     
@@ -55,6 +56,7 @@ from .serializers import (
     DoctorSerializer,
     NurseSerializer,
     LabTechSerializer,
+    PharmacistSerializer,
     ReceptionistSerializer,
 
 )
@@ -252,8 +254,21 @@ class LabTechAPIView(APIView):
         responses=LabTechSerializer,
     )
     def get(self, request: Request, *args, **kwargs):
-        labtech = LabTech.objects.filter(role = CustomUser.DOCTOR)
+        labtech = LabTech.objects.filter(role = CustomUser.LAB_TECH)
         serializers = LabTechSerializer(labtech, many=True)
+        return Response(serializers.data, status=status.HTTP_200_OK)
+
+
+class PharmacistAPIView(APIView):
+    permission_classes = (IsStaffUser,)
+
+    @extend_schema(
+        request=PharmacistSerializer,
+        responses=PharmacistSerializer,
+    )
+    def get(self, request: Request, *args, **kwargs):
+        pharmacist = Pharmacist.objects.filter(role = CustomUser.PHARMACIST)
+        serializers = PharmacistSerializer(pharmacist, many=True)
         return Response(serializers.data, status=status.HTTP_200_OK)
 
 
@@ -265,7 +280,7 @@ class ReceptionistAPIView(APIView):
         responses=ReceptionistSerializer,
     )
     def get(self, request: Request, *args, **kwargs):
-        receptionist = Receptionist.objects.filter(role = CustomUser.DOCTOR)
+        receptionist = Receptionist.objects.filter(role = CustomUser.RECEPTIONIST)
         serializers = ReceptionistSerializer(receptionist, many=True)
         return Response(serializers.data, status=status.HTTP_200_OK)
 

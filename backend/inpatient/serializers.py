@@ -5,7 +5,7 @@ from django.core.exceptions import ObjectDoesNotExist
 
 from patient.serializers import ReferralSerializer
 from patient.models import AttendanceProcess
-from .models import (Bed, PatientAdmission, PatientDischarge, Schedule, ScheduledDrug, Ward,
+from .models import (Bed, PatientAdmission, PatientDischarge, Schedule, ScheduledDrug, ScheduledLabTest, Ward,
                     WardNurseAssignment, InPatientTriage)
 from .celery_tasks import set_bed_status_occupied
 
@@ -269,6 +269,7 @@ class WardSerializer(serializers.ModelSerializer):
 
 
 class ScheduledDrugSerializer(serializers.ModelSerializer):
+    prescription_schedule = serializers.PrimaryKeyRelatedField(read_only=True)
     drug_name = serializers.CharField(source='prescribed_drug.item.name', read_only=True)
     frequency = serializers.CharField(source='prescribed_drug.frequency', read_only=True)
     dosage = serializers.CharField(source='prescribed_drug.dosage', read_only=True)
@@ -279,8 +280,24 @@ class ScheduledDrugSerializer(serializers.ModelSerializer):
         model = ScheduledDrug
         fields = '__all__'
 
+class ScheduledLabTestSerializer(serializers.ModelSerializer):
+    schedule = serializers.PrimaryKeyRelatedField(read_only=True)
+    test_profile_name = serializers.SerializerMethodField(read_only=True)
+
+    def get_test_profile_name(self, obj):
+        if getattr(obj, 'lab_test_request', None) and getattr(obj.lab_test_request, 'test_profile', None):
+            return obj.lab_test_request.test_profile.name
+        if getattr(obj, 'lab_test_profile', None):
+            return obj.lab_test_profile.name
+        return None
+    
+    class Meta:
+        model = ScheduledLabTest
+        fields = '__all__'
+
 class ScheduleSerializer(serializers.Serializer):
     scheduled_drugs = serializers.SerializerMethodField()
+    scheduled_lab_tests = serializers.SerializerMethodField()
 
     class Meta:
         model = Schedule
@@ -289,6 +306,10 @@ class ScheduleSerializer(serializers.Serializer):
     def get_scheduled_drugs(self, obj):
         schedules = obj.prescription_schedule.all()
         return ScheduledDrugSerializer(schedules, many=True).data
+
+    def get_scheduled_lab_tests(self, obj):
+        schedules = obj.scheduled_lab_tests.all()
+        return ScheduledLabTestSerializer(schedules, many=True).data
 
 
 

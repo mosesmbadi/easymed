@@ -55,10 +55,7 @@ const AdminCreateUser = ({role}) => {
   }, [authUser]);
 
   const setRole = ()=> {
-    let theRole = role;
-    if( theRole === "labtech"){
-      theRole = "lab_tech"
-    }
+    const theRole = role;
     const roleSelected = groups.find((group) => group.name.toLowerCase() === theRole);
     if (roleSelected) {
       return { value: roleSelected.id, label: roleSelected.name };
@@ -101,9 +98,28 @@ const AdminCreateUser = ({role}) => {
 
   const handleCreateUser = async (formValue, helpers) => {
     try {
+      // Map group names (from DB) to backend role values
+      // Database groups: "SYS_ADMIN", "LAB_TECH", "PHARMACIST", etc.
+      // Backend roles: "sysadmin", "labtech", "pharmacist", etc.
+      const roleMapping = {
+        'sys_admin': 'sysadmin',
+        'lab_tech': 'labtech',
+        'senior_nurse': 'senior_nurse',
+        'senior nurse': 'senior_nurse',
+        'lab tech': 'labtech',
+        'pharmacist': 'pharmacist',
+        'receptionist': 'receptionist',
+        'doctor': 'doctor',
+        'nurse': 'nurse',
+        'patient': 'patient',
+      };
+      
+      const roleName = (formValue.group.label).toLowerCase().trim();
+      const mappedRole = roleMapping[roleName] || roleName;
+      
       const formData = {
         ...formValue,
-        role: (formValue.group.label).toLowerCase(),
+        role: mappedRole,
         group: formValue.group.value,
         profession: "",
       };

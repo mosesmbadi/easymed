@@ -108,20 +108,6 @@ services:
   #     networks:
   #       - mks
 
-  flower:
-    image: mher/flower
-    container_name: flower
-    command: celery flower
-    environment:
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - FLOWER_PORT=8888
-    ports:
-      - 8888:8888
-    depends_on:
-      - redis
-    networks:
-      - mks
-
   lis_server:
     image: mosesmbadi/hl7-astm-parser:latest
     container_name: lis-server
