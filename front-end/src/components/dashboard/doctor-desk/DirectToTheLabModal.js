@@ -46,10 +46,6 @@ const DirectToTheLabModal = ({ labOpen, setLabOpen, selectedData }) => {
   const saveAllPanels = async (testReqPanelPayload) => {
     try{
       const response = await sendLabRequestsPanels(testReqPanelPayload, auth);
-      // Only show toast on the first panel to avoid too many notifications
-      if (testReqPanelPayload.test_panel) {
-        toast.success("Lab Request Panel saved successfully!");
-      }
       dispatch(getAllProcesses(auth));
       // Only create invoice items if there's a valid response with an item
       if (response && response.item) {

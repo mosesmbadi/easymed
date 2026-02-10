@@ -56,9 +56,37 @@
       .summary-table td {
         text-align: left;
       }
+      .payment-stamp {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        padding: 10px 20px;
+        font-size: 24px;
+        font-weight: bold;
+        border: 3px solid;
+        border-radius: 8px;
+        transform: rotate(-15deg);
+        text-transform: uppercase;
+      }
+      .paid-stamp {
+        color: #28a745;
+        border-color: #28a745;
+        background-color: rgba(40, 167, 69, 0.1);
+      }
+      .unpaid-stamp {
+        color: #dc3545;
+        border-color: #dc3545;
+        background-color: rgba(220, 53, 69, 0.1);
+      }
     </style>
   </head>
   <body>
+    {% if invoice.status == 'paid' %}
+    <div class="payment-stamp paid-stamp">PAID</div>
+    {% else %}
+    <div class="payment-stamp unpaid-stamp">UNPAID</div>
+    {% endif %}
+    
     <div class="header">
       <div class="logo-column">
         <img src="{{ company_logo_url }}" alt="Company Logo" class="logo" />
@@ -93,13 +121,18 @@
           <td>{{ invoice_item.item.name }}</td>
           <td>{{ invoice_item.total_amount|floatformat:2 }}</td>
           <td>
-            {% if invoice_item.insurance_sale_price %} {{
-            invoice_item.insurance_sale_price|floatformat:2 }} {% else %} N/A {%
-            endif %}
+            {% if invoice_item.insurance_sale_price %}
+              {{ invoice_item.insurance_sale_price|floatformat:2 }}
+            {% else %}
+              N/A
+            {% endif %}
           </td>
           <td>
-            {% if invoice_item.co_pay %} {{ invoice_item.co_pay|floatformat:2 }}
-            {% else %} N/A {% endif %}
+            {% if invoice_item.co_pay %}
+              {{ invoice_item.co_pay|floatformat:2 }}
+            {% else %}
+              N/A
+            {% endif %}
           </td>
           <td>{{ invoice_item.payment_mode.payment_mode }}</td>
           <td>{{ invoice_item.item.category }}</td>

@@ -46,7 +46,6 @@ const AddInpatientTestModal = ({ labOpen, setLabOpen, process }) => {
         }
         billingInvoiceItems(auth, payload)
       })
-      toast.success("Lab Request Panels saved successfully!");
     } catch (error) {
       console.log(error);
       toast.error(error);
