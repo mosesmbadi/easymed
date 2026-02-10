@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -86,7 +86,7 @@
     {% else %}
     <div class="payment-stamp unpaid-stamp">UNPAID</div>
     {% endif %}
-    
+
     <div class="header">
       <div class="logo-column">
         <img src="{{ company_logo_url }}" alt="Company Logo" class="logo" />
@@ -121,18 +121,13 @@
           <td>{{ invoice_item.item.name }}</td>
           <td>{{ invoice_item.total_amount|floatformat:2 }}</td>
           <td>
-            {% if invoice_item.insurance_sale_price %}
-              {{ invoice_item.insurance_sale_price|floatformat:2 }}
-            {% else %}
-              N/A
-            {% endif %}
+            {% if invoice_item.insurance_sale_price %} {{
+            invoice_item.insurance_sale_price|floatformat:2 }} {% else %} N/A {%
+            endif %}
           </td>
           <td>
-            {% if invoice_item.co_pay %}
-              {{ invoice_item.co_pay|floatformat:2 }}
-            {% else %}
-              N/A
-            {% endif %}
+            {% if invoice_item.co_pay %} {{ invoice_item.co_pay|floatformat:2 }}
+            {% else %} N/A {% endif %}
           </td>
           <td>{{ invoice_item.payment_mode.payment_mode }}</td>
           <td>{{ invoice_item.item.category }}</td>

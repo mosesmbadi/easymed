@@ -9,7 +9,8 @@ RUN apk update && apk add --no-cache \
     libc-dev \
     weasyprint \
     ttf-dejavu \
-    fontconfig
+    fontconfig \
+    dos2unix
 
 WORKDIR /app
 
@@ -23,7 +24,8 @@ COPY . /app
 
 EXPOSE 8080
 
-RUN chmod +x ./entrypoint.sh
+# Convert line endings and make executable
+RUN dos2unix ./entrypoint.sh && chmod +x ./entrypoint.sh
 ENTRYPOINT [ "./entrypoint.sh" ]
 
 
