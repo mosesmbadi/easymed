@@ -88,25 +88,22 @@ services:
     networks:
       - mks
 
-  #   frontend:
-  #     build:
-  #       context: ./front-end
-  #       dockerfile: ./Dockerfile.local
-  #     container_name: easymed-frontend
-  #     restart: unless-stopped
-  #     ports:
-  #       - 3000:3000
-  #     volumes:
-  #       - ./front-end:/app
-  #       - /app/node_modules
-  #     env_file:
-  #       - ./.env.local
-  #     environment:
-  #       - NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL}
-  #     depends_on:
-  #       - backend
-  #     networks:
-  #       - mks
+  frontend:
+    build:
+      context: ./front-end
+      dockerfile: ./Dockerfile
+    container_name: easymed-frontend
+    restart: unless-stopped
+    ports:
+      - 3000:3000
+    env_file:
+      - ./.env.local
+    environment:
+      - NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL}
+    depends_on:
+      - backend
+    networks:
+      - mks
 
   lis_server:
     image: mosesmbadi/hl7-astm-parser:latest
@@ -135,6 +132,7 @@ services:
 
 volumes:
   postgres_data:
+  easymed_node_modules:
 
 networks:
   mks:

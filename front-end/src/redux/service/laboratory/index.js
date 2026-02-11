@@ -613,6 +613,49 @@ export const updateSpecimen = (specimen_id, payload, auth) => {
 
 }
 
+export const fetchReferenceValues = (auth) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve,reject) => {
+        axiosInstance.get(`${APP_API_URL.REFERENCE_VALUES}`)
+            .then((res) =>{
+                resolve(res.data)
+            })
+            .catch((err) =>{
+                reject(err.message)
+            })
+    })
+}
+
+export const createReferenceValue = (payload, auth) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve,reject) => {
+        axiosInstance.post(`${APP_API_URL.REFERENCE_VALUES}`, payload)
+            .then((res) =>{
+                resolve(res.data)
+            })
+            .catch((err) =>{
+                reject(err.message)
+            })
+    })
+}
+
+export const updateReferenceValue = (reference_value_id, payload, auth) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve,reject) => {
+        axiosInstance.patch(`${APP_API_URL.REFERENCE_VALUES}`, payload, {
+            params: {
+                reference_value_id: reference_value_id
+            }
+        })
+            .then((res) =>{
+                resolve(res.data)
+            })
+            .catch((err) =>{
+                reject(err.message)
+            })
+    })
+}
+
 export const fetchPhlebotomySamples = (auth) =>{
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve,reject) =>{

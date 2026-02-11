@@ -1,38 +1,45 @@
 FROM node:22.11.0-alpine AS base
 
-# setup docker image to install all node packages
+# 1. Install dependencies only when needed
 FROM base AS dependencies
-
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
-
 COPY package*.json ./
-
 RUN npm install
 
-
-# setup docker image for next.js build
+# 2. Rebuild the source code only when needed
 FROM base AS build
 WORKDIR /app
 COPY --from=dependencies /app/node_modules ./node_modules
 COPY . .
-
 ENV NEXT_TELEMETRY_DISABLED=1
-
 RUN npm run build
 
-# setup docker image to hold build, static and run the app
+# 3. Production image, copy all the files and run next
 FROM base AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
-    HOSTNAME="0.0.0.0"
+    HOSTNAME="0.0.0.0" \
+    PORT=3000
+
+# Create a non-root user
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
 
 COPY --from=build /app/public ./public
 
+# Set correct permission for nextjs user
 RUN mkdir .next
+RUN chown nextjs:nodejs .next
 
-COPY --from=build /app/.next/standalone ./
-COPY --from=build /app/.next/static ./.next/static
+# Automatically leverage output traces to reduce image size
+COPY --from=build --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=build --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+USER nextjs
+
+EXPOSE 3000
 
 CMD ["node", "server.js"]

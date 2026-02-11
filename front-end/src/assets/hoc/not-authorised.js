@@ -49,9 +49,9 @@ const NotAuthorized = ({ isAuthenticated = false, requiredPermission = null, use
   useEffect(() => {
     // Set mounted to true after component mounts on client
     setMounted(true);
-    
+
     if (auth?.token) {
-      dispatch(getAllPatients(auth)); 
+      dispatch(getAllPatients(auth));
     }
   }, [auth, dispatch]);
 
@@ -81,9 +81,9 @@ const NotAuthorized = ({ isAuthenticated = false, requiredPermission = null, use
           <h1 className="text-7xl font-bold text-warning">403</h1>
           <h2 className="text-2xl font-semibold">Access Denied</h2>
           <p className="text-gray-600">
-            You don't have permission to access <span className="font-semibold">{permissionName}</span>.
+            You don&apos;t have permission to access <span className="font-semibold">{permissionName}</span>.
           </p>
-          
+
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-left">
             <p className="text-blue-800">
               <strong>Need access?</strong> Contact your system administrator to request the necessary permissions for your role.
@@ -94,11 +94,11 @@ const NotAuthorized = ({ isAuthenticated = false, requiredPermission = null, use
             <Link href={dashboardUrl}>
               <button className="rounded text-white text-sm bg-primary px-6 py-3 flex items-center gap-2 hover:bg-opacity-90 transition">
                 <BiHome className="text-lg" />
-                Go to My Dashboard        
+                Go to My Dashboard
               </button>
             </Link>
-            
-            <button 
+
+            <button
               onClick={() => window.history.back()}
               className="rounded text-primary border border-primary text-sm bg-white px-6 py-3 flex items-center gap-2 hover:bg-gray-50 transition"
             >
@@ -129,7 +129,7 @@ const NotAuthorized = ({ isAuthenticated = false, requiredPermission = null, use
         <p className="text-gray-600">
           Your session has expired or you need to log in to access this page.
         </p>
-        
+
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-sm">
           <p className="text-yellow-800">
             Please log in to continue to <span className="font-semibold">{getPermissionName(requiredPermission)}</span>.
@@ -139,7 +139,7 @@ const NotAuthorized = ({ isAuthenticated = false, requiredPermission = null, use
         <Link href="/auth/login">
           <button className="rounded text-white text-sm bg-primary px-8 py-3 mt-4 flex items-center justify-center gap-2 mx-auto hover:bg-opacity-90 transition">
             <BiArrowBack />
-            Login to Continue        
+            Login to Continue
           </button>
         </Link>
       </div>

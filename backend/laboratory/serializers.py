@@ -19,6 +19,7 @@ from .models import (
     TestKit,
     TestKitCounter,
     LabTestInterpretation,
+    ReferenceValue,
     ReagentConsumptionLog
     )
 
@@ -249,6 +250,23 @@ class LabTestInterpretationSerializer(serializers.ModelSerializer):
             'updated_on',
         ]
         read_only_fields = ['created_on', 'updated_on']
+
+
+class ReferenceValueSerializer(serializers.ModelSerializer):
+    lab_test_panel_name = serializers.ReadOnlyField(source='lab_test_panel.name')
+
+    class Meta:
+        model = ReferenceValue
+        fields = [
+            'id',
+            'lab_test_panel',
+            'lab_test_panel_name',
+            'sex',
+            'age_min',
+            'age_max',
+            'ref_value_low',
+            'ref_value_high',
+        ]
 
 
 class ReagentConsumptionLogSerializer(serializers.ModelSerializer):

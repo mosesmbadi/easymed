@@ -31,7 +31,7 @@ const PatientConfirmedProtect = ({ children }) => {
     };
 
     fetchData();
-  }, [auth]);
+  }, [auth, dispatch]);
 
   useEffect(() => {
     if (!isLoading && !loggedInPatient) {
@@ -41,7 +41,7 @@ const PatientConfirmedProtect = ({ children }) => {
   }, [isLoading, loggedInPatient]);
 
   return (
-      <>{children}</>
+    <>{children}</>
   )
 }
 

@@ -11,7 +11,7 @@ import { fetchLabRequests,
     fetchLabTestByProcessId,
     fetchSamplesForSpecificProcess,
     fetchPhlebotomySamples,
-    fetchLabTestPanelsBySpecificSample, fetchSpecimens,
+    fetchLabTestPanelsBySpecificSample, fetchSpecimens, fetchReferenceValues,
   } from "@/redux/service/laboratory";
 
 
@@ -31,7 +31,8 @@ const initialState = {
   labTestProfiles: [],
   patientSpecificLabRequests: [],
   processAllTestRequest: [],
-  specimens: []
+  specimens: [],
+  referenceValues: []
 };
 
 const LaboratorySlice = createSlice({
@@ -56,6 +57,9 @@ const LaboratorySlice = createSlice({
     setSpecimens: (state, action) => {
       state.specimens = action.payload;
     },
+    setReferenceValues: (state, action) => {
+      state.referenceValues = action.payload;
+    },
     addSpecimenToStoreOnCreate: (state, action) => {
       state.specimens = [action.payload, ...state.specimens];
     },
@@ -69,6 +73,21 @@ const LaboratorySlice = createSlice({
         state.specimens[index] = {
           ...state.specimens[index], // Keep existing properties
           ...action.payload       // Override with new data
+        };
+      }
+    },
+    addReferenceValueToStoreOnCreate: (state, action) => {
+      state.referenceValues = [action.payload, ...state.referenceValues];
+    },
+    updateReferenceValueToStoreOnPatch: (state, action) => {
+      const index = state.referenceValues.findIndex(
+        (value) => parseInt(value.id) === parseInt(action.payload.id)
+      );
+
+      if (index !== -1) {
+        state.referenceValues[index] = {
+          ...state.referenceValues[index],
+          ...action.payload,
         };
       }
     },
@@ -198,7 +217,8 @@ export const { setLabResults,
   clearProcessAllTestRequest, setProcessesSamples, clearProcessesSamples,
   setPhlebotomySamples, updateLabEquipmentStore, createLabEquipmentStore, setSpecimens, newTestPanelsStore,
   updatePanelsOnPatch, addSpecimenToStoreOnCreate, updateSpecimenToStoreOnPatch,
-  updateProfileToStoreOnPatch, addProfileToStoreOnCreate, updateLabResultItems, updateAddedLabRequestToStore
+  updateProfileToStoreOnPatch, addProfileToStoreOnCreate, updateLabResultItems, updateAddedLabRequestToStore,
+  setReferenceValues, addReferenceValueToStoreOnCreate, updateReferenceValueToStoreOnPatch
 } = LaboratorySlice.actions;
 
 
@@ -370,6 +390,15 @@ export const getSpecimens = (auth) => async (dispatch) => {
   }
 };
 
+export const getReferenceValues = (auth) => async (dispatch) => {
+  try {
+    const response = await fetchReferenceValues(auth);
+    dispatch(setReferenceValues(response));
+  } catch (error) {
+    console.log("REFERENCE_VALUES_ERROR ", error);
+  }
+};
+
 export const addItemToLabResultsItems = (payload) => (dispatch) => {
   dispatch(setLabResultItems(payload));
 };
@@ -407,6 +436,14 @@ export const addSpecimenToStore = (payload) => (dispatch) => {
 
 export const updateSpecimenToStore = (payload) => (dispatch) => {
   dispatch(updateSpecimenToStoreOnPatch(payload));
+};
+
+export const addReferenceValueToStore = (payload) => (dispatch) => {
+  dispatch(addReferenceValueToStoreOnCreate(payload));
+};
+
+export const updateReferenceValueToStore = (payload) => (dispatch) => {
+  dispatch(updateReferenceValueToStoreOnPatch(payload));
 };
 
 export const addProfileToStore = (payload) => (dispatch) => {

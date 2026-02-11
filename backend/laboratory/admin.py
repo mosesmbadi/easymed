@@ -20,7 +20,25 @@ from .models import (
 
 admin.site.register(LabReagent)
 admin.site.register(LabTestProfile)
-admin.site.register(LabTestPanel)
+@admin.register(LabTestPanel)
+class LabTestPanelAdmin(admin.ModelAdmin):
+    list_display = ['name', 'test_profile', 'specimen', 'unit', 'is_qualitative', 'is_quantitative']
+    list_filter = ['test_profile', 'specimen', 'is_qualitative', 'is_quantitative']
+    search_fields = ['name', 'test_profile__name', 'specimen__name']
+
+    class ReferenceValueInline(admin.TabularInline):
+        model = ReferenceValue
+        extra = 1
+
+    class LabTestInterpretationInline(admin.TabularInline):
+        model = LabTestInterpretation
+        extra = 1
+
+    class TestPanelReagentInline(admin.TabularInline):
+        model = TestPanelReagent
+        extra = 1
+
+    inlines = [ReferenceValueInline, LabTestInterpretationInline, TestPanelReagentInline]
 admin.site.register(ProcessTestRequest)
 admin.site.register(LabTestRequest)
 admin.site.register(LabTestRequestPanel)

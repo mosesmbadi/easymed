@@ -5,6 +5,7 @@ import TestPanels from './TestPanels'
 import LabEquipments from './LabEquipments'
 import TestProfile from './TestProfile'
 import Specimens from './Specimens'
+import ReferenceValues from './ReferenceValues'
 
 const LabSettingsNav = () => {
   const [currentTab, setCurrentTab] = useState(0);
@@ -26,6 +27,18 @@ const LabSettingsNav = () => {
             onClick={() => setCurrentTab(0)}
           >
             Test Panels
+          </p>
+        </div>
+        <div>
+          <p
+            className={`${
+              currentTab === 4
+                ? "cursor-pointer text-primary p-4 border-b-2 border-primary text-center"
+                : "cursor-pointer text-center p-4"
+            } `}
+            onClick={() => setCurrentTab(4)}
+          >
+            Reference Values
           </p>
         </div>
         <div>
@@ -71,6 +84,7 @@ const LabSettingsNav = () => {
       {currentTab === 1 && <LabEquipments />}
       {currentTab === 2 && <TestProfile />}
       {currentTab === 3 && <Specimens />}
+      {currentTab === 4 && <ReferenceValues />}
     </div>
   </>
   )

@@ -15,17 +15,26 @@ const secretKey = new SimpleCrypto("c2FubGFta2VueWFAZ21haWwuY29t");
 export const AuthProvider = ({ children }) => {
   const dispatch = useDispatch();
   const router = useRouter();
+  const parseStoredToken = (key) => {
+    if (typeof window === "undefined") return null;
+    const item = localStorage.getItem(key);
+    if (!item) return null;
+    try {
+      return JSON.parse(item);
+    } catch (error) {
+      return item;
+    }
+  };
+
   const [user, setUser] = useState(() => {
-    if (typeof window !== "undefined" && localStorage.getItem("token")) {
-      const token = JSON.parse(localStorage.getItem("token"));
-      if (token) {
-        try {
-          const decodedToken = jwtDecode(token);
-          return { ...decodedToken, token };
-        } catch (error) {
-          console.error("Error decoding token:", error);
-          return null;
-        }
+    const token = parseStoredToken("token");
+    if (token) {
+      try {
+        const decodedToken = jwtDecode(token);
+        return { ...decodedToken, token };
+      } catch (error) {
+        console.error("Error decoding token:", error);
+        return null;
       }
     }
     return null;
@@ -69,7 +78,7 @@ export const AuthProvider = ({ children }) => {
   // Function to check if token is valid and not expired
   const isTokenValid = (token) => {
     if (!token) return false;
-    
+
     try {
       const decoded = jwtDecode(token);
       const currentTime = Date.now() / 1000; // Convert to seconds
@@ -99,14 +108,14 @@ export const AuthProvider = ({ children }) => {
 
   // decode the token and set the user when a component mounts
   useEffect(() => {
-    const storedToken = JSON.parse(localStorage.getItem("token"));
-    
+    const storedToken = parseStoredToken("token");
+
     if (storedToken && isTokenValid(storedToken)) {
       // Token exists and is valid
       try {
         const decodedToken = jwtDecode(storedToken);
         setUser({ ...decodedToken, token: storedToken });
-        
+
         // Only fetch permissions for non-patient users
         if (decodedToken.role !== 'patient') {
           const fetchPermissions = async () => {

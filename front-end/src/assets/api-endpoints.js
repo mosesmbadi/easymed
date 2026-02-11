@@ -83,6 +83,7 @@ export const API_URL = {
   PANELS_BY_SAMPLE_ID: "/lab/labtestrequestpanels/sample/",
   PHLEBOTOMY_PATIENT_SAMPLES:"/lab/patient-samples/",
   SPECIMENS: "/lab/specimens/",
+  REFERENCE_VALUES: "/lab/reference-values/",
 
   /***************** INVENTORY APIS **********************/
   ADD_INVENTORY: "/inventory/inventories/",
@@ -257,6 +258,7 @@ export const APP_API_URL = {
   PANELS_BY_SAMPLE_ID: "/api/laboratory/panels-by-specific-sample/",
   PHLEBOTOMY_PATIENT_SAMPLES:"/api/laboratory/patient-samples",
   SPECIMENS: "/api/laboratory/specimens",
+  REFERENCE_VALUES: "/api/laboratory/reference-values",
 
   /***************** INVENTORY APIS **********************/
   ADD_INVENTORY: "/api/inventory/add-inventory",
