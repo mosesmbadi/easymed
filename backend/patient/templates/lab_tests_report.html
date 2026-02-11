@@ -76,8 +76,12 @@
       <h1>Lab Test Requests Report</h1>
       <p><strong>Doctor ID:</strong> {{ doctor_id }}</p>
       <p>
-        <strong>Date Range:</strong> {% if start_date %}{{ start_date }} - {{
-        end_date }}{% else %}All Dates{% endif %}
+        <strong>Date Range:</strong>
+        {% if start_date %}
+          {{ start_date }} - {{ end_date }}
+        {% else %}
+          All Dates
+        {% endif %}
       </p>
 
       {% if lab_test_requests %}

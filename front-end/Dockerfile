@@ -12,7 +12,16 @@ FROM base AS build
 WORKDIR /app
 COPY --from=dependencies /app/node_modules ./node_modules
 COPY . .
-ENV NEXT_TELEMETRY_DISABLED=1
+
+# Accept build arguments for environment variables
+ARG NEXT_PUBLIC_BACKEND_URL="http://api:8080/"
+ARG NEXT_PUBLIC_HMIS_VERSION="v0.0.1"
+
+# Set them as environment variables for the build
+ENV NEXT_TELEMETRY_DISABLED=1 \
+    NEXT_PUBLIC_BACKEND_URL=$NEXT_PUBLIC_BACKEND_URL \
+    NEXT_PUBLIC_HMIS_VERSION=$NEXT_PUBLIC_HMIS_VERSION
+
 RUN npm run build
 
 # 3. Production image, copy all the files and run next

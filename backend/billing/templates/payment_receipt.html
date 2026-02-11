@@ -106,10 +106,13 @@
     {% endif %}
     <p>
       <strong>Paid by:</strong>
-      {% if receipt.patient %} {{ receipt.patient.first_name }} {{
-      receipt.patient.second_name }} (Cash Payment) {% elif receipt.insurance %}
-      {{ receipt.insurance.insurance_name }} (Credit Payment) {% else %} N/A {%
-      endif %}
+      {% if receipt.patient %}
+        {{ receipt.patient.first_name }} {{ receipt.patient.second_name }} (Cash Payment)
+      {% elif receipt.insurance %}
+        {{ receipt.insurance.insurance_name }} (Credit Payment)
+      {% else %}
+        N/A
+      {% endif %}
     </p>
     <p><strong>Payment Mode:</strong> {{ receipt.payment_mode.mode_name }}</p>
     <p><strong>Reference Number:</strong> {{ receipt.reference_number }}</p>
