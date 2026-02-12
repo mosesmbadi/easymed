@@ -94,6 +94,19 @@ services:
         networks:
             - mks
 
+    backup:
+        build: ./backup
+        container_name: easymed-backup
+        env_file:
+            - ./.env
+        volumes:
+            - ./backup/data:/backups
+        depends_on:
+            - postgres
+        networks:
+            - mks
+        restart: unless-stopped
+
 volumes:
     postgres_data:
     redis:

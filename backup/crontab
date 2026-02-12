@@ -1,1 +1,3 @@
-0 1 * * * /backup.sh >> /var/log/cron.log 2>&1
+# EasyMed database backup - runs every 4 hours
+0 */4 * * * . /etc/environment; /backup.sh >> /var/log/backup.log 2>&1
+# Empty line required by cron
