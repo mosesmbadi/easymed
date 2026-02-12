@@ -21,7 +21,7 @@ services:
       resources:
         limits:
           memory: 1G
-          cpus: '1.0'
+          cpus: "1.0"
 
   redis:
     image: redis:7.0-alpine
@@ -38,7 +38,7 @@ services:
       resources:
         limits:
           memory: 256M
-          cpus: '0.5'
+          cpus: "0.5"
 
   backend:
     build:
@@ -69,7 +69,7 @@ services:
       resources:
         limits:
           memory: 1G
-          cpus: '1.0'
+          cpus: "1.0"
 
   worker:
     build: ./backend
@@ -90,7 +90,7 @@ services:
       resources:
         limits:
           memory: 1G
-          cpus: '1.0'
+          cpus: "1.0"
 
   celery-beat:
     build: ./backend
@@ -111,7 +111,7 @@ services:
       resources:
         limits:
           memory: 256M
-          cpus: '0.25'
+          cpus: "0.25"
 
   frontend:
     build:
@@ -134,7 +134,7 @@ services:
       resources:
         limits:
           memory: 512M
-          cpus: '0.5'
+          cpus: "0.5"
 
   lis_server:
     image: mosesmbadi/hl7-astm-parser:latest
@@ -164,7 +164,7 @@ services:
       resources:
         limits:
           memory: 512M
-          cpus: '0.5'
+          cpus: "0.5"
 
   backup:
     build: ./backup
@@ -183,7 +183,7 @@ services:
       resources:
         limits:
           memory: 256M
-          cpus: '0.25'
+          cpus: "0.25"
 
 volumes:
   postgres_data:

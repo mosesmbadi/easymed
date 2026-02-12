@@ -97,45 +97,33 @@
     </div>
 
     <h2>Invoice</h2>
-    <p>Invoice Number: {{ invoice.invoice_number }}</p>
-    <p>Invoice Date: {{ invoice.invoice_date }}</p>
-    <p>
-      Invoiced to: {{ invoice.patient.first_name }} {{
-      invoice.patient.second_name }}
-    </p>
+    <p>Number: {{ invoice.invoice_number }}</p>
+    <p>Date: {{ invoice.invoice_date }}</p>
+    <!-- prettier-ignore -->
+    <p>Invoiced to: {{ invoice.patient.first_name }} {{ invoice.patient.second_name }}</p>
 
     <table>
       <thead>
         <tr>
-          <th>Item Name</th>
-          <th>Total Amount</th>
-          <th>Insurance Sale Price</th>
-          <th>Co-Pay</th>
-          <th>MoP</th>
           <th>Category</th>
+          <th>Item Name</th>
+          <th>Ins Price</th>
+          <th>Co-Pay</th>
+          <th>Amount</th>
         </tr>
       </thead>
       <tbody>
         {% for invoice_item in invoice_items %}
         <tr>
-          <td>{{ invoice_item.item.name }}</td>
-          <td>{{ invoice_item.total_amount|floatformat:2 }}</td>
-          <td>
-            {% if invoice_item.insurance_sale_price %}
-              {{ invoice_item.insurance_sale_price|floatformat:2 }}
-            {% else %}
-              N/A
-            {% endif %}
-          </td>
-          <td>
-            {% if invoice_item.co_pay %}
-              {{ invoice_item.co_pay|floatformat:2 }}
-            {% else %}
-              N/A
-            {% endif %}
-          </td>
-          <td>{{ invoice_item.payment_mode.payment_mode }}</td>
           <td>{{ invoice_item.item.category }}</td>
+          <td>{{ invoice_item.item.name }}</td>
+          <td>
+            {% if invoice_item.insurance_sale_price %}{{ invoice_item.insurance_sale_price|floatformat:2 }}{% else %}N/A{% endif %}
+          </td>
+          <td>
+            {% if invoice_item.co_pay %}{{ invoice_item.co_pay|floatformat:2 }}{% else %}N/A{% endif %}
+          </td>
+          <td>{{ invoice_item.total_amount|floatformat:2 }}</td>
         </tr>
         {% endfor %}
       </tbody>
