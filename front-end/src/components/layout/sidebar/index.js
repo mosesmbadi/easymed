@@ -10,6 +10,7 @@ import VersionModal from "./VersionModal";
 import { useAuth } from "@/assets/hooks/use-auth";
 import { getCompanyDetails } from "@/redux/features/company";
 import { useUserPermissions } from "@/assets/hooks/use-permission";
+import { toLocalMediaUrl } from "@/assets/utils/media-url";
 
 const Sidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
@@ -56,7 +57,7 @@ const Sidebar = () => {
     <>
       <section className="">
         <header className="h-[15vh] shadow flex items-center justify-center font-bold">
-          <img src={companyDetails.logo} alt="logo" className="h-36" />
+          <img src={toLocalMediaUrl(companyDetails.logo)} alt="logo" className="h-36" />
         </header>
         <section className="pl-2 h-[84vh] flex flex-col justify-between">
           <div className="overflow-x-auto">
