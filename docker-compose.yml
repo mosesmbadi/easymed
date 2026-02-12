@@ -10,6 +10,11 @@ services:
             - postgres_data:/var/lib/postgresql/data
         networks:
             - mks
+        deploy:
+            resources:
+                limits:
+                    memory: 1G
+                    cpus: '1.0'
 
     redis:
         image: redis:7.0-alpine
@@ -22,6 +27,11 @@ services:
         networks:
             - mks
         restart: unless-stopped
+        deploy:
+            resources:
+                limits:
+                    memory: 256M
+                    cpus: '0.5'
 
     backend:
         image: mosesmbadi/easymedbackend
@@ -39,6 +49,11 @@ services:
             - mks
         labels:
             - "service: backend"
+        deploy:
+            resources:
+                limits:
+                    memory: 1G
+                    cpus: '1.0'
 
     worker:
         image: mosesmbadi/easymedbackend
@@ -56,6 +71,11 @@ services:
             - mks
         labels:
             - "service: worker"
+        deploy:
+            resources:
+                limits:
+                    memory: 1G
+                    cpus: '1.0'
 
     frontend:
         image: mosesmbadi/easymedfrontend
@@ -69,6 +89,11 @@ services:
             - ./.env
         networks:
             - mks
+        deploy:
+            resources:
+                limits:
+                    memory: 512M
+                    cpus: '0.5'
 
     lis_server:
         image: mosesmbadi/hl7-astm-parser:latest
@@ -93,6 +118,11 @@ services:
         restart: unless-stopped
         networks:
             - mks
+        deploy:
+            resources:
+                limits:
+                    memory: 512M
+                    cpus: '0.5'
 
     backup:
         build: ./backup
@@ -106,6 +136,11 @@ services:
         networks:
             - mks
         restart: unless-stopped
+        deploy:
+            resources:
+                limits:
+                    memory: 256M
+                    cpus: '0.25'
 
 volumes:
     postgres_data:
