@@ -29,6 +29,31 @@ export const fetchInventoryInsurancePrices = (auth) =>{
     })
 }
 
+// Fetch insurance price for a specific item and insurance company
+export const fetchInsurancePriceForItem = (auth, itemId, insuranceCompanyId) =>{
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve,reject) =>{
+        axiosInstance.get(`${APP_API_URL.INSURANCE_INVENTORY_PRICES}`, {
+            params: {
+                item: itemId,
+                insurance_company: insuranceCompanyId
+            }
+        })
+            .then((res) =>{
+                // API returns an array, we want the first (and should be only) match
+                const data = res.data;
+                if (Array.isArray(data) && data.length > 0) {
+                    resolve(data[0]);
+                } else {
+                    resolve(null);
+                }
+            })
+            .catch((err) =>{
+                reject(err.message)
+            })
+    })
+}
+
 export const createInventoryInsurancePrices = (auth, payload) =>{
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve,reject) =>{

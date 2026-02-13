@@ -385,8 +385,8 @@ class InventorySerializer(serializers.ModelSerializer):
             insurance_price = {
                 "insurance": sale.insurance_company.id,
                 "insurance_name": sale.insurance_company.name,
-                "price": str(sale.sale_price),
-                "co_pay": str(sale.co_pay)
+                "price": float(sale.sale_price),
+                "co_pay": float(sale.co_pay)
             }
             insurance_prices.append(insurance_price)
         return insurance_prices

@@ -19,7 +19,7 @@ class RequisitionItemFilter(django_filters.FilterSet):
 
 
 class InventoryFilter(django_filters.FilterSet):
-    item = django_filters.CharFilter(field_name='item__id', lookup_expr='icontains')
+    item = django_filters.NumberFilter(field_name='item__id', lookup_expr='exact')
     department = django_filters.NumberFilter(field_name='department__id')
     department_name = django_filters.CharFilter(field_name='department__name', lookup_expr='icontains')
 
