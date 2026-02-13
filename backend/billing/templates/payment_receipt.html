@@ -122,8 +122,7 @@
 
       {% for invoice, allocations in allocations_grouped.items %}
       <div class="invoice-title">
-        Invoice #{{ invoice.invoice_number }} - {{
-        invoice.invoice_date|date:"d/m/Y" }}
+        Invoice #{{ invoice.invoice_number }} - {{ invoice.invoice_date|date:"d/m/Y" }}
       </div>
       <table>
         <thead>
