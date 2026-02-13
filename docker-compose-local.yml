@@ -113,28 +113,28 @@ services:
           memory: 256M
           cpus: "0.25"
 
-  # frontend:
-  #   build:
-  #     context: ./front-end
-  #     dockerfile: ./Dockerfile
-  #     args:
-  #       NEXT_PUBLIC_BACKEND_URL: "http://backend:8080"
-  #       NEXT_PUBLIC_HMIS_VERSION: ${NEXT_PUBLIC_HMIS_VERSION:-v0.0.1}
-  #   container_name: easymed-frontend
-  #   restart: unless-stopped
-  #   ports:
-  #     - 3000:3000
-  #   env_file:
-  #     - ./.env.local
-  #   depends_on:
-  #     - backend
-  #   networks:
-  #     - mks
-  #   deploy:
-  #     resources:
-  #       limits:
-  #         memory: 512M
-  #         cpus: "0.5"
+  frontend:
+    build:
+      context: ./front-end
+      dockerfile: ./Dockerfile
+      args:
+        NEXT_PUBLIC_BACKEND_URL: "http://backend:8080"
+        NEXT_PUBLIC_HMIS_VERSION: ${NEXT_PUBLIC_HMIS_VERSION:-v0.0.1}
+    container_name: easymed-frontend
+    restart: unless-stopped
+    ports:
+      - 3000:3000
+    env_file:
+      - ./.env.local
+    depends_on:
+      - backend
+    networks:
+      - mks
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
 
   lis_server:
     image: mosesmbadi/hl7-astm-parser:latest

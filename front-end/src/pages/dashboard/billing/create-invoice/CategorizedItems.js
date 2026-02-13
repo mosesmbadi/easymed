@@ -104,17 +104,38 @@ const CategorizedItems = ({
       setSelectedCoPay(0);
     } else {
       // Insurance selected - fetch insurance price from backend
+      // Get the item ID from either updatedInvoiceItem or the original invoiceItem prop
+      const itemId = updatedInvoiceItem?.item ?? invoiceItem?.item;
+      const insuranceCompanyId = selectedOption.insurance;
+      
+      // Validate we have the required IDs before making the API call
+      if (!itemId) {
+        console.error('[BILLING] Cannot fetch insurance price: item ID is missing');
+        toast.error("Cannot determine item for insurance pricing. Using cash price.");
+        setSelectedPrice(cashPrice);
+        setSelectedCoPay(0);
+        return;
+      }
+      
+      if (!insuranceCompanyId) {
+        console.warn('[BILLING] Insurance payment mode has no linked insurance company:', selectedOption.payment_mode);
+        toast.warning(`Payment mode "${selectedOption.payment_mode}" has no linked insurance company. Using cash price.`);
+        setSelectedPrice(cashPrice);
+        setSelectedCoPay(0);
+        return;
+      }
+      
       setPriceLoading(true);
       console.log('[BILLING] Fetching insurance price for:', {
-        item_id: updatedInvoiceItem?.item,
-        insurance_company_id: selectedOption.insurance,
+        item_id: itemId,
+        insurance_company_id: insuranceCompanyId,
         payment_mode: selectedOption.payment_mode,
       });
       try {
         const insurancePrice = await fetchInsurancePriceForItem(
           auth, 
-          updatedInvoiceItem?.item, 
-          selectedOption.insurance
+          itemId, 
+          insuranceCompanyId
         );
         
         console.log('[BILLING] Insurance price API response:', insurancePrice);

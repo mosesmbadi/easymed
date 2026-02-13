@@ -79,7 +79,7 @@ class Item(AbstractBaseModel):
         ('Specialized Appointment', 'Specialized Appointment'),
         ('general', 'General'),
     ]
-    item_code=models.CharField(max_length=255, default="99999-NA")
+    item_code=models.CharField(max_length=255)
     name = models.CharField(max_length=255)
     desc = models.CharField(max_length=255)
     category = models.CharField(max_length=255, choices=CATEGORY_CHOICES)
