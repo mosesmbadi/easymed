@@ -1,34 +1,55 @@
-from .models import PurchaseOrder
+import random
+import string
+from django.db.models import Max, Sum
+from .models import Item, PurchaseOrder, PurchaseOrderItem
+
+
+def generate_unique_item_code():
+    """
+    Generates a unique item code in the format 'AAA-00000' or 'LAB-00000' etc.
+    If a collision occurs, it tries again with a new random code.
+    """
+    
+    while True:
+        # Generate a random 3-letter prefix
+        prefix = ''.join(random.choices(string.ascii_uppercase, k=3))
+        
+        # Find the maximum existing numerical suffix for the given prefix
+        # This approach ensures uniqueness and sequential numbering within a prefix
+        last_item = Item.objects.filter(item_code__startswith=f'{prefix}-').aggregate(Max('item_code'))
+        
+        if last_item['item_code__max']:
+            try:
+                last_number = int(last_item['item_code__max'].split('-')[1])
+                new_number = last_number + 1
+            except (ValueError, IndexError):
+                # Fallback if parsing fails or prefix exists with non-numeric suffix
+                new_number = 1
+        else:
+            new_number = 1
+
+        # Format the new item code
+        new_item_code = f'{prefix}-{new_number:05d}'
+
+        # Check for absolute uniqueness (in case of rare collisions or non-standard existing codes)
+        if not Item.objects.filter(item_code=new_item_code).exists():
+            return new_item_code
 
 
 def update_purchase_order_status(purchase_order):
-    '''
-    Determine the status based on the aggregate state:
-        - If all items are fully received, set the status to COMPLETED.
-        - If none are received, set the status to PENDING.
-        - Otherwise, set the status to PARTIAL.
-    '''
-    items = purchase_order.po_items.all()
-    
-    all_completed = True
-    none_received = True
-    
-    for item in items:
-        if item.quantity_received < item.quantity_ordered:
-            all_completed = False
-        if item.quantity_received > 0:
-            none_received = False
-    
-    if all_completed:
-        purchase_order.status = PurchaseOrder.Status.COMPLETED
-        print(f"All items received; status set to COMPLETED.")
-    elif none_received:
-        purchase_order.status = PurchaseOrder.Status.PENDING
-        print(f"No items received; status set to PENDING.")
-    else:
-        purchase_order.status = PurchaseOrder.Status.PARTIAL
-        print(f"Some items received; status set to PARTIAL.")
-    
-    purchase_order.save()
+    """
+    Updates the status of a PurchaseOrder based on the received quantities of its items.
+    """
+    total_ordered = purchase_order.po_items.aggregate(Sum('quantity_ordered'))['quantity_ordered__sum'] or 0
+    total_received = purchase_order.po_items.aggregate(Sum('quantity_received'))['quantity_received__sum'] or 0
 
-    print(f'Status set to {purchase_order.status}')
+    if total_received == 0:
+        new_status = PurchaseOrder.Status.PENDING
+    elif total_received >= total_ordered:
+        new_status = PurchaseOrder.Status.COMPLETED
+    else:
+        new_status = PurchaseOrder.Status.PARTIAL
+    
+    if purchase_order.status != new_status:
+        purchase_order.status = new_status
+        purchase_order.save(update_fields=['status'])
