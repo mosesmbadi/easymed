@@ -294,7 +294,7 @@ export const APP_API_URL = {
   FETCH_INVOICE_ITEMS_BY_INVOICE: "/api/billing/fetch-invoices-items-by-invoice/",
   TOTALS_OF_THE_DAY: "/api/billing/transactionAday/",
   PAYMENT_MODES: "/api/billing/payment-modes/",
-  INSURANCE_INVENTORY_PRICES: "/api/insurance/insurance-prices/",
+  INSURANCE_INVENTORY_PRICES: "/api/insurance/insurance-prices",
 
 
   /***************** PRESCRIPRION **********************/

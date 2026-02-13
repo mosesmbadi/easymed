@@ -248,6 +248,8 @@ class PurchaseOrderItemViewSet(viewsets.ModelViewSet):
 class InsuranceItemSalePriceViewSet(viewsets.ModelViewSet):
     queryset = InsuranceItemSalePrice.objects.all()
     serializer_class = InsuranceItemSalePriceSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['item', 'insurance_company']
 
 
 class InventoryFilterView(ListAPIView):

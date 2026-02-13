@@ -19,9 +19,18 @@ export default async function handler(req, res) {
                     'Authorization': req.headers.authorization,
                 }
             };
-    
+            
+            // Support filtering by item and insurance_company
+            const { item, insurance_company } = req.query;
+            let url = `${API_URL.INSURANCE_INVENTORY_PRICES}`;
+            const params = [];
+            if (item) params.push(`item=${item}`);
+            if (insurance_company) params.push(`insurance_company=${insurance_company}`);
+            if (params.length > 0) {
+                url += `?${params.join('&')}`;
+            }
 
-            await backendAxiosInstance.get(`${API_URL.INSURANCE_INVENTORY_PRICES}`, config).then(response => {
+            await backendAxiosInstance.get(url, config).then(response => {
                 res.status(200).json(response.data);
 
             }).catch(e => {

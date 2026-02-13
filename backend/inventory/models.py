@@ -313,8 +313,10 @@ class InsuranceItemSalePrice(models.Model):
     def __str__(self):
         return f"{self.item.name} - {self.insurance_company.name}"
     
-    # class Meta:
-    #     unique_together = ('inventory_item', 'item')
+    class Meta:
+        unique_together = ('item', 'insurance_company')
+        verbose_name = "Insurance Item Sale Price"
+        verbose_name_plural = "Insurance Item Sale Prices"
     
 
 class DepartmentInventory(AbstractBaseModel):
