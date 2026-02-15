@@ -176,11 +176,14 @@ const CreateTestPanelModal = () => {
                             />
                         </Grid>
                         <Grid className='my-2' item md={4} xs={12}>
-                            <SeachableSelect
-                                label="Select Item"
-                                name="item"
-                                options={item?.filter((item)=> item.category.toLowerCase().includes('lab test')).map((item) => ({ value: item.id, label: `${item?.name}` }))}
-                            />
+                          <SeachableSelect
+                            label="Select Item (Lab Test Panel)"
+                            name="item"
+                            options={item?.filter((item)=> {
+                              const category = item.category.toLowerCase();
+                              return category.includes('lab test') || category.includes('labreagent');
+                            }).map((item) => ({ value: item.id, label: `${item?.name}` }))}
+                          />
                             <ErrorMessage
                                 name="item"
                                 component="div"
