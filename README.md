@@ -103,6 +103,8 @@ Create super user then navigate to `127.0.0.1::8080/admin` and add permissions;
 - Billing Dashboard => `CAN_ACCESS_BILLING_DASHBOARD`
 - Settings Dashboard => `CAN_ACCESS_ADMIN_DASHBOARD` -`CAN_RECEIVE_INVENTORY_NOTIFICATIONS`
 
+
+
 You will notice that we have a Role and a Group. A group is associated with permissions which determines which specific dashboards a user is allowed to access. A role helps differentiate staff from patients hence redirecting to patient profile if patient and to general dashboard if staff.
 
 If doing all these manually sounds like too much work, you can run the command below to create the groups and permissions automatically.
