@@ -27,16 +27,16 @@ import { MdPersonAddAlt1 } from "react-icons/md";
 
 export const menus = [
   {
-    label: "Check-In",
-    href: "/dashboard/reception/check-in",
-    icon: <MdPersonAddAlt1 className="text-xl" />,
-    requiredPermission: "CAN_ACCESS_RECEPTION_DASHBOARD",
-  },
-  {
     label: "Patients",
     href: "/dashboard/patients",
     icon: <HiUsers className="text-xl" />,
     requiredPermission: "CAN_ACCESS_PATIENTS_DASHBOARD",
+  },
+  {
+    label: "Check-In",
+    href: "/dashboard/reception/check-in",
+    icon: <MdPersonAddAlt1 className="text-xl" />,
+    requiredPermission: "CAN_ACCESS_RECEPTION_DASHBOARD",
   },
   // {
   //   label: "Reception",
