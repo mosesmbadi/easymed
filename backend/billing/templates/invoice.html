@@ -1,161 +1,426 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Invoice Report</title>
-    <style>
-      table {
-        border-collapse: collapse;
-        width: 100%;
-        margin-bottom: 10px;
-      }
-      th,
-      td {
-        border: 1px solid black;
-        padding: 8px;
-        text-align: left;
-      }
-      th {
-        background-color: #f2f2f2;
-      }
-      .header {
-        text-align: center;
-        margin-bottom: 20px;
-      }
-      .logo {
-        max-width: 150px;
-        max-height: 150px;
-      }
-      .footer {
-        position: fixed;
-        bottom: 0;
-        width: 100%;
-        text-align: center;
-        margin-top: 20px;
-        font-size: 10px;
-        font-style: italic;
-        color: gray;
-        font-weight: bold;
-      }
-      .summary-table {
-        border: 1px solid black;
-        border-collapse: collapse;
-        width: 30%;
-        float: right;
-        margin-top: -1px;
-      }
-      .summary-table th,
-      .summary-table td {
-        padding: 8px;
-        text-align: right;
-      }
-      .summary-table th {
-        background-color: #f2f2f2;
-      }
-      .summary-table td {
-        text-align: left;
-      }
-      .payment-stamp {
-        position: absolute;
-        top: 20px;
-        right: 20px;
-        padding: 10px 20px;
-        font-size: 24px;
-        font-weight: bold;
-        border: 3px solid;
-        border-radius: 8px;
-        transform: rotate(-15deg);
-        text-transform: uppercase;
-      }
-      .paid-stamp {
-        color: #28a745;
-        border-color: #28a745;
-        background-color: rgba(40, 167, 69, 0.1);
-      }
-      .unpaid-stamp {
-        color: #dc3545;
-        border-color: #dc3545;
-        background-color: rgba(220, 53, 69, 0.1);
-      }
-    </style>
-  </head>
-  <body>
-    {% if invoice.status == 'paid' %}
-    <div class="payment-stamp paid-stamp">PAID</div>
-    {% else %}
-    <div class="payment-stamp unpaid-stamp">UNPAID</div>
-    {% endif %}
 
-    <div class="header">
-      <div class="logo-column">
-        <img src="{{ company_logo_url }}" alt="Company Logo" class="logo" />
-      </div>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Invoice Report</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 1cm;
+    }
+
+    body {
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-size: 10px;
+      line-height: 1.4;
+      color: #333;
+    }
+
+    .header-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 2px solid #555;
+      padding-bottom: 20px;
+      margin-bottom: 30px;
+    }
+
+    .company-logo img {
+      max-width: 180px;
+      max-height: 100px;
+    }
+
+    .company-info {
+      text-align: right;
+      font-size: 11px;
+    }
+
+    .company-info h2 {
+      margin: 0 0 5px 0;
+      color: #555;
+      font-size: 18px;
+      text-transform: uppercase;
+    }
+
+    .company-info p {
+      margin: 2px 0;
+    }
+
+    .invoice-title {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .invoice-title h1 {
+      font-size: 24px;
+      color: #333;
+      margin: 0;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .invoice-meta-container {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 30px;
+    }
+
+    .meta-box {
+      width: 48%;
+    }
+
+    .meta-box h3 {
+      font-size: 12px;
+      color: #555;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 5px;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+    }
+
+    .meta-row {
+      display: flex;
+      margin-bottom: 4px;
+    }
+
+    .meta-label {
+      font-weight: bold;
+      width: 80px;
+      color: #555;
+    }
+
+    .meta-value {
+      flex: 1;
+    }
+
+    table.invoice-items {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 30px;
+    }
+
+    table.invoice-items th {
+      background-color: #555;
+      color: white;
+      padding: 10px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+
+    table.invoice-items td {
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+      color: #444;
+    }
+
+    table.invoice-items tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+
+    table.invoice-items th:last-child,
+    table.invoice-items td:last-child {
+      text-align: right;
+    }
+
+    .summary-section {
+      width: 100%;
+      margin-bottom: 150px;
+      page-break-inside: avoid;
+    }
+
+    .summary-table {
+      width: 40%;
+      float: right;
+      border-collapse: collapse;
+    }
+
+    .summary-table td {
+      padding: 8px 10px;
+      text-align: right;
+    }
+
+    .summary-table .label {
+      font-weight: bold;
+      color: #555;
+    }
+
+    .summary-table .amount {
+      font-weight: 600;
+    }
+
+    .summary-table tr.total-row {
+      background-color: #555;
+      color: white;
+    }
+
+    .summary-table tr.total-row .label,
+    .summary-table tr.total-row .amount {
+      color: white;
+      font-size: 14px;
+      padding: 12px 10px;
+    }
+
+    .signatures {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 60px;
+      page-break-inside: avoid;
+      clear: both;
+    }
+
+    .signature-box {
+      width: 30%;
+      text-align: left;
+    }
+
+    .signature-header {
+      font-weight: bold;
+      font-size: 11px;
+      color: #555;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #eee;
+      padding-bottom: 5px;
+    }
+
+    .signature-row {
+      display: flex;
+      align-items: flex-end;
+      margin-bottom: 25px;
+    }
+
+    .sig-label {
+      font-size: 10px;
+      font-weight: bold;
+      color: #555;
+      width: 40px;
+    }
+
+    .sig-line {
+      flex: 1;
+      border-bottom: 1px solid #aaa;
+      height: 1px;
+    }
+
+    @page {
+      size: A4;
+      margin: 1cm;
+      margin-bottom: 2cm;
+
+      @bottom-center {
+        content: element(footer-content);
+        width: 100%;
+        text-align: center;
+      }
+    }
+
+    .footer {
+      position: running(footer-content);
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-size: 9px;
+      color: #888;
+      border-top: 1px solid #eee;
+      padding-top: 10px;
+      text-align: center;
+    }
+
+    .page::after {
+      content: counter(page) " of " counter(pages);
+    }
+
+    /* Remove old footer styles */
+    /* .footer { ... } */
+  </style>
+</head>
+
+<body>
+  <!-- Footer for running element -->
+  <div class="footer">
+    Generated by EaSyMed-HMIS | Printed on: {% now "Y-m-d H:i" %} | Page <span class="page"></span>
+  </div>
+
+  <div class="header-container">
+    <div class="company-logo">
+      <img src="{{ company_logo_url }}" alt="Logo" />
+    </div>
+    <div class="company-info">
       <h2>{{ company.name }}</h2>
       <p>{{ company.address1 }}</p>
-      <p>{{ company.phone1 }} | {{ company.email1 }}</p>
+      {% if company.address2 %}<p>{{ company.address2 }}</p>{% endif %}
+      <p>{{ company.phone1 }} {% if company.phone2 %} | {{ company.phone2 }}{% endif %}</p>
+      <p>{{ company.email1 }}</p>
+    </div>
+  </div>
+
+  <div class="invoice-title">
+    <h1>Invoice</h1>
+  </div>
+
+  <div class="invoice-meta-container">
+    <div class="meta-box">
+      <h3>Invoice Details</h3>
+      <div class="meta-row">
+        <span class="meta-label">Invoice #:</span>
+        <span class="meta-value">{{ invoice.invoice_number }}</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">Date:</span>
+        <span class="meta-value">{{ invoice.invoice_date }}</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">Billed To:</span>
+        <span class="meta-value">
+          {% if insurance_name %}
+          {{ insurance_name }}
+          {% else %}
+          {{ invoice.patient.first_name }} {{ invoice.patient.second_name }}
+          {% endif %}
+        </span>
+      </div>
     </div>
 
-    <h2>Invoice</h2>
-    <p>Number: {{ invoice.invoice_number }}</p>
-    <p>Date: {{ invoice.invoice_date }}</p>
-    <!-- prettier-ignore -->
-    <p>Invoiced to: {{ invoice.patient.first_name }} {{ invoice.patient.second_name }}</p>
+    <div class="meta-box">
+      <h3>Patient Info</h3>
+      <div class="meta-row">
+        <span class="meta-label">Name:</span>
+        <span class="meta-value">{{ invoice.patient.first_name }} {{ invoice.patient.second_name }}</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">PID:</span>
+        <span class="meta-value">{{ invoice.patient.unique_id }}</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">Age/Gender:</span>
+        <span class="meta-value">{{ invoice.patient.age }} / {{ invoice.patient.gender }}</span>
+      </div>
+      {% if invoice.patient.phone %}
+      <div class="meta-row">
+        <span class="meta-label">Phone:</span>
+        <span class="meta-value">{{ invoice.patient.phone }}</span>
+      </div>
+      {% endif %}
+    </div>
+  </div>
 
-    <table>
-      <thead>
-        <tr>
-          <th>Category</th>
-          <th>Item Name</th>
-          <th>Ins Price</th>
-          <th>Co-Pay</th>
-          <th>Amount</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for invoice_item in invoice_items %}
-        <tr>
-          <td>{{ invoice_item.item.category }}</td>
-          <td>{{ invoice_item.item.name }}</td>
-          <td>
-            {% if invoice_item.insurance_sale_price %}
-              {{ invoice_item.insurance_sale_price|floatformat:2 }}
-            {% else %}
-              N/A
-            {% endif %}
-          </td>
-          <td>
-            {% if invoice_item.co_pay %}{{ invoice_item.co_pay|floatformat:2
-            }}{% else %}N/A{% endif %}
-          </td>
-          <td>{{ invoice_item.total_amount|floatformat:2 }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+  <table class="invoice-items">
+    <thead>
+      <tr>
+        <th style="width: 15%">Category</th>
+        <th style="width: 30%">Item Name</th>
+        <th style="width: 10%; text-align: center">Qty</th>
+        <th style="width: 15%; text-align: right">Price</th>
+        <th style="width: 15%; text-align: right">Co-Pay</th>
+        <th style="width: 15%; text-align: right">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for invoice_item in invoice_items %}
+      <tr>
+        <td>{{ invoice_item.item.category }}</td>
+        <td>{{ invoice_item.item.name }}</td>
+        <td style="text-align: center">1</td>
+        <td style="text-align: right">
+          {% if invoice_item.insurance_sale_price %}
+          {{ invoice_item.insurance_sale_price|floatformat:2 }}
+          {% else %}
+          {{invoice_item.item_amount|floatformat:2 }}
+          {% endif %}
+        </td>
+        <td style="text-align: right">
+          {% if invoice_item.co_pay %}
+          {{ invoice_item.co_pay|floatformat:2 }}
+          {% else %}
+          -
+          {% endif %}
+        </td>
+        <td style="text-align: right">{{ invoice_item.total_amount|floatformat:2 }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 
+  <div class="summary-section">
     <table class="summary-table">
       <tbody>
         <tr>
-          <th>Subtotal:</th>
-          <td>{{ subtotal|floatformat:2 }}</td>
+          <td class="label">Subtotal:</td>
+          <td class="amount">{{ subtotal|floatformat:2 }}</td>
         </tr>
         <tr>
-          <th>Tax:</th>
-          <td>{{ tax|floatformat:2 }}</td>
+          <td class="label">Cash Total:</td>
+          <td class="amount">{{ cash_total|floatformat:2 }}</td>
         </tr>
         <tr>
-          <th>Total Amount:</th>
-          <td>{{ invoice.invoice_amount|floatformat:2 }}</td>
+          <td class="label">Insurance Total:</td>
+          <td class="amount">{{ insurance_total|floatformat:2 }}</td>
         </tr>
+        <tr>
+          <td class="label">Tax:</td>
+          <td class="amount">{{ tax|floatformat:2 }}</td>
+        </tr>
+        <tr class="total-row">
+          <td class="label">Total Amount:</td>
+          <td class="amount">{{ invoice.invoice_amount|floatformat:2 }}</td>
+        </tr>
+        {% if invoice.cash_paid and invoice.cash_paid > 0 %}
+        <tr>
+          <td class="label">Amount Paid:</td>
+          <td class="amount">{{ invoice.cash_paid|floatformat:2 }}</td>
+        </tr>
+        <tr>
+          <td class="label">Balance:</td>
+          <td class="amount">{{ balance|floatformat:2 }}</td>
+        </tr>
+        {% endif %}
       </tbody>
     </table>
+  </div>
 
-    <section class="footer">
-      <span>
-        Generated by: EaSyMed-HMIS | Email: admin@proto-typesolution.com |
-        Printed: {% now "Y-m-d H:i" %}
-      </span>
-    </section>
-  </body>
+  <div class="signatures">
+    <div class="signature-box">
+      <div class="signature-header">INVOICED BY</div>
+      <div class="signature-row">
+        <span class="sig-label">Date:</span>
+        <div class="sig-line"></div>
+      </div>
+      <div class="signature-row">
+        <span class="sig-label">Sign:</span>
+        <div class="sig-line"></div>
+      </div>
+    </div>
+
+    <div class="signature-box">
+      <div class="signature-header">APPROVED BY</div>
+      <div class="signature-row">
+        <span class="sig-label">Date:</span>
+        <div class="sig-line"></div>
+      </div>
+      <div class="signature-row">
+        <span class="sig-label">Sign:</span>
+        <div class="sig-line"></div>
+      </div>
+    </div>
+
+    {% if insurance_name %}
+    <div class="signature-box">
+      <div class="signature-header">PATIENT SIGN</div>
+      <div class="signature-row">
+        <span class="sig-label">Date:</span>
+        <div class="sig-line"></div>
+      </div>
+      <div class="signature-row">
+        <span class="sig-label">Sign:</span>
+        <div class="sig-line"></div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+
+</body>
+
 </html>
