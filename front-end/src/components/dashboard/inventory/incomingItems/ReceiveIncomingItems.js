@@ -95,11 +95,23 @@ const ReceiveIncomingItems = ({ open, setOpen, selectedRowData, setSelectedRowDa
 
             }else{
 
-                const supplierInvoiceResponse = await createSupplierInvoice(payload, auth)
+                // const supplierInvoiceResponse = await createSupplierInvoice(payload, auth)
             
-                const gRNoteResponse = await createGRNote(payload, auth)
+                // const gRNoteResponse = await createGRNote(payload, auth)
+                // Fire off both requests at the same time
+                const [supplierInvoiceResponse, gRNoteResponse] = await Promise.all([
+                    createSupplierInvoice(payload, auth),
+                    createGRNote(payload, auth)
+                ]);
+
+                // This only runs once BOTH promises resolve successfully
+                saveIncomingItems(
+                    selectedItems.selectedRowsData, 
+                    supplierInvoiceResponse, 
+                    gRNoteResponse
+                );
                 
-                saveIncomingItems(selectedItems.selectedRowsData, supplierInvoiceResponse, gRNoteResponse)
+                // saveIncomingItems(selectedItems.selectedRowsData, supplierInvoiceResponse, gRNoteResponse)
     
                 toast.success("Purchase order Created Successfully");
 
