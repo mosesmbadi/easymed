@@ -144,7 +144,7 @@ const ReferenceValues = () => {
                 name="lab_test_panel"
                 options={labTestPanels.map((panel) => ({
                   value: panel.id,
-                  label: `${panel?.name}`,
+                  label: `${panel?.name} - (${panel?.unit})`,
                 }))}
               />
               <ErrorMessage name="lab_test_panel" component="div" className="text-warning text-xs" />
