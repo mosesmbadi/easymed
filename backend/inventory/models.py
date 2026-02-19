@@ -101,6 +101,9 @@ class Item(AbstractBaseModel):
 
     def __str__(self):
         return f"{self.id} - {self.name} - {self.category}"
+        
+    class Meta:
+        unique_together = ('name', 'category', 'units_of_measure')
 
 
 class Requisition(AbstractBaseModel):

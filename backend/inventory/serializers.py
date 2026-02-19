@@ -872,11 +872,6 @@ class InventoryArchiveSerializer(serializers.ModelSerializer):
         model = InventoryArchive
         fields = '__all__'
 
-class GoodsReceiptNoteSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = GoodsReceiptNote
-        fields = '__all__'
-
 
 class QuotationSerializer(serializers.ModelSerializer):
     class Meta:
