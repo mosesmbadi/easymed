@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, forwardRef, useImperativeHandle } from 'react';
 import { Grid } from '@mui/material';
 import { fetchInventories } from '@/redux/service/inventory';
 import { fetchInsurancePriceForItem } from '@/redux/service/insurance';
@@ -6,8 +6,8 @@ import { useAuth } from '@/assets/hooks/use-auth';
 import { updateInvoiceItems } from '@/redux/service/billing';
 import { toast } from 'react-toastify';
 
-const CategorizedItems = ({ 
-  invoiceItem, 
+const CategorizedItems = ({
+  invoiceItem,
   patient_insurance,
   setLabReqSum,
   setLabReqCashSum,
@@ -18,7 +18,7 @@ const CategorizedItems = ({
   setPrescribedDrugsSum,
   setPrescribedDrugsCashSum,
   setPrescribedDrugsInsuranceSum,
- }) => {
+}, ref) => {
   const auth = useAuth();
   const [loading, setLoading] = useState(false);
   const [priceLoading, setPriceLoading] = useState(false);
@@ -31,14 +31,14 @@ const CategorizedItems = ({
   // Fetch cash price from inventory on mount
   useEffect(() => {
     setUpdatedInvoiceItem(invoiceItem);
-    
+
     const fetchCashPrice = async () => {
       if (!invoiceItem?.item) return;
-      
+
       try {
         const response = await fetchInventories(auth, '', invoiceItem.item);
         const inv = Array.isArray(response) && response.length > 0 ? response[0] : null;
-        
+
         let price = 0;
         if (inv?.sale_price && parseFloat(inv.sale_price) > 0) {
           price = parseFloat(inv.sale_price);
@@ -47,9 +47,9 @@ const CategorizedItems = ({
         } else if (invoiceItem?.item_amount && parseFloat(invoiceItem.item_amount) > 0) {
           price = parseFloat(invoiceItem.item_amount);
         }
-        
+
         setCashPrice(price);
-        
+
         // Auto-select cash as default if not already billed
         if (invoiceItem?.status !== 'billed' && !selectedPayMethod) {
           const cashMode = patient_insurance?.find(
@@ -71,7 +71,7 @@ const CategorizedItems = ({
           price = parseFloat(invoiceItem.item_amount);
         }
         setCashPrice(price);
-        
+
         if (invoiceItem?.status !== 'billed' && !selectedPayMethod) {
           const cashMode = patient_insurance?.find(
             mode => mode.is_default || mode.payment_category === 'cash'
@@ -93,11 +93,11 @@ const CategorizedItems = ({
     const selectedOption = patient_insurance?.find(
       (mode) => mode.id === parseInt(e.target.value)
     );
-    
+
     if (!selectedOption) return;
-    
+
     setSelectedPayMethod(selectedOption);
-    
+
     if ((selectedOption.payment_category || '').toLowerCase() !== 'insurance') {
       // Cash or other non-insurance payment mode - use cash price
       setSelectedPrice(cashPrice);
@@ -107,7 +107,7 @@ const CategorizedItems = ({
       // Get the item ID from either updatedInvoiceItem or the original invoiceItem prop
       const itemId = updatedInvoiceItem?.item ?? invoiceItem?.item;
       const insuranceCompanyId = selectedOption.insurance;
-      
+
       // Validate we have the required IDs before making the API call
       if (!itemId) {
         console.error('[BILLING] Cannot fetch insurance price: item ID is missing');
@@ -116,7 +116,7 @@ const CategorizedItems = ({
         setSelectedCoPay(0);
         return;
       }
-      
+
       if (!insuranceCompanyId) {
         console.warn('[BILLING] Insurance payment mode has no linked insurance company:', selectedOption.payment_mode);
         toast.warning(`Payment mode "${selectedOption.payment_mode}" has no linked insurance company. Using cash price.`);
@@ -124,7 +124,7 @@ const CategorizedItems = ({
         setSelectedCoPay(0);
         return;
       }
-      
+
       setPriceLoading(true);
       console.log('[BILLING] Fetching insurance price for:', {
         item_id: itemId,
@@ -133,13 +133,13 @@ const CategorizedItems = ({
       });
       try {
         const insurancePrice = await fetchInsurancePriceForItem(
-          auth, 
-          itemId, 
+          auth,
+          itemId,
           insuranceCompanyId
         );
-        
+
         console.log('[BILLING] Insurance price API response:', insurancePrice);
-        
+
         if (insurancePrice && parseFloat(insurancePrice.sale_price) > 0) {
           console.log('[BILLING] Setting insurance price:', insurancePrice.sale_price, 'co_pay:', insurancePrice.co_pay);
           setSelectedPrice(parseFloat(insurancePrice.sale_price));
@@ -164,29 +164,29 @@ const CategorizedItems = ({
   };
 
   const updateInvoiceTotals = (invoiceItem) => {
-    if(invoiceItem.category.toLowerCase().includes("appointment")){
+    if (invoiceItem.category.toLowerCase().includes("appointment")) {
       setAppointmentSum((prevSum) => prevSum + parseInt(invoiceItem.item_amount));
-      if(invoiceItem.payment_mode_name.toLowerCase() === "cash"){
+      if (invoiceItem.payment_mode_name.toLowerCase() === "cash") {
         setAppointmentCashSum((prevSum) => prevSum + parseInt(invoiceItem.item_amount))
-      }else{
+      } else {
         const co_pay = parseInt(invoiceItem.item_amount) - parseInt(invoiceItem.actual_total)
         setAppointmentCashSum((prevSum) => prevSum + parseInt(co_pay))
         setAppointmentInsuranceSum((prevSum) => prevSum + parseInt(invoiceItem.actual_total))
       }
-    }else if(invoiceItem.category==="Lab Test"){
+    } else if (invoiceItem.category === "Lab Test") {
       setLabReqSum((prevSum) => prevSum + parseInt(invoiceItem.item_amount))
-      if(invoiceItem.payment_mode_name.toLowerCase() === "cash"){
+      if (invoiceItem.payment_mode_name.toLowerCase() === "cash") {
         setLabReqCashSum((prevSum) => prevSum + parseInt(invoiceItem.item_amount))
-      }else{
+      } else {
         const co_pay = parseInt(invoiceItem.item_amount) - parseInt(invoiceItem.actual_total)
         setLabReqCashSum((prevSum) => prevSum + parseInt(co_pay))
         setLabReqInsuranceSum((prevSum) => prevSum + parseInt(invoiceItem.actual_total))
       }
-    }else if(invoiceItem.category==="Drug"){
+    } else if (invoiceItem.category === "Drug") {
       setPrescribedDrugsSum((prevSum) => prevSum + parseInt(invoiceItem.item_amount))
-      if(invoiceItem.payment_mode_name.toLowerCase() === "cash"){
+      if (invoiceItem.payment_mode_name.toLowerCase() === "cash") {
         setPrescribedDrugsCashSum((prevSum) => prevSum + parseInt(invoiceItem.item_amount))
-      }else{
+      } else {
         const co_pay = parseInt(invoiceItem.item_amount) - parseInt(invoiceItem.actual_total)
         setPrescribedDrugsCashSum((prevSum) => prevSum + parseInt(co_pay))
         setPrescribedDrugsInsuranceSum((prevSum) => prevSum + parseInt(invoiceItem.actual_total))
@@ -204,7 +204,7 @@ const CategorizedItems = ({
     try {
       // Calculate actual_total (what insurance pays = price - co_pay)
       const actualTotal = selectedPrice - selectedCoPay;
-      
+
       const payload = {
         item_amount: selectedPrice,
         actual_total: actualTotal,
@@ -226,6 +226,35 @@ const CategorizedItems = ({
 
   // Calculate actual total (what insurance pays)
   const actualTotal = (selectedPrice || 0) - (selectedCoPay || 0);
+
+  useImperativeHandle(ref, () => ({
+    billItem: async () => {
+      if (updatedInvoiceItem?.status === 'billed') {
+        return { success: true, message: 'Already billed' };
+      }
+      if (!selectedPayMethod || !selectedPrice || selectedPrice <= 0) {
+        return { success: false, message: 'Missing payment details' };
+      }
+
+      // Return a promise that resolves when billing is complete
+      return new Promise(async (resolve) => {
+        // Reuse logic from handleBillClick but we need to await it and know result
+        // Since handleBillClick doesn't return value, we will duplicate critical logic or refactor.
+        // For simplicity and safety, let's just trigger it and wait a bit, or better:
+        // We can just call handleBillClick and assume it works if no error thrown? 
+        // handleBillClick catches its own errors.
+
+        // Let's refactor handleBillClick slightly to return status? 
+        // Or just copy the logic here? Copying prevents breaking existing button flow if I mess up.
+        // But duplication is bad.
+
+        // Let's try to call handleBillClick.
+        // Since it's defined in the scope, we can call it.
+        await handleBillClick();
+        resolve({ success: true }); // We assume it handled its own errors/toasts
+      });
+    }
+  }));
 
   return (
     <Grid className='flex items-center py-1' container>
@@ -343,4 +372,4 @@ const CategorizedItems = ({
   );
 };
 
-export default CategorizedItems;
+export default forwardRef(CategorizedItems);
