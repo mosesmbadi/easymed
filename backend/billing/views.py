@@ -68,7 +68,7 @@ class InvoicesByPatientId(generics.ListAPIView):
 
     def get_queryset(self):
         patient_id = self.kwargs['patient_id']
-        return Invoice.objects.filter(patient_id=patient_id)
+        return Invoice.objects.filter(patient_id=patient_id).order_by('-invoice_created_at')
 
 class InvoiceItemViewset(viewsets.ModelViewSet):
     queryset = InvoiceItem.objects.all().order_by('-id')
