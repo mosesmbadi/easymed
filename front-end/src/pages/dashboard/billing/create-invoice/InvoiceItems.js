@@ -80,12 +80,13 @@ const InvoiceItems = ({
         resetTotals();
         if (groupedItems) {
             Object.keys(groupedItems).forEach((category) => {
+                const billedItems = groupedItems[category].filter(item => item.status === 'billed');
                 if (category.toLowerCase().includes("appointment")) {
-                    totalAppointmentSum(groupedItems[category]);
+                    totalAppointmentSum(billedItems);
                 } else if (category === "Lab Test") {
-                    totalLabReqSum(groupedItems[category]);
+                    totalLabReqSum(billedItems);
                 } else if (category === "Drug") {
-                    totalPrescribedDrugsSum(groupedItems[category]);
+                    totalPrescribedDrugsSum(billedItems);
                 }
             });
         }

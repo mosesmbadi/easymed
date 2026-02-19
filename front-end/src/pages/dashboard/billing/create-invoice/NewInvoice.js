@@ -5,7 +5,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import _ from 'lodash';
 
 import { getAllPatients } from "@/redux/features/patients";
-import { getAllInvoices } from "@/redux/features/billing";
+import { getAllInvoices, getPaymentModes } from "@/redux/features/billing";
 
 import LabTestRequests from './lab-test-requests';
 import PrescribedDrug from './prescribed-drug';
@@ -86,6 +86,12 @@ const NewInvoice = () => {
       setSelectedInvoice(invoice)
       dispatch(getAllInvoiceItemsByInvoiceId(auth, invoice.id))
     }
+
+      useEffect(() => {
+          if (auth) {
+              dispatch(getPaymentModes(auth));
+          }
+      }, [auth]);
 
   return (
     <Grid container spacing={2}>
