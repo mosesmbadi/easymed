@@ -70,48 +70,24 @@ const PurchaseOrdersDatagrid = () => {
   const auth = useAuth();
 
   const handlePrintPO = async (data) => {
-    if (isDownloading) return; 
-    
-    setIsDownloading(true);
     try {
-      const response = await downloadPDF(data.id, "_purchaseorder_pdf", auth);
-      const link = document.createElement('a');
-      link.href = response.link;
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      toast.success("PDF downloaded successfully");
-    } catch (error) {
-      console.error("Error downloading PO:", error);
-      toast.error(error.message || "Failed to download PDF");
-    } finally {
-      setIsDownloading(false);
+      const response = await downloadPDF(data.id, '_purchase_order_pdf', auth);
+      window.open(response.url, '_blank');
+      toast.success('PDF generated');
+    } catch (e) {
+      toast.error('Failed to generate PDF');
     }
   };
 
   const handlePrintGRN = async (data) => {
-    if (!auth?.token) {
-      console.error("Missing auth token");
-      return;
-    }
-  
-    if (!data?.id) {
-      console.error("Missing data or data.id");
-      return;
-    }
-  
     try {
-      await dispatch(getGoods(data.id, auth));
-      console.log("Goods receipt note fetched successfully.");
-    } catch (error) {
-      console.error("Error fetching GRN:", error);
+      const response = await downloadPDF(data.id, '_receipt_note_pdf', auth);
+      window.open(response.url, '_blank');
+      toast.success('PDF generated');
+    } catch (e) {
+      toast.error('Failed to generate PDF');
     }
   };
-  
-  
 
   const onMenuClick = async (menu, data) => {
     switch (menu.action) {
