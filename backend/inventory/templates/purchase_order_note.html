@@ -1,112 +1,346 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Purchase Order Report</title>
-    <style>
-      .company-details {
-        display: flex;
-        align-items: center;
-        gap: 20px;
-        margin-bottom: 20px;
-      }
 
-      .logo-column {
-        flex: 0 0 auto;
-        border-right: 2px solid #ddd;
-        padding-right: 20px;
-      }
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Purchase Order Report</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 1cm;
+    }
 
-      .details-column {
-        flex: 1;
-        padding-left: 20px;
-      }
+    body {
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-size: 10px;
+      line-height: 1.4;
+      color: #333;
+    }
 
-      .logo {
-        width: 100px;
-        height: auto;
-      }
+    .header-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      align-items: center;
+      border-bottom: 2px solid #555;
+      padding-bottom: 20px;
+      margin-bottom: 30px;
+      height: 150px;
+    }
 
-      table {
-        border-collapse: collapse;
+    .company-logo img {
+      max-width: 180px;
+      height: 100%;
+    }
+
+    .company-info {
+      text-align: right;
+      font-size: 11px;
+    }
+
+    .company-info h2 {
+      margin: 0 0 5px 0;
+      color: #555;
+      font-size: 18px;
+      text-transform: uppercase;
+    }
+
+    .company-info p {
+      margin: 2px 0;
+    }
+
+    .invoice-title {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .invoice-title h1 {
+      font-size: 24px;
+      color: #333;
+      margin: 0;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .invoice-meta-container {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 30px;
+    }
+
+    .meta-box {
+      width: 48%;
+    }
+
+    .meta-box h3 {
+      font-size: 12px;
+      color: #555;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 5px;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+    }
+
+    .meta-row {
+      display: flex;
+      margin-bottom: 4px;
+    }
+
+    .meta-label {
+      font-weight: bold;
+      width: 80px;
+      color: #555;
+    }
+
+    .meta-value {
+      flex: 1;
+    }
+
+    table.invoice-items {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 30px;
+    }
+
+    table.invoice-items th {
+      background-color: #555;
+      color: white;
+      padding: 10px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+
+    table.invoice-items td {
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+      color: #444;
+    }
+
+    table.invoice-items tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+
+    table.invoice-items th:last-child,
+    table.invoice-items td:last-child {
+      text-align: right;
+    }
+
+    .summary-section {
+      width: 100%;
+      margin-bottom: 150px;
+      page-break-inside: avoid;
+    }
+
+    .summary-table {
+      width: 40%;
+      float: right;
+      border-collapse: collapse;
+    }
+
+    .summary-table td {
+      padding: 8px 10px;
+      text-align: right;
+    }
+
+    .summary-table .label {
+      font-weight: bold;
+      color: #555;
+    }
+
+    .summary-table .amount {
+      font-weight: 600;
+    }
+
+    .summary-table tr.total-row {
+      background-color: #555;
+      color: white;
+    }
+
+    .summary-table tr.total-row .label,
+    .summary-table tr.total-row .amount {
+      color: white;
+      font-size: 14px;
+      padding: 12px 10px;
+    }
+
+    .signatures {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 60px;
+      page-break-inside: avoid;
+      clear: both;
+    }
+
+    .signature-box {
+      width: 30%;
+      text-align: left;
+    }
+
+    .signature-header {
+      font-weight: bold;
+      font-size: 11px;
+      color: #555;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #eee;
+      padding-bottom: 5px;
+    }
+
+    .signature-row {
+      display: flex;
+      align-items: flex-end;
+      margin-bottom: 25px;
+    }
+
+    .sig-label {
+      font-size: 10px;
+      font-weight: bold;
+      color: #555;
+      width: 40px;
+    }
+
+    .sig-line {
+      flex: 1;
+      border-bottom: 1px solid #aaa;
+      height: 1px;
+    }
+
+    @page {
+      size: A4;
+      margin: 1cm;
+      margin-bottom: 2cm;
+
+      @bottom-center {
+        content: element(footer-content);
         width: 100%;
-      }
-      th,
-      td {
-        border: 1px solid black;
-        padding: 8px;
-        text-align: left;
-      }
-      th {
-        background-color: #f2f2f2;
-      }
-      .header {
         text-align: center;
-        margin-bottom: 20px;
       }
-      .logo {
-        max-width: 150px;
-        max-height: 150px;
-      }
-      .footer {
-        position: fixed;
-        bottom: 0;
-        width: 100%;
-        text-align: center;
-        margin-top: 20px;
-        font-size: 10px;
-        font-style: italic;
-        color: gray;
-        font-weight: bold;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="company-details">
-      <div class="logo-column">
-        <img src="{{ company_logo_url }}" alt="Company Logo" class="logo" />
+    }
+
+    .footer {
+      position: running(footer-content);
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-size: 9px;
+      color: #888;
+      border-top: 1px solid #eee;
+      padding-top: 10px;
+      text-align: center;
+    }
+
+    .page::after {
+      content: counter(page) " of " counter(pages);
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Footer for running element -->
+  <div class="footer">
+    Generated by EaSyMed-HMIS | Printed on: {% now "Y-m-d H:i" %} | Page <span class="page"></span>
+  </div>
+
+  <div class="header-container">
+    <div class="company-logo">
+      <img src="{{ company_logo_url }}" alt="Logo" />
+    </div>
+    <div class="company-info">
+      <h2>{{ company.name }}</h2>
+      <p>{{ company.address1 }}</p>
+      {% if company.address2 %}<p>{{ company.address2 }}</p>{% endif %}
+      <p>{{ company.phone1 }} {% if company.phone2 %} | {{ company.phone2 }}{% endif %}</p>
+      <p>{{ company.email1 }}</p>
+    </div>
+  </div>
+
+  <div class="invoice-title">
+    <h1>Purchase Order</h1>
+  </div>
+
+  <div class="invoice-meta-container">
+    <div class="meta-box">
+      <h3>Order Details</h3>
+      <div class="meta-row">
+        <span class="meta-label">PO #:</span>
+        <span class="meta-value">{{ purchaseorder.PO_number }}</span>
       </div>
-      <div class="details-column">
-        <p><strong>{{ company.name }}</strong></p>
-        <p>Address: {{ company.address1 }}</p>
-        <p>{{ company.phone1 }} | {{ company.email1 }}</p>
+      <div class="meta-row">
+        <span class="meta-label">Date:</span>
+        <span class="meta-value">{{ purchaseorder.date_created }}</span>
       </div>
     </div>
 
-    <h2>Purchase Order Note</h2>
-    <p>PO Number: {{ purchaseorder.PO_number }}</p>
-    <p>Date Created: {{ purchaseorder.date_created }}</p>
-    <h2>Supplier Details</h2>
-    <p>Supplier Name: {{ purchaseorder.supplier.official_name }}</p>
-    <p>Supplier Address: {{ purchaseorder.supplier.address }}</p>
-    <p>Supplier Phone: {{ purchaseorder.supplier.phone }}</p>
+    <div class="meta-box">
+      <h3>Supplier Info</h3>
+      <div class="meta-row">
+        <span class="meta-label">Name:</span>
+        <span class="meta-value">{{ purchaseorder.supplier.official_name }}</span>
+      </div>
+    </div>
+  </div>
 
-    <table>
-      <thead>
-        <tr>
-          <th>Item</th>
-          <th>Quantity Ordered</th>
-        </tr>
-      </thead>
+  <table class="invoice-items">
+    <thead>
+      <tr>
+        <th style="width: 40%">Item Name</th>
+        <th style="width: 20%; text-align: center">Quantity Ordered</th>
+        <th style="width: 20%; text-align: right">Unit Price</th>
+        <th style="width: 20%; text-align: right">Total Price</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in item_details %}
+      <tr>
+        <td>{{ item.name }}</td>
+        <td style="text-align: center">{{ item.quantity_ordered}}</td>
+        <td style="text-align: right">{{ item.unit_price|floatformat:2 }}</td>
+        <td style="text-align: right">{{ item.total_price|floatformat:2 }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="summary-section">
+    <table class="summary-table">
       <tbody>
-        {% for purchase_order_item in purchaseorder_items %}
-        <tr>
-          <td>{{ purchase_order_item.requisition_item.item.name }}</td>
-          <td>{{ purchase_order_item.quantity_ordered}}</td>
+        <tr class="total-row">
+          <td class="label">Total Amount:</td>
+          <td class="amount">{{ total_amount|floatformat:2 }}</td>
         </tr>
-        {% endfor %}
       </tbody>
     </table>
-    <p>Created By: {{ purchaseorder.created_by.first_name}}</p>
-    <p>Approved By: {{ purchaseorder.approved_by.first_name }}</p>
-    <p>Supplier: {{ purchaseorder.supplier.official_name }}</p>
+  </div>
 
-    <section class="footer">
-      <span>
-        Generated by: EaSyMed-HMIS | Email: admin@proto-typesolution.com |
-        Printed: {% now "Y-m-d H:i" %}
-      </span>
-    </section>
-  </body>
+  <div class="signatures">
+    <div class="signature-box">
+      <div class="signature-header">CREATED BY</div>
+      <p style="margin-bottom: 5px;">{{ purchaseorder.created_by.first_name}}</p>
+      <div class="signature-row">
+        <span class="sig-label">Date:</span>
+        <div class="sig-line"></div>
+      </div>
+      <div class="signature-row">
+        <span class="sig-label">Sign:</span>
+        <div class="sig-line"></div>
+      </div>
+    </div>
+
+    <div class="signature-box">
+      <div class="signature-header">APPROVED BY</div>
+      <p style="margin-bottom: 5px;">{{ purchaseorder.approved_by.first_name }}</p>
+      <div class="signature-row">
+        <span class="sig-label">Date:</span>
+        <div class="sig-line"></div>
+      </div>
+      <div class="signature-row">
+        <span class="sig-label">Sign:</span>
+        <div class="sig-line"></div>
+      </div>
+    </div>
+  </div>
+
+</body>
+
 </html>

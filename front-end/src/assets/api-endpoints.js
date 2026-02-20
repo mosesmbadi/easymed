@@ -69,10 +69,10 @@ export const API_URL = {
   FETCH_LAB_TEST_PANELS: "/lab/lab-test-panel/",
   FETCH_LAB_TEST_PANELS_BY_PROFILE_ID: "/lab/lab-test-panel/labtestpanels-byprofile-id",
   FETCH_LAB_TEST_REQUEST_PANELS: "/lab/lab-test-requests-panel/",
-  FETCH_PANELS_BY_RESULT:"/lab/lab-test-result-panels-by-lab-test-result-id/",
-  FETCH_QUALITATIVE_PANELS_BY_RESULT:"/lab/qualitative-lab-test-result-panels-by-lab-test-result-id/",
+  FETCH_PANELS_BY_RESULT: "/lab/lab-test-result-panels-by-lab-test-result-id/",
+  FETCH_QUALITATIVE_PANELS_BY_RESULT: "/lab/qualitative-lab-test-result-panels-by-lab-test-result-id/",
   FETCH_LAB_TEST_RESULT_PANELS: "/lab/lab-test-results-panel/",
-  QUALITATIVE_LAB_TEST_RESULTS:"/lab/lab-test-results-qualitative/",
+  QUALITATIVE_LAB_TEST_RESULTS: "/lab/lab-test-results-qualitative/",
   QUALITATIVE_LAB_TEST_RESULTS_PANEL_ITEM: "/lab/lab-test-results-panel-qualitative/",
   GET_LAB_TEST_PANELS_BY_LAB_TEST_REQUEST_ID: "lab/lab-test-request-panels-by-lab-test-request-id/",
   SEND_LAB_RESULTS_ITEMS: "/lab/lab-test-result-item/",
@@ -81,9 +81,10 @@ export const API_URL = {
   LAB_TEST_REQ_BY_PROCESS_ID: "lab/lab-test-request-by-process-id/",
   SAMPLES_BY_process_ID: "/lab/patient-samples-by-process-id/",
   PANELS_BY_SAMPLE_ID: "/lab/labtestrequestpanels/sample/",
-  PHLEBOTOMY_PATIENT_SAMPLES:"/lab/patient-samples/",
+  PHLEBOTOMY_PATIENT_SAMPLES: "/lab/patient-samples/",
   SPECIMENS: "/lab/specimens/",
   REFERENCE_VALUES: "/lab/reference-values/",
+  LAB_TEST_INTERPRETATIONS: "/lab/lab-test-interpretations/",
 
   /***************** INVENTORY APIS **********************/
   ADD_INVENTORY: "/inventory/inventories/",
@@ -98,7 +99,7 @@ export const API_URL = {
   PURCHASE_ORDER_ITEM: "/inventory/purchase-order-item/",
   FETCH_INCOMING_ITEMS: "/inventory/incoming-item/",
   FETCH_SUPPLIER_INVOICE: "/inventory/supplier-invoice/",
-  FETCH_INVOICE:"/inventory/supplier_invoice_pdf/",
+  FETCH_INVOICE: "/inventory/supplier_invoice_pdf/",
   FETCH_GOODS_RECEIPT_NOTE: "/inventory/goods-receipt-note/",
   FETCH_DEPARTMENTS: "/inventory/departments/",
   FETCH_LOW_QUANTITY: "/inventory/inventory_filter/",
@@ -135,7 +136,7 @@ export const API_URL = {
 
   /***************** Announcements **********************/
   FETCH_ANNOUNCEMENTS_CHANNELS: "/announcement/channels/",
-  FETCH_ANNOUNCEMENTS:"/announcement/announcements/",
+  FETCH_ANNOUNCEMENTS: "/announcement/announcements/",
 
   /***************** Company **********************/
   FETCH_COMPANY_INFO: "/company/company/",
@@ -171,7 +172,7 @@ export const API_URL = {
 //------------------------ Application APIs ----------------------//
 export const APP_API_URL = {
   BASE_URL: ((typeof window !== 'undefined' && typeof process !== 'undefined' && process.env.NEXT_PUBLIC_BACKEND_URL) || "http://localhost:8000").replace(/\/$/, ''),
-  
+
   /***************** AUTH **********************/
 
   REGISTER_USER: "/api/register",
@@ -182,7 +183,7 @@ export const APP_API_URL = {
   CHANGE_PASSWORD: "/api/register/change-password",
   ADMIN_CHANGE_PASSWORD: "/api/register/admin",
   GET_USER_PERMISSIONS: "/api/auth/user-permissions",
-  CREATE_GROUP:"/api/groups/create-group",
+  CREATE_GROUP: "/api/groups/create-group",
   ADD_PERMISSION: "/api/groups/add-permission/",
   FETCH_GROUP: "/api/groups",
   FETCH_PATIENT_GROUP: "/api/auth/get-group",
@@ -245,10 +246,10 @@ export const APP_API_URL = {
   FETCH_LAB_TEST_PANELS_BY_PROFILE_ID: "/api/laboratory/labtestpanels-byprofile-id",
   SEND_LAB_RESULTS_ITEMS: "/api/laboratory/get-lab-test-result-item",
   FETCH_LAB_TEST_REQUEST_PANELS: "/api/laboratory/lab-test-requests-panel/",
-  FETCH_PANELS_BY_RESULT:"/api/laboratory/lab-test-result-panels-by-lab-test-result-id/",
-  FETCH_QUALITATIVE_PANELS_BY_RESULT:"/api/laboratory/qualitative-lab-test-result-panels-by-lab-test-result-id/",
+  FETCH_PANELS_BY_RESULT: "/api/laboratory/lab-test-result-panels-by-lab-test-result-id/",
+  FETCH_QUALITATIVE_PANELS_BY_RESULT: "/api/laboratory/qualitative-lab-test-result-panels-by-lab-test-result-id/",
   FETCH_LAB_TEST_RESULT_PANELS: "/api/laboratory/lab-test-results-panel/",
-  QUALITATIVE_LAB_TEST_RESULTS:"/api/laboratory/lab-test-results-qualitative/",
+  QUALITATIVE_LAB_TEST_RESULTS: "/api/laboratory/lab-test-results-qualitative/",
   QUALITATIVE_LAB_TEST_RESULTS_PANEL_ITEM: "/api/laboratory/lab-test-results-panel-qualitative/",
   GET_LAB_TEST_PANELS_BY_LAB_TEST_REQUEST_ID: "/api/laboratory/lab-test-request-panels-by-lab-test-request-id/",
   APPROVE_LAB_RESULTS: "/api/laboratory/approve-results/",
@@ -256,9 +257,10 @@ export const APP_API_URL = {
   LAB_TEST_REQ_BY_PROCESS_ID: "/api/laboratory/lab-test-request-by-process-id",
   SAMPLES_BY_process_ID: "/api/laboratory/samples-by-process-id/",
   PANELS_BY_SAMPLE_ID: "/api/laboratory/panels-by-specific-sample/",
-  PHLEBOTOMY_PATIENT_SAMPLES:"/api/laboratory/patient-samples",
+  PHLEBOTOMY_PATIENT_SAMPLES: "/api/laboratory/patient-samples",
   SPECIMENS: "/api/laboratory/specimens",
   REFERENCE_VALUES: "/api/laboratory/reference-values",
+  LAB_TEST_INTERPRETATIONS: "/api/laboratory/lab-test-interpretations",
 
   /***************** INVENTORY APIS **********************/
   ADD_INVENTORY: "/api/inventory/add-inventory",
@@ -310,7 +312,7 @@ export const APP_API_URL = {
 
   /***************** Announcements **********************/
   FETCH_ANNOUNCEMENTS_CHANNELS: "/api/announcement/channels/",
-  FETCH_ANNOUNCEMENTS:"/api/announcement/announcements/",
+  FETCH_ANNOUNCEMENTS: "/api/announcement/announcements/",
 
   /***************** Company **********************/
   FETCH_COMPANY_INFO: "/api/company/company/",

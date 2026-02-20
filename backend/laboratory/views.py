@@ -32,7 +32,8 @@ from .models import (
     TestKit,
     TestKitCounter,
     ReagentConsumptionLog,
-    ReferenceValue
+    ReferenceValue,
+    LabTestInterpretation
 )
 
 from .serializers import (
@@ -50,7 +51,8 @@ from .serializers import (
     TestKitSerializer,
     ReagentConsumptionLogSerializer,
     LowStockReagentSerializer,
-    ReferenceValueSerializer
+    ReferenceValueSerializer,
+    LabTestInterpretationSerializer
 )
 
 from authperms.permissions import (
@@ -98,6 +100,12 @@ class SpecimenViewSet(viewsets.ModelViewSet):
 class ReferenceValueViewSet(viewsets.ModelViewSet):
     queryset = ReferenceValue.objects.all()
     serializer_class = ReferenceValueSerializer
+    permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser | IsReceptionistUser,)
+
+
+class LabTestInterpretationViewSet(viewsets.ModelViewSet):
+    queryset = LabTestInterpretation.objects.all()
+    serializer_class = LabTestInterpretationSerializer
     permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser | IsReceptionistUser,)
 
 
