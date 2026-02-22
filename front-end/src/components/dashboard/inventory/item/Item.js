@@ -3,8 +3,7 @@ import { useRouter } from 'next/navigation'
 import { Formik, Field, Form, ErrorMessage } from "formik";
 import { Grid } from "@mui/material";
 import * as Yup from "yup";
-import { useSelector, useDispatch } from "react-redux";
-import { addIncomingItem, createItem, fetchUnits } from "@/redux/service/inventory";
+import { createItem, fetchUnits } from "@/redux/service/inventory";
 import { toast } from "react-toastify";
 import SeachableSelect from "@/components/select/Searchable";
 import { useAuth } from "@/assets/hooks/use-auth";
@@ -13,9 +12,7 @@ const NewItem = () => {
 
     const [loading, setLoading] = useState(false);
     const [unitOptions, setUnitOptions] = useState([]);
-    const dispatch = useDispatch();
     const router = useRouter()
-    const { item, suppliers, purchaseOrders } = useSelector((store) => store.inventory);
     const auth = useAuth();
 
     useEffect(() => {
@@ -65,9 +62,11 @@ const NewItem = () => {
         };
   
         await createItem(formData, auth).then((res)=>{
-          console.log(res)
            helpers.resetForm();
-           toast.success("Item Added Successfully!");
+           const message = formValue.category.value === 'LabReagent'
+             ? "Lab Reagent added. A Lab Test billing item was also created automatically."
+             : "Item Added Successfully!";
+           toast.success(message);
            setLoading(false);
            router.push('/dashboard/inventory/items')
         })

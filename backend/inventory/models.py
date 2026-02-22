@@ -114,6 +114,13 @@ class Item(AbstractBaseModel):
     category = models.CharField(max_length=255, choices=CATEGORY_CHOICES)
     units_of_measure = models.CharField(max_length=255, choices=UNIT_CHOICES, blank=True, default='')
     units = models.ForeignKey(Unit, on_delete=models.SET_NULL, null=True, blank=True, related_name='items')
+    lab_test_item = models.OneToOneField(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='reagent_item',
+        help_text="Auto-created Lab Test billing item paired to this Lab Reagent"
+    )
     vat_rate= models.DecimalField(max_digits=5, decimal_places=2, default=16.0) 
     packed = models.CharField(max_length=255, default=1)
     subpacked = models.CharField(max_length=255, default=1)
