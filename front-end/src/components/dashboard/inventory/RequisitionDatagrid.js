@@ -69,7 +69,16 @@ const RequisitionDatagrid = () => {
 
   const onMenuClick = async (menu, data) => {
     if (menu.action === "r-items") {
-      setSelectedRowData(data);
+      const updatedWithApprovedAsRequestedQuantity = data.items.map((item)=>{
+        return({
+          ...item,
+          quantity_approved: item.quantity_requested
+        })
+      })
+      setSelectedRowData({
+        ...data,
+        items: updatedWithApprovedAsRequestedQuantity
+      });
       setOpen(true);
     }else if (menu.action === "print"){
       handlePrint(data);

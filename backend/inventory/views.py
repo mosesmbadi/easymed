@@ -362,9 +362,23 @@ def download_purchaseorder_pdf(request, purchaseorder_id):
 
     company_logo_url = request.build_absolute_uri(company.logo.url) if company.logo else None
 
+    item_details = []
+    total_amount = 0
+    for item in purchase_order_items:
+        unit_price = item.requisition_item.item.active_inventory_items.first().purchase_price if item.requisition_item.item.active_inventory_items.exists() else 0
+        total_price = unit_price * item.quantity_ordered
+        total_amount += total_price
+        item_details.append({
+            'name': item.requisition_item.item.name,
+            'quantity_ordered': item.quantity_ordered,
+            'unit_price': unit_price,
+            'total_price': total_price
+        })
+
     context = {
         'purchaseorder': purchase_order,
-        'purchaseorder_items': purchase_order_items,
+        'item_details': item_details,
+        'total_amount': total_amount,
         'company': company,
         'company_logo_url': company_logo_url,
         'user': user
@@ -410,7 +424,8 @@ def download_goods_receipt_note_pdf(request, purchase_order_id):
             'unit_price': item.purchase_price,
             'amount_before_vat': amount_before_vat,
             'vat_amount': vat_amount,
-            'amount_with_vat': amount_with_vat
+            'amount_with_vat': amount_with_vat,
+            'expiry_date': item.expiry_date
         })
 
     # Construct full logo URL for template

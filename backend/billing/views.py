@@ -68,7 +68,7 @@ class InvoicesByPatientId(generics.ListAPIView):
 
     def get_queryset(self):
         patient_id = self.kwargs['patient_id']
-        return Invoice.objects.filter(patient_id=patient_id)
+        return Invoice.objects.filter(patient_id=patient_id).order_by('-invoice_created_at')
 
 class InvoiceItemViewset(viewsets.ModelViewSet):
     queryset = InvoiceItem.objects.all().order_by('-id')
@@ -307,6 +307,9 @@ def download_invoice_pdf(request, invoice_id):
     invoice = get_object_or_404(Invoice, pk=invoice_id)
     invoice_items = InvoiceItem.objects.filter(invoice=invoice)
     company = Company.objects.first()
+    patient = invoice.patient
+    insurance_items = invoice_items.filter(payment_mode__payment_category="insurance")
+    insurance_names_str = ", ".join(insurance_items.values_list('payment_mode__payment_mode', flat=True).distinct())
 
     company_logo_url = request.build_absolute_uri(company.logo.url) if (company and getattr(company, 'logo', None)) else None
 
@@ -333,7 +336,14 @@ def download_invoice_pdf(request, invoice_id):
             item.total_amount = item.actual_total or item.item_amount or regular_sale_price
 
     subtotal = sum(item.total_amount for item in invoice_items)
+    
+    insurance_total = sum(item.total_amount for item in invoice_items if item.payment_mode and item.payment_mode.payment_category == 'insurance')
+    cash_total = subtotal - insurance_total
+
     # tax = sum((item.item.vat_rate or 0) * item.total_amount / 100 for item in invoice_items)
+    
+    cash_paid = invoice.cash_paid or 0
+    balance = invoice.invoice_amount - cash_paid
 
     html_template = get_template('invoice.html').render({
         'company_logo_url': company_logo_url,
@@ -341,7 +351,12 @@ def download_invoice_pdf(request, invoice_id):
         'invoice_items': invoice_items,
         'company': company,
         'subtotal': subtotal,
-        'tax': 0.00
+        'insurance_total': insurance_total,
+        'cash_total': cash_total,
+        'tax': 0.00,
+        'patient': patient,
+        'insurance_name': insurance_names_str,
+        'balance': balance
     })
 
     pdf_file = HTML(string=html_template).write_pdf()
