@@ -1,18 +1,20 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { fetchLabRequests, 
-    fetchLabResults,fetchLabEquipment, 
-    fetchLabTestProfile, fetchLabTestPanels, 
-    fetchPublicLabRequests, fetchSpecificPatientLabRequests,
-    fetchLabTestPanelsByProfileId,
-    fetchLabTestPanelsByTestRequestId,
-    fetchQualitativeLabRequests,
-    fetchResultPanelsByResultsId,
-    fetchQualitativeResultPanelsByResultsId,
-    fetchLabTestByProcessId,
-    fetchSamplesForSpecificProcess,
-    fetchPhlebotomySamples,
-    fetchLabTestPanelsBySpecificSample, fetchSpecimens, fetchReferenceValues,
-  } from "@/redux/service/laboratory";
+import {
+  fetchLabRequests,
+  fetchLabResults, fetchLabEquipment,
+  fetchLabTestProfile, fetchLabTestPanels,
+  fetchPublicLabRequests, fetchSpecificPatientLabRequests,
+  fetchLabTestPanelsByProfileId,
+  fetchLabTestPanelsByTestRequestId,
+  fetchQualitativeLabRequests,
+  fetchResultPanelsByResultsId,
+  fetchQualitativeResultPanelsByResultsId,
+  fetchLabTestByProcessId,
+  fetchSamplesForSpecificProcess,
+  fetchPhlebotomySamples,
+  fetchLabTestPanelsBySpecificSample, fetchSpecimens, fetchReferenceValues,
+  fetchLabTestInterpretations
+} from "@/redux/service/laboratory";
 
 
 const initialState = {
@@ -32,7 +34,8 @@ const initialState = {
   patientSpecificLabRequests: [],
   processAllTestRequest: [],
   specimens: [],
-  referenceValues: []
+  referenceValues: [],
+  labTestInterpretations: []
 };
 
 const LaboratorySlice = createSlice({
@@ -50,7 +53,7 @@ const LaboratorySlice = createSlice({
     },
     updateAddedLabRequestToStore: (state, action) => {
       state.labRequests = [action.payload, ...state.labRequests];
-    },    
+    },
     setPhlebotomySamples: (state, action) => {
       state.phlebotomySamples = action.payload;
     },
@@ -59,6 +62,9 @@ const LaboratorySlice = createSlice({
     },
     setReferenceValues: (state, action) => {
       state.referenceValues = action.payload;
+    },
+    setLabTestInterpretations: (state, action) => {
+      state.labTestInterpretations = action.payload;
     },
     addSpecimenToStoreOnCreate: (state, action) => {
       state.specimens = [action.payload, ...state.specimens];
@@ -91,16 +97,36 @@ const LaboratorySlice = createSlice({
         };
       }
     },
+    addLabTestInterpretationToStoreOnCreate: (state, action) => {
+      state.labTestInterpretations = [action.payload, ...state.labTestInterpretations];
+    },
+    updateLabTestInterpretationToStoreOnPatch: (state, action) => {
+      const index = state.labTestInterpretations.findIndex(
+        (value) => parseInt(value.id) === parseInt(action.payload.id)
+      );
+
+      if (index !== -1) {
+        state.labTestInterpretations[index] = {
+          ...state.labTestInterpretations[index],
+          ...action.payload,
+        };
+      }
+    },
+    deleteLabTestInterpretationFromStore: (state, action) => {
+      state.labTestInterpretations = state.labTestInterpretations.filter(
+        (value) => parseInt(value.id) !== parseInt(action.payload)
+      );
+    },
     setProcessLabRequests: (state, action) => {
       state.labRequestsByProcess = action.payload;
     },
-    clearProcessLabRequests: (state, action)=>{
+    clearProcessLabRequests: (state, action) => {
       state.labRequestsByProcess = [];
     },
     setProcessesSamples: (state, action) => {
       state.labSamplesByProcess = action.payload;
     },
-    clearProcessesSamples: (state, action)=>{
+    clearProcessesSamples: (state, action) => {
       state.labSamplesByProcess = [];
     },
     setPublicLabRequests: (state, action) => {
@@ -169,20 +195,20 @@ const LaboratorySlice = createSlice({
     setResultPanelsByResultId: (state, action) => {
       state.resultPanels = action.payload;
     },
-    clearLabResultItems: (state, action)=>{
+    clearLabResultItems: (state, action) => {
       state.labResultItems = [];
     },
     setLabResultItemsAfterRemovingItem: (state, action) => {
-      const labResultItem = state.labResultItems.filter(item => item.test_panel != action.payload.test_panel );
+      const labResultItem = state.labResultItems.filter(item => item.test_panel != action.payload.test_panel);
       state.labResultItems = labResultItem;
     },
     setLabResultItems: (state, action) => {
 
-      const labResultItem = state.labResultItems.find(item => item.test_panel === action.payload.test_panel );
+      const labResultItem = state.labResultItems.find(item => item.test_panel === action.payload.test_panel);
       if (labResultItem) {
         // If labResultItem is found, update the existing item in the array
         state.labResultItems = state.labResultItems.map(item =>
-          item.test_panel === action.payload.test_panel ? { ...item, result:action.payload.result, lab_test_result:action.payload.lab_test_result } : item
+          item.test_panel === action.payload.test_panel ? { ...item, result: action.payload.result, lab_test_result: action.payload.lab_test_result } : item
         );
       } else {
         // If labResultItem is not found, add the new item to the array
@@ -190,7 +216,7 @@ const LaboratorySlice = createSlice({
       }
     },
     updateLabResultItems: (state, action) => {
-      const labResultItemIndex = state.labResultItems.findIndex(item => item.test_panel === action.payload.test_panel );
+      const labResultItemIndex = state.labResultItems.findIndex(item => item.test_panel === action.payload.test_panel);
       if (labResultItemIndex !== -1) {
         // Update the item at the found index with the new data from action.payload
         state.labResultItems[labResultItemIndex] = {
@@ -208,9 +234,9 @@ const LaboratorySlice = createSlice({
   },
 });
 
-export const { setLabResults, 
-  setLabRequests, setPublicLabRequests, 
-  setLabEquipments,setLabTestProfile, setSpecificPatientLabRequests,
+export const { setLabResults,
+  setLabRequests, setPublicLabRequests,
+  setLabEquipments, setLabTestProfile, setSpecificPatientLabRequests,
   setLabResultItems, setLabResultItemsAfterRemovingItem, setResultPanelsByResultId,
   clearLabResultItems, setLabTestPanels, setLabTestPanelsById, setQualitativeLabResults,
   setProcessLabRequests, clearProcessLabRequests, setProcessAllTestRequest,
@@ -218,7 +244,8 @@ export const { setLabResults,
   setPhlebotomySamples, updateLabEquipmentStore, createLabEquipmentStore, setSpecimens, newTestPanelsStore,
   updatePanelsOnPatch, addSpecimenToStoreOnCreate, updateSpecimenToStoreOnPatch,
   updateProfileToStoreOnPatch, addProfileToStoreOnCreate, updateLabResultItems, updateAddedLabRequestToStore,
-  setReferenceValues, addReferenceValueToStoreOnCreate, updateReferenceValueToStoreOnPatch
+  setReferenceValues, addReferenceValueToStoreOnCreate, updateReferenceValueToStoreOnPatch,
+  setLabTestInterpretations, addLabTestInterpretationToStoreOnCreate, updateLabTestInterpretationToStoreOnPatch, deleteLabTestInterpretationFromStore
 } = LaboratorySlice.actions;
 
 
@@ -276,7 +303,7 @@ export const getAllSpecificPatientLabRequsts = (patient_id, auth) => async (disp
     const response = await fetchSpecificPatientLabRequests(patient_id, auth);
     dispatch(setSpecificPatientLabRequests(response));
 
-  }catch (error){
+  } catch (error) {
     console.log("Specific Patient Lab Requests", error)
   }
 }
@@ -339,7 +366,7 @@ export const getAllLabTestPanelsByTestRequest = (test_request_id, auth) => async
   try {
     const response = await fetchLabTestPanelsByTestRequestId(test_request_id, auth);
     dispatch(clearItemsToLabResultsItems())
-    response.forEach((item)=> {
+    response.forEach((item) => {
       dispatch(addItemToLabResultsItems(item));
     })
   } catch (error) {
@@ -351,7 +378,7 @@ export const getAllLabTestPanelsBySample = (sample_id, auth) => async (dispatch)
   try {
     const response = await fetchLabTestPanelsBySpecificSample(sample_id, auth);
     dispatch(clearItemsToLabResultsItems())
-    response.forEach((item)=> {
+    response.forEach((item) => {
       dispatch(addItemToLabResultsItems(item));
     })
   } catch (error) {
@@ -363,7 +390,7 @@ export const getAllLabTestByProcessId = (process_id, auth) => async (dispatch) =
   try {
     const response = await fetchLabTestByProcessId(process_id, auth);
     dispatch(clearProcessLabRequests())
-      dispatch(setProcessLabRequests(response));
+    dispatch(setProcessLabRequests(response));
 
   } catch (error) {
     console.log("LAB_TEST_REQ_BY_PROCESS_ID_ERROR ", error);
@@ -396,6 +423,15 @@ export const getReferenceValues = (auth) => async (dispatch) => {
     dispatch(setReferenceValues(response));
   } catch (error) {
     console.log("REFERENCE_VALUES_ERROR ", error);
+  }
+};
+
+export const getLabTestInterpretations = (auth) => async (dispatch) => {
+  try {
+    const response = await fetchLabTestInterpretations(auth);
+    dispatch(setLabTestInterpretations(response));
+  } catch (error) {
+    console.log("LAB_TEST_INTERPRETATIONS_ERROR ", error);
   }
 };
 
@@ -444,6 +480,18 @@ export const addReferenceValueToStore = (payload) => (dispatch) => {
 
 export const updateReferenceValueToStore = (payload) => (dispatch) => {
   dispatch(updateReferenceValueToStoreOnPatch(payload));
+};
+
+export const addLabTestInterpretationToStore = (payload) => (dispatch) => {
+  dispatch(addLabTestInterpretationToStoreOnCreate(payload));
+};
+
+export const updateLabTestInterpretationToStore = (payload) => (dispatch) => {
+  dispatch(updateLabTestInterpretationToStoreOnPatch(payload));
+};
+
+export const deleteLabTestInterpretationFromStoreAction = (id) => (dispatch) => {
+  dispatch(deleteLabTestInterpretationFromStore(id));
 };
 
 export const addProfileToStore = (payload) => (dispatch) => {
