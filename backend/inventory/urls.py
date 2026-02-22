@@ -5,6 +5,7 @@ from rest_framework.routers import DefaultRouter
 from rest_framework_nested.routers import NestedDefaultRouter
 from .views import (
     ItemViewSet,
+    UnitViewSet,
     PurchaseOrderViewSet,
     PurchaseOrderItemViewSet,
     InventoryViewSet,
@@ -31,6 +32,7 @@ from .views import (
 
 router = DefaultRouter()
 router.register(r'items', ItemViewSet)
+router.register(r'units', UnitViewSet, basename='units')
 router.register(r'inventories', InventoryViewSet, basename='inventory')
 router.register(r'suppliers', SupplierViewSet)
 # router.register(r'department-inventory', DepartmentInventoryViewSet, basename='department-inventory')

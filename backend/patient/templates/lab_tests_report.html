@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -77,11 +77,8 @@
       <p><strong>Doctor ID:</strong> {{ doctor_id }}</p>
       <p>
         <strong>Date Range:</strong>
-        {% if start_date %}
-          {{ start_date }} - {{ end_date }}
-        {% else %}
-          All Dates
-        {% endif %}
+        {% if start_date %} {{ start_date }} - {{ end_date }} {% else %} All
+        Dates {% endif %}
       </p>
 
       {% if lab_test_requests %}

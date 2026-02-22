@@ -118,11 +118,9 @@
           <td>{{ invoice_item.item.category }}</td>
           <td>{{ invoice_item.item.name }}</td>
           <td>
-            {% if invoice_item.insurance_sale_price %}
-              {{ invoice_item.insurance_sale_price|floatformat:2 }}
-            {% else %}
-              N/A
-            {% endif %}
+            {% if invoice_item.insurance_sale_price %} {{
+            invoice_item.insurance_sale_price|floatformat:2 }} {% else %} N/A {%
+            endif %}
           </td>
           <td>
             {% if invoice_item.co_pay %}{{ invoice_item.co_pay|floatformat:2

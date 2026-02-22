@@ -4,7 +4,7 @@ import { Formik, Field, Form, ErrorMessage } from "formik";
 import { Grid } from "@mui/material";
 import * as Yup from "yup";
 import { useSelector, useDispatch } from "react-redux";
-import { addIncomingItem, createItem } from "@/redux/service/inventory";
+import { addIncomingItem, createItem, fetchUnits } from "@/redux/service/inventory";
 import { toast } from "react-toastify";
 import SeachableSelect from "@/components/select/Searchable";
 import { useAuth } from "@/assets/hooks/use-auth";
@@ -12,19 +12,20 @@ import { useAuth } from "@/assets/hooks/use-auth";
 const NewItem = () => {
 
     const [loading, setLoading] = useState(false);
+    const [unitOptions, setUnitOptions] = useState([]);
     const dispatch = useDispatch();
     const router = useRouter()
     const { item, suppliers, purchaseOrders } = useSelector((store) => store.inventory);
     const auth = useAuth();
 
-    const units = [
-        {value: 'unit', label: 'unit'}, 
-        {value: 'mg', label: 'milligrams'},
-        {value: 'g', label: 'grams'},
-        {value: 'kg', label: 'kilograms'},
-        {value: 'ml', label: 'millilitres'},
-        {value: 'L', label: 'litres'}
-    ]
+    useEffect(() => {
+        if (!auth?.token) return;
+        fetchUnits(auth).then((data) => {
+            const results = Array.isArray(data) ? data : (data?.results ?? []);
+            setUnitOptions(results.map((u) => ({ value: u.id, label: `${u.symbol} — ${u.name}` })));
+        }).catch(() => {});
+    }, [auth?.token]);
+
     const categories = [
         {value: 'SurgicalEquipment', label: 'Surgical Equipment'},
         {value: 'LabReagent', label: 'Lab Reagent'},
@@ -41,19 +42,17 @@ const NewItem = () => {
       subpacked: "",
       name: "",
       category: "",
-      units_of_measure: "",
+      units: "",
       desc: "",
     };
-  
+
     const validationSchema = Yup.object().shape({
-    //   packed: Yup.string().required("This field is required!"),
-    //   subpacked: Yup.string().required("This field is required!"),
       name: Yup.string().required("This field is required!"),
       category: Yup.object().required("This field is required!"),
-      units_of_measure: Yup.object().required("This field is required!"),
+      units: Yup.object().required("This field is required!"),
       desc: Yup.string().required("This field is required!"),
     });
-  
+
     const AddItem = async (formValue, helpers) => {
       try {
 
@@ -62,7 +61,7 @@ const NewItem = () => {
         const formData = {
           ...formValue,
           category: formValue.category.value,
-          units_of_measure: formValue.units_of_measure.value
+          units: formValue.units.value
         };
   
         await createItem(formData, auth).then((res)=>{
@@ -149,11 +148,11 @@ const NewItem = () => {
             <Grid className='my-2' item md={6} xs={12}>
                 <SeachableSelect
                     label="Select Unit"
-                    name="units_of_measure"
-                    options={units.map((item) => ({ value: item.value, label: `${item?.label}` }))}
+                    name="units"
+                    options={unitOptions}
                 />
                 <ErrorMessage
-                    name="units_of_measure"
+                    name="units"
                     component="div"
                     className="text-warning text-xs"
                 />

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -76,7 +76,8 @@
     </div>
 
     <p>
-      Goods Receipt Note Number: {{ incoming_items.0.goods_receipt_note.grn_number }}
+      Goods Receipt Note Number: {{
+      incoming_items.0.goods_receipt_note.grn_number }}
     </p>
     <p>LPO Number {{ incoming_items.0.purchase_order.PO_number }}</p>
     <p>Invoice Number: {{ incoming_items.0.supplier_invoice.invoice_no }}</p>

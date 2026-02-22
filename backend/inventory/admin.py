@@ -4,8 +4,15 @@ from .models import (
     Requisition, IncomingItem,
     Department, InsuranceItemSalePrice,
     GoodsReceiptNote, PurchaseOrderItem, Quotation, QuotationItem,
-    QuotationCustomer, RequisitionItem
+    QuotationCustomer, RequisitionItem, Unit
 )
+
+@admin.register(Unit)
+class UnitAdmin(admin.ModelAdmin):
+    list_display = ['symbol', 'name', 'category']
+    search_fields = ['symbol', 'name']
+    list_filter = ['category']
+
 
 admin.site.register(PurchaseOrder)
 admin.site.register(PurchaseOrderItem)

@@ -22,7 +22,8 @@ from .models import (
     QuotationCustomer,
     InventoryArchive,
     SupplierPaymentReceipt,
-    SupplierPaymentAllocation
+    SupplierPaymentAllocation,
+    Unit
 )
 
 from . validators import (
@@ -175,8 +176,15 @@ class SupplierInvoiceSerializer(serializers.ModelSerializer):
         return float(total_paid or 0)
 
 
+class UnitSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Unit
+        fields = '__all__'
+
+
 class ItemSerializer(serializers.ModelSerializer):
     item_code = serializers.CharField(max_length=255, required=False)
+    unit_symbol = serializers.CharField(source='units.symbol', read_only=True)
 
     class Meta:
         model = Item

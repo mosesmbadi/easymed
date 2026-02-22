@@ -35,8 +35,8 @@ from .models import (
     Quotation,
     QuotationItem,
     SupplierInvoice,
-    InventoryArchive
-
+    InventoryArchive,
+    Unit
 )
 
 from .serializers import (
@@ -54,7 +54,8 @@ from .serializers import (
     GoodsReceiptNoteSerializer,
     QuotationSerializer,
     QuotationItemSerializer,
-    InventoryArchiveSerializer
+    InventoryArchiveSerializer,
+    UnitSerializer
 )
 
 from .filters import (
@@ -70,6 +71,13 @@ class ItemViewSet(viewsets.ModelViewSet):
     serializer_class = ItemSerializer
     filter_backends = (DjangoFilterBackend,)
     filterset_class = ItemFilter
+
+
+class UnitViewSet(viewsets.ModelViewSet):
+    queryset = Unit.objects.all()
+    serializer_class = UnitSerializer
+    filter_backends = (DjangoFilterBackend,)
+    filterset_fields = ['category']
 
 
 class IncomingItemViewSet(viewsets.ModelViewSet):
