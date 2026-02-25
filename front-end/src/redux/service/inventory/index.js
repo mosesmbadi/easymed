@@ -63,6 +63,17 @@ export const fetchItem = (auth) =>{
     })
 }
 
+export const fetchUnits = (auth, category = '') => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+        axiosInstance.get(`${APP_API_URL.FETCH_UNITS}`, {
+            params: category ? { category } : {}
+        })
+            .then((res) => { resolve(res.data) })
+            .catch((err) => { reject(err.message) })
+    })
+}
+
 export const createItem = (payload, auth) =>{
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve,reject) =>{

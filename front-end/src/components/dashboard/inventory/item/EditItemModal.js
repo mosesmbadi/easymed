@@ -10,22 +10,15 @@ import { editPatient } from "@/redux/service/patients";
 import { toast } from 'react-toastify'
 import { getAllPatients } from "@/redux/features/patients";
 import SeachableSelect from "@/components/select/Searchable";
-import { updateItem } from "@/redux/service/inventory";
+import { updateItem, fetchUnits } from "@/redux/service/inventory";
 import { useAuth } from '@/assets/hooks/use-auth';
 import { updateAnItem } from "@/redux/features/inventory";
 const EditItemModal = ({ open, setOpen, selectedRowData }) => {
   const [loading, setLoading] = useState(false);
+  const [unitOptions, setUnitOptions] = useState([]);
   const dispatch = useDispatch();
   const auth = useAuth();
 
-  const units = [
-        {value: 'unit', label: 'unit'}, 
-        {value: 'mg', label: 'milligrams'},
-        {value: 'g', label: 'grams'},
-        {value: 'kg', label: 'kilograms'},
-        {value: 'ml', label: 'millilitres'},
-        {value: 'L', label: 'litres'}
-    ]
     const categories = [
         {value: 'SurgicalEquipment', label: 'Surgical Equipment'},
         {value: 'LabReagent', label: 'Lab Reagent'},
@@ -37,14 +30,22 @@ const EditItemModal = ({ open, setOpen, selectedRowData }) => {
         {value: 'general', label: 'general'},
     ]
 
+    useEffect(() => {
+        if (!auth?.token) return;
+        fetchUnits(auth).then((data) => {
+            const results = Array.isArray(data) ? data : (data?.results ?? []);
+            setUnitOptions(results.map((u) => ({ value: u.id, label: `${u.symbol} — ${u.name}` })));
+        }).catch(() => {});
+    }, [auth?.token]);
+
     const getCategory = ()=> {
-        const category = categories.find((category)=> category.label === selectedRowData?.category)
+        const category = categories.find((c) => c.value === selectedRowData?.category)
         return category
     }
 
     const getUnit = ()=> {
-        const unit = units.find((unit)=> unit.label === selectedRowData?.units_of_measure)
-        return unit
+        if (!selectedRowData?.units) return null;
+        return unitOptions.find((u) => u.value === selectedRowData?.units) ?? null;
     }
 
   const handleClose = () => {
@@ -56,7 +57,7 @@ const EditItemModal = ({ open, setOpen, selectedRowData }) => {
     item_code: selectedRowData?.item_code || "",
     name: selectedRowData?.name || "",
     category: getCategory() || "",
-    units_of_measure: getUnit() || "",
+    units: getUnit() || "",
     desc: selectedRowData?.desc || "",
     packed: selectedRowData?.packed || "",
     subpacked: selectedRowData?.subpacked || ""
@@ -68,7 +69,7 @@ const EditItemModal = ({ open, setOpen, selectedRowData }) => {
     packed: Yup.string().required("Field is Required!"),
     subpacked: Yup.string().required("Field is Required!"),
     category: Yup.object().required("Field is Required!"),
-    units_of_measure: Yup.object().required("Field is Required!"),
+    units: Yup.object().required("Field is Required!"),
     desc: Yup.string().required("Field is Required!"),
   });
 
@@ -76,7 +77,7 @@ const EditItemModal = ({ open, setOpen, selectedRowData }) => {
     const formData = {
         ...formValue,
         category: formValue.category.value,
-        units_of_measure: formValue.units_of_measure.value
+        units: formValue.units.value
     };
     try {
       setLoading(true);
@@ -180,11 +181,11 @@ const EditItemModal = ({ open, setOpen, selectedRowData }) => {
             <Grid className='my-2' item md={6} xs={12}>
                 <SeachableSelect
                     label="Select Unit"
-                    name="units_of_measure"
-                    options={units.map((item) => ({ value: item.value, label: `${item?.label}` }))}
+                    name="units"
+                    options={unitOptions}
                 />
                 <ErrorMessage
-                    name="units_of_measure"
+                    name="units"
                     component="div"
                     className="text-warning text-xs"
                 />

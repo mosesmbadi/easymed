@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -75,7 +75,8 @@
     <div class="container">
       <h1>Appointments Report</h1>
       <p>
-        Doctor: {{ appointments.first.assigned_doctor.first_name }} {{ appointments.first.assigned_doctor.last_name }}
+        Doctor: {{ appointments.first.assigned_doctor.first_name }} {{
+        appointments.first.assigned_doctor.last_name }}
       </p>
       <p>
         Date Range: {{ appointments.first.appointment_date_time|date:"Y-m-d" }}
@@ -96,7 +97,8 @@
           <tr>
             <td>{{ appointment.appointment_date_time|date:"Y-m-d H:i" }}</td>
             <td>
-              {{ appointment.patient.first_name }} {{ appointment.patient.second_name }}
+              {{ appointment.patient.first_name }} {{
+              appointment.patient.second_name }}
             </td>
             <td>{{ appointment.status }}</td>
             <td>{{ appointment.reason }}</td>

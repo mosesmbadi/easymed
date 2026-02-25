@@ -179,10 +179,8 @@ const CreateTestPanelModal = () => {
                           <SeachableSelect
                             label="Select Item (Lab Test Panel)"
                             name="item"
-                            options={item?.filter((item)=> {
-                              const category = item.category.toLowerCase();
-                              return category.includes('lab test') || category.includes('labreagent');
-                            }).map((item) => ({ value: item.id, label: `${item?.name}` }))}
+                            options={item?.filter((item)=> item.category === 'Lab Test')
+                              .map((item) => ({ value: item.id, label: `${item?.name}` }))}
                           />
                             <ErrorMessage
                                 name="item"
