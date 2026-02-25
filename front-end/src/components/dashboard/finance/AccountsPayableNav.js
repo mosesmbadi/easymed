@@ -6,7 +6,7 @@ import { useRouter } from 'next/router';
 const AccountsPayableNav = () => {
   const { pathname } = useRouter();
   const base = '/dashboard/finance/accounts-payable';
-  const receivableBase = '/dashboard/finance/accounts-receivable'
+  // const receivableBase = '/dashboard/finance/accounts-receivable'
   const links = [
     { href: `${base}/requisitions`, label: 'Requisitions' },
     { href: `${base}/purchase-orders`, label: 'Purchase Orders' },
@@ -14,7 +14,7 @@ const AccountsPayableNav = () => {
     { href: `${base}/invoices`, label: 'Invoices' },
     { href: `${base}/aging-statements`, label: 'Aging Statements' },
     { href: `${base}/make-payments`, label: 'Make Payments' },
-    { href: `${receivableBase}/payments`, label: 'Receive Payments' },
+    // { href: `${receivableBase}/payments`, label: 'Receive Payments' },
     { href: `${base}/creditors`, label: 'Creditors' },
   ];
 
