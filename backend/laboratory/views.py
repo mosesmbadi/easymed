@@ -299,6 +299,10 @@ def download_labtestresult_pdf(request, processtestrequest_id):
     first_request = labtestrequests.first() if labtestrequests.exists() else None
     first_panel = panels.first() if panels.exists() else None
     
+    # Get signature URLs
+    doctor_sig_url = request.build_absolute_uri(attendance_process.doctor.signature.url) if attendance_process.doctor and attendance_process.doctor.signature else None
+    lab_tech_sig_url = request.build_absolute_uri(attendance_process.lab_tech.signature.url) if attendance_process.lab_tech and attendance_process.lab_tech.signature else None
+
     context = {
         'processtestrequest': processtestrequest,
         'labtestrequests': labtestrequests,
@@ -307,6 +311,8 @@ def download_labtestresult_pdf(request, processtestrequest_id):
         'patient': patient,
         'company': company,
         'company_logo_url': company_logo_url,
+        'doctor_sig_url': doctor_sig_url,
+        'lab_tech_sig_url': lab_tech_sig_url,
         'attendance_process': attendance_process,
         'approved_on': first_panel.approved_on if first_panel else None,
         'first_labtestrequest': first_request,

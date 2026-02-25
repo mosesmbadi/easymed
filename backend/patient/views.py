@@ -217,12 +217,23 @@ def download_prescription_pdf(request, prescription_id):
     prescription = get_object_or_404(Prescription, pk=prescription_id)
     prescribed_drugs = PrescribedDrug.objects.filter(prescription=prescription)
     company = Company.objects.first()
+    
+    # Get attendance process to get the doctor
+    attendance_process = AttendanceProcess.objects.filter(prescription=prescription).first()
+    
+    # Get signature and logo URLs
+    company_logo_url = request.build_absolute_uri(company.logo.url) if company.logo else None
+    doctor_sig_url = request.build_absolute_uri(attendance_process.doctor.signature.url) if attendance_process and attendance_process.doctor and attendance_process.doctor.signature else None
 
     # Render the HTML template with the context
     html = render_to_string('prescription.html', {
         'prescription': prescription,
         'prescribed_drugs': prescribed_drugs,
-        'company': company
+        'company': company,
+        'company_logo_url': company_logo_url,
+        'doctor_sig_url': doctor_sig_url,
+        'attendance_process': attendance_process,
+        'patient': attendance_process.patient if attendance_process else None,
         })
 
     # Use WeasyPrint to generate the PDF from the rendered HTML
