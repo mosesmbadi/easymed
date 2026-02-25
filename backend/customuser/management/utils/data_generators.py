@@ -22,7 +22,10 @@ MEDICAL_ITEM_NAMES = [
     "Paracetamol Tablet", "Surgical Gloves", "Blood Pressure Monitor",
     "Stethoscope", "Insulin Pen", "Antiseptic Solution", "Gauze Roll", "Thermometer",
     "Amoxicillin Capsule", "Saline Drip", "Face Mask", "ECG Machine", "Defibrillator",
-    "Scalpel", "Surgical Mask", "Bandage", "Wheelchair", "Crutches"
+    "Scalpel", "Surgical Mask", "Bandage", "Wheelchair", "Crutches",
+    "Aspirin", "Ibuprofen", "Morphine", "Syringe", "Catheter", "IV Stand",
+    "Nebulizer", "Pulse Oximeter", "Suction Machine", "Hospital Bed",
+    "Stretcher", "Mayo Stand", "Instrument Table", "Operating Light"
 ]
 
 # Map medical items to appropriate categories
@@ -170,24 +173,37 @@ def create_dummy_items(count=50):
     # Exclude appointment categories from random assignment - these should be created separately
     categories = [c[0] for c in Item.CATEGORY_CHOICES if c[0] not in ['General Appointment', 'Specialized Appointment']]
     units = [u[0] for u in Item.UNIT_CHOICES]
-    for _ in range(count):
+    
+    created_count = 0
+    attempts = 0
+    max_attempts = count * 2
+    
+    while created_count < count and attempts < max_attempts:
+        attempts += 1
         name = random.choice(MEDICAL_ITEM_NAMES)
         desc = random.choice(MEDICAL_DESCRIPTIONS)
         # Use mapped category if available, otherwise pick random from valid categories
         category = ITEM_CATEGORY_MAP.get(name, random.choice(categories))
         units_of_measure = random.choice(units)
-        item = Item.objects.create(
-            item_code=fake.unique.bothify(text='???-#####')[:255],
+        
+        item, created = Item.objects.get_or_create(
             name=name[:255],
-            desc=desc[:255],
             category=category,
             units_of_measure=units_of_measure,
-            vat_rate=16.0,
-            packed=str(random.randint(1, 10))[:255],
-            subpacked=str(random.randint(1, 100))[:255],
-            slow_moving_period=random.choice([30, 60, 90, 180]),
+            defaults={
+                'item_code': fake.unique.bothify(text='???-#####')[:255],
+                'desc': desc[:255],
+                'vat_rate': 16.0,
+                'packed': str(random.randint(1, 10))[:255],
+                'subpacked': str(random.randint(1, 100))[:255],
+                'slow_moving_period': random.choice([30, 60, 90, 180]),
+            }
         )
-        items.append(item)
+        if item not in items:
+            items.append(item)
+            if created:
+                created_count += 1
+                
     return items
 
 
@@ -199,16 +215,18 @@ def create_appointment_items():
     appointment_items = []
     
     # General Appointment - single item
-    general_appointment = Item.objects.create(
-        item_code='GEN-00001',
+    general_appointment, _ = Item.objects.get_or_create(
         name='General Appointment',
-        desc='Standard general consultation appointment',
         category='General Appointment',
         units_of_measure='unit',
-        vat_rate=0.0,  # Appointments typically don't have VAT
-        packed='1',
-        subpacked='1',
-        slow_moving_period=30,
+        defaults={
+            'item_code': 'GEN-00001',
+            'desc': 'Standard general consultation appointment',
+            'vat_rate': 0.0,  # Appointments typically don't have VAT
+            'packed': '1',
+            'subpacked': '1',
+            'slow_moving_period': 30,
+        }
     )
     appointment_items.append(general_appointment)
     
@@ -237,16 +255,18 @@ def create_appointment_items():
     ]
     
     for appt in specialized_appointments:
-        item = Item.objects.create(
-            item_code=appt['code'],
+        item, _ = Item.objects.get_or_create(
             name=appt['name'],
-            desc=appt['desc'],
             category='Specialized Appointment',
             units_of_measure='unit',
-            vat_rate=0.0,  # Appointments typically don't have VAT
-            packed='1',
-            subpacked='1',
-            slow_moving_period=30,
+            defaults={
+                'item_code': appt['code'],
+                'desc': appt['desc'],
+                'vat_rate': 0.0,  # Appointments typically don't have VAT
+                'packed': '1',
+                'subpacked': '1',
+                'slow_moving_period': 30,
+            }
         )
         appointment_items.append(item)
     
@@ -376,11 +396,11 @@ def create_demo_lab_profiles_and_panels():
         for panel in panels:
             item, _ = Item.objects.get_or_create(
                 name=panel["name"],
+                category="Lab Test",
+                units_of_measure=panel.get("unit", "unit") or "unit",
                 defaults={
                     "item_code": f"LAB-{profile_name[:3].upper()}-{panel['name'][:3].upper()}",
                     "desc": f"{panel['name']} test for {profile_name}",
-                    "category": "Lab Test",
-                    "units_of_measure": panel.get("unit", "unit") or "unit",
                     "vat_rate": 0.0,
                     "packed": "1",
                     "subpacked": "1",
@@ -987,10 +1007,10 @@ def create_real_world_lab_data():
     # Create reagent for CBC
     cbc_reagent_item, _ = Item.objects.get_or_create(
         name='Sysmex CBC Reagent Kit',
+        category='LabReagent',
+        units_of_measure='kits',
         defaults={
             'desc': 'Complete reagent kit for automated hematology analyzer - Sysmex XN Series',
-            'category': 'LabReagent',
-            'units_of_measure': 'kits',
             'packed': '1',
             'subpacked': '500',  # 500 tests per kit
             'item_code': 'SYS-CBC-500',
@@ -1021,10 +1041,10 @@ def create_real_world_lab_data():
         # Create item for billing
         panel_item, _ = Item.objects.get_or_create(
             name=panel_name,
+            category='Lab Test',
+            units_of_measure='unit',
             defaults={
                 'desc': f'{panel_name} test',
-                'category': 'Lab Test',
-                'units_of_measure': 'unit',
                 'packed': '1',
                 'subpacked': '1',
                 'item_code': f'LAB-{panel_name[:10].upper().replace(" ", "-")}',
@@ -1070,10 +1090,10 @@ def create_real_world_lab_data():
     # Create reagents for LFT (separate reagents for different tests)
     alt_ast_reagent, _ = Item.objects.get_or_create(
         name='Roche ALT/AST Reagent',
+        category='LabReagent',
+        units_of_measure='kits',
         defaults={
             'desc': 'Enzymatic colorimetric test for ALT and AST determination',
-            'category': 'LabReagent',
-            'units_of_measure': 'kits',
             'packed': '1',
             'subpacked': '200',  # 200 tests per kit
             'item_code': 'ROCHE-ALT-AST-200',
@@ -1085,10 +1105,10 @@ def create_real_world_lab_data():
     
     alp_reagent, _ = Item.objects.get_or_create(
         name='Roche Alkaline Phosphatase Reagent',
+        category='LabReagent',
+        units_of_measure='kits',
         defaults={
             'desc': 'Colorimetric test for ALP determination using p-nitrophenyl phosphate',
-            'category': 'LabReagent',
-            'units_of_measure': 'kits',
             'packed': '1',
             'subpacked': '200',
             'item_code': 'ROCHE-ALP-200',
@@ -1100,10 +1120,10 @@ def create_real_world_lab_data():
     
     bilirubin_reagent, _ = Item.objects.get_or_create(
         name='Roche Total Bilirubin Reagent',
+        category='LabReagent',
+        units_of_measure='kits',
         defaults={
             'desc': 'Diazo method for total bilirubin determination',
-            'category': 'LabReagent',
-            'units_of_measure': 'kits',
             'packed': '1',
             'subpacked': '200',
             'item_code': 'ROCHE-TBIL-200',
@@ -1115,10 +1135,10 @@ def create_real_world_lab_data():
     
     albumin_protein_reagent, _ = Item.objects.get_or_create(
         name='Roche Albumin/Total Protein Reagent',
+        category='LabReagent',
+        units_of_measure='kits',
         defaults={
             'desc': 'BCG method for albumin and biuret method for total protein',
-            'category': 'LabReagent',
-            'units_of_measure': 'kits',
             'packed': '1',
             'subpacked': '250',
             'item_code': 'ROCHE-ALB-TP-250',
@@ -1141,10 +1161,10 @@ def create_real_world_lab_data():
     for panel_name, unit, reagents in lft_panels_config:
         panel_item, _ = Item.objects.get_or_create(
             name=panel_name,
+            category='Lab Test',
+            units_of_measure='unit',
             defaults={
                 'desc': f'{panel_name} test - Liver function marker',
-                'category': 'Lab Test',
-                'units_of_measure': 'unit',
                 'packed': '1',
                 'subpacked': '1',
                 'item_code': f'LAB-{panel_name[:10].upper().replace(" ", "-")}',
@@ -1192,10 +1212,10 @@ def create_real_world_lab_data():
     # Lipid reagents
     cholesterol_reagent, _ = Item.objects.get_or_create(
         name='Abbott Cholesterol Reagent',
+        category='LabReagent',
+        units_of_measure='kits',
         defaults={
             'desc': 'Enzymatic endpoint method for cholesterol determination',
-            'category': 'LabReagent',
-            'units_of_measure': 'kits',
             'packed': '1',
             'subpacked': '300',
             'item_code': 'ABB-CHOL-300',
@@ -1207,10 +1227,10 @@ def create_real_world_lab_data():
     
     triglycerides_reagent, _ = Item.objects.get_or_create(
         name='Abbott Triglycerides Reagent',
+        category='LabReagent',
+        units_of_measure='kits',
         defaults={
             'desc': 'Enzymatic colorimetric test with lipase and glycerol kinase',
-            'category': 'LabReagent',
-            'units_of_measure': 'kits',
             'packed': '1',
             'subpacked': '300',
             'item_code': 'ABB-TRIG-300',
@@ -1222,10 +1242,10 @@ def create_real_world_lab_data():
     
     hdl_ldl_reagent, _ = Item.objects.get_or_create(
         name='Abbott HDL/LDL Reagent',
+        category='LabReagent',
+        units_of_measure='kits',
         defaults={
             'desc': 'Direct measurement of HDL and LDL cholesterol',
-            'category': 'LabReagent',
-            'units_of_measure': 'kits',
             'packed': '1',
             'subpacked': '250',
             'item_code': 'ABB-HDL-LDL-250',
@@ -1245,10 +1265,10 @@ def create_real_world_lab_data():
     for panel_name, unit, reagents in lipid_panels_config:
         panel_item, _ = Item.objects.get_or_create(
             name=panel_name,
+            category='Lab Test',
+            units_of_measure='unit',
             defaults={
                 'desc': f'{panel_name} test - Cardiovascular risk assessment',
-                'category': 'Lab Test',
-                'units_of_measure': 'unit',
                 'packed': '1',
                 'subpacked': '1',
                 'item_code': f'LAB-{panel_name[:10].upper().replace(" ", "-")}',
@@ -1295,10 +1315,10 @@ def create_real_world_lab_data():
     # Kidney function reagents
     creatinine_reagent, _ = Item.objects.get_or_create(
         name='Roche Creatinine Reagent',
+        category='LabReagent',
+        units_of_measure='kits',
         defaults={
             'desc': 'Jaffe kinetic method for creatinine determination',
-            'category': 'LabReagent',
-            'units_of_measure': 'kits',
             'packed': '1',
             'subpacked': '300',
             'item_code': 'ROCHE-CREAT-300',
@@ -1310,10 +1330,10 @@ def create_real_world_lab_data():
     
     urea_reagent, _ = Item.objects.get_or_create(
         name='Roche Urea/BUN Reagent',
+        category='LabReagent',
+        units_of_measure='kits',
         defaults={
             'desc': 'Urease/GLDH enzymatic method for urea determination',
-            'category': 'LabReagent',
-            'units_of_measure': 'kits',
             'packed': '1',
             'subpacked': '300',
             'item_code': 'ROCHE-UREA-300',
@@ -1325,10 +1345,10 @@ def create_real_world_lab_data():
     
     uric_acid_reagent, _ = Item.objects.get_or_create(
         name='Roche Uric Acid Reagent',
+        category='LabReagent',
+        units_of_measure='kits',
         defaults={
             'desc': 'Uricase enzymatic colorimetric method',
-            'category': 'LabReagent',
-            'units_of_measure': 'kits',
             'packed': '1',
             'subpacked': '250',
             'item_code': 'ROCHE-URIC-250',
@@ -1348,10 +1368,10 @@ def create_real_world_lab_data():
     for panel_name, unit, reagents in kft_panels_config:
         panel_item, _ = Item.objects.get_or_create(
             name=panel_name,
+            category='Lab Test',
+            units_of_measure='unit',
             defaults={
                 'desc': f'{panel_name} test - Kidney function marker',
-                'category': 'Lab Test',
-                'units_of_measure': 'unit',
                 'packed': '1',
                 'subpacked': '1',
                 'item_code': f'LAB-{panel_name[:10].upper().replace(" ", "-")}',
@@ -1397,10 +1417,10 @@ def create_real_world_lab_data():
     # Thyroid reagents
     thyroid_reagent, _ = Item.objects.get_or_create(
         name='Roche Thyroid Panel Reagent',
+        category='LabReagent',
+        units_of_measure='kits',
         defaults={
             'desc': 'Electrochemiluminescence immunoassay (ECLIA) for thyroid hormones',
-            'category': 'LabReagent',
-            'units_of_measure': 'kits',
             'packed': '1',
             'subpacked': '100',
             'item_code': 'ROCHE-THYROID-100',
@@ -1421,10 +1441,10 @@ def create_real_world_lab_data():
     for panel_name, unit in tft_panels_config:
         panel_item, _ = Item.objects.get_or_create(
             name=panel_name,
+            category='Lab Test',
+            units_of_measure='unit',
             defaults={
                 'desc': f'{panel_name} test - Thyroid function assessment',
-                'category': 'Lab Test',
-                'units_of_measure': 'unit',
                 'packed': '1',
                 'subpacked': '1',
                 'item_code': f'LAB-{panel_name[:10].upper().replace(" ", "-")}',
@@ -1468,10 +1488,10 @@ def create_real_world_lab_data():
     # Electrolytes reagent
     electrolytes_reagent, _ = Item.objects.get_or_create(
         name='Roche ISE Electrolytes Reagent',
+        category='LabReagent',
+        units_of_measure='kits',
         defaults={
             'desc': 'Ion-selective electrode (ISE) method for sodium, potassium, chloride',
-            'category': 'LabReagent',
-            'units_of_measure': 'kits',
             'packed': '1',
             'subpacked': '500',
             'item_code': 'ROCHE-ELEC-500',
@@ -1491,10 +1511,10 @@ def create_real_world_lab_data():
     for panel_name, unit in electrolytes_panels_config:
         panel_item, _ = Item.objects.get_or_create(
             name=panel_name,
+            category='Lab Test',
+            units_of_measure='unit',
             defaults={
                 'desc': f'{panel_name} test - Electrolyte balance assessment',
-                'category': 'Lab Test',
-                'units_of_measure': 'unit',
                 'packed': '1',
                 'subpacked': '1',
                 'item_code': f'LAB-{panel_name[:10].upper().replace(" ", "-")}',
@@ -1537,10 +1557,10 @@ def create_real_world_lab_data():
     
     glucose_reagent, _ = Item.objects.get_or_create(
         name='Roche Glucose Reagent',
+        category='LabReagent',
+        units_of_measure='kits',
         defaults={
             'desc': 'Hexokinase enzymatic method for glucose determination',
-            'category': 'LabReagent',
-            'units_of_measure': 'kits',
             'packed': '1',
             'subpacked': '500',
             'item_code': 'ROCHE-GLUC-500',
@@ -1552,10 +1572,10 @@ def create_real_world_lab_data():
     
     hba1c_reagent, _ = Item.objects.get_or_create(
         name='Abbott HbA1c Reagent',
+        category='LabReagent',
+        units_of_measure='kits',
         defaults={
             'desc': 'HPLC method for hemoglobin A1c determination',
-            'category': 'LabReagent',
-            'units_of_measure': 'kits',
             'packed': '1',
             'subpacked': '100',
             'item_code': 'ABB-HBA1C-100',
@@ -1574,10 +1594,10 @@ def create_real_world_lab_data():
     for panel_name, unit, reagents in glucose_panels_config:
         panel_item, _ = Item.objects.get_or_create(
             name=panel_name,
+            category='Lab Test',
+            units_of_measure='unit',
             defaults={
                 'desc': f'{panel_name} test - Diabetes monitoring',
-                'category': 'Lab Test',
-                'units_of_measure': 'unit',
                 'packed': '1',
                 'subpacked': '1',
                 'item_code': f'LAB-{panel_name[:10].upper().replace(" ", "-")}',
@@ -2038,12 +2058,13 @@ def create_pharmaceutical_inventory():
     for category, drugs in pharmaceuticals.items():
         for drug in drugs:
             # Create or get the item
+            cat = 'Drug' if category not in ['Medical Supplies', 'Antiseptics'] else 'SurgicalEquipment'
             item, item_created = Item.objects.get_or_create(
                 name=drug["name"],
+                category=cat,
+                units_of_measure=drug["unit"],
                 defaults={
                     'desc': f'{drug["name"]} - {category}',
-                    'category': 'Drug' if category not in ['Medical Supplies', 'Antiseptics'] else 'SurgicalEquipment',
-                    'units_of_measure': drug["unit"],
                     'packed': drug["pack"],
                     'subpacked': drug["subpack"],
                     'item_code': f'PHARM-{drug["name"][:8].upper().replace(" ", "")}-{random.randint(100, 999)}',
