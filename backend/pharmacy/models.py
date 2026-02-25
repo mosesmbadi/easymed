@@ -1,7 +1,5 @@
 from django.db import models
-from django.db import models
 from django.core.validators import FileExtensionValidator
-from django.db import models
 from django.conf import settings
 from django.utils import timezone
 from datetime import datetime
@@ -46,3 +44,31 @@ class DrugsFeedback(models.Model):
 
     def __str__(self):
         return f"DrugsFeedback #{self.drug.name}"
+
+class DrugCategory(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+    description = models.TextField(null=True, blank=True)
+
+    def __str__(self):
+        return self.name
+
+class DrugMode(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+
+    def __str__(self):
+        return self.name
+
+class DrugState(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+
+    def __str__(self):
+        return self.name
+
+class Drug(models.Model):
+    item = models.OneToOneField('inventory.Item', on_delete=models.CASCADE, related_name='drug_details')
+    category = models.ForeignKey(DrugCategory, on_delete=models.SET_NULL, null=True, blank=True)
+    mode = models.ForeignKey(DrugMode, on_delete=models.SET_NULL, null=True, blank=True)
+    state = models.ForeignKey(DrugState, on_delete=models.SET_NULL, null=True, blank=True)
+
+    def __str__(self):
+        return self.item.name

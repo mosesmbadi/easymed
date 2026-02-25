@@ -128,6 +128,10 @@ export const API_URL = {
   PATIENTPRESCRIPTIONREQUEST: "/pharmacy/public-prescription-requests/",
   FETCH_PRESCRIBED_DRUGS: "/patients/prescribed-drugs/",
   FETCH_PRESCRIPTIONS_PRESCRIBED_DRUGS: "/patients/prescribed-drugs/by-prescription",
+  DRUG_CATEGORIES: "/pharmacy/drug-categories/",
+  DRUG_MODES: "/pharmacy/drug-modes/",
+  DRUG_STATES: "/pharmacy/drug-states/",
+  DRUGS: "/pharmacy/drugs/",
 
   /***************** User **********************/
   GET_USER_NAME: "/users/users",
@@ -304,6 +308,10 @@ export const APP_API_URL = {
   FETCH_PUBLIC_PRESCRIPTION: "/api/pharmacy/fetch-public-prescriptions",
   FETCH_PRESCRIBED_DRUGS: "/api/pharmacy/fetch-prescribed-drugs",
   FETCH_PRESCRIPTIONS_PRESCRIBED_DRUGS: "/api/pharmacy/fetch-prescriptions-prescribed-drug",
+  DRUG_CATEGORIES: "/api/pharmacy/drug-categories",
+  DRUG_MODES: "/api/pharmacy/drug-modes",
+  DRUG_STATES: "/api/pharmacy/drug-states",
+  DRUGS: "/api/pharmacy/drugs",
 
   /***************** User **********************/
   GET_USER_NAME: "/api/user/getUserName",
