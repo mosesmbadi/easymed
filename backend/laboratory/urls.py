@@ -23,7 +23,10 @@ from .views import (
     TestKitCounterViewSet,
     ReagentConsumptionLogViewSet,
     LowStockReagentViewSet,
-    LabTestInterpretationViewSet
+    LabTestInterpretationViewSet,
+    LabDashboardMetricsView,
+    print_lab_report,
+    LabSettingsViewSet
 )
 
 router = DefaultRouter()
@@ -43,6 +46,7 @@ router.register(r'testkits', TestKitViewSet)
 router.register(r'testkitcounters', TestKitCounterViewSet)
 router.register(r'reagent-consumption', ReagentConsumptionLogViewSet, basename='reagent-consumption')
 router.register(r'low-stock-reagents', LowStockReagentViewSet, basename='low-stock-reagents')
+router.register(r'lab-settings', LabSettingsViewSet, basename='lab-settings')
 
 
 
@@ -60,5 +64,7 @@ urlpatterns = [
 
 
 
+    path('lab-dashboard-metrics/', LabDashboardMetricsView.as_view(), name='lab-dashboard-metrics'),
+    path('print-lab-report/', print_lab_report, name='print-lab-report'),
 ]
 

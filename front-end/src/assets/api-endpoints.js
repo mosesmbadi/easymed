@@ -85,6 +85,9 @@ export const API_URL = {
   SPECIMENS: "/lab/specimens/",
   REFERENCE_VALUES: "/lab/reference-values/",
   LAB_TEST_INTERPRETATIONS: "/lab/lab-test-interpretations/",
+  PRINT_LAB_REPORT: "/lab/print-lab-report/",
+  LAB_SETTINGS: "/lab/lab-settings/",
+  LAB_DASHBOARD_METRICS: "/lab/lab-dashboard-metrics/",
 
   /***************** INVENTORY APIS **********************/
   ADD_INVENTORY: "/inventory/inventories/",
@@ -265,6 +268,8 @@ export const APP_API_URL = {
   SPECIMENS: "/api/laboratory/specimens",
   REFERENCE_VALUES: "/api/laboratory/reference-values",
   LAB_TEST_INTERPRETATIONS: "/api/laboratory/lab-test-interpretations",
+  LAB_SETTINGS: "/api/laboratory/lab-settings",
+  LAB_DASHBOARD_METRICS: "/api/laboratory/lab-dashboard-metrics",
 
   /***************** INVENTORY APIS **********************/
   ADD_INVENTORY: "/api/inventory/add-inventory",
@@ -330,6 +335,7 @@ export const APP_API_URL = {
   DOWNLOAD_RESULT_PDF: "/api/pdf/result_pdf",
   SALE_BY_DATE_RANGE_PDF: "/api/pdf/sale-by-date-range-report-pdf",
   SALE_BY_DATE_RANGE_AND_ITEM_PDF: "/api/pdf/sale-by-date-range-and-item-report-pdf",
+  LAB_REPORT_PDF: "/api/pdf/lab-report-pdf",
 
   /***************** REPORTS **********************/
   SALE_BY_DATE_RANGE_GENERATE_REPORTS: "/api/reports/sale-by-date-range/",

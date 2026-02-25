@@ -9,13 +9,16 @@ from drf_spectacular.utils import extend_schema
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.conf import settings
-from django.template.loader import render_to_string
+from datetime import timedelta
+from django.utils import timezone
+from django.template.loader import get_template, render_to_string
 from weasyprint import HTML
-from django.template.loader import get_template
+from django.db.models import F
 
 from company.models import Company
 from patient.models import Patient
 from patient.models import AttendanceProcess
+from inventory.models import Inventory
 
 
 from .models import (
@@ -33,7 +36,8 @@ from .models import (
     TestKitCounter,
     ReagentConsumptionLog,
     ReferenceValue,
-    LabTestInterpretation
+    LabTestInterpretation,
+    LabSettings
 )
 
 from .serializers import (
@@ -52,7 +56,8 @@ from .serializers import (
     ReagentConsumptionLogSerializer,
     LowStockReagentSerializer,
     ReferenceValueSerializer,
-    LabTestInterpretationSerializer
+    LabTestInterpretationSerializer,
+    LabSettingsSerializer
 )
 
 from authperms.permissions import (
@@ -510,3 +515,163 @@ class LowStockReagentViewSet(viewsets.ReadOnlyModelViewSet):
             'out_of_stock': out_of_stock,
             'total_alerts': low_stock + out_of_stock
         })
+
+class LabSettingsViewSet(viewsets.ModelViewSet):
+    queryset = LabSettings.objects.all()
+    serializer_class = LabSettingsSerializer
+    permission_classes = (IsLabTechUser | IsStaffUser,)
+
+    def get_queryset(self):
+        return LabSettings.objects.all()
+
+    def get_object(self):
+        return LabSettings.get_settings()
+
+    @action(detail=False, methods=['get'])
+    def get_settings(self, request):
+        settings = LabSettings.get_settings()
+        serializer = self.get_serializer(settings)
+        return Response(serializer.data)
+class LabDashboardMetricsView(APIView):
+    def get(self, request, *args, **kwargs):
+        # 1. TAT Analysis Summary
+        now = timezone.now()
+        lab_settings = LabSettings.get_settings()
+        default_tat = timedelta(minutes=lab_settings.default_tat_minutes)
+        
+        # Tests with collected samples (for TAT analysis)
+        with_samples = LabTestRequestPanel.objects.filter(
+            patient_sample__collected_on__isnull=False
+        ).select_related('test_panel', 'patient_sample')
+        
+        # Pending tests (ALL not yet approved, even without samples)
+        pending_panels = LabTestRequestPanel.objects.filter(result_approved=False)
+        pending_count = pending_panels.count()
+        
+        # Late pending tests (unapproved, with samples, duration > TAT)
+        late_pending_count = 0
+        pending_with_samples = pending_panels.filter(patient_sample__collected_on__isnull=False).select_related('test_panel', 'patient_sample')
+        
+        for panel in pending_with_samples:
+            tat_limit = panel.test_panel.tat if panel.test_panel.tat else default_tat
+            if tat_limit:
+                duration = now - panel.patient_sample.collected_on
+                if duration > tat_limit:
+                    late_pending_count += 1
+
+        # 2. Short Expiries for Lab Items
+        today = timezone.now().date()
+        date_limit = today + timedelta(days=90)
+        
+        short_expiries_count = Inventory.objects.filter(
+            item__category__in=['LabReagent', 'Lab Test'],
+            expiry_date__lte=date_limit,
+            expiry_date__gt=today
+        ).count()
+
+        # 3. Re-order Levels for Lab Items
+        reorder_count = Inventory.objects.filter(
+            item__category__in=['LabReagent', 'Lab Test'],
+            quantity_at_hand__lte=F('re_order_level')
+        ).count()
+
+        return Response({
+            'late_pending': late_pending_count,
+            'pending_tat': pending_count,
+            'short_expiries': short_expiries_count,
+            'reorder_levels': reorder_count
+        })
+
+def print_lab_report(request):
+    report_type = request.GET.get('type')
+    company = Company.objects.first()
+    today = timezone.now()
+    company_logo_url = request.build_absolute_uri(company.logo.url) if (company and getattr(company, 'logo', None)) else None
+    
+    data = {
+        'company': company,
+        'company_logo_url': company_logo_url,
+        'today': today,
+        'report_type': report_type,
+    }
+    
+    template_name = 'lab_metrics_report.html'
+    
+    if report_type == 'tat':
+        now = timezone.now()
+        lab_settings = LabSettings.get_settings()
+        default_tat = timedelta(minutes=lab_settings.default_tat_minutes)
+
+        # All tests with collected samples
+        all_tests = LabTestRequestPanel.objects.filter(
+            patient_sample__collected_on__isnull=False
+        ).select_related('test_panel', 'patient_sample')
+        
+        report_items = []
+        for panel in all_tests:
+            # Time taken: if approved, use approved_on - collected_on, else use now - collected_on
+            if panel.result_approved and panel.approved_on:
+                duration = panel.approved_on - panel.patient_sample.collected_on
+            else:
+                duration = now - panel.patient_sample.collected_on
+            
+            # Prevent negative duration display due to timezone drift or old records
+            if duration.total_seconds() < 0:
+                duration = timedelta(0)
+
+            # Format duration
+            total_seconds = int(duration.total_seconds())
+            hours, remainder = divmod(total_seconds, 3600)
+            minutes, seconds = divmod(remainder, 60)
+            time_taken_str = f"{hours}h {minutes}m"
+            
+            # TAT Goal string
+            tat_limit = panel.test_panel.tat if panel.test_panel.tat else default_tat
+            panel.tat_limit_str = f"{int(tat_limit.total_seconds() // 60)} mins" if tat_limit else "N/A"
+
+            # Determine Status and Color
+            if not panel.result_approved:
+                status_text = "PENDING"
+                status_color = "#ed6c02" # Orange
+            else:
+                if tat_limit and duration > tat_limit:
+                    status_text = "FAILED"
+                    status_color = "#d32f2f" # Red
+                else:
+                    status_text = "PASSED"
+                    status_color = "#2e7d32" # Green
+            
+            # Add extra info to the object for the template
+            panel.time_taken_str = time_taken_str
+            panel.status_text = status_text
+            panel.status_color = status_color
+            report_items.append(panel)
+            
+        data['items'] = report_items
+        data['title'] = "Laboratory TAT Analysis Report (Full)"
+        
+    elif report_type == 'expiry':
+        today_date = today.date()
+        date_limit = today_date + timedelta(days=90)
+        items = Inventory.objects.filter(
+            item__category__in=['LabReagent', 'Lab Test'],
+            expiry_date__lte=date_limit,
+            expiry_date__gt=today_date
+        ).select_related('item')
+        data['items'] = items
+        data['title'] = "Lab Items Short Expiry Report"
+        
+    elif report_type == 'reorder':
+        items = Inventory.objects.filter(
+            item__category__in=['LabReagent', 'Lab Test'],
+            quantity_at_hand__lte=F('re_order_level')
+        ).select_related('item')
+        data['items'] = items
+        data['title'] = "Lab Items Re-order Level Report"
+    
+    html_content = render_to_string(template_name, data)
+    pdf_file = HTML(string=html_content).write_pdf()
+    
+    response = HttpResponse(pdf_file, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="lab_{report_type}_report_{today.strftime("%Y%m%d")}.pdf"'
+    return response

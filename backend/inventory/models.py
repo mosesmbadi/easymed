@@ -278,6 +278,12 @@ class Inventory(AbstractBaseModel):
     department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='department_items')
     item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name='active_inventory_items')
 
+    @property
+    def is_expired(self):
+        if self.expiry_date:
+            return self.expiry_date < timezone.now().date()
+        return False
+
     def clean(self):
         if self.purchase_price > self.sale_price:
             raise ValidationError("Buying price cannot exceed selling price")

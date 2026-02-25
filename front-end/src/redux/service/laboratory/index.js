@@ -786,3 +786,29 @@ export const deleteLabTestInterpretation = (id, auth) => {
             })
     })
 }
+
+export const fetchLabSettings = (auth) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+        axiosInstance.get(`${APP_API_URL.LAB_SETTINGS}/get_settings/`)
+            .then((res) => {
+                resolve(res.data)
+            })
+            .catch((err) => {
+                reject(err.message)
+            })
+    })
+}
+
+export const updateLabSettings = (payload, auth) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+        axiosInstance.put(`${APP_API_URL.LAB_SETTINGS}/`, payload)
+            .then((res) => {
+                resolve(res.data)
+            })
+            .catch((err) => {
+                reject(err.message)
+            })
+    })
+}
