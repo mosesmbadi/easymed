@@ -142,6 +142,11 @@ class RequisitionItem(AbstractBaseModel):
     item = models.ForeignKey(Item, on_delete=models.CASCADE)
     unit_cost = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
 
+    def save(self, *args, **kwargs):
+        if not self.id and (self.quantity_approved is None or self.quantity_approved == 0):
+            self.quantity_approved = self.quantity_requested
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.item.name} - Requested: {self.quantity_requested}, Approved: {self.quantity_approved}"
 
