@@ -8,7 +8,9 @@ from .views import (
     DrugCategoryViewSet,
     DrugModeViewSet,
     DrugStateViewSet,
-    DrugViewSet
+    DrugViewSet,
+    PharmacyDashboardMetricsView,
+    print_pharmacy_report
 )
 
 
@@ -23,4 +25,6 @@ router.register(r'drugs', DrugViewSet)
 urlpatterns = [
     path('', include(router.urls)),
     path('public-prescription/by_patient_id/<int:patient_id>/', PublicPrescriptionRequestByPatientIDView.as_view(), name='prescriptions-by-patient'),
+    path('pharmacy-dashboard-metrics/', PharmacyDashboardMetricsView.as_view(), name='pharmacy-dashboard-metrics'),
+    path('print-pharmacy-report/', print_pharmacy_report, name='print-pharmacy-report'),
 ]

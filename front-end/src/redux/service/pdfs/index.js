@@ -82,3 +82,22 @@ export const downloadLabReportPDF = (type, auth) => {
             });
     });
 };
+
+export const downloadPharmacyReportPDF = (type, auth) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+        axiosInstance
+            .get(`${APP_API_URL.PRINT_PHARMACY_REPORT}`, {
+                params: { type },
+                responseType: 'arraybuffer'
+            })
+            .then((res) => {
+                const blob = new Blob([res.data], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
+                resolve({ url });
+            })
+            .catch((err) => {
+                reject(err.message);
+            });
+    });
+};
