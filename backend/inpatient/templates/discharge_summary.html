@@ -1,435 +1,262 @@
 <!doctype html>
 <html lang="en">
-
-<head>
+  <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Discharge Summary</title>
     <style>
-        @page {
-            size: A4;
-            margin: 1cm;
-        }
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        font-size: 12pt;
+        line-height: 1.5;
+      }
 
-        body {
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            font-size: 10px;
-            line-height: 1.4;
-            color: #333;
-        }
+      .company-details {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        margin-bottom: 30px;
+        border-bottom: 2px solid #ccc;
+        padding-bottom: 10px;
+      }
 
-        .header-container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 2px solid #555;
-            padding-bottom: 20px;
-            margin-bottom: 30px;
-            height: 150px;
-        }
+      .logo-column {
+        flex: 0 0 auto;
+        border-right: 2px solid #ddd;
+        padding-right: 20px;
+      }
 
-        .company-logo img {
-            max-width: 180px;
-            height: 100%;
-        }
+      .details-column {
+        flex: 1;
+        padding-left: 20px;
+      }
 
-        .company-info {
-            text-align: right;
-            font-size: 11px;
-        }
+      .logo {
+        width: 100px;
+        height: auto;
+      }
 
-        .company-info h2 {
-            margin: 0 0 5px 0;
-            color: #555;
-            font-size: 18px;
-            text-transform: uppercase;
-        }
+      h1,
+      h2 {
+        color: #2c3e50;
+        margin-bottom: 10px;
+      }
 
-        .company-info p {
-            margin: 2px 0;
-        }
+      .section {
+        margin-bottom: 20px;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+      }
 
-        .report-title {
-            text-align: center;
-            margin-bottom: 30px;
-        }
+      .section-title {
+        font-weight: bold;
+        font-size: 14pt;
+        margin-bottom: 10px;
+        background-color: #f4f4f4;
+        padding: 5px;
+      }
 
-        .report-title h1 {
-            font-size: 24px;
-            color: #333;
-            margin: 0;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-        }
+      .info-grid {
+        display: grid;
+        grid-template-columns: 150px 1fr;
+        gap: 5px;
+      }
 
-        .meta-container {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
-        }
+      .label {
+        font-weight: bold;
+      }
 
-        .meta-box {
-            width: 48%;
-            margin-bottom: 20px;
-        }
+      .value {
+        color: #34495e;
+      }
 
-        .meta-box h3 {
-            font-size: 12px;
-            color: #555;
-            border-bottom: 1px solid #ddd;
-            padding-bottom: 5px;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-        }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+      }
 
-        .meta-row {
-            display: flex;
-            margin-bottom: 4px;
-        }
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+      }
 
-        .meta-label {
-            font-weight: bold;
-            width: 110px;
-            color: #555;
-        }
+      th {
+        background-color: #e0e0e0;
+        font-weight: bold;
+      }
 
-        .meta-value {
-            flex: 1;
-        }
-
-        table.items-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 30px;
-        }
-
-        table.items-table th {
-            background-color: #555;
-            color: white;
-            padding: 10px;
-            text-align: left;
-            font-weight: 600;
-            font-size: 11px;
-            text-transform: uppercase;
-        }
-
-        table.items-table td {
-            padding: 10px;
-            border-bottom: 1px solid #eee;
-            color: #444;
-        }
-
-        table.items-table tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-
-        .vitals-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .vital-item {
-            background: #f4f4f4;
-            padding: 10px;
-            border-radius: 4px;
-            min-width: 100px;
-            text-align: center;
-        }
-
-        .vital-label {
-            font-weight: bold;
-            font-size: 10px;
-            display: block;
-            color: #555;
-        }
-
-        .vital-value {
-            font-size: 12px;
-            font-weight: bold;
-        }
-
-        .signatures {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 60px;
-            page-break-inside: avoid;
-            clear: both;
-        }
-
-        .signature-box {
-            width: 45%;
-            text-align: left;
-        }
-
-        .signature-header {
-            font-weight: bold;
-            font-size: 11px;
-            color: #555;
-            text-transform: uppercase;
-            margin-bottom: 10px;
-            border-bottom: 2px solid #eee;
-            padding-bottom: 5px;
-        }
-
-        .signature-name {
-            font-size: 11px;
-            margin-bottom: 20px;
-            font-weight: bold;
-        }
-
-        .signature-row {
-            display: flex;
-            align-items: flex-end;
-            margin-bottom: 25px;
-        }
-
-        .sig-label {
-            font-size: 10px;
-            font-weight: bold;
-            color: #555;
-            width: 40px;
-        }
-
-        .sig-line {
-            flex: 1;
-            border-bottom: 1px solid #aaa;
-            height: 1px;
-        }
-
-        @page {
-            size: A4;
-            margin: 1cm;
-            margin-bottom: 2cm;
-
-            @bottom-center {
-                content: element(footer-content);
-                width: 100%;
-                text-align: center;
-            }
-        }
-
-        .footer {
-            position: running(footer-content);
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            font-size: 9px;
-            color: #888;
-            border-top: 1px solid #eee;
-            padding-top: 10px;
-            text-align: center;
-        }
-
-        .page::after {
-            content: counter(page) " of " counter(pages);
-        }
+      .footer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        text-align: center;
+        font-size: 9pt;
+        color: #7f8c8d;
+        margin-top: 20px;
+      }
     </style>
-</head>
+  </head>
+  <body>
+    <!-- Header Section Matching GRN -->
+    <div class="company-details">
+      <div class="logo-column">
+        <img src="{{ company.logo_url }}" alt="Company Logo" class="logo" />
+        <p><strong>{{ company.name }}</strong></p>
+        <p>Address: {{ company.address1 }}</p>
+        <p>{{ company.phone1 }} | {{ company.email1 }}</p>
+      </div>
+    </div>
 
-<body>
-    <!-- Footer for running element -->
+    <h1 style="text-align: center">Discharge Summary</h1>
+
+    <div class="section">
+      <div class="section-title">Patient Information</div>
+      <div class="info-grid">
+        <div class="label">Name:</div>
+        <div class="value">{{ patient.name }}</div>
+        <div class="label">Age:</div>
+        <div class="value">{{ patient.age }}</div>
+        <div class="label">Gender:</div>
+        <div class="value">{{ patient.gender }}</div>
+        <div class="label">Patient ID:</div>
+        <div class="value">{{ patient.unique_id }}</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Admission Details</div>
+      <div class="info-grid">
+        <div class="label">Admission ID:</div>
+        <div class="value">{{ admission.id }}</div>
+        <div class="label">Reason:</div>
+        <div class="value">{{ admission.reason }}</div>
+        <div class="label">Admitted On:</div>
+        <div class="value">{{ admission.admitted_at|date:"Y-m-d H:i" }}</div>
+        <div class="label">Ward:</div>
+        <div class="value">{{ admission.ward }}</div>
+        <div class="label">Bed:</div>
+        <div class="value">{{ admission.bed }}</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Discharge Details</div>
+      <div class="info-grid">
+        <div class="label">Type:</div>
+        <div class="value">{{ discharge.type }}</div>
+        <div class="label">Notes:</div>
+        <div class="value">{{ discharge.notes }}</div>
+        <div class="label">Discharged On:</div>
+        <div class="value">{{ discharge.discharged_at|date:"Y-m-d H:i" }}</div>
+        <div class="label">Discharged By:</div>
+        <div class="value">{{ discharge.discharged_by }}</div>
+      </div>
+
+      {% if discharge.type == "External Referral" and referral %}
+      <div class="section-title">Referral Information</div>
+      <div class="info-grid">
+        <div class="label">Service:</div>
+        <div class="value">{{ referral.service }}</div>
+        <div class="label">Note:</div>
+        <div class="value">{{ referral.note }}</div>
+        <div class="label">Email:</div>
+        <div class="value">{{ referral.email }}</div>
+        <div class="label">Referred By:</div>
+        <div class="value">{{ referral.referred_by }}</div>
+      </div>
+      {% endif %} {% if discharge.type == "Deceased" %}
+      <div class="section-title">Cause of Death</div>
+      <div class="info-grid">
+        <div class="label">Cause:</div>
+        <div class="value">{{ discharge.notes }}</div>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="section">
+      <div class="section-title">Last Lab Results</div>
+      {% if lab_results %}
+      <table>
+        <tr>
+          <th>Test Name</th>
+          <th>Result</th>
+          <th>Specimen</th>
+          <th>Date</th>
+        </tr>
+        {% for result in lab_results %}
+        <tr>
+          <td>{{ result.test_name }}</td>
+          <td>{{ result.result }}</td>
+          <td>{{ result.specimen }}</td>
+          <td>{{ result.date|date:"Y-m-d" }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+      {% else %}
+      <p>No lab results available.</p>
+      {% endif %}
+    </div>
+
+    <div class="section">
+      <div class="section-title">Last Prescription</div>
+      {% if prescription %}
+      <table>
+        <tr>
+          <th>Medication</th>
+          <th>Dosage</th>
+          <th>Frequency</th>
+          <th>Duration</th>
+          <th>Prescribed By</th>
+          <th>Date</th>
+        </tr>
+        {% for item in prescription %}
+        <tr>
+          <td>{{ item.medication }}</td>
+          <td>{{ item.dosage }}</td>
+          <td>{{ item.frequency }}</td>
+          <td>{{ item.duration }}</td>
+          <td>{{ item.prescribed_by }}</td>
+          <td>{{ item.date|date:"Y-m-d" }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+      {% else %}
+      <p>No prescription available.</p>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="section">
+      <div class="section-title">Latest Vitals</div>
+      {% if vitals %}
+      <div class="info-grid">
+        <div class="label">Blood Pressure:</div>
+        <div class="value">{{ vitals.blood_pressure }}</div>
+        <div class="label">Heart Rate:</div>
+        <div class="value">{{ vitals.heart_rate }} bpm</div>
+        <div class="label">Respiratory Rate:</div>
+        <div class="value">{{ vitals.respiratory_rate }} breaths/min</div>
+        <div class="label">Temperature:</div>
+        <div class="value">{{ vitals.temperature }} °C</div>
+        <div class="label">Recorded At:</div>
+        <div class="value">{{ vitals.recorded_at|date:"Y-m-d H:i" }}</div>
+      </div>
+      {% else %}
+      <p>No vitals recorded.</p>
+      {% endif %}
+    </div>
+
     <div class="footer">
-        Generated by EaSyMed-HMIS | Email: admin@proto-typesolution.com | Printed on: {% now "Y-m-d H:i" %} | Page <span
-            class="page"></span>
+      <span>
+        Generated by: EaSyMed-HMIS | Email: admin@proto-typesolution.com |
+        Printed: {% now "Y-m-d H:i" %}
+      </span>
     </div>
-
-    <div class="header-container">
-        <div class="company-logo">
-            <img src="{{ company.logo_url }}" alt="Logo" />
-        </div>
-        <div class="company-info">
-            <h2>{{ company.name }}</h2>
-            <p>{{ company.address1 }}</p>
-            {% if company.address2 %}<p>{{ company.address2 }}</p>{% endif %}
-            <p>{{ company.phone1 }} {% if company.phone2 %} | {{ company.phone2 }}{% endif %}</p>
-            <p>{{ company.email1 }}</p>
-        </div>
-    </div>
-
-    <div class="report-title">
-        <h1>Discharge Summary</h1>
-    </div>
-
-    <div class="meta-container">
-        <div class="meta-box">
-            <h3>Patient Information</h3>
-            <div class="meta-row">
-                <span class="meta-label">Name:</span>
-                <span class="meta-value">{{ patient.name }}</span>
-            </div>
-            <div class="meta-row">
-                <span class="meta-label">ID:</span>
-                <span class="meta-value">{{ patient.unique_id }}</span>
-            </div>
-            <div class="meta-row">
-                <span class="meta-label">Age/Gender:</span>
-                <span class="meta-value">{{ patient.age }} / {{ patient.gender }}</span>
-            </div>
-        </div>
-
-        <div class="meta-box">
-            <h3>Admission Details</h3>
-            <div class="meta-row">
-                <span class="meta-label">Admission ID:</span>
-                <span class="meta-value">{{ admission.id }}</span>
-            </div>
-            <div class="meta-row">
-                <span class="meta-label">Admitted On:</span>
-                <span class="meta-value">{{ admission.admitted_at|date:"Y-m-d H:i" }}</span>
-            </div>
-            <div class="meta-row">
-                <span class="meta-label">Ward / Bed:</span>
-                <span class="meta-value">{{ admission.ward }} / {{ admission.bed }}</span>
-            </div>
-        </div>
-
-        <div class="meta-box">
-            <h3>Discharge Details</h3>
-            <div class="meta-row">
-                <span class="meta-label">Type:</span>
-                <span class="meta-value"><strong>{{ discharge.type }}</strong></span>
-            </div>
-            <div class="meta-row">
-                <span class="meta-label">Discharged On:</span>
-                <span class="meta-value">{{ discharge.discharged_at|date:"Y-m-d H:i" }}</span>
-            </div>
-            <div class="meta-row">
-                <span class="meta-label">Discharged By:</span>
-                <span class="meta-value">{{ discharge.discharged_by }}</span>
-            </div>
-        </div>
-
-        {% if discharge.type == "External Referral" and referral %}
-        <div class="meta-box">
-            <h3>Referral Information</h3>
-            <div class="meta-row">
-                <span class="meta-label">Service:</span>
-                <span class="meta-value">{{ referral.service }}</span>
-            </div>
-            <div class="meta-row">
-                <span class="meta-label">Referred By:</span>
-                <span class="meta-value">{{ referral.referred_by }}</span>
-            </div>
-        </div>
-        {% endif %}
-    </div>
-
-    <div style="margin-bottom: 30px;">
-        <h3
-            style="font-size: 12px; color: #555; border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-bottom: 10px; text-transform: uppercase;">
-            Clinical Notes / Reason</h3>
-        <p><strong>Reason for Admission:</strong> {{ admission.reason }}</p>
-        <p><strong>Discharge Notes:</strong> {{ discharge.notes }}</p>
-    </div>
-
-    {% if vitals %}
-    <div style="margin-bottom: 30px;">
-        <h3
-            style="font-size: 12px; color: #555; border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-bottom: 10px; text-transform: uppercase;">
-            Latest Vitals ({{ vitals.recorded_at|date:"Y-m-d H:i" }})</h3>
-        <div class="vitals-grid">
-            <div class="vital-item">
-                <span class="vital-label">BP</span>
-                <span class="vital-value">{{ vitals.blood_pressure }}</span>
-            </div>
-            <div class="vital-item">
-                <span class="vital-label">HR</span>
-                <span class="vital-value">{{ vitals.heart_rate }} bpm</span>
-            </div>
-            <div class="vital-item">
-                <span class="vital-label">RR</span>
-                <span class="vital-value">{{ vitals.respiratory_rate }}</span>
-            </div>
-            <div class="vital-item">
-                <span class="vital-label">Temp</span>
-                <span class="vital-value">{{ vitals.temperature }} °C</span>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
-    {% if lab_results %}
-    <h3
-        style="font-size: 12px; color: #555; border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-bottom: 10px; text-transform: uppercase;">
-        Recent Lab Results</h3>
-    <table class="items-table">
-        <thead>
-            <tr>
-                <th style="width: 40%">Test Name</th>
-                <th style="width: 20%">Result</th>
-                <th style="width: 20%">Specimen</th>
-                <th style="width: 20%">Date</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for result in lab_results %}
-            <tr>
-                <td>{{ result.test_name }}</td>
-                <td><strong>{{ result.result }}</strong></td>
-                <td>{{ result.specimen }}</td>
-                <td>{{ result.date|date:"Y-m-d" }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    {% endif %}
-
-    {% if prescription %}
-    <h3
-        style="font-size: 12px; color: #555; border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-bottom: 10px; text-transform: uppercase;">
-        Final Prescription</h3>
-    <table class="items-table">
-        <thead>
-            <tr>
-                <th style="width: 30%">Medication</th>
-                <th style="width: 15%">Dosage</th>
-                <th style="width: 15%">Frequency</th>
-                <th style="width: 15%">Duration</th>
-                <th style="width: 25%">Prescribed By</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in prescription %}
-            <tr>
-                <td>{{ item.medication }}</td>
-                <td>{{ item.dosage }}</td>
-                <td>{{ item.frequency }}</td>
-                <td>{{ item.duration }}</td>
-                <td>{{ item.prescribed_by }} ({{ item.date|date:"Y-m-d" }})</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    {% endif %}
-
-    <div class="signatures">
-        <div class="signature-box">
-            <div class="signature-header">CONSOLIDATED BY</div>
-            <div class="signature-name">{{ discharge.discharged_by }}</div>
-            <div class="signature-row" style="margin-top: 20px;">
-                <span class="sig-label">Date:</span>
-                <div class="sig-line"></div>
-            </div>
-            <div class="signature-row">
-                <span class="sig-label">Sign:</span>
-                <div class="sig-line"></div>
-            </div>
-        </div>
-
-        <div class="signature-box">
-            <div class="signature-header">APPROVED BY (CONSULTANT)</div>
-            <div class="signature-row" style="margin-top: 40px;">
-                <span class="sig-label">Name:</span>
-                <div class="sig-line"></div>
-            </div>
-            <div class="signature-row">
-                <span class="sig-label">Sign:</span>
-                <div class="sig-line"></div>
-            </div>
-        </div>
-    </div>
-
-</body>
-
+  </body>
 </html>

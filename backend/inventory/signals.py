@@ -9,11 +9,12 @@ from django.db import models
 from django.utils import timezone
 
 
-from .utils import update_purchase_order_status
+from .utils import update_purchase_order_status, generate_unique_item_code
 from .models import (
     PurchaseOrderItem,
     IncomingItem,
-    Inventory
+    Inventory,
+    Item,
 )
 from .tasks import (create_insurance_prices_for_inventory)
 
@@ -161,3 +162,57 @@ def create_default_insurance_prices(sender, instance, created, **kwargs):
     '''
     if created:
         create_insurance_prices_for_inventory.delay(instance.id)
+
+
+@receiver(post_save, sender=Item)
+def sync_lab_test_item(sender, instance, created, **kwargs):
+    """
+    When a LabReagent item is saved, automatically maintain a paired
+    'Lab Test' billing item so users never need to create one manually.
+
+    - On create: generate and link a new Lab Test item.
+    - On update: keep name and desc in sync with the paired item.
+    - Category change away from LabReagent: leave the paired item in place
+      but nullify the link so it can be managed independently.
+    """
+    # QuerySet.update() does not fire signals, so we use it here to avoid
+    # re-entering this receiver and causing infinite recursion.
+    if instance.category == 'LabReagent':
+        with transaction.atomic():
+            if instance.lab_test_item_id is None:
+                # First time — create the paired billing item
+                lab_test = Item.objects.create(
+                    name=instance.name,
+                    desc=instance.desc,
+                    category='Lab Test',
+                    item_code=generate_unique_item_code(),
+                    units_of_measure='',
+                    packed=instance.packed,
+                    subpacked=instance.subpacked,
+                )
+                # Link without triggering this signal again
+                Item.objects.filter(pk=instance.pk).update(lab_test_item=lab_test)
+                logger.info(
+                    f"Auto-created Lab Test item '{lab_test.name}' "
+                    f"(#{lab_test.id}) for LabReagent '{instance.name}' (#{instance.pk})"
+                )
+            else:
+                # Subsequent saves — keep name and desc in sync
+                Item.objects.filter(pk=instance.lab_test_item_id).update(
+                    name=instance.name,
+                    desc=instance.desc,
+                )
+
+
+@receiver(post_delete, sender=Item)
+def delete_paired_lab_test_item(sender, instance, **kwargs):
+    """
+    When a LabReagent item is deleted, cascade-delete its paired Lab Test item.
+    The Lab Test item's category is 'Lab Test' so this receiver won't re-fire.
+    """
+    if instance.category == 'LabReagent' and instance.lab_test_item_id:
+        Item.objects.filter(pk=instance.lab_test_item_id).delete()
+        logger.info(
+            f"Deleted paired Lab Test item #{instance.lab_test_item_id} "
+            f"for deleted LabReagent '{instance.name}' (#{instance.pk})"
+        )

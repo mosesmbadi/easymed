@@ -184,15 +184,40 @@
       </div>
     </div>
 
-    <div class="meta-box">
-      <h3>Report Period</h3>
-      <div class="meta-row">
-        <span class="meta-label">Range:</span>
-        <span class="meta-value">
-          {{ appointments.first.appointment_date_time|date:"Y-m-d" }} - {{
-          appointments.last.appointment_date_time|date:"Y-m-d" }}
-        </span>
-      </div>
+    <div class="container">
+      <h1>Appointments Report</h1>
+      <p>
+        Doctor: {{ appointments.first.assigned_doctor.first_name }} {{
+        appointments.first.assigned_doctor.last_name }}
+      </p>
+      <p>
+        Date Range: {{ appointments.first.appointment_date_time|date:"Y-m-d" }}
+        - {{ appointments.last.appointment_date_time|date:"Y-m-d" }}
+      </p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Appointment Date</th>
+            <th>Patient Name</th>
+            <th>Status</th>
+            <th>Reason</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for appointment in appointments %}
+          <tr>
+            <td>{{ appointment.appointment_date_time|date:"Y-m-d H:i" }}</td>
+            <td>
+              {{ appointment.patient.first_name }} {{
+              appointment.patient.second_name }}
+            </td>
+            <td>{{ appointment.status }}</td>
+            <td>{{ appointment.reason }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
   </div>
 

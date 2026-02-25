@@ -124,140 +124,114 @@ const CreateTestPanelModal = () => {
   };
 
   return (
-    <>
-      <button
-        onClick={handleClickOpen}
-        className="bg-primary rounded-xl text-white px-4 py-2 text-sm flex items-center gap-1"
-      >
-        <IoMdAdd /> Create Test Panel
-      </button>
-      <Dialog
-        fullWidth
-        maxWidth="md"
-        open={open}
-        onClose={handleClose}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
-        sx={{
-          '& .MuiDialog-paper': {
-            minHeight: '70vh',
-          },
-        }}
-      >
-        <DialogContent>
-          <section className="flex items-center justify-center gap-8">
-            <div className="w-full space-y-4 px-4">
-              <h1 className="text-xl text-center">Create Test Panel</h1>
-              <Formik
-                initialValues={initialValues}
-                validationSchema={validationSchema}
-                onSubmit={handleCreateTestPanel}
-              >
-                <Form className="">
-                  <Grid container spacing={2}>
-                    <Grid className='my-2' item md={4} xs={12}>
-                      <label htmlFor="item_code">Panel Name</label>
-                      <Field
-                        className="block border rounded-md text-sm border-gray py-2.5 px-4 focus:outline-card w-full"
-                        maxWidth="sm"
-                        placeholder="Panel Name"
-                        name="name"
-                      />
-                      <ErrorMessage
-                        name="name"
-                        component="div"
-                        className="text-warning text-xs"
-                      />
-                    </Grid>
-                    <Grid className='my-2' item md={4} xs={12}>
-                      <SeachableSelect
-                        label="Select Profile"
-                        name="test_profile"
-                        options={labTestProfiles.map((item) => ({ value: item.id, label: `${item?.name}` }))}
-                      />
-                      <ErrorMessage
-                        name="test_profile"
-                        component="div"
-                        className="text-warning text-xs"
-                      />
-                    </Grid>
-                    <Grid className='my-2' item md={4} xs={12}>
-                      <SeachableSelect
-                        label="Select Item (Lab Test Panel)"
-                        name="item"
-                        options={item?.filter((item) => {
-                          const category = item.category.toLowerCase();
-                          return category.includes('lab test') || category.includes('labreagent');
-                        }).map((item) => ({ value: item.id, label: `${item?.name}` }))}
-                      />
-                      <ErrorMessage
-                        name="item"
-                        component="div"
-                        className="text-warning text-xs"
-                      />
-                    </Grid>
-                    <Grid className='my-2' item md={6} xs={12}>
-                      <SeachableSelect
-                        label="Select Unit"
-                        name="unit"
-                        options={units.map((item) => ({ value: item.value, label: `${item?.label}` }))}
-                      />
-                      <ErrorMessage
-                        name="unit"
-                        component="div"
-                        className="text-warning text-xs"
-                      />
-                    </Grid>
-                    <Grid className='my-2' item md={6} xs={12}>
-                      <SeachableSelect
-                        label="Select Specimen"
-                        name="specimen"
-                        options={specimens.map((item) => ({ value: item.id, label: `${item?.name}` }))}
-                      />
-                      <ErrorMessage
-                        name="specimen"
-                        component="div"
-                        className="text-warning text-xs"
-                      />
-                    </Grid>
-                    <Grid className="my-2" item md={6} xs={12}>
-                      <div className="flex items-center gap-2">
-                        <Field type="checkbox" name="is_qualitative" />
-                        <label htmlFor="is_qualitative" className="font-bold cursor-pointer">
-                          Is Qualitative
-                        </label>
-                      </div>
-                      <ErrorMessage name="is_qualitative" component="div" className="text-warning text-xs" />
-                    </Grid>
-                    <Grid className='my-2' item md={6} xs={12}>
-                      <label htmlFor="tat">TAT Goal (Minutes)</label>
-                      <Field
-                        className="block border rounded-md text-sm border-gray py-2.5 px-4 focus:outline-card w-full"
-                        maxWidth="sm"
-                        placeholder="e.g. 60"
-                        name="tat"
-                        type="number"
-                      />
-                      <ErrorMessage
-                        name="tat"
-                        component="div"
-                        className="text-warning text-xs"
-                      />
-                    </Grid>
-                    <Grid className='my-2' item md={12} xs={12}>
-                      <div className="flex items-center justify-end">
-                        <button
-                          type="submit"
-                          className="bg-primary rounded-xl text-sm px-8 py-2 text-white"
-                        >
-                          {loading && (
-                            <svg
-                              aria-hidden="true"
-                              role="status"
-                              className="inline mr-2 w-4 h-4 text-gray-200 animate-spin dark:text-gray-600"
-                              viewBox="0 0 100 101"
-                              fill="none"
-                              xmlns="http://www.w3.org/2000/svg"
+        <>
+        <button
+          onClick={handleClickOpen}
+          className="bg-primary rounded-xl text-white px-4 py-2 text-sm flex items-center gap-1"
+        >
+          <IoMdAdd /> Create Test Panel
+        </button>
+        <Dialog
+          fullWidth
+          maxWidth="md"
+          open={open}
+          onClose={handleClose}
+          aria-labelledby="alert-dialog-title"
+          aria-describedby="alert-dialog-description"
+          sx={{
+            '& .MuiDialog-paper': {
+              minHeight: '70vh',
+            },
+          }}
+        >
+          <DialogContent>
+            <section className="flex items-center justify-center gap-8">
+              <div className="w-full space-y-4 px-4">
+                <h1 className="text-xl text-center">Create Test Panel</h1>
+                <Formik
+                    initialValues={initialValues}
+                    validationSchema={validationSchema}
+                    onSubmit={handleCreateTestPanel}
+                    >
+                    <Form className="">
+                        <Grid container spacing={2}>
+                        <Grid className='my-2' item md={4} xs={12}>
+                        <label htmlFor="item_code">Panel Name</label>
+                            <Field
+                            className="block border rounded-md text-sm border-gray py-2.5 px-4 focus:outline-card w-full"
+                            maxWidth="sm"
+                            placeholder="Panel Name"
+                            name="name"
+                            />
+                            <ErrorMessage
+                            name="name"
+                            component="div"
+                            className="text-warning text-xs"
+                            />
+                        </Grid>
+                        <Grid className='my-2' item md={4} xs={12}>
+                            <SeachableSelect
+                                label="Select Profile"
+                                name="test_profile"
+                                options={labTestProfiles.map((item) => ({ value: item.id, label: `${item?.name}` }))}
+                            />
+                            <ErrorMessage
+                                name="test_profile"
+                                component="div"
+                                className="text-warning text-xs"
+                            />
+                        </Grid>
+                        <Grid className='my-2' item md={4} xs={12}>
+                          <SeachableSelect
+                            label="Select Item (Lab Test Panel)"
+                            name="item"
+                            options={item?.filter((item)=> item.category === 'Lab Test')
+                              .map((item) => ({ value: item.id, label: `${item?.name}` }))}
+                          />
+                            <ErrorMessage
+                                name="item"
+                                component="div"
+                                className="text-warning text-xs"
+                            />
+                        </Grid>
+                        <Grid className='my-2' item md={6} xs={12}>
+                            <SeachableSelect
+                                label="Select Unit"
+                                name="unit"
+                                options={units.map((item) => ({ value: item.value, label: `${item?.label}` }))}
+                            />
+                            <ErrorMessage
+                                name="unit"
+                                component="div"
+                                className="text-warning text-xs"
+                            />
+                        </Grid>
+                        <Grid className='my-2' item md={6} xs={12}>
+                            <SeachableSelect
+                                label="Select Specimen"
+                                name="specimen"
+                                options={specimens.map((item) => ({ value: item.id, label: `${item?.name}` }))}
+                            />
+                            <ErrorMessage
+                                name="specimen"
+                                component="div"
+                                className="text-warning text-xs"
+                            />
+                        </Grid>
+                        <Grid className="my-2" item md={6} xs={12}>
+                          <div className="flex items-center gap-2">
+                            <Field type="checkbox" name="is_qualitative" />
+                            <label htmlFor="is_qualitative" className="font-bold cursor-pointer">
+                              Is Qualitative
+                            </label>
+                          </div>
+                          <ErrorMessage name="is_qualitative" component="div" className="text-warning text-xs" />
+                        </Grid>
+                        <Grid className='my-2' item md={12} xs={12}>
+                            <div className="flex items-center justify-end">
+                            <button
+                                type="submit"
+                                className="bg-primary rounded-xl text-sm px-8 py-2 text-white"
                             >
                               <path
                                 d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"

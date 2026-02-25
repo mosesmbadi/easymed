@@ -56,6 +56,35 @@ class Supplier(AbstractBaseModel):
         return f"{self.id} - {self.official_name} ({self.common_name})"
 
 
+class Unit(AbstractBaseModel):
+    CATEGORY_CHOICES = [
+        ('mass', 'Mass / Weight'),
+        ('volume', 'Volume'),
+        ('length', 'Length'),
+        ('concentration', 'Concentration'),
+        ('hematology', 'Hematology'),
+        ('enzyme', 'Enzyme Activity'),
+        ('hormone', 'Hormones & Tumor Markers'),
+        ('microbiology', 'Microbiology'),
+        ('urinalysis', 'Urinalysis'),
+        ('coagulation', 'Coagulation'),
+        ('blood_gas', 'Blood Gas'),
+        ('osmolality', 'Osmolality & Density'),
+        ('molecular', 'Molecular Biology'),
+        ('dose', 'Dose & Ratio'),
+        ('general', 'General'),
+    ]
+    symbol = models.CharField(max_length=30, unique=True)
+    name = models.CharField(max_length=100, blank=True)
+    category = models.CharField(max_length=30, choices=CATEGORY_CHOICES, default='general')
+
+    class Meta:
+        ordering = ['category', 'symbol']
+
+    def __str__(self):
+        return self.symbol
+
+
 class Item(AbstractBaseModel):
     '''
     Refer to the docs above
@@ -79,11 +108,19 @@ class Item(AbstractBaseModel):
         ('Specialized Appointment', 'Specialized Appointment'),
         ('general', 'General'),
     ]
-    item_code=models.CharField(max_length=255)
+    item_code = models.CharField(max_length=255)
     name = models.CharField(max_length=255)
     desc = models.CharField(max_length=255)
     category = models.CharField(max_length=255, choices=CATEGORY_CHOICES)
-    units_of_measure = models.CharField(max_length=255, choices=UNIT_CHOICES)
+    units_of_measure = models.CharField(max_length=255, choices=UNIT_CHOICES, blank=True, default='')
+    units = models.ForeignKey(Unit, on_delete=models.SET_NULL, null=True, blank=True, related_name='items')
+    lab_test_item = models.OneToOneField(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='reagent_item',
+        help_text="Auto-created Lab Test billing item paired to this Lab Reagent"
+    )
     vat_rate= models.DecimalField(max_digits=5, decimal_places=2, default=16.0) 
     packed = models.CharField(max_length=255, default=1)
     subpacked = models.CharField(max_length=255, default=1)

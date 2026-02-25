@@ -298,7 +298,9 @@ def create_dummy_groups(count=10, permissions_per_group=5):
 def create_permissions_and_groups():
     perm_objs = {}
     for perm_name in DASHBOARD_PERMISSIONS:
-        perm, _ = Permission.objects.get_or_create(name=perm_name)
+        perm = Permission.objects.filter(name=perm_name).first()
+        if perm is None:
+            perm = Permission.objects.create(name=perm_name)
         perm_objs[perm_name] = perm
 
     group_objs = []

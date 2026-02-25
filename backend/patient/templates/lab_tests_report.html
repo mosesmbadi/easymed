@@ -174,27 +174,41 @@
     <h1>Lab Test Requests</h1>
   </div>
 
-  <div class="meta-container">
-    <div class="meta-box">
-      <h3>Doctor Info</h3>
-      <div class="meta-row">
-        <span class="meta-label">Doctor ID:</span>
-        <span class="meta-value">{{ doctor_id }}</span>
-      </div>
-    </div>
+    <div class="container">
+      <h1>Lab Test Requests Report</h1>
+      <p><strong>Doctor ID:</strong> {{ doctor_id }}</p>
+      <p>
+        <strong>Date Range:</strong>
+        {% if start_date %} {{ start_date }} - {{ end_date }} {% else %} All
+        Dates {% endif %}
+      </p>
 
-    <div class="meta-box">
-      <h3>Report Period</h3>
-      <div class="meta-row">
-        <span class="meta-label">Range:</span>
-        <span class="meta-value">
-          {% if start_date %}
-          {{ start_date }} - {{ end_date }}
-          {% else %}
-          All Dates
-          {% endif %}
-        </span>
-      </div>
+      {% if lab_test_requests %}
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Test Profile</th>
+            <th>Notes</th>
+            <th>Requested On</th>
+            <th>Has Result</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for request in lab_test_requests %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ request.test_profile.name }}</td>
+            <td>{{ request.note }}</td>
+            <td>{{ request.created_on }}</td>
+            <td>{{ request.has_result|yesno:"Yes,No" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p>No lab test requests found for the specified criteria.</p>
+      {% endif %}
     </div>
   </div>
 
