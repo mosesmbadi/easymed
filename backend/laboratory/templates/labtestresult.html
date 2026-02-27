@@ -1,119 +1,265 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Lab Test Report</title>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        font-size: 14px;
-      }
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-bottom: 20px;
-      }
-      th,
-      td {
-        border: 1px solid #dddddd;
-        padding: 8px;
-        text-align: left;
-      }
-      th {
-        background-color: #f2f2f2;
-      }
-      .company-details {
-        display: flex;
-        gap: 20px;
-        margin-bottom: 20px;
-      }
-      .logo-column {
-        border-right: 2px solid #ddd;
-        padding-right: 20px;
-      }
-      .details-column {
-        padding-left: 20px;
-      }
-      .logo {
-        width: 100px;
-        height: auto;
-      }
-      .header {
-        display: flex;
-        justify-content: space-between;
-        padding: 10px;
-        background: #e6edf7;
-        border: 1px solid #ddd;
-        margin-bottom: 20px;
-      }
-      .header .column {
-        flex: 1;
-        padding: 0 10px;
-      }
-      .header .column:not(:last-child) {
-        border-right: 2px solid #ddd;
-      }
-      .report-footer {
-        column-count: 2;
-        column-gap: 20px;
-        font-size: 12px;
-        margin-top: 30px;
-      }
-      .footer {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lab Test Report</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 1cm;
+    }
+
+    body {
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-size: 10px;
+      line-height: 1.4;
+      color: #333;
+    }
+
+    .header-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #555;
+      padding-bottom: 20px;
+      margin-bottom: 30px;
+      height: 150px;
+    }
+
+    .company-logo img {
+      max-width: 180px;
+      height: 100%;
+    }
+
+    .company-info {
+      text-align: right;
+      font-size: 11px;
+    }
+
+    .company-info h2 {
+      margin: 0 0 5px 0;
+      color: #555;
+      font-size: 18px;
+      text-transform: uppercase;
+    }
+
+    .company-info p {
+      margin: 2px 0;
+    }
+
+    .report-title {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .report-title h1 {
+      font-size: 24px;
+      color: #333;
+      margin: 0;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .meta-container {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 30px;
+    }
+
+    .meta-box {
+      width: 48%;
+    }
+
+    .meta-box h3 {
+      font-size: 12px;
+      color: #555;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 5px;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+    }
+
+    .meta-row {
+      display: flex;
+      margin-bottom: 4px;
+    }
+
+    .meta-label {
+      font-weight: bold;
+      width: 110px;
+      color: #555;
+    }
+
+    .meta-value {
+      flex: 1;
+    }
+
+    table.results-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 30px;
+    }
+
+    table.results-table th {
+      background-color: #555;
+      color: white;
+      padding: 10px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+
+    table.results-table td {
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+      color: #444;
+    }
+
+    table.results-table tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+
+    .flag-low {
+      color: #d8a500;
+      font-weight: bold;
+    }
+
+    .flag-high {
+      color: #d30d0d;
+      font-weight: bold;
+    }
+
+    .flag-normal {
+      color: #0d7d2a;
+    }
+
+    .interpretation-section {
+      margin-top: 30px;
+      padding: 15px;
+      background: #f9f9f9;
+      border-left: 4px solid #555;
+      page-break-inside: avoid;
+    }
+
+    .interpretation-title {
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 14px;
+      text-transform: uppercase;
+    }
+
+    .interpretation-item {
+      margin-bottom: 15px;
+      padding: 10px;
+      background: #fff;
+      border-radius: 4px;
+      border: 1px solid #e0e0e0;
+    }
+
+    .interpretation-item.critical {
+      border-left: 4px solid #d32f2f;
+      background: #ffebee;
+    }
+
+    .attention-flag {
+      display: inline-block;
+      background: #d32f2f;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: bold;
+      margin-left: 10px;
+    }
+
+    .signatures {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 60px;
+      page-break-inside: avoid;
+      clear: both;
+    }
+
+    .signature-box {
+      width: 30%;
+      text-align: left;
+    }
+
+    .signature-header {
+      font-weight: bold;
+      font-size: 11px;
+      color: #555;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #eee;
+      padding-bottom: 5px;
+    }
+
+    .signature-row {
+      display: flex;
+      align-items: baseline;
+      margin-bottom: 15px;
+      position: relative;
+    }
+
+    .signature-row {
+      margin-top: 15px;
+      position: relative;
+      width: 100%;
+      min-height: 25px;
+    }
+
+    .sig-label {
+      font-size: 10px;
+      font-weight: bold;
+      color: #555;
+      width: 45px;
+      display: inline-block;
+      vertical-align: bottom;
+      padding-bottom: 2px;
+    }
+
+    .sig-value {
+      display: inline-block;
+      vertical-align: bottom;
+      border-bottom: 1px solid #aaa;
+      width: calc(100% - 50px);
+      min-height: 18px;
+    }
+
+    .sig-value-text {
+      font-size: 11px;
+      padding-left: 5px;
+      padding-bottom: 2px;
+    }
+
+    .signature-image {
+      position: absolute;
+      bottom: 2px;
+      left: 50px;
+      height: 60px;
+      z-index: 10;
+    }
+
+    .signature-image img {
+      max-height: 100%;
+      max-width: 150px;
+      display: block;
+    }
+
+    @page {
+      size: A4;
+      margin: 1cm;
+      margin-bottom: 2cm;
+
+      @bottom-center {
+        content: element(footer-content);
         width: 100%;
         text-align: center;
-        margin-top: 40px;
-        font-size: 10px;
-        font-style: italic;
-        color: gray;
-        font-weight: bold;
-      }
-      .flag-low {
-        color: #d8a500;
-      }
-      .flag-high {
-        color: #d30d0d;
-      }
-      .flag-normal {
-        color: #0d7d2a;
-      }
-      .interpretation-section {
-        margin-top: 30px;
-        padding: 15px;
-        background: #f9f9f9;
-        border-left: 4px solid #2196f3;
-      }
-      .interpretation-title {
-        font-weight: bold;
-        color: #2196f3;
-        margin-bottom: 10px;
-        font-size: 16px;
-      }
-      .interpretation-item {
-        margin-bottom: 15px;
-        padding: 10px;
-        background: #fff;
-        border-radius: 4px;
-        border: 1px solid #e0e0e0;
-      }
-      .interpretation-item.critical {
-        border-left: 4px solid #d32f2f;
-        background: #ffebee;
-      }
-      .attention-flag {
-        display: inline-block;
-        background: #d32f2f;
-        color: white;
-        padding: 2px 8px;
-        border-radius: 3px;
-        font-size: 11px;
-        font-weight: bold;
-        margin-left: 10px;
       }
     </style>
   </head>
@@ -134,18 +280,43 @@
       </div>
     </div>
 
-    <div class="report-title">
-      <h2 style="text-align: center">Laboratory Test Report</h2>
+  <div class="header-container">
+    <div class="company-logo">
+      <img src="{{ company_logo_url }}" alt="Logo" />
     </div>
+    <div class="company-info">
+      <h2>{{ company.name }}</h2>
+      <p>{{ company.address1 }}</p>
+      {% if company.address2 %}<p>{{ company.address2 }}</p>{% endif %}
+      <p>{{ company.phone1 }} {% if company.phone2 %} | {{ company.phone2 }}{% endif %}</p>
+      <p>{{ company.email1 }}</p>
+    </div>
+  </div>
 
-    <div class="header">
-      <div class="column">
-        <p><strong>Patient Particulars</strong></p>
-        <p>{{ patient.first_name }} {{ patient.second_name }}</p>
-        <p>Gender: {{ patient.gender }} | Age: {{ patient.age }}</p>
-        <p>Patient ID: {{ patient.id }}</p>
-        <p>Ref: {{ processtestrequest.reference }}</p>
+  <div class="report-title">
+    <h1>Laboratory Report</h1>
+  </div>
+
+  <div class="meta-container">
+    <div class="meta-box">
+      <h3>Patient Particulars</h3>
+      <div class="meta-row">
+        <span class="meta-label">Name:</span>
+        <span class="meta-value">{{ patient.first_name }} {{ patient.second_name }}</span>
       </div>
+      <div class="meta-row">
+        <span class="meta-label">ID:</span>
+        <span class="meta-value">{{ patient.id }}</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">Age/Gender:</span>
+        <span class="meta-value">{{ patient.age }} / {{ patient.gender }}</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">Ref:</span>
+        <span class="meta-value">{{ processtestrequest.reference }}</span>
+      </div>
+    </div>
 
       <div class="column">
         <p><strong>Request Details</strong></p>
@@ -166,6 +337,7 @@
         </p>
       </div>
     </div>
+  </div>
 
     {% if quantitative_panels %}
     <table>
@@ -264,6 +436,9 @@
       {% endif %} {% endfor %}
     </div>
     {% endif %}
+    {% endfor %}
+  </div>
+  {% endif %}
 
     <div class="report-footer">
       <p><strong>Date Posted:</strong> {{ approved_on }}</p>
@@ -285,12 +460,8 @@
         else %} _______________ {% endif %}
       </p>
     </div>
+  </div>
 
-    <section class="footer">
-      <span>
-        Generated by: EaSyMed-HMIS | Email: admin@proto-typesolution.com |
-        Printed: {% now "Y-m-d H:i" %}
-      </span>
-    </section>
-  </body>
+</body>
+
 </html>

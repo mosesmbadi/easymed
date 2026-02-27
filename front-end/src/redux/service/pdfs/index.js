@@ -40,26 +40,64 @@ export const downloadResultPDF = (item_id, item_name, auth) => {
     });
 };
 
-export const saleByDateRangePdf = () =>{
-    return new Promise((resolve,reject) =>{
+export const saleByDateRangePdf = () => {
+    return new Promise((resolve, reject) => {
         axios.get(`${APP_API_URL.SALE_BY_DATE_RANGE_PDF}`)
-        .then((res) =>{
-            resolve(res.data)
-        })
-        .catch((err) =>{
-            reject(err.message)
-        })
+            .then((res) => {
+                resolve(res.data)
+            })
+            .catch((err) => {
+                reject(err.message)
+            })
     })
 }
 
-export const saleByDateRangeAndItemPdf = () =>{
-    return new Promise((resolve,reject) =>{
+export const saleByDateRangeAndItemPdf = () => {
+    return new Promise((resolve, reject) => {
         axios.get(`${APP_API_URL.SALE_BY_DATE_RANGE_AND_ITEM_PDF}`)
-        .then((res) =>{
-            resolve(res.data)
-        })
-        .catch((err) =>{
-            reject(err.message)
-        })
+            .then((res) => {
+                resolve(res.data)
+            })
+            .catch((err) => {
+                reject(err.message)
+            })
     })
 }
+
+export const downloadLabReportPDF = (type, auth) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+        axiosInstance
+            .get(`${APP_API_URL.LAB_REPORT_PDF}`, {
+                params: { type },
+                responseType: 'arraybuffer'
+            })
+            .then((res) => {
+                const blob = new Blob([res.data], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
+                resolve({ url });
+            })
+            .catch((err) => {
+                reject(err.message);
+            });
+    });
+};
+
+export const downloadPharmacyReportPDF = (type, auth) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+        axiosInstance
+            .get(`${APP_API_URL.PRINT_PHARMACY_REPORT}`, {
+                params: { type },
+                responseType: 'arraybuffer'
+            })
+            .then((res) => {
+                const blob = new Blob([res.data], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
+                resolve({ url });
+            })
+            .catch((err) => {
+                reject(err.message);
+            });
+    });
+};

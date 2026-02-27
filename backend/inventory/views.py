@@ -331,13 +331,18 @@ def download_requisition_pdf(request, requisition_id):
     print(f'Total cost: {total_cost}')    
     
 
+    # Get signature URLs
+    requester_sig_url = request.build_absolute_uri(requisition.requested_by.signature.url) if requisition.requested_by and requisition.requested_by.signature else None
+    approver_sig_url = request.build_absolute_uri(requisition.approved_by.signature.url) if requisition.approved_by and requisition.approved_by.signature else None
+
     context = {
         'requisition': requisition,
         'requisition_items': requisition_items,
         'company': company,
         'company_logo_url': company_logo_url,
         'total_cost': total_cost,
-
+        'requester_sig_url': requester_sig_url,
+        'approver_sig_url': approver_sig_url,
     }
 
     html_template = get_template('requisition.html').render(context)
@@ -375,13 +380,20 @@ def download_purchaseorder_pdf(request, purchaseorder_id):
             'total_price': total_price
         })
 
+    # Get signature and logo URLs
+    company_logo_url = request.build_absolute_uri(company.logo.url) if company.logo else None
+    creator_sig_url = request.build_absolute_uri(purchase_order.created_by.signature.url) if purchase_order.created_by and purchase_order.created_by.signature else None
+    approver_sig_url = request.build_absolute_uri(purchase_order.approved_by.signature.url) if purchase_order.approved_by and purchase_order.approved_by.signature else None
+
     context = {
         'purchaseorder': purchase_order,
         'item_details': item_details,
         'total_amount': total_amount,
         'company': company,
         'company_logo_url': company_logo_url,
-        'user': user
+        'user': user,
+        'creator_sig_url': creator_sig_url,
+        'approver_sig_url': approver_sig_url,
     }
 
     html_template = get_template('purchase_order_note.html').render(context)

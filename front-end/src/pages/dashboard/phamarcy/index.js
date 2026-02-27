@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import DashboardLayout from "@/components/layout/dashboard-layout";
 import { Container, Grid, Paper } from "@mui/material";
@@ -6,6 +6,7 @@ import AuthGuard from "@/assets/hoc/auth-guard";
 import PharmacyDataGrid from "@/components/dashboard/pharmacy";
 import { pharmacyDisplayStats } from "@/assets/menu";
 import PhamarcyNav from "@/components/dashboard/pharmacy/PhamarcyNav";
+import PharmacyDashboardCards from "@/components/dashboard/pharmacy/PharmacyDashboardCards";
 import ProtectedRoute from "@/assets/hoc/protected-route";
 
 
@@ -16,7 +17,7 @@ const Phamarcy = () => {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    padding:10,
+    padding: 10,
     textAlign: 'center',
     color: 'black',
     background: 'white',
@@ -25,8 +26,8 @@ const Phamarcy = () => {
     gap: '20px',
   };
 
-  const displayInformation = pharmacyDisplayStats.map((item, index)=>{
-    return(
+  const displayInformation = pharmacyDisplayStats.map((item, index) => {
+    return (
       <Grid key={`pharmacy-display-info ${index}`} item xs={4}>
         <Paper style={columnStyle}>
           <img className="h-8 w-8" src={item.icon} alt=""></img>
@@ -36,15 +37,16 @@ const Phamarcy = () => {
           </div>
         </Paper>
       </Grid>
-      )
+    )
   })
 
   return (
     <Container maxWidth="xl">
-      <PhamarcyNav/>
-      <Grid container spacing={2}>
-        {displayInformation}      
-      </Grid>
+      <PhamarcyNav />
+      <PharmacyDashboardCards />
+      {/* <Grid container spacing={2}>
+        {displayInformation}
+      </Grid> */}
       <h3 className="text-2xl mt-12"> Prescriptions </h3>
       <PharmacyDataGrid />
 

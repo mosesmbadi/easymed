@@ -190,22 +190,48 @@
     }
 
     .signature-row {
-      display: flex;
-      align-items: flex-end;
-      margin-bottom: 25px;
+      margin-top: 15px;
+      position: relative;
+      width: 100%;
+      min-height: 25px;
     }
 
     .sig-label {
       font-size: 10px;
       font-weight: bold;
       color: #555;
-      width: 40px;
+      width: 45px;
+      display: inline-block;
+      vertical-align: bottom;
+      padding-bottom: 2px;
     }
 
-    .sig-line {
-      flex: 1;
+    .sig-value {
+      display: inline-block;
+      vertical-align: bottom;
       border-bottom: 1px solid #aaa;
-      height: 1px;
+      width: calc(100% - 50px);
+      min-height: 18px;
+    }
+
+    .sig-value-text {
+      font-size: 11px;
+      padding-left: 5px;
+      padding-bottom: 2px;
+    }
+
+    .signature-image {
+      position: absolute;
+      bottom: 2px;
+      left: 50px;
+      height: 60px;
+      z-index: 10;
+    }
+
+    .signature-image img {
+      max-height: 100%;
+      max-width: 150px;
+      display: block;
     }
 
     @page {
@@ -316,27 +342,60 @@
   <div class="signatures">
     <div class="signature-box">
       <div class="signature-header">CREATED BY</div>
-      <p style="margin-bottom: 5px;">{{ purchaseorder.created_by.first_name}}</p>
-      <div class="signature-row">
-        <span class="sig-label">Date:</span>
-        <div class="sig-line"></div>
+      <div class="signature-name">
+        {% if purchaseorder.created_by %}
+        {{ purchaseorder.created_by.first_name }} {{ purchaseorder.created_by.last_name }}
+        {% else %}
+        N/A
+        {% endif %}
       </div>
       <div class="signature-row">
+        <span class="sig-label">Date:</span>
+        <div class="sig-value">
+          <span class="sig-value-text">{{ purchaseorder.date_created|date:"d M Y" }}</span>
+        </div>
+      </div>
+      <div class="signature-row" style="position: relative; margin-top: 40px;">
         <span class="sig-label">Sign:</span>
-        <div class="sig-line"></div>
+        <div class="sig-value">
+          {% if creator_sig_url %}
+          <div class="signature-image">
+            <img src="{{ creator_sig_url }}" alt="Creator Signature">
+          </div>
+          {% endif %}
+        </div>
       </div>
     </div>
 
     <div class="signature-box">
       <div class="signature-header">APPROVED BY</div>
-      <p style="margin-bottom: 5px;">{{ purchaseorder.approved_by.first_name }}</p>
-      <div class="signature-row">
-        <span class="sig-label">Date:</span>
-        <div class="sig-line"></div>
+      <div class="signature-name">
+        {% if purchaseorder.approved_by %}
+        {{ purchaseorder.approved_by.first_name }} {{ purchaseorder.approved_by.last_name }}
+        {% else %}
+        Pending Approval
+        {% endif %}
       </div>
       <div class="signature-row">
+        <span class="sig-label">Date:</span>
+        <div class="sig-value">
+          <span class="sig-value-text">
+            <!-- Approval date not explicitly stored in PO model, using date_created as fallback for now if approved -->
+            {% if purchaseorder.approved_by %}
+            {{ purchaseorder.date_created|date:"d M Y" }}
+            {% endif %}
+          </span>
+        </div>
+      </div>
+      <div class="signature-row" style="position: relative; margin-top: 40px;">
         <span class="sig-label">Sign:</span>
-        <div class="sig-line"></div>
+        <div class="sig-value">
+          {% if approver_sig_url %}
+          <div class="signature-image">
+            <img src="{{ approver_sig_url }}" alt="Approver Signature">
+          </div>
+          {% endif %}
+        </div>
       </div>
     </div>
   </div>

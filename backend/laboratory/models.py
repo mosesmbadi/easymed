@@ -354,6 +354,7 @@ class PatientSample(models.Model):
     patient_sample_code = models.CharField(max_length=100, unique=True)
     process = models.ForeignKey(ProcessTestRequest, on_delete=models.CASCADE, null=True, blank=True) # from patient app
     is_sample_collected = models.BooleanField(default=False)
+    collected_on = models.DateTimeField(null=True, blank=True)
 
     def generate_sample_code(self):
         prefix = "DDLR"
@@ -390,6 +391,9 @@ class PatientSample(models.Model):
         # Ensure process set from related request (before code generation logic in case future depends on process)
         if self.lab_test_request and self.lab_test_request.process:
             self.process = self.lab_test_request.process
+
+        if self.is_sample_collected and not self.collected_on:
+            self.collected_on = timezone.now()
 
         max_attempts = 5
         attempt = 0
@@ -531,10 +535,10 @@ class LabTestRequestPanel(models.Model):
         # Set approved_on timestamp when result is entered or approved
         if self.result and not self.approved_on:
             # Set timestamp when result is first entered
-            self.approved_on = datetime.now()
+            self.approved_on = timezone.now()
         elif self.result_approved and not self.approved_on:
             # Also set if result_approved is set but approved_on wasn't set
-            self.approved_on = datetime.now()
+            self.approved_on = timezone.now()
             
         super().save(*args, **kwargs)
 
@@ -573,3 +577,32 @@ class PublicLabTestRequest(models.Model):
             patient_age:int = (datetime.now().year - self.patient.date_of_birth.year)
             return patient_age
         return None
+
+class LabSettings(models.Model):
+    """
+    Global settings for the laboratory module.
+    Implemented as a singleton.
+    """
+    default_tat_minutes = models.PositiveIntegerField(
+        default=60, 
+        help_text="Global default Turnaround Time in minutes if not specified per test panel"
+    )
+    updated_on = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Lab Settings"
+        verbose_name_plural = "Lab Settings"
+
+    def __str__(self):
+        return f"Lab Settings (Default TAT: {self.default_tat_minutes} mins)"
+
+    def save(self, *args, **kwargs):
+        # Ensure only one instance exists
+        if not self.pk and LabSettings.objects.exists():
+            return LabSettings.objects.first()
+        return super().save(*args, **kwargs)
+
+    @classmethod
+    def get_settings(cls):
+        settings, created = cls.objects.get_or_create(pk=1)
+        return settings

@@ -1,5 +1,14 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { fetchPrescriptions, fetchPrescribedDrugs, fetchPrescriptionsPrescribedDrugs, fetchPublicPrescriptions } from "@/redux/service/pharmacy";
+import {
+  fetchPrescriptions,
+  fetchPrescribedDrugs,
+  fetchPrescriptionsPrescribedDrugs,
+  fetchPublicPrescriptions,
+  fetchDrugCategories,
+  fetchDrugModes,
+  fetchDrugStates,
+  fetchDrugs
+} from "@/redux/service/pharmacy";
 
 
 const initialState = {
@@ -8,6 +17,10 @@ const initialState = {
   searchedPrescriptions: [],
   prescriptionsPrescribed: [],
   publicPrescriptions: [],
+  drugCategories: [],
+  drugModes: [],
+  drugStates: [],
+  drugs: [],
 };
 
 const PrescriptionSlice = createSlice({
@@ -33,13 +46,39 @@ const PrescriptionSlice = createSlice({
       state.searchedPrescriptions = action.payload;
     },
     setPrescriptionStatus: (state, action) => {
-      const prescription = state.prescriptions.find(prescription => prescription.id === action.payload );
-     prescription.status = "dispensed"
+      const prescription = state.prescriptions.find(prescription => prescription.id === action.payload);
+      if (prescription) {
+        prescription.status = "dispensed";
+      }
+    },
+    setDrugCategories: (state, action) => {
+      state.drugCategories = action.payload;
+    },
+    setDrugModes: (state, action) => {
+      state.drugModes = action.payload;
+    },
+    setDrugStates: (state, action) => {
+      state.drugStates = action.payload;
+    },
+    setDrugs: (state, action) => {
+      state.drugs = action.payload;
     },
   },
 });
 
-export const { setPrescriptions,setSearchedPrescriptions, setPrescriptionsPrescribedDrugs, setPrescribedDrugs, setPrescribedDrugsStore, setPrescriptionStatus, setPublicPrescriptions } = PrescriptionSlice.actions;
+export const {
+  setPrescriptions,
+  setSearchedPrescriptions,
+  setPrescriptionsPrescribedDrugs,
+  setPrescribedDrugs,
+  setPrescribedDrugsStore,
+  setPrescriptionStatus,
+  setPublicPrescriptions,
+  setDrugCategories,
+  setDrugModes,
+  setDrugStates,
+  setDrugs
+} = PrescriptionSlice.actions;
 
 
 export const getAllPrescriptions = (auth) => async (dispatch) => {
@@ -95,6 +134,42 @@ export const getAllSearchedPrescriptions = (first_name) => async (dispatch) => {
 
 export const updatePrescriptionStatus = (id) => (dispatch) => {
   dispatch(setPrescriptionStatus(id));
+};
+
+export const getAllDrugCategories = (auth) => async (dispatch) => {
+  try {
+    const response = await fetchDrugCategories(auth);
+    dispatch(setDrugCategories(response));
+  } catch (error) {
+    console.log("DRUG_CATEGORIES_ERROR ", error);
+  }
+};
+
+export const getAllDrugModes = (auth) => async (dispatch) => {
+  try {
+    const response = await fetchDrugModes(auth);
+    dispatch(setDrugModes(response));
+  } catch (error) {
+    console.log("DRUG_MODES_ERROR ", error);
+  }
+};
+
+export const getAllDrugStates = (auth) => async (dispatch) => {
+  try {
+    const response = await fetchDrugStates(auth);
+    dispatch(setDrugStates(response));
+  } catch (error) {
+    console.log("DRUG_STATES_ERROR ", error);
+  }
+};
+
+export const getAllDrugs = (auth) => async (dispatch) => {
+  try {
+    const response = await fetchDrugs(auth);
+    dispatch(setDrugs(response));
+  } catch (error) {
+    console.log("DRUGS_ERROR ", error);
+  }
 };
 
 export default PrescriptionSlice.reducer;

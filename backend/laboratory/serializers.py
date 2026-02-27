@@ -20,7 +20,8 @@ from .models import (
     TestKitCounter,
     LabTestInterpretation,
     ReferenceValue,
-    ReagentConsumptionLog
+    ReagentConsumptionLog,
+    LabSettings
     )
 
 
@@ -92,7 +93,7 @@ class LabTestRequestPanelSerializer(serializers.ModelSerializer):
     reference_values = serializers.SerializerMethodField()
     is_qualitative = serializers.ReadOnlyField(source='test_panel.is_qualitative')
     is_quantitative = serializers.ReadOnlyField(source='test_panel.is_quantitative')
-    eta = serializers.DurationField(source='test_panel.eta', read_only=True)
+    tat = serializers.DurationField(source='test_panel.tat', read_only=True)
 
     def get_sale_price(self, instance):
         try:
@@ -171,7 +172,7 @@ class LabTestRequestPanelSerializer(serializers.ModelSerializer):
             'is_billed',
             'is_quantitative',
             'is_qualitative',
-            'eta',
+            'tat',
             'auto_interpretation',
             'clinical_action',
             'requires_attention',
@@ -320,3 +321,9 @@ class LowStockReagentSerializer(serializers.ModelSerializer):
         elif obj.is_low_stock():
             return 'low_stock'
         return 'in_stock'
+
+
+class LabSettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LabSettings
+        fields = '__all__'

@@ -78,6 +78,8 @@ export const API_URL = {
   SEND_LAB_RESULTS_ITEMS: "/lab/lab-test-result-item/",
   APPROVE_LAB_RESULTS: "/lab/approve-results/",
   APPROVE_QUALITATIVE_LAB_RESULTS: "/lab/approve-qualitative-results/",
+  PHARMACY_DASHBOARD_METRICS: "/pharmacy/pharmacy-dashboard-metrics/",
+  PRINT_PHARMACY_REPORT: "/pharmacy/print-pharmacy-report/",
   LAB_TEST_REQ_BY_PROCESS_ID: "lab/lab-test-request-by-process-id/",
   SAMPLES_BY_process_ID: "/lab/patient-samples-by-process-id/",
   PANELS_BY_SAMPLE_ID: "/lab/labtestrequestpanels/sample/",
@@ -85,6 +87,9 @@ export const API_URL = {
   SPECIMENS: "/lab/specimens/",
   REFERENCE_VALUES: "/lab/reference-values/",
   LAB_TEST_INTERPRETATIONS: "/lab/lab-test-interpretations/",
+  PRINT_LAB_REPORT: "/lab/print-lab-report/",
+  LAB_SETTINGS: "/lab/lab-settings/",
+  LAB_DASHBOARD_METRICS: "/lab/lab-dashboard-metrics/",
 
   /***************** INVENTORY APIS **********************/
   ADD_INVENTORY: "/inventory/inventories/",
@@ -129,6 +134,10 @@ export const API_URL = {
   PATIENTPRESCRIPTIONREQUEST: "/pharmacy/public-prescription-requests/",
   FETCH_PRESCRIBED_DRUGS: "/patients/prescribed-drugs/",
   FETCH_PRESCRIPTIONS_PRESCRIBED_DRUGS: "/patients/prescribed-drugs/by-prescription",
+  DRUG_CATEGORIES: "/pharmacy/drug-categories/",
+  DRUG_MODES: "/pharmacy/drug-modes/",
+  DRUG_STATES: "/pharmacy/drug-states/",
+  DRUGS: "/pharmacy/drugs/",
 
   /***************** User **********************/
   GET_USER_NAME: "/users/users",
@@ -255,6 +264,8 @@ export const APP_API_URL = {
   GET_LAB_TEST_PANELS_BY_LAB_TEST_REQUEST_ID: "/api/laboratory/lab-test-request-panels-by-lab-test-request-id/",
   APPROVE_LAB_RESULTS: "/api/laboratory/approve-results/",
   APPROVE_QUALITATIVE_LAB_RESULTS: "/api/laboratory/approve-qualitative-results/",
+  PHARMACY_DASHBOARD_METRICS: "/api/pharmacy/pharmacy-dashboard-metrics",
+  PRINT_PHARMACY_REPORT: "/api/pharmacy/print-pharmacy-report",
   LAB_TEST_REQ_BY_PROCESS_ID: "/api/laboratory/lab-test-request-by-process-id",
   SAMPLES_BY_process_ID: "/api/laboratory/samples-by-process-id/",
   PANELS_BY_SAMPLE_ID: "/api/laboratory/panels-by-specific-sample/",
@@ -262,6 +273,8 @@ export const APP_API_URL = {
   SPECIMENS: "/api/laboratory/specimens",
   REFERENCE_VALUES: "/api/laboratory/reference-values",
   LAB_TEST_INTERPRETATIONS: "/api/laboratory/lab-test-interpretations",
+  LAB_SETTINGS: "/api/laboratory/lab-settings",
+  LAB_DASHBOARD_METRICS: "/api/laboratory/lab-dashboard-metrics",
 
   /***************** INVENTORY APIS **********************/
   ADD_INVENTORY: "/api/inventory/add-inventory",
@@ -306,6 +319,10 @@ export const APP_API_URL = {
   FETCH_PUBLIC_PRESCRIPTION: "/api/pharmacy/fetch-public-prescriptions",
   FETCH_PRESCRIBED_DRUGS: "/api/pharmacy/fetch-prescribed-drugs",
   FETCH_PRESCRIPTIONS_PRESCRIBED_DRUGS: "/api/pharmacy/fetch-prescriptions-prescribed-drug",
+  DRUG_CATEGORIES: "/api/pharmacy/drug-categories",
+  DRUG_MODES: "/api/pharmacy/drug-modes",
+  DRUG_STATES: "/api/pharmacy/drug-states",
+  DRUGS: "/api/pharmacy/drugs",
 
   /***************** User **********************/
   GET_USER_NAME: "/api/user/getUserName",
@@ -324,6 +341,7 @@ export const APP_API_URL = {
   DOWNLOAD_RESULT_PDF: "/api/pdf/result_pdf",
   SALE_BY_DATE_RANGE_PDF: "/api/pdf/sale-by-date-range-report-pdf",
   SALE_BY_DATE_RANGE_AND_ITEM_PDF: "/api/pdf/sale-by-date-range-and-item-report-pdf",
+  LAB_REPORT_PDF: "/api/pdf/lab-report-pdf",
 
   /***************** REPORTS **********************/
   SALE_BY_DATE_RANGE_GENERATE_REPORTS: "/api/reports/sale-by-date-range/",

@@ -44,13 +44,13 @@ const TestPanels = () => {
   const [open, setOpen] = React.useState(false);
   const [deleteOpen, setDeleteOpen] = React.useState(false);
   const [selectedRowData, setSelectedRowData] = React.useState({});
-  const { labTestPanels } = useSelector((store)=> store.laboratory);
+  const { labTestPanels } = useSelector((store) => store.laboratory);
   const [showPageSizeSelector, setShowPageSizeSelector] = useState(true);
   const [showInfo, setShowInfo] = useState(true);
   const [showNavButtons, setShowNavButtons] = useState(true);
 
-  useEffect(()=> {
-    if (auth){
+  useEffect(() => {
+    if (auth) {
       dispatch(getAllLabTestPanels(auth));
     }
 
@@ -91,7 +91,7 @@ const TestPanels = () => {
     <section>
       <Grid className="my-2 flex justify-between gap-4">
         <Grid className="flex items-center rounded-lg bg-white px-2 w-full" item md={4} xs={4}>
-          <img className="h-4 w-4" src='/images/svgs/search.svg'/>
+          <img className="h-4 w-4" src='/images/svgs/search.svg' />
           <input
             className="py-2 w-full px-4 bg-transparent rounded-lg focus:outline-none placeholder-font font-thin text-sm"
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -115,16 +115,16 @@ const TestPanels = () => {
         wordWrapEnabled={true}
         allowPaging={true}
         className="shadow-xl"
-        // height={"70vh"}
+      // height={"70vh"}
       >
         <Scrolling rowRenderingMode='virtual'></Scrolling>
         <Paging defaultPageSize={10} />
         <Pager
-            visible={true}
-            allowedPageSizes={allowedPageSizes}
-            showPageSizeSelector={showPageSizeSelector}
-            showInfo={showInfo}
-            showNavigationButtons={showNavButtons}
+          visible={true}
+          allowedPageSizes={allowedPageSizes}
+          showPageSizeSelector={showPageSizeSelector}
+          showInfo={showInfo}
+          showNavigationButtons={showNavButtons}
         />
         <Column dataField="name" caption="Name" />
         <Column dataField="specimen_name" caption="Specimen" />
@@ -136,6 +136,20 @@ const TestPanels = () => {
         />
         <Column dataField="is_qualitative" caption="Qualitative" />
         <Column dataField="is_quantitative" caption="Quantitative" />
+        <Column
+          dataField="tat"
+          caption="TAT (mins)"
+          cellRender={({ data }) => {
+            if (!data.tat) return "Default";
+            // Simple parsing of "HH:MM:SS" or "DD HH:MM:SS"
+            const parts = data.tat.split(':');
+            if (parts.length >= 2) {
+              const mins = parseInt(parts[0]) * 60 + parseInt(parts[1]);
+              return `${mins} mins`;
+            }
+            return data.tat;
+          }}
+        />
         <Column
           dataField=""
           caption=""

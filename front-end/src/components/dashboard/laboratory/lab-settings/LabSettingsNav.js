@@ -7,6 +7,7 @@ import TestProfile from './TestProfile'
 import Specimens from './Specimens'
 import ReferenceValues from './ReferenceValues'
 import ProfessionalInterpretation from './ProfessionalInterpretation'
+import GlobalSettings from './GlobalSettings'
 
 const LabSettingsNav = () => {
   const [currentTab, setCurrentTab] = useState(0);
@@ -21,8 +22,8 @@ const LabSettingsNav = () => {
           <div>
             <p
               className={`${currentTab === 0
-                  ? "cursor-pointer text-primary p-4 border-b-2 border-primary text-center"
-                  : "cursor-pointer text-center p-4"
+                ? "cursor-pointer text-primary p-4 border-b-2 border-primary text-center"
+                : "cursor-pointer text-center p-4"
                 } `}
               onClick={() => setCurrentTab(0)}
             >
@@ -33,8 +34,8 @@ const LabSettingsNav = () => {
           <div>
             <p
               className={`${currentTab === 1
-                  ? "cursor-pointer text-primary p-4 border-b-2 border-primary text-center"
-                  : "cursor-pointer text-center p-4"
+                ? "cursor-pointer text-primary p-4 border-b-2 border-primary text-center"
+                : "cursor-pointer text-center p-4"
                 } `}
               onClick={() => setCurrentTab(1)}
             >
@@ -45,8 +46,8 @@ const LabSettingsNav = () => {
           <div>
             <p
               className={`${currentTab === 2
-                  ? "cursor-pointer text-primary p-4 border-b-2 border-primary text-center"
-                  : "cursor-pointer text-center p-4"
+                ? "cursor-pointer text-primary p-4 border-b-2 border-primary text-center"
+                : "cursor-pointer text-center p-4"
                 } `}
               onClick={() => setCurrentTab(2)}
             >
@@ -57,8 +58,8 @@ const LabSettingsNav = () => {
           <div>
             <p
               className={`${currentTab === 3
-                  ? "cursor-pointer text-primary p-4 border-b-2 border-primary text-center"
-                  : "cursor-pointer text-center p-4"
+                ? "cursor-pointer text-primary p-4 border-b-2 border-primary text-center"
+                : "cursor-pointer text-center p-4"
                 }`}
               onClick={() => setCurrentTab(3)}
             >
@@ -69,8 +70,8 @@ const LabSettingsNav = () => {
           <div>
             <p
               className={`${currentTab === 4
-                  ? "cursor-pointer text-primary p-4 border-b-2 border-primary text-center"
-                  : "cursor-pointer text-center p-4"
+                ? "cursor-pointer text-primary p-4 border-b-2 border-primary text-center"
+                : "cursor-pointer text-center p-4"
                 } `}
               onClick={() => setCurrentTab(4)}
             >
@@ -81,12 +82,24 @@ const LabSettingsNav = () => {
           <div>
             <p
               className={`${currentTab === 5
-                  ? "cursor-pointer text-primary p-4 border-b-2 border-primary text-center"
-                  : "cursor-pointer text-center p-4"
+                ? "cursor-pointer text-primary p-4 border-b-2 border-primary text-center"
+                : "cursor-pointer text-center p-4"
                 } `}
               onClick={() => setCurrentTab(5)}
             >
               Professional Interpretation
+            </p>
+          </div>
+
+          <div>
+            <p
+              className={`${currentTab === 6
+                ? "cursor-pointer text-primary p-4 border-b-2 border-primary text-center"
+                : "cursor-pointer text-center p-4"
+                } `}
+              onClick={() => setCurrentTab(6)}
+            >
+              Global Settings
             </p>
           </div>
         </div>
@@ -98,6 +111,7 @@ const LabSettingsNav = () => {
         {currentTab === 3 && <TestPanels />}
         {currentTab === 4 && <ReferenceValues />}
         {currentTab === 5 && <ProfessionalInterpretation />}
+        {currentTab === 6 && <GlobalSettings />}
       </div>
     </>
   )
