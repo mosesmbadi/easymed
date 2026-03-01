@@ -281,6 +281,8 @@ export const APP_API_URL = {
   FETCH_INVENTORY: "/api/inventory/fetch-inventory",
   FETCH_SUPPLIERS: "/api/inventory/fetch-suppliers",
   FETCH_ITEMS: "/api/inventory/fetch-items",
+  EXPORT_ITEMS: "/api/inventory/export-items",
+  IMPORT_ITEMS: "/api/inventory/import-items",
   FETCH_ITEM: "/api/inventory/get-item",
   DELETE_ITEM: "/api/inventory/delete-item",
   FETCH_UNITS: "/api/inventory/units",

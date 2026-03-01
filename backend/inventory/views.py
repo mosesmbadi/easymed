@@ -72,6 +72,87 @@ class ItemViewSet(viewsets.ModelViewSet):
     filter_backends = (DjangoFilterBackend,)
     filterset_class = ItemFilter
 
+    @action(detail=False, methods=['get'], url_path='export_excel')
+    def export_excel(self, request):
+        import openpyxl
+        from django.http import HttpResponse
+
+        workbook = openpyxl.Workbook()
+        worksheet = workbook.active
+        worksheet.title = 'Items'
+
+        columns = ['Item Code', 'Name', 'Description', 'Category', 'Unit', 'Vat Rate', 'Packed', 'Subpacked', 'Slow Moving Period']
+        worksheet.append(columns)
+
+        for item in self.get_queryset():
+            worksheet.append([
+                item.item_code,
+                item.name,
+                item.desc,
+                item.category,
+                item.units_of_measure,
+                str(item.vat_rate),
+                item.packed,
+                item.subpacked,
+                item.slow_moving_period,
+            ])
+            
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename=items.xlsx'
+        workbook.save(response)
+        return response
+
+    @action(detail=False, methods=['post'], url_path='import_excel')
+    def import_excel(self, request):
+        import openpyxl
+        file = request.FILES.get('file')
+        if not file:
+            return Response({"error": "No file uploaded"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            workbook = openpyxl.load_workbook(file)
+            worksheet = workbook.active
+            
+            created_count = 0
+            updated_count = 0
+            
+            for row in worksheet.iter_rows(min_row=2, values_only=True):
+                if not any(row):
+                    continue
+                    
+                item_code, name, desc, category, unit, vat_rate, packed, subpacked, slow_moving_period = row[:9]
+                
+                if not name or not category:
+                    continue 
+                    
+                defaults = {
+                    'item_code': item_code or '',
+                    'desc': desc or '',
+                    'vat_rate': vat_rate or 16.0,
+                    'packed': packed or 1,
+                    'subpacked': subpacked or 1,
+                    'slow_moving_period': slow_moving_period or 90
+                }
+                
+                item, created = Item.objects.update_or_create(
+                    name=name,
+                    category=category,
+                    units_of_measure=unit or '',
+                    defaults=defaults
+                )
+                
+                if created:
+                    created_count += 1
+                else:
+                    updated_count += 1
+                    
+            return Response({
+                "message": f"Successfully imported items. Created: {created_count}, Updated: {updated_count}"
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
 
 class UnitViewSet(viewsets.ModelViewSet):
     queryset = Unit.objects.all()
