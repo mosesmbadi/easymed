@@ -69,6 +69,10 @@ const InventoryDataGrid = ({ department }) => {
       };
   }, [processFilter.search, selectedDepartment, department]); // The effect re-runs only when the local `searchTerm` state changes
 
+  const calculateLotValue = ({ data }) => {
+    return parseInt(data.purchase_price) * parseInt(data.quantity_at_hand)
+  };
+
   const inventorySummaryInfo = InventoryDisplayStats().map((item, index) => <InventoryInfoCardsItem key={`inventory-display-info ${index}`} itemData={item} />)
 
   return (
@@ -129,7 +133,12 @@ const InventoryDataGrid = ({ department }) => {
           showInfo={showInfo}
           showNavigationButtons={showNavButtons}
         />
+        <Column dataField="item_code" caption="Product Code" />
         <Column dataField="item_name" caption="Product Name" />
+        <Column dataField="category_one" caption="Category" />
+        <Column dataField="department_name" caption="Department" />
+        <Column dataField="lot_number" caption="Lot No" />
+        <Column dataField="expiry_date" caption="Expiry Date" />
         <Column dataField="purchase_price" caption="Purchase Price" />
         <Column
           dataField="sale_price"
@@ -137,12 +146,9 @@ const InventoryDataGrid = ({ department }) => {
           allowFiltering={true}
           allowSearch={true}
         />
-        <Column dataField="lot_number" caption="Lot No" />
-        <Column dataField="department_name" caption="Department" />
         <Column dataField="quantity_at_hand" caption="Lot Quantity" />
         <Column dataField="total_quantity" caption="Total Quantity" />
-        <Column dataField="category_one" caption="Category" />
-        <Column dataField="expiry_date" caption="Expiry Date" />
+        <Column dataField="" caption="Total Amount" cellRender={calculateLotValue}/>
       </DataGrid>
     </section>
   );

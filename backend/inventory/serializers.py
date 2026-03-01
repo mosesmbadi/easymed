@@ -838,11 +838,12 @@ class IncomingItemSerializer(serializers.ModelSerializer):
 class InventorySerializer(serializers.ModelSerializer):
     insurance_sale_prices = serializers.SerializerMethodField()
     item_name = serializers.ReadOnlyField(source='item.name')
+    item_code = serializers.ReadOnlyField(source='item.item_code')
     department_name = serializers.ReadOnlyField(source='department.name')
     total_quantity = serializers.SerializerMethodField()
     class Meta:
         model = Inventory
-        fields = ['id', 'item', 'item_name', 'department', 'department_name', 'purchase_price', 'sale_price', 
+        fields = ['id', 'item', 'item_code', 'item_name', 'department', 'department_name', 'purchase_price', 'sale_price', 
                  'quantity_at_hand', 'lot_number', 'expiry_date', 'date_created', 
                  'category_one', 'insurance_sale_prices', 'total_quantity']
 
