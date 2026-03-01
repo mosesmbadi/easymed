@@ -201,54 +201,21 @@
 
     .signature-row {
       display: flex;
-      align-items: baseline;
-      margin-bottom: 15px;
-      position: relative;
-    }
-
-    .signature-row {
-      margin-top: 15px;
-      position: relative;
-      width: 100%;
-      min-height: 25px;
+      align-items: flex-end;
+      margin-bottom: 25px;
     }
 
     .sig-label {
       font-size: 10px;
       font-weight: bold;
       color: #555;
-      width: 45px;
-      display: inline-block;
-      vertical-align: bottom;
-      padding-bottom: 2px;
+      width: 40px;
     }
 
-    .sig-value {
-      display: inline-block;
-      vertical-align: bottom;
+    .sig-line {
+      flex: 1;
       border-bottom: 1px solid #aaa;
-      width: calc(100% - 50px);
-      min-height: 18px;
-    }
-
-    .sig-value-text {
-      font-size: 11px;
-      padding-left: 5px;
-      padding-bottom: 2px;
-    }
-
-    .signature-image {
-      position: absolute;
-      bottom: 2px;
-      left: 50px;
-      height: 60px;
-      z-index: 10;
-    }
-
-    .signature-image img {
-      max-height: 100%;
-      max-width: 150px;
-      display: block;
+      height: 1px;
     }
 
     @page {
@@ -261,24 +228,25 @@
         width: 100%;
         text-align: center;
       }
-    </style>
-  </head>
-  <body>
-    <div class="company-details">
-      <div class="logo-column">
-        {% if company_logo_url %}
-        <img src="{{ company_logo_url }}" class="logo" alt="Company Logo" />
-        {% endif %}
-      </div>
-      <div class="details-column">
-        <p><strong>{{ company.name }}</strong></p>
-        <p>Address: {{ company.address1 }}</p>
-        <p>
-          {{ company.phone1 }} {% if company.email1 %} | {{ company.email1 }} {%
-          endif %}
-        </p>
-      </div>
+    }
+  </style>
+</head>
+
+<body>
+  <div class="company-details">
+    <div class="logo-column">
+      {% if company_logo_url %}
+      <img src="{{ company_logo_url }}" class="logo" alt="Company Logo" />
+      {% endif %}
     </div>
+    <div class="details-column">
+      <p><strong>{{ company.name }}</strong></p>
+      <p>Address: {{ company.address1 }}</p>
+      <p>
+        {{ company.phone1 }} {% if company.email1 %} | {{ company.email1 }} {% endif %}
+      </p>
+    </div>
+  </div>
 
   <div class="header-container">
     <div class="company-logo">
@@ -318,148 +286,177 @@
       </div>
     </div>
 
-      <div class="column">
-        <p><strong>Request Details</strong></p>
-        <p>
-          <strong>Requested Date:</strong>
-          {% if requested_date %} {{ requested_date|date:"d M Y" }} {% else %}
-          N/A {% endif %}
-        </p>
-        <p>
-          <strong>Requested Time:</strong>
-          {% if requested_time %} {{ requested_time|time:"H:i" }} {% else %} N/A
-          {% endif %}
-        </p>
-        <p>
-          <strong>Results Entered:</strong>
-          {% if result_entered_datetime %} {{ result_entered_datetime|date:"d M
-          Y H:i" }} {% else %} Pending {% endif %}
-        </p>
-      </div>
+    <div class="column">
+      <p><strong>Request Details</strong></p>
+      <p>
+        <strong>Requested Date:</strong>
+        {% if requested_date %} {{ requested_date|date:"d M Y" }} {% else %}
+        N/A {% endif %}
+      </p>
+      <p>
+        <strong>Requested Time:</strong>
+        {% if requested_time %} {{ requested_time|time:"H:i" }} {% else %} N/A
+        {% endif %}
+      </p>
+      <p>
+        <strong>Results Entered:</strong>
+        {% if result_entered_datetime %} {{ result_entered_datetime|date:"d M Y H:i" }} {% else %} Pending {% endif %}
+      </p>
     </div>
   </div>
+  </div>
 
-    {% if quantitative_panels %}
-    <table>
-      <thead>
-        <tr>
-          <th>Test Panel</th>
-          <th>Result</th>
-          <th>Flag</th>
-          <th>Ref Value</th>
-          <th>Unit</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for panel in quantitative_panels %}
-        <tr>
-          <td>{{ panel.test_panel_name }}</td>
-          <td>{{ panel.result }}</td>
-          <td>
-            {% if panel.flag == "Low" %}
-            <span class="flag-low">Low</span>
-            {% elif panel.flag == "High" %}
-            <span class="flag-high">High</span>
-            {% else %}
-            <span class="flag-normal">Normal</span>
-            {% endif %}
-          </td>
-          <td>{{ panel.ref_value_low }} - {{ panel.ref_value_high }}</td>
-          <td>{{ panel.unit }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    {% endif %} {% if qualitative_panels %}
-    <table>
-      <thead>
-        <tr>
-          <th>Test Panel</th>
-          <th>Result</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for panel in qualitative_panels %}
-        <tr>
-          <td>{{ panel.test_panel_name }}</td>
-          <td>{{ panel.result }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    {% endif %} {% if first_labtestrequest and first_labtestrequest.note %}
-    <p><strong>Notes:</strong></p>
-    <p>{{ first_labtestrequest.note }}</p>
-    {% endif %} {% if quantitative_panels or qualitative_panels %}
-    <div class="interpretation-section">
-      <div class="interpretation-title">Clinical Interpretations</div>
-
-      {% for panel in quantitative_panels %} {% if panel.interpretation %}
-      <div
-        class="interpretation-item {% if panel.requires_attention %}critical{% endif %}"
-      >
-        <div class="interpretation-test-name">
-          {{ panel.test_panel_name }} ({{ panel.result }} {{ panel.unit }}) {%
-          if panel.requires_attention %}
-          <span class="attention-flag">⚠ URGENT</span>
+  {% if quantitative_panels %}
+  <table class="results-table">
+    <thead>
+      <tr>
+        <th>Test Panel</th>
+        <th>Result</th>
+        <th>Flag</th>
+        <th>Ref Value</th>
+        <th>Unit</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for panel in quantitative_panels %}
+      <tr>
+        <td>{{ panel.test_panel_name }}</td>
+        <td>{{ panel.result }}</td>
+        <td>
+          {% if panel.flag == "Low" %}
+          <span class="flag-low">Low</span>
+          {% elif panel.flag == "High" %}
+          <span class="flag-high">High</span>
+          {% else %}
+          <span class="flag-normal">Normal</span>
           {% endif %}
-        </div>
-        <div class="interpretation-text">
-          <strong>Interpretation:</strong> {{ panel.interpretation }}
-        </div>
-        {% if panel.clinical_action %}
-        <div class="clinical-action">
-          <strong>Recommended Action:</strong> {{ panel.clinical_action }}
-        </div>
+        </td>
+        <td>{{ panel.ref_value_low }} - {{ panel.ref_value_high }}</td>
+        <td>{{ panel.unit }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %} {% if qualitative_panels %}
+  <table class="results-table">
+    <thead>
+      <tr>
+        <th>Test Panel</th>
+        <th>Result</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for panel in qualitative_panels %}
+      <tr>
+        <td>{{ panel.test_panel_name }}</td>
+        <td>{{ panel.result }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %} {% if first_labtestrequest and first_labtestrequest.note %}
+  <p><strong>Notes:</strong></p>
+  <p>{{ first_labtestrequest.note }}</p>
+  {% endif %} {% if quantitative_panels or qualitative_panels %}
+  {% if profile_interpretations %}
+  <div class="interpretation-section">
+    <div class="interpretation-title">Clinical Interpretations</div>
+
+    {% for profile in profile_interpretations %}
+    <div class="interpretation-item {% if profile.requires_attention %}critical{% endif %}">
+      <div class="interpretation-test-name">
+        {{ profile.profile_name }}
+        {% if profile.requires_attention %}
+        <span class="attention-flag">⚠ URGENT</span>
         {% endif %}
       </div>
-      {% endif %} {% endfor %} {% for panel in qualitative_panels %} {% if
-      panel.interpretation %}
-      <div
-        class="interpretation-item {% if panel.requires_attention %}critical{% endif %}"
-      >
-        <div class="interpretation-test-name">
-          {{ panel.test_panel_name }} ({{ panel.result }}) {% if
-          panel.requires_attention %}
-          <span class="attention-flag">⚠ URGENT</span>
-          {% endif %}
-        </div>
-        <div class="interpretation-text">
-          <strong>Interpretation:</strong> {{ panel.interpretation }}
-        </div>
-        {% if panel.clinical_action %}
-        <div class="clinical-action">
-          <strong>Recommended Action:</strong> {{ panel.clinical_action }}
-        </div>
-        {% endif %}
+      <div class="interpretation-text">
+        <strong>Interpretation:</strong> {{ profile.interpretation }}
       </div>
-      {% endif %} {% endfor %}
+      {% if profile.clinical_action %}
+      <div class="clinical-action">
+        <strong>Recommended Action:</strong> {{ profile.clinical_action }}
+      </div>
+      {% endif %}
     </div>
-    {% endif %}
     {% endfor %}
   </div>
   {% endif %}
+  {% endif %}
 
-    <div class="report-footer">
-      <p><strong>Date Posted:</strong> {{ approved_on }}</p>
-      <p>
-        <strong>Requested By:</strong>
-        {% if attendance_process.doctor %} {{
-        attendance_process.doctor.first_name }} {% else %} N/A {% endif %}
-      </p>
-      <p>
-        <strong>Done By:</strong>
-        {% if attendance_process.lab_tech %} {{
-        attendance_process.lab_tech.first_name }} {% else %} _______________ {%
-        endif %}
-      </p>
-      <p><strong>Approved By:</strong> ____________________________</p>
-      <p>
-        <strong>Equipment:</strong>
-        {% if first_labtestrequest %} {{ first_labtestrequest.equipment }} {%
-        else %} _______________ {% endif %}
-      </p>
+  <div class="report-footer">
+    <p><strong>Date Posted:</strong> {{ approved_on }}</p>
+    <p>
+      <strong>Equipment:</strong>
+      {% if first_labtestrequest %}
+      {{ first_labtestrequest.equipment }}
+      {% else %}
+      _______________
+      {% endif %}
+    </p>
+  </div>
+
+  <div class="signatures">
+    <div class="signature-box">
+      <div class="signature-header">REQUESTED BY</div>
+      <div class="signature-row">
+        <span class="sig-label">Name:</span>
+        <div class="sig-line" style="font-size: 11px; padding-left: 5px; padding-bottom: 2px;">
+          {% if attendance_process.doctor %}
+          {{ attendance_process.doctor.first_name }}
+          {% else %}
+          N/A
+          {% endif %}
+        </div>
+      </div>
+      <div class="signature-row">
+        <span class="sig-label">Date:</span>
+        <div class="sig-line"></div>
+      </div>
+      <div class="signature-row">
+        <span class="sig-label">Sign:</span>
+        <div class="sig-line"></div>
+      </div>
     </div>
+
+    <div class="signature-box">
+      <div class="signature-header">DONE BY</div>
+      <div class="signature-row">
+        <span class="sig-label">Name:</span>
+        <div class="sig-line" style="font-size: 11px; padding-left: 5px; padding-bottom: 2px;">
+          {% if attendance_process.lab_tech %}
+          {{ attendance_process.lab_tech.first_name }}
+          {% else %}
+          _______________
+          {% endif %}
+        </div>
+      </div>
+      <div class="signature-row">
+        <span class="sig-label">Date:</span>
+        <div class="sig-line"></div>
+      </div>
+      <div class="signature-row">
+        <span class="sig-label">Sign:</span>
+        <div class="sig-line"></div>
+      </div>
+    </div>
+
+    <div class="signature-box">
+      <div class="signature-header">APPROVED BY</div>
+      <div class="signature-row">
+        <span class="sig-label">Name:</span>
+        <div class="sig-line"></div>
+      </div>
+      <div class="signature-row">
+        <span class="sig-label">Date:</span>
+        <div class="sig-line"></div>
+      </div>
+      <div class="signature-row">
+        <span class="sig-label">Sign:</span>
+        <div class="sig-line"></div>
+      </div>
+    </div>
+  </div>
   </div>
 
 </body>

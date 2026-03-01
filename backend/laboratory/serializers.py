@@ -226,24 +226,14 @@ class SpecimenSerializer(serializers.ModelSerializer):
 
 
 class LabTestInterpretationSerializer(serializers.ModelSerializer):
-    lab_test_panel_name = serializers.ReadOnlyField(source='lab_test_panel.name')
-    sex_display = serializers.CharField(source='get_sex_display', read_only=True)
-    range_type_display = serializers.CharField(source='get_range_type_display', read_only=True)
+    test_profile_name = serializers.ReadOnlyField(source='test_profile.name')
     
     class Meta:
         model = LabTestInterpretation
         fields = [
             'id',
-            'lab_test_panel',
-            'lab_test_panel_name',
-            'range_type',
-            'range_type_display',
-            'sex',
-            'sex_display',
-            'age_min',
-            'age_max',
-            'value_min',
-            'value_max',
+            'test_profile',
+            'test_profile_name',
             'interpretation',
             'clinical_action',
             'requires_immediate_attention',

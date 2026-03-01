@@ -313,6 +313,7 @@ def download_labtestresult_pdf(request, processtestrequest_id):
         'labtestrequests': labtestrequests,
         'qualitative_panels': [],
         'quantitative_panels': [],
+        'profile_interpretations': [],
         'patient': patient,
         'company': company,
         'company_logo_url': company_logo_url,
@@ -326,8 +327,22 @@ def download_labtestresult_pdf(request, processtestrequest_id):
         'result_entered_datetime': first_panel.approved_on if first_panel else None,
     }
 
+    profile_interpretations_dict = {}
+
     # Only process panels that have results (already filtered in the query)
     for panel in panels:
+        interpretation, action, attention = panel.generate_interpretation()
+        
+        profile = panel.test_panel.test_profile
+        if profile and profile.id not in profile_interpretations_dict:
+            if interpretation or panel.auto_interpretation:
+                profile_interpretations_dict[profile.id] = {
+                    'profile_name': profile.name,
+                    'interpretation': interpretation or panel.auto_interpretation,
+                    'clinical_action': action or panel.clinical_action,
+                    'requires_attention': attention if interpretation else panel.requires_attention,
+                }
+                
         panel_data = {
             'test_panel_name': panel.test_panel.name,
             'result': panel.result,
@@ -335,9 +350,6 @@ def download_labtestresult_pdf(request, processtestrequest_id):
             'ref_value_low': 'N/A',
             'ref_value_high': 'N/A',
             'unit': panel.test_panel.unit,
-            'interpretation': panel.auto_interpretation,
-            'clinical_action': panel.clinical_action,
-            'requires_attention': panel.requires_attention,
         }
 
         if panel.test_panel.is_qualitative:
@@ -376,6 +388,8 @@ def download_labtestresult_pdf(request, processtestrequest_id):
                     pass
 
             context['quantitative_panels'].append(panel_data)
+
+    context['profile_interpretations'] = list(profile_interpretations_dict.values())
 
     html_template = get_template('labtestresult.html').render(context)
 

@@ -19,7 +19,14 @@ from .models import (
 )
 
 admin.site.register(LabReagent)
-admin.site.register(LabTestProfile)
+@admin.register(LabTestProfile)
+class LabTestProfileAdmin(admin.ModelAdmin):
+    class LabTestInterpretationInline(admin.TabularInline):
+        model = LabTestInterpretation
+        extra = 1
+
+    inlines = [LabTestInterpretationInline]
+
 @admin.register(LabTestPanel)
 class LabTestPanelAdmin(admin.ModelAdmin):
     list_display = ['name', 'test_profile', 'specimen', 'unit', 'is_qualitative', 'is_quantitative']
@@ -30,15 +37,11 @@ class LabTestPanelAdmin(admin.ModelAdmin):
         model = ReferenceValue
         extra = 1
 
-    class LabTestInterpretationInline(admin.TabularInline):
-        model = LabTestInterpretation
-        extra = 1
-
     class TestPanelReagentInline(admin.TabularInline):
         model = TestPanelReagent
         extra = 1
 
-    inlines = [ReferenceValueInline, LabTestInterpretationInline, TestPanelReagentInline]
+    inlines = [ReferenceValueInline, TestPanelReagentInline]
 admin.site.register(ProcessTestRequest)
 admin.site.register(LabTestRequest)
 admin.site.register(LabTestRequestPanel)
@@ -91,19 +94,12 @@ class ReagentConsumptionLogAdmin(admin.ModelAdmin):
 
 @admin.register(LabTestInterpretation)
 class LabTestInterpretationAdmin(admin.ModelAdmin):
-    list_display = ['lab_test_panel', 'range_type', 'sex', 'value_min', 'value_max', 'requires_immediate_attention']
-    list_filter = ['lab_test_panel', 'range_type', 'sex', 'requires_immediate_attention']
-    search_fields = ['lab_test_panel__name', 'interpretation', 'clinical_action']
+    list_display = ['test_profile', 'requires_immediate_attention']
+    list_filter = ['test_profile', 'requires_immediate_attention']
+    search_fields = ['test_profile__name', 'interpretation', 'clinical_action']
     fieldsets = (
         ('Test Information', {
-            'fields': ('lab_test_panel', 'range_type')
-        }),
-        ('Patient Criteria', {
-            'fields': ('sex', 'age_min', 'age_max')
-        }),
-        ('Value Range', {
-            'fields': ('value_min', 'value_max'),
-            'description': 'Leave blank for unbounded ranges (e.g., blank max for "greater than X")'
+            'fields': ('test_profile',)
         }),
         ('Interpretation', {
             'fields': ('interpretation', 'clinical_action', 'requires_immediate_attention')

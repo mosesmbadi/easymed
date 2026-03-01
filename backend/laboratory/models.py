@@ -214,53 +214,20 @@ class ReferenceValue(models.Model):
 
 class LabTestInterpretation(models.Model):
     '''
-    Store interpretation ranges for lab test panels.
-    This allows automatic interpretation of results based on numeric values.
-    Example: Albumin < 2.0 = "Low albumin (hypoalbuminemia) - may indicate liver disease, malnutrition, or kidney disease"
+    Store static interpretation for a lab test profile.
+    This allows an interpretation to be displayed on all test panels within that profile.
     '''
-    RANGE_TYPE_CHOICES = (
-        ('critical_low', 'Critical Low'),
-        ('low', 'Low'),
-        ('normal', 'Normal'),
-        ('high', 'High'),
-        ('critical_high', 'Critical High'),
-    )
-
-    SEX_CHOICES = (
-        ('M', 'Male'),
-        ('F', 'Female'),
-        ('B', 'Both'),  # Applies to all genders
-    )
-
-    lab_test_panel = models.ForeignKey(
-        LabTestPanel, 
+    test_profile = models.ForeignKey(
+        LabTestProfile, 
         on_delete=models.CASCADE, 
-        related_name="interpretations"
-    )
-    range_type = models.CharField(max_length=20, choices=RANGE_TYPE_CHOICES)
-    sex = models.CharField(max_length=1, choices=SEX_CHOICES, default='B')
-    age_min = models.IntegerField(null=True, blank=True, help_text="Minimum age in years (leave blank for all ages)")
-    age_max = models.IntegerField(null=True, blank=True, help_text="Maximum age in years (leave blank for all ages)")
-    
-    # Define the range boundaries
-    value_min = models.DecimalField(
-        max_digits=10, 
-        decimal_places=2, 
-        null=True, 
-        blank=True,
-        help_text="Minimum value for this range (leave blank for unbounded)"
-    )
-    value_max = models.DecimalField(
-        max_digits=10, 
-        decimal_places=2, 
-        null=True, 
-        blank=True,
-        help_text="Maximum value for this range (leave blank for unbounded)"
+        related_name="interpretations",
+        null=True,
+        blank=True
     )
     
     # The interpretation text
     interpretation = models.TextField(
-        help_text="Clinical interpretation for values in this range"
+        help_text="Clinical interpretation for this test profile"
     )
     
     # Optional recommendations or actions
@@ -280,52 +247,12 @@ class LabTestInterpretation(models.Model):
     updated_on = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['lab_test_panel', 'sex', 'age_min', 'value_min']
+        ordering = ['test_profile']
         verbose_name = "Lab Test Interpretation"
         verbose_name_plural = "Lab Test Interpretations"
 
     def __str__(self):
-        range_str = f"{self.value_min or '-∞'} to {self.value_max or '+∞'}"
-        sex_display = self.get_sex_display()
-        age_str = ""
-        if self.age_min or self.age_max:
-            age_str = f" (Age: {self.age_min or '0'}-{self.age_max or '∞'})"
-        return f"{self.lab_test_panel.name} - {sex_display}{age_str}: {self.range_type} [{range_str}]"
-
-    def matches_criteria(self, value, patient_sex=None, patient_age=None):
-        """
-        Check if a given value and patient demographics match this interpretation's criteria.
-        
-        Args:
-            value: The test result value (numeric)
-            patient_sex: 'M', 'F', or None
-            patient_age: Patient age in years or None
-            
-        Returns:
-            Boolean indicating if this interpretation applies
-        """
-        # Check sex criteria
-        if self.sex != 'B' and patient_sex and self.sex != patient_sex:
-            return False
-        
-        # Check age criteria
-        if self.age_min is not None and patient_age is not None and patient_age < self.age_min:
-            return False
-        if self.age_max is not None and patient_age is not None and patient_age > self.age_max:
-            return False
-        
-        # Check value range
-        try:
-            value_decimal = float(value)
-        except (ValueError, TypeError):
-            return False
-        
-        if self.value_min is not None and value_decimal < float(self.value_min):
-            return False
-        if self.value_max is not None and value_decimal > float(self.value_max):
-            return False
-        
-        return True
+        return f"{self.test_profile.name} Interpretation"
 
 
 class ProcessTestRequest(models.Model):
@@ -451,33 +378,23 @@ class LabTestRequestPanel(models.Model):
     
     def generate_interpretation(self):
         """
-        Auto-generate interpretation based on the result value and patient demographics.
+        Auto-generate interpretation based on the test profile's static interpretation.
         Returns a tuple of (interpretation_text, clinical_action, requires_attention)
         """
-        if not self.result or not self.test_panel:
+        if not self.test_panel or not self.test_panel.test_profile:
             return None, None, False
         
         try:
-            # Get patient demographics
-            patient = self.patient_sample.process.attendanceprocess.patient
-            patient_sex = patient.gender  # 'M', 'F', or other
-            patient_age = patient.age  # Age in years
-            
-            # Query matching interpretations
-            interpretations = self.test_panel.interpretations.all()
-            
-            # Find the matching interpretation
-            for interp in interpretations:
-                if interp.matches_criteria(self.result, patient_sex, patient_age):
-                    return (
-                        interp.interpretation,
-                        interp.clinical_action,
-                        interp.requires_immediate_attention
-                    )
-            
+            # Get the interpretation for this profile
+            interp = self.test_panel.test_profile.interpretations.first()
+            if interp:
+                return (
+                    interp.interpretation,
+                    interp.clinical_action,
+                    interp.requires_immediate_attention
+                )
             return None, None, False
         except Exception as e:
-            # Log the error but don't break the save
             print(f"Error generating interpretation: {e}")
             return None, None, False
         
