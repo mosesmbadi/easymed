@@ -11,80 +11,34 @@ import { useAuth } from "@/assets/hooks/use-auth";
 import { updateLabTestInterpretation } from "@/redux/service/laboratory";
 import { updateLabTestInterpretationToStore } from "@/redux/features/laboratory";
 
-const sexOptions = [
-    { value: "M", label: "Male" },
-    { value: "F", label: "Female" },
-    { value: "B", label: "Both" },
-];
 
-const rangeTypeOptions = [
-    { value: "critical_low", label: "Critical Low" },
-    { value: "low", label: "Low" },
-    { value: "normal", label: "Normal" },
-    { value: "high", label: "High" },
-    { value: "critical_high", label: "Critical High" },
-];
 
 const EditProfessionalInterpretationModal = ({ open, setOpen, selectedRowData }) => {
     const [loading, setLoading] = useState(false);
     const dispatch = useDispatch();
     const auth = useAuth();
-    const { labTestPanels } = useSelector((store) => store.laboratory);
+    const { labTestProfiles } = useSelector((store) => store.laboratory);
 
     const handleClose = () => {
         setOpen(false);
     };
 
-    const getPanel = () => {
-        const panel = labTestPanels.find(
-            (item) => parseInt(item.id) === parseInt(selectedRowData?.lab_test_panel)
+    const getProfile = () => {
+        const profile = labTestProfiles.find(
+            (item) => parseInt(item.id) === parseInt(selectedRowData?.test_profile)
         );
-        return panel ? { value: panel.id, label: panel.name } : "";
-    };
-
-    const getSex = () => {
-        const option = sexOptions.find((item) => item.value === selectedRowData?.sex);
-        return option || sexOptions[2]; // fallback to Both
-    };
-
-    const getRangeType = () => {
-        const option = rangeTypeOptions.find((item) => item.value === selectedRowData?.range_type);
-        return option || "";
+        return profile ? { value: profile.id, label: profile.name } : "";
     };
 
     const initialValues = {
-        lab_test_panel: getPanel(),
-        range_type: getRangeType(),
-        sex: getSex(),
-        age_min: selectedRowData?.age_min ?? "",
-        age_max: selectedRowData?.age_max ?? "",
-        value_min: selectedRowData?.value_min ?? "",
-        value_max: selectedRowData?.value_max ?? "",
+        test_profile: getProfile(),
         interpretation: selectedRowData?.interpretation ?? "",
         clinical_action: selectedRowData?.clinical_action ?? "",
         requires_immediate_attention: selectedRowData?.requires_immediate_attention ?? false,
     };
 
     const validationSchema = Yup.object().shape({
-        lab_test_panel: Yup.object().required("Field is required!"),
-        range_type: Yup.object().required("Field is required!"),
-        sex: Yup.object().required("Field is required!"),
-        age_min: Yup.number()
-            .nullable()
-            .transform((value, originalValue) => (originalValue === "" ? null : value))
-            .typeError("Age min must be a number"),
-        age_max: Yup.number()
-            .nullable()
-            .transform((value, originalValue) => (originalValue === "" ? null : value))
-            .typeError("Age max must be a number"),
-        value_min: Yup.number()
-            .nullable()
-            .transform((value, originalValue) => (originalValue === "" ? null : value))
-            .typeError("Must be a number"),
-        value_max: Yup.number()
-            .nullable()
-            .transform((value, originalValue) => (originalValue === "" ? null : value))
-            .typeError("Must be a number"),
+        test_profile: Yup.object().required("Field is required!"),
         interpretation: Yup.string().required("Interpretation text is required!"),
         clinical_action: Yup.string(),
         requires_immediate_attention: Yup.boolean()
@@ -92,13 +46,7 @@ const EditProfessionalInterpretationModal = ({ open, setOpen, selectedRowData })
 
     const updateAnInterpretation = async (formValue) => {
         const payload = {
-            lab_test_panel: formValue.lab_test_panel.value,
-            range_type: formValue.range_type.value,
-            sex: formValue.sex.value,
-            age_min: formValue.age_min === "" ? null : Number(formValue.age_min),
-            age_max: formValue.age_max === "" ? null : Number(formValue.age_max),
-            value_min: formValue.value_min === "" ? null : Number(formValue.value_min),
-            value_max: formValue.value_max === "" ? null : Number(formValue.value_max),
+            test_profile: formValue.test_profile.value,
             interpretation: formValue.interpretation,
             clinical_action: formValue.clinical_action,
             requires_immediate_attention: formValue.requires_immediate_attention,
@@ -140,62 +88,16 @@ const EditProfessionalInterpretationModal = ({ open, setOpen, selectedRowData })
                         {({ values, setFieldValue }) => (
                             <Form>
                                 <Grid container spacing={2}>
-                                    <Grid item md={6} xs={12}>
+                                    <Grid item md={12} xs={12}>
                                         <SeachableSelect
-                                            label="Test Panel"
-                                            name="lab_test_panel"
-                                            options={labTestPanels.map((panel) => ({
-                                                value: panel.id,
-                                                label: `${panel?.name}`,
+                                            label="Test Profile"
+                                            name="test_profile"
+                                            options={labTestProfiles.map((profile) => ({
+                                                value: profile.id,
+                                                label: `${profile?.name}`,
                                             }))}
                                         />
-                                        <ErrorMessage name="lab_test_panel" component="div" className="text-warning text-xs" />
-                                    </Grid>
-                                    <Grid item md={3} xs={12}>
-                                        <SeachableSelect label="Range Type" name="range_type" options={rangeTypeOptions} />
-                                        <ErrorMessage name="range_type" component="div" className="text-warning text-xs" />
-                                    </Grid>
-                                    <Grid item md={3} xs={12}>
-                                        <SeachableSelect label="Sex" name="sex" options={sexOptions} />
-                                        <ErrorMessage name="sex" component="div" className="text-warning text-xs" />
-                                    </Grid>
-                                    <Grid item md={3} xs={6}>
-                                        <Field
-                                            className="block border border-gray py-3 px-4 focus:outline-none w-full"
-                                            type="number"
-                                            placeholder="Age Min"
-                                            name="age_min"
-                                        />
-                                        <ErrorMessage name="age_min" component="div" className="text-warning text-xs" />
-                                    </Grid>
-                                    <Grid item md={3} xs={6}>
-                                        <Field
-                                            className="block border border-gray py-3 px-4 focus:outline-none w-full"
-                                            type="number"
-                                            placeholder="Age Max"
-                                            name="age_max"
-                                        />
-                                        <ErrorMessage name="age_max" component="div" className="text-warning text-xs" />
-                                    </Grid>
-                                    <Grid item md={3} xs={6}>
-                                        <Field
-                                            className="block border border-gray py-3 px-4 focus:outline-none w-full"
-                                            type="number"
-                                            step="0.01"
-                                            placeholder="Value Min"
-                                            name="value_min"
-                                        />
-                                        <ErrorMessage name="value_min" component="div" className="text-warning text-xs" />
-                                    </Grid>
-                                    <Grid item md={3} xs={6}>
-                                        <Field
-                                            className="block border border-gray py-3 px-4 focus:outline-none w-full"
-                                            type="number"
-                                            step="0.01"
-                                            placeholder="Value Max"
-                                            name="value_max"
-                                        />
-                                        <ErrorMessage name="value_max" component="div" className="text-warning text-xs" />
+                                        <ErrorMessage name="test_profile" component="div" className="text-warning text-xs" />
                                     </Grid>
                                     <Grid item md={6} xs={12}>
                                         <Field
