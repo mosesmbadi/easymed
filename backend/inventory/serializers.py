@@ -479,7 +479,7 @@ class InventorySerializer(serializers.ModelSerializer):
         model = Inventory
         fields = ['id', 'item', 'item_name', 'department', 'department_name', 'purchase_price', 'sale_price', 
                  'quantity_at_hand', 'lot_number', 'expiry_date', 'date_created', 
-                 'category_one', 'insurance_sale_prices', 'total_quantity']
+                 'category_one', 'insurance_sale_prices', 'total_quantity', 're_order_level']
 
     def get_insurance_sale_prices(self, obj):
         sale_prices = InsuranceItemSalePrice.objects.filter(item=obj.item)
