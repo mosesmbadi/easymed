@@ -19,7 +19,7 @@ const SampleArchiveNav = () => {
                                 } `}
                             onClick={() => setCurrentTab(0)}
                         >
-                            Positions
+                            Archive
                         </p>
                     </div>
 
@@ -31,7 +31,7 @@ const SampleArchiveNav = () => {
                                 } `}
                             onClick={() => setCurrentTab(1)}
                         >
-                            Sections
+                            Component
                         </p>
                     </div>
 
@@ -43,7 +43,7 @@ const SampleArchiveNav = () => {
                                 } `}
                             onClick={() => setCurrentTab(2)}
                         >
-                            Component
+                            Sections
                         </p>
                     </div>
 
@@ -55,17 +55,17 @@ const SampleArchiveNav = () => {
                                 }`}
                             onClick={() => setCurrentTab(3)}
                         >
-                            Archive
+                            Positions
                         </p>
                     </div>
                 </div>
             </section>
 
             <div className="mt-2">
-                {currentTab === 0 && <Positions />}
-                {currentTab === 1 && <Sections />}
-                {currentTab === 2 && <Component />}
-                {currentTab === 3 && <Archive />}
+                {currentTab === 0 && <Archive />}
+                {currentTab === 1 && <Component />}
+                {currentTab === 2 && <Sections />}
+                {currentTab === 3 && <Positions />}
             </div>
         </>
     );
