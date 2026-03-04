@@ -17,7 +17,8 @@ import {
   fetchArchives,
   fetchArchiveComponents,
   fetchArchiveSections,
-  fetchArchivePositions
+  fetchArchivePositions,
+  fetchPatientSampleArchives
 } from "@/redux/service/laboratory";
 
 
@@ -43,7 +44,8 @@ const initialState = {
   archives: [],
   archiveComponents: [],
   archiveSections: [],
-  archivePositions: []
+  archivePositions: [],
+  patientSampleArchives: []
 };
 
 const LaboratorySlice = createSlice({
@@ -55,6 +57,9 @@ const LaboratorySlice = createSlice({
     },
     setQualitativeLabResults: (state, action) => {
       state.qualitativeLabResults = action.payload;
+    },
+    setPatientSampleArchives: (state, action) => {
+      state.patientSampleArchives = action.payload;
     },
     setLabRequests: (state, action) => {
       state.labRequests = action.payload;
@@ -266,7 +271,10 @@ export const { setLabResults,
   updateProfileToStoreOnPatch, addProfileToStoreOnCreate, updateLabResultItems, updateAddedLabRequestToStore,
   setReferenceValues, addReferenceValueToStoreOnCreate, updateReferenceValueToStoreOnPatch,
   setLabTestInterpretations, addLabTestInterpretationToStoreOnCreate, updateLabTestInterpretationToStoreOnPatch, deleteLabTestInterpretationFromStore,
-  setArchives, setArchiveComponents, setArchiveSections, setArchivePositions
+  setArchives, setArchiveComponents,
+  setArchiveSections,
+  setArchivePositions,
+  setPatientSampleArchives
 } = LaboratorySlice.actions;
 
 
@@ -556,6 +564,15 @@ export const getAllArchivePositions = (auth) => async (dispatch) => {
     dispatch(setArchivePositions(response));
   } catch (error) {
     console.log("ARCHIVE_POSITIONS_ERROR ", error);
+  }
+};
+
+export const getAllPatientSampleArchives = (auth) => async (dispatch) => {
+  try {
+    const response = await fetchPatientSampleArchives(auth);
+    dispatch(setPatientSampleArchives(response));
+  } catch (error) {
+    console.log("PATIENT_SAMPLE_ARCHIVES_ERROR ", error);
   }
 };
 

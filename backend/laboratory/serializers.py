@@ -363,3 +363,30 @@ class PatientSampleArchiveSerializer(serializers.ModelSerializer):
         model = PatientSampleArchive
         fields = '__all__'
 
+    def validate(self, attrs):
+        position = attrs.get('position')
+        patient_sample = attrs.get('patient_sample')
+        instance = getattr(self, 'instance', None)
+
+        if position:
+            # Check if position is already occupied by another archive
+            existing_archive_pos = PatientSampleArchive.objects.filter(position=position)
+            if instance:
+                existing_archive_pos = existing_archive_pos.exclude(pk=instance.pk)
+            if existing_archive_pos.exists():
+                raise serializers.ValidationError({
+                    "position": "This position is already occupied by another patient sample."
+                })
+
+        if patient_sample:
+            # Check if this sample is already archived
+            existing_archive_sample = PatientSampleArchive.objects.filter(patient_sample=patient_sample)
+            if instance:
+                existing_archive_sample = existing_archive_sample.exclude(pk=instance.pk)
+            if existing_archive_sample.exists():
+                raise serializers.ValidationError({
+                    "patient_sample": "This patient sample has already been archived."
+                })
+
+        return attrs
+

@@ -94,6 +94,7 @@ export const API_URL = {
   ARCHIVE_COMPONENT: "/lab/archive-component/",
   ARCHIVE_SECTION: "/lab/archive-section/",
   ARCHIVE_POSITION: "/lab/archive-position/",
+  PATIENT_SAMPLE_ARCHIVE: "/lab/patient-sample-archive/",
 
   /***************** INVENTORY APIS **********************/
   ADD_INVENTORY: "/inventory/inventories/",
@@ -283,6 +284,7 @@ export const APP_API_URL = {
   ARCHIVE_COMPONENT: "/api/laboratory/archive-component",
   ARCHIVE_SECTION: "/api/laboratory/archive-section",
   ARCHIVE_POSITION: "/api/laboratory/archive-position",
+  PATIENT_SAMPLE_ARCHIVE: "/api/laboratory/patient-sample-archive",
 
   /***************** INVENTORY APIS **********************/
   ADD_INVENTORY: "/api/inventory/add-inventory",
