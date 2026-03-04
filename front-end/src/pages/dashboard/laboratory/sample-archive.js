@@ -4,12 +4,13 @@ import DashboardLayout from "@/components/layout/dashboard-layout";
 import AuthGuard from "@/assets/hoc/auth-guard";
 import LabNav from "@/components/dashboard/laboratory/LabNav";
 import ProtectedRoute from "@/assets/hoc/protected-route";
+import SampleArchiveNav from "@/components/dashboard/laboratory/sample-archive/SampleArchiveNav";
 
 const SampleArchive = () => {
     return (
         <Container maxWidth="xl">
             <LabNav />
-            <h1 className="uppercase text-2xl my-4">Sample Archive</h1>
+            <SampleArchiveNav />
         </Container>
     );
 };
