@@ -136,6 +136,7 @@ class LabTestProfile(models.Model):
 
 class Specimen(models.Model):
     name = models.CharField(max_length=255)
+    max_archive_duration = models.DurationField(null=True, blank=True, help_text="Maximum duration a specimen can be archived")
 
     def __str__(self):
         return self.name
@@ -523,3 +524,73 @@ class LabSettings(models.Model):
     def get_settings(cls):
         settings, created = cls.objects.get_or_create(pk=1)
         return settings
+
+
+class Archive(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+    description = models.TextField(null=True, blank=True)
+    created_on = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+class ArchiveComponent(models.Model):
+    archive = models.ForeignKey(Archive, on_delete=models.CASCADE, related_name='components')
+    name = models.CharField(max_length=255)
+    description = models.TextField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.archive.name} - {self.name}"
+
+class ArchiveSection(models.Model):
+    component = models.ForeignKey(ArchiveComponent, on_delete=models.CASCADE, related_name='sections')
+    name = models.CharField(max_length=255)
+    description = models.TextField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.component.name} - {self.name}"
+
+class ArchivePosition(models.Model):
+    section = models.ForeignKey(ArchiveSection, on_delete=models.CASCADE, related_name='positions')
+    name = models.CharField(max_length=255)
+    description = models.TextField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.section.name} - {self.name}"
+
+class PatientSampleArchive(models.Model):
+    STATUS_CHOICES = (
+        ('not_expired', 'Not Expired'),
+        ('expired', 'Expired'),
+    )
+    ACTION_CHOICES = (
+        ('dispose', 'Dispose'),
+        ('retest', 'Retest'),
+        ('released', 'Released'),
+    )
+
+    patient_sample = models.OneToOneField(PatientSample, on_delete=models.CASCADE, related_name='archive_record')
+    position = models.OneToOneField(ArchivePosition, on_delete=models.CASCADE, related_name='sample_archive')
+    archiving_date = models.DateField(auto_now_add=True)
+    expiry_date = models.DateField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='not_expired')
+    action = models.CharField(max_length=20, choices=ACTION_CHOICES, null=True, blank=True)
+    created_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if not self.pk:
+            # On creation, calculate expiry_date based on specimen's max_archive_duration
+            specimen = self.patient_sample.specimen
+            collected_on = self.patient_sample.collected_on
+            if specimen.max_archive_duration and collected_on:
+                self.expiry_date = (collected_on + specimen.max_archive_duration).date()
+            
+            # Update status if already expired
+            if self.expiry_date and timezone.now().date() > self.expiry_date:
+                self.status = 'expired'
+                
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.patient_sample.patient_sample_code} at {self.position.name}"
+
