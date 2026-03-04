@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Positions from './Positions';
 import Sections from './Sections';
 import Component from './Component';
+import PatientSampleArchive from './PatientSampleArchive';
 import Archive from './Archive';
 
 const SampleArchiveNav = () => {
@@ -19,7 +20,7 @@ const SampleArchiveNav = () => {
                                 } `}
                             onClick={() => setCurrentTab(0)}
                         >
-                            Archive
+                            Patient Sample Archive
                         </p>
                     </div>
 
@@ -31,7 +32,7 @@ const SampleArchiveNav = () => {
                                 } `}
                             onClick={() => setCurrentTab(1)}
                         >
-                            Component
+                            Archive
                         </p>
                     </div>
 
@@ -43,7 +44,7 @@ const SampleArchiveNav = () => {
                                 } `}
                             onClick={() => setCurrentTab(2)}
                         >
-                            Sections
+                            Component
                         </p>
                     </div>
 
@@ -52,8 +53,20 @@ const SampleArchiveNav = () => {
                             className={`${currentTab === 3
                                 ? "cursor-pointer text-primary p-4 border-b-2 border-primary text-center"
                                 : "cursor-pointer text-center p-4"
-                                }`}
+                                } `}
                             onClick={() => setCurrentTab(3)}
+                        >
+                            Sections
+                        </p>
+                    </div>
+
+                    <div>
+                        <p
+                            className={`${currentTab === 4
+                                ? "cursor-pointer text-primary p-4 border-b-2 border-primary text-center"
+                                : "cursor-pointer text-center p-4"
+                                }`}
+                            onClick={() => setCurrentTab(4)}
                         >
                             Positions
                         </p>
@@ -62,10 +75,11 @@ const SampleArchiveNav = () => {
             </section>
 
             <div className="mt-2">
-                {currentTab === 0 && <Archive />}
-                {currentTab === 1 && <Component />}
-                {currentTab === 2 && <Sections />}
-                {currentTab === 3 && <Positions />}
+                {currentTab === 0 && <PatientSampleArchive />}
+                {currentTab === 1 && <Archive />}
+                {currentTab === 2 && <Component />}
+                {currentTab === 3 && <Sections />}
+                {currentTab === 4 && <Positions />}
             </div>
         </>
     );

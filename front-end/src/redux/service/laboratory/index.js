@@ -960,3 +960,40 @@ export const deleteArchivePosition = (id, auth) => {
             .catch((err) => reject(err.message))
     })
 }
+
+// PatientSampleArchive CRUD
+export const fetchPatientSampleArchives = (auth) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+        axiosInstance.get(`${APP_API_URL.PATIENT_SAMPLE_ARCHIVE}`)
+            .then((res) => resolve(res.data))
+            .catch((err) => reject(err.message))
+    })
+}
+
+export const createPatientSampleArchive = (payload, auth) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+        axiosInstance.post(`${APP_API_URL.PATIENT_SAMPLE_ARCHIVE}`, payload)
+            .then((res) => resolve(res.data))
+            .catch((err) => reject(err.message))
+    })
+}
+
+export const updatePatientSampleArchive = (id, payload, auth) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+        axiosInstance.patch(`${APP_API_URL.PATIENT_SAMPLE_ARCHIVE}${id}/`, payload)
+            .then((res) => resolve(res.data))
+            .catch((err) => reject(err.message))
+    })
+}
+
+export const deletePatientSampleArchive = (id, auth) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+        axiosInstance.delete(`${APP_API_URL.PATIENT_SAMPLE_ARCHIVE}${id}/`)
+            .then((res) => resolve(res.data))
+            .catch((err) => reject(err.message))
+    })
+}
