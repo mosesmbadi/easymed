@@ -37,7 +37,12 @@ from .models import (
     ReagentConsumptionLog,
     ReferenceValue,
     LabTestInterpretation,
-    LabSettings
+    LabSettings,
+    Archive,
+    ArchiveComponent,
+    ArchiveSection,
+    ArchivePosition,
+    PatientSampleArchive
 )
 
 from .serializers import (
@@ -57,7 +62,12 @@ from .serializers import (
     LowStockReagentSerializer,
     ReferenceValueSerializer,
     LabTestInterpretationSerializer,
-    LabSettingsSerializer
+    LabSettingsSerializer,
+    ArchiveSerializer,
+    ArchiveComponentSerializer,
+    ArchiveSectionSerializer,
+    ArchivePositionSerializer,
+    PatientSampleArchiveSerializer
 )
 
 from authperms.permissions import (
@@ -689,3 +699,34 @@ def print_lab_report(request):
     response = HttpResponse(pdf_file, content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="lab_{report_type}_report_{today.strftime("%Y%m%d")}.pdf"'
     return response
+
+
+class ArchiveViewSet(viewsets.ModelViewSet):
+    queryset = Archive.objects.all().order_by('-id')
+    serializer_class = ArchiveSerializer
+    permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser | IsReceptionistUser | IsSystemsAdminUser,)
+
+
+class ArchiveComponentViewSet(viewsets.ModelViewSet):
+    queryset = ArchiveComponent.objects.all().order_by('-id')
+    serializer_class = ArchiveComponentSerializer
+    permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser | IsReceptionistUser | IsSystemsAdminUser,)
+
+
+class ArchiveSectionViewSet(viewsets.ModelViewSet):
+    queryset = ArchiveSection.objects.all().order_by('-id')
+    serializer_class = ArchiveSectionSerializer
+    permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser | IsReceptionistUser | IsSystemsAdminUser,)
+
+
+class ArchivePositionViewSet(viewsets.ModelViewSet):
+    queryset = ArchivePosition.objects.all().order_by('-id')
+    serializer_class = ArchivePositionSerializer
+    permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser | IsReceptionistUser | IsSystemsAdminUser,)
+
+
+class PatientSampleArchiveViewSet(viewsets.ModelViewSet):
+    queryset = PatientSampleArchive.objects.all().order_by('-id')
+    serializer_class = PatientSampleArchiveSerializer
+    permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser | IsReceptionistUser | IsSystemsAdminUser,)
+

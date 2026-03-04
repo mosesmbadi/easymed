@@ -21,7 +21,12 @@ from .models import (
     LabTestInterpretation,
     ReferenceValue,
     ReagentConsumptionLog,
-    LabSettings
+    LabSettings,
+    Archive,
+    ArchiveComponent,
+    ArchiveSection,
+    ArchivePosition,
+    PatientSampleArchive
     )
 
 
@@ -317,3 +322,44 @@ class LabSettingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = LabSettings
         fields = '__all__'
+
+
+class ArchiveSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Archive
+        fields = '__all__'
+
+
+class ArchiveComponentSerializer(serializers.ModelSerializer):
+    archive_name = serializers.ReadOnlyField(source='archive.name')
+
+    class Meta:
+        model = ArchiveComponent
+        fields = '__all__'
+
+
+class ArchiveSectionSerializer(serializers.ModelSerializer):
+    component_name = serializers.ReadOnlyField(source='component.name')
+
+    class Meta:
+        model = ArchiveSection
+        fields = '__all__'
+
+
+class ArchivePositionSerializer(serializers.ModelSerializer):
+    section_name = serializers.ReadOnlyField(source='section.name')
+
+    class Meta:
+        model = ArchivePosition
+        fields = '__all__'
+
+
+class PatientSampleArchiveSerializer(serializers.ModelSerializer):
+    patient_sample_code = serializers.ReadOnlyField(source='patient_sample.patient_sample_code')
+    position_name = serializers.ReadOnlyField(source='position.name')
+    created_by_name = serializers.ReadOnlyField(source='created_by.get_fullname')
+
+    class Meta:
+        model = PatientSampleArchive
+        fields = '__all__'
+

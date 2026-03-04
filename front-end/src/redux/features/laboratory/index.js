@@ -13,7 +13,11 @@ import {
   fetchSamplesForSpecificProcess,
   fetchPhlebotomySamples,
   fetchLabTestPanelsBySpecificSample, fetchSpecimens, fetchReferenceValues,
-  fetchLabTestInterpretations
+  fetchLabTestInterpretations,
+  fetchArchives,
+  fetchArchiveComponents,
+  fetchArchiveSections,
+  fetchArchivePositions
 } from "@/redux/service/laboratory";
 
 
@@ -35,7 +39,11 @@ const initialState = {
   processAllTestRequest: [],
   specimens: [],
   referenceValues: [],
-  labTestInterpretations: []
+  labTestInterpretations: [],
+  archives: [],
+  archiveComponents: [],
+  archiveSections: [],
+  archivePositions: []
 };
 
 const LaboratorySlice = createSlice({
@@ -230,7 +238,19 @@ const LaboratorySlice = createSlice({
     },
     clearProcessAllTestRequest: (state, action) => {
       state.processAllTestRequest = []
-    }
+    },
+    setArchives: (state, action) => {
+      state.archives = action.payload;
+    },
+    setArchiveComponents: (state, action) => {
+      state.archiveComponents = action.payload;
+    },
+    setArchiveSections: (state, action) => {
+      state.archiveSections = action.payload;
+    },
+    setArchivePositions: (state, action) => {
+      state.archivePositions = action.payload;
+    },
   },
 });
 
@@ -245,7 +265,8 @@ export const { setLabResults,
   updatePanelsOnPatch, addSpecimenToStoreOnCreate, updateSpecimenToStoreOnPatch,
   updateProfileToStoreOnPatch, addProfileToStoreOnCreate, updateLabResultItems, updateAddedLabRequestToStore,
   setReferenceValues, addReferenceValueToStoreOnCreate, updateReferenceValueToStoreOnPatch,
-  setLabTestInterpretations, addLabTestInterpretationToStoreOnCreate, updateLabTestInterpretationToStoreOnPatch, deleteLabTestInterpretationFromStore
+  setLabTestInterpretations, addLabTestInterpretationToStoreOnCreate, updateLabTestInterpretationToStoreOnPatch, deleteLabTestInterpretationFromStore,
+  setArchives, setArchiveComponents, setArchiveSections, setArchivePositions
 } = LaboratorySlice.actions;
 
 
@@ -502,5 +523,40 @@ export const updateProfileToStore = (payload) => (dispatch) => {
   dispatch(updateProfileToStoreOnPatch(payload));
 };
 
+export const getAllArchives = (auth) => async (dispatch) => {
+  try {
+    const response = await fetchArchives(auth);
+    dispatch(setArchives(response));
+  } catch (error) {
+    console.log("ARCHIVES_ERROR ", error);
+  }
+};
+
+export const getAllArchiveComponents = (auth) => async (dispatch) => {
+  try {
+    const response = await fetchArchiveComponents(auth);
+    dispatch(setArchiveComponents(response));
+  } catch (error) {
+    console.log("ARCHIVE_COMPONENTS_ERROR ", error);
+  }
+};
+
+export const getAllArchiveSections = (auth) => async (dispatch) => {
+  try {
+    const response = await fetchArchiveSections(auth);
+    dispatch(setArchiveSections(response));
+  } catch (error) {
+    console.log("ARCHIVE_SECTIONS_ERROR ", error);
+  }
+};
+
+export const getAllArchivePositions = (auth) => async (dispatch) => {
+  try {
+    const response = await fetchArchivePositions(auth);
+    dispatch(setArchivePositions(response));
+  } catch (error) {
+    console.log("ARCHIVE_POSITIONS_ERROR ", error);
+  }
+};
 
 export default LaboratorySlice.reducer;

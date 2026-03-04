@@ -26,7 +26,12 @@ from .views import (
     LabTestInterpretationViewSet,
     LabDashboardMetricsView,
     print_lab_report,
-    LabSettingsViewSet
+    LabSettingsViewSet,
+    ArchiveViewSet,
+    ArchiveComponentViewSet,
+    ArchiveSectionViewSet,
+    ArchivePositionViewSet,
+    PatientSampleArchiveViewSet
 )
 
 router = DefaultRouter()
@@ -47,6 +52,11 @@ router.register(r'testkitcounters', TestKitCounterViewSet)
 router.register(r'reagent-consumption', ReagentConsumptionLogViewSet, basename='reagent-consumption')
 router.register(r'low-stock-reagents', LowStockReagentViewSet, basename='low-stock-reagents')
 router.register(r'lab-settings', LabSettingsViewSet, basename='lab-settings')
+router.register(r'archive', ArchiveViewSet, basename='archive')
+router.register(r'archive-component', ArchiveComponentViewSet, basename='archive-component')
+router.register(r'archive-section', ArchiveSectionViewSet, basename='archive-section')
+router.register(r'archive-position', ArchivePositionViewSet, basename='archive-position')
+router.register(r'patient-sample-archive', PatientSampleArchiveViewSet, basename='patient-sample-archive')
 
 
 

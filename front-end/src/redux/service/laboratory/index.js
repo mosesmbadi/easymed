@@ -812,3 +812,151 @@ export const updateLabSettings = (payload, auth) => {
             })
     })
 }
+
+// Archive CRUD
+export const fetchArchives = (auth) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+        axiosInstance.get(`${APP_API_URL.ARCHIVE}`)
+            .then((res) => resolve(res.data))
+            .catch((err) => reject(err.message))
+    })
+}
+
+export const createArchive = (payload, auth) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+        axiosInstance.post(`${APP_API_URL.ARCHIVE}`, payload)
+            .then((res) => resolve(res.data))
+            .catch((err) => reject(err.message))
+    })
+}
+
+export const updateArchive = (id, payload, auth) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+        axiosInstance.patch(`${APP_API_URL.ARCHIVE}${id}/`, payload)
+            .then((res) => resolve(res.data))
+            .catch((err) => reject(err.message))
+    })
+}
+
+export const deleteArchive = (id, auth) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+        axiosInstance.delete(`${APP_API_URL.ARCHIVE}${id}/`)
+            .then((res) => resolve(res.data))
+            .catch((err) => reject(err.message))
+    })
+}
+
+// Component CRUD
+export const fetchArchiveComponents = (auth) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+        axiosInstance.get(`${APP_API_URL.ARCHIVE_COMPONENT}`)
+            .then((res) => resolve(res.data))
+            .catch((err) => reject(err.message))
+    })
+}
+
+export const createArchiveComponent = (payload, auth) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+        axiosInstance.post(`${APP_API_URL.ARCHIVE_COMPONENT}`, payload)
+            .then((res) => resolve(res.data))
+            .catch((err) => reject(err.message))
+    })
+}
+
+export const updateArchiveComponent = (id, payload, auth) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+        axiosInstance.patch(`${APP_API_URL.ARCHIVE_COMPONENT}${id}/`, payload)
+            .then((res) => resolve(res.data))
+            .catch((err) => reject(err.message))
+    })
+}
+
+export const deleteArchiveComponent = (id, auth) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+        axiosInstance.delete(`${APP_API_URL.ARCHIVE_COMPONENT}${id}/`)
+            .then((res) => resolve(res.data))
+            .catch((err) => reject(err.message))
+    })
+}
+
+// Section CRUD
+export const fetchArchiveSections = (auth) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+        axiosInstance.get(`${APP_API_URL.ARCHIVE_SECTION}`)
+            .then((res) => resolve(res.data))
+            .catch((err) => reject(err.message))
+    })
+}
+
+export const createArchiveSection = (payload, auth) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+        axiosInstance.post(`${APP_API_URL.ARCHIVE_SECTION}`, payload)
+            .then((res) => resolve(res.data))
+            .catch((err) => reject(err.message))
+    })
+}
+
+export const updateArchiveSection = (id, payload, auth) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+        axiosInstance.patch(`${APP_API_URL.ARCHIVE_SECTION}${id}/`, payload)
+            .then((res) => resolve(res.data))
+            .catch((err) => reject(err.message))
+    })
+}
+
+export const deleteArchiveSection = (id, auth) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+        axiosInstance.delete(`${APP_API_URL.ARCHIVE_SECTION}${id}/`)
+            .then((res) => resolve(res.data))
+            .catch((err) => reject(err.message))
+    })
+}
+
+// Position CRUD
+export const fetchArchivePositions = (auth) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+        axiosInstance.get(`${APP_API_URL.ARCHIVE_POSITION}`)
+            .then((res) => resolve(res.data))
+            .catch((err) => reject(err.message))
+    })
+}
+
+export const createArchivePosition = (payload, auth) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+        axiosInstance.post(`${APP_API_URL.ARCHIVE_POSITION}`, payload)
+            .then((res) => resolve(res.data))
+            .catch((err) => reject(err.message))
+    })
+}
+
+export const updateArchivePosition = (id, payload, auth) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+        axiosInstance.patch(`${APP_API_URL.ARCHIVE_POSITION}${id}/`, payload)
+            .then((res) => resolve(res.data))
+            .catch((err) => reject(err.message))
+    })
+}
+
+export const deleteArchivePosition = (id, auth) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+        axiosInstance.delete(`${APP_API_URL.ARCHIVE_POSITION}${id}/`)
+            .then((res) => resolve(res.data))
+            .catch((err) => reject(err.message))
+    })
+}

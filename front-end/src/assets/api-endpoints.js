@@ -90,6 +90,10 @@ export const API_URL = {
   PRINT_LAB_REPORT: "/lab/print-lab-report/",
   LAB_SETTINGS: "/lab/lab-settings/",
   LAB_DASHBOARD_METRICS: "/lab/lab-dashboard-metrics/",
+  ARCHIVE: "/lab/archive/",
+  ARCHIVE_COMPONENT: "/lab/archive-component/",
+  ARCHIVE_SECTION: "/lab/archive-section/",
+  ARCHIVE_POSITION: "/lab/archive-position/",
 
   /***************** INVENTORY APIS **********************/
   ADD_INVENTORY: "/inventory/inventories/",
@@ -275,6 +279,10 @@ export const APP_API_URL = {
   LAB_TEST_INTERPRETATIONS: "/api/laboratory/lab-test-interpretations",
   LAB_SETTINGS: "/api/laboratory/lab-settings",
   LAB_DASHBOARD_METRICS: "/api/laboratory/lab-dashboard-metrics",
+  ARCHIVE: "/api/laboratory/archive",
+  ARCHIVE_COMPONENT: "/api/laboratory/archive-component",
+  ARCHIVE_SECTION: "/api/laboratory/archive-section",
+  ARCHIVE_POSITION: "/api/laboratory/archive-position",
 
   /***************** INVENTORY APIS **********************/
   ADD_INVENTORY: "/api/inventory/add-inventory",
