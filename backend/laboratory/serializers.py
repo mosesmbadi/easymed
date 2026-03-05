@@ -385,8 +385,8 @@ class PatientSampleArchiveSerializer(serializers.ModelSerializer):
         from django.utils import timezone
         expiry_date = self.get_expiry_date(obj)
         if expiry_date and timezone.now().date() > expiry_date:
-            return 'expired'
-        return 'not_expired'
+            return 'Expired'
+        return 'Not Expired'
 
 
     def validate(self, attrs):
