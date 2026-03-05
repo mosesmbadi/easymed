@@ -593,3 +593,15 @@ class DisposedSample(models.Model):
 
     def __str__(self):
         return f"{self.patient_sample_code} - Disposed on {self.disposed_on}"
+
+
+class RetestSample(models.Model):
+    """Records samples that have been sent for retesting from the archive."""
+    patient_sample_code = models.CharField(max_length=255)
+    position_name = models.CharField(max_length=255)
+    archiving_date = models.DateField()
+    retested_on = models.DateField(auto_now_add=True)
+    retested_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='retest_samples')
+
+    def __str__(self):
+        return f"{self.patient_sample_code} - Retested on {self.retested_on}"

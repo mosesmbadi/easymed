@@ -28,7 +28,8 @@ from .models import (
     ArchiveRack,
     ArchivePosition,
     PatientSampleArchive,
-    DisposedSample
+    DisposedSample,
+    RetestSample
     )
 
 
@@ -208,6 +209,8 @@ class ProcessTestRequestSerializer(serializers.ModelSerializer):
 class PatientSampleSerializer(serializers.ModelSerializer):
     specimen_name = serializers.SerializerMethodField()
     is_archived = serializers.SerializerMethodField()
+    is_disposed = serializers.SerializerMethodField()
+    is_retested = serializers.SerializerMethodField()
 
     class Meta:
         model = PatientSample
@@ -221,6 +224,7 @@ class PatientSampleSerializer(serializers.ModelSerializer):
             'process',
             'is_archived',
             'is_disposed',
+            'is_retested',
             'collected_on',
         ]
         read_only_fields = [
@@ -236,6 +240,10 @@ class PatientSampleSerializer(serializers.ModelSerializer):
     def get_is_disposed(self, obj):
         from .models import DisposedSample
         return DisposedSample.objects.filter(patient_sample_code=obj.patient_sample_code).exists()
+
+    def get_is_retested(self, obj):
+        from .models import RetestSample
+        return RetestSample.objects.filter(patient_sample_code=obj.patient_sample_code).exists()
 
 class SpecimenSerializer(serializers.ModelSerializer):
     class Meta:
@@ -436,4 +444,12 @@ class DisposedSampleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = DisposedSample
+        fields = '__all__'
+
+
+class RetestSampleSerializer(serializers.ModelSerializer):
+    retested_by_name = serializers.ReadOnlyField(source='retested_by.get_fullname')
+
+    class Meta:
+        model = RetestSample
         fields = '__all__'

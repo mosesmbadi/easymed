@@ -44,7 +44,8 @@ from .models import (
     ArchiveRack,
     ArchivePosition,
     PatientSampleArchive,
-    DisposedSample
+    DisposedSample,
+    RetestSample
 )
 
 from .serializers import (
@@ -71,7 +72,8 @@ from .serializers import (
     ArchiveRackSerializer,
     ArchivePositionSerializer,
     PatientSampleArchiveSerializer,
-    DisposedSampleSerializer
+    DisposedSampleSerializer,
+    RetestSampleSerializer
 )
 
 from authperms.permissions import (
@@ -744,4 +746,10 @@ class PatientSampleArchiveViewSet(viewsets.ModelViewSet):
 class DisposedSampleViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = DisposedSample.objects.all().order_by('-id')
     serializer_class = DisposedSampleSerializer
+    permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser | IsReceptionistUser | IsSystemsAdminUser,)
+
+
+class RetestSampleViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = RetestSample.objects.all().order_by('-id')
+    serializer_class = RetestSampleSerializer
     permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser | IsReceptionistUser | IsSystemsAdminUser,)

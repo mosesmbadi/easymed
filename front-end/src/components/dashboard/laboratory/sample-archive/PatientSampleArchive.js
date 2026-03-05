@@ -13,7 +13,9 @@ import { Column, Pager, Paging, Scrolling, Lookup } from "devextreme-react/data-
 import { BiEdit, BiTrash, BiRevision, BiPaperPlane } from 'react-icons/bi';
 import { getAllPatientSampleArchives, getAllArchivePositions, getAllArchiveRacks, getAllArchiveSections, getAllArchiveComponents, getAllArchives, getAllPhlebotomySamples } from '@/redux/features/laboratory';
 import { createPatientSampleArchive, updatePatientSampleArchive } from '@/redux/service/laboratory';
+import { fetchAllAttendanceProcesses } from '@/redux/service/patients';
 import EditPatientSampleArchiveModal from './modals/EditPatientSampleArchive';
+import LabModal from '@/components/dashboard/doctor-desk/lab-modal';
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
     ssr: false,
@@ -59,6 +61,8 @@ const PatientSampleArchive = () => {
     const [showNavButtons, setShowNavButtons] = useState(true);
     const { patientSampleArchives, archivePositions, archiveRacks, archiveSections, archiveComponents, archives, phlebotomySamples } = useSelector((store) => store.laboratory);
     const [selectedRowData, setSelectedRowData] = useState({})
+    const [retestOpen, setRetestOpen] = useState(false);
+    const [retestProcess, setRetestProcess] = useState(null);
 
     // Cascading dropdown states
     const [selectedArchive, setSelectedArchive] = useState("");
@@ -119,6 +123,21 @@ const PatientSampleArchive = () => {
         if (menu.action === "update") {
             setSelectedRowData(data);
             setEditOpen(true);
+        } else if (menu.action === "action_retest") {
+            // Fetch full AttendanceProcess record then open lab modal
+            try {
+                const results = await fetchAllAttendanceProcesses(auth, data.attendance_process_id);
+                const process = Array.isArray(results) ? results[0] : results;
+                if (process) {
+                    setRetestProcess(process);
+                    setRetestOpen(true);
+                } else {
+                    toast.error('Could not find the attendance process for this sample');
+                }
+            } catch (error) {
+                console.error('Error fetching attendance process:', error);
+                toast.error('Error loading process for retest');
+            }
         } else {
             let payload = {};
             if (menu.action === "action_dispose") {
@@ -409,6 +428,13 @@ const PatientSampleArchive = () => {
                     />
                 </DataGrid>
                 <EditPatientSampleArchiveModal open={editOpen} setOpen={setEditOpen} selectedRowData={selectedRowData} />
+                {retestProcess && (
+                    <LabModal
+                        labOpen={retestOpen}
+                        setLabOpen={setRetestOpen}
+                        selectedRowData={retestProcess}
+                    />
+                )}
             </div>
         </div>
     )
