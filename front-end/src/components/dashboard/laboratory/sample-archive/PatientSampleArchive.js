@@ -10,9 +10,9 @@ import CmtDropdownMenu from '@/assets/DropdownMenu';
 import { LuMoreHorizontal } from 'react-icons/lu';
 import { useDispatch, useSelector } from 'react-redux';
 import { Column, Pager, Paging, Scrolling, Lookup } from "devextreme-react/data-grid";
-import { BiEdit } from 'react-icons/bi';
+import { BiEdit, BiTrash, BiRevision, BiPaperPlane } from 'react-icons/bi';
 import { getAllPatientSampleArchives, getAllArchivePositions, getAllArchiveRacks, getAllArchiveSections, getAllArchiveComponents, getAllArchives, getAllPhlebotomySamples } from '@/redux/features/laboratory';
-import { createPatientSampleArchive } from '@/redux/service/laboratory';
+import { createPatientSampleArchive, updatePatientSampleArchive } from '@/redux/service/laboratory';
 import EditPatientSampleArchiveModal from './modals/EditPatientSampleArchive';
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
@@ -27,6 +27,21 @@ const getActions = () => {
             action: "update",
             label: "Edit Item",
             icon: <BiEdit className="text-success text-xl mx-2" />,
+        },
+        {
+            action: "action_dispose",
+            label: "Action: Dispose",
+            icon: <BiTrash className="text-warning text-xl mx-2" />,
+        },
+        {
+            action: "action_retest",
+            label: "Action: Retest",
+            icon: <BiRevision className="text-primary text-xl mx-2" />,
+        },
+        {
+            action: "action_released",
+            label: "Action: Released",
+            icon: <BiPaperPlane className="text-success text-xl mx-2" />,
         },
     ];
 
@@ -104,6 +119,29 @@ const PatientSampleArchive = () => {
         if (menu.action === "update") {
             setSelectedRowData(data);
             setEditOpen(true);
+        } else {
+            let payload = {};
+            if (menu.action === "action_dispose") {
+                payload = { action: "dispose" };
+            } else if (menu.action === "action_retest") {
+                payload = { action: "retest" };
+            } else if (menu.action === "action_released") {
+                payload = { action: "released" };
+            }
+
+            if (Object.keys(payload).length > 0) {
+                setLoading(true);
+                try {
+                    await updatePatientSampleArchive(data.id, payload, auth);
+                    dispatch(getAllPatientSampleArchives(auth));
+                    toast.success("Archive updated successfully");
+                } catch (error) {
+                    console.error("Error updating archive:", error);
+                    toast.error("Error updating archive");
+                } finally {
+                    setLoading(false);
+                }
+            }
         }
     };
 
@@ -280,7 +318,7 @@ const PatientSampleArchive = () => {
                                 <div className="flex justify-end gap-2 h-full">
                                     <button
                                         type="submit"
-                                        className="bg-primary px-4 py-2 text-white w-48 h-[54px] rounded-lg"
+                                        className="bg-primary px-4 py-2 text-white w-full h-[54px] rounded-lg"
                                     >
                                         {loading && (
                                             <svg
@@ -358,10 +396,6 @@ const PatientSampleArchive = () => {
                     <Column
                         dataField="status"
                         caption="Status"
-                    />
-                    <Column
-                        dataField="action"
-                        caption="Action"
                     />
                     <Column
                         dataField=""

@@ -265,42 +265,6 @@ const EditPatientSampleArchiveModal = ({ open, setOpen, selectedRowData }) => {
                                         />
                                     </Grid>
 
-                                    <Grid item md={4} xs={12}>
-                                        <FormControl fullWidth>
-                                            <Select
-                                                name="status"
-                                                value={values.status}
-                                                onChange={handleChange}
-                                                displayEmpty
-                                                className="block border border-gray w-full"
-                                            >
-                                                <MenuItem value="not_expired">Not Expired</MenuItem>
-                                                <MenuItem value="expired">Expired</MenuItem>
-                                            </Select>
-                                        </FormControl>
-                                        <ErrorMessage
-                                            name="status"
-                                            component="div"
-                                            className="text-warning text-xs"
-                                        />
-                                    </Grid>
-                                    <Grid item md={4} xs={12}>
-                                        <FormControl fullWidth>
-                                            <Select
-                                                name="action"
-                                                value={values.action}
-                                                onChange={handleChange}
-                                                displayEmpty
-                                                className="block border border-gray w-full"
-                                            >
-                                                <MenuItem value="">-- No Action --</MenuItem>
-                                                <MenuItem value="dispose">Dispose</MenuItem>
-                                                <MenuItem value="retest">Retest</MenuItem>
-                                                <MenuItem value="released">Released</MenuItem>
-                                            </Select>
-                                        </FormControl>
-                                    </Grid>
-
                                     <Grid item md={12} xs={12}>
                                         <div className="flex justify-end gap-2 h-full">
                                             <button

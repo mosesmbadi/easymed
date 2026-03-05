@@ -20,7 +20,7 @@ const EditSpecimenModal = ({ open, setOpen, selectedRowData }) => {
 
   const initialValues = {
     name: selectedRowData?.name || "",
-    max_archive_duration: selectedRowData?.max_archive_duration ? selectedRowData?.max_archive_duration.split(' ')[0] : "",
+    max_archive_duration: selectedRowData?.max_archive_duration ?? "",
   };
 
   const validationSchema = Yup.object().shape({
@@ -31,7 +31,7 @@ const EditSpecimenModal = ({ open, setOpen, selectedRowData }) => {
   const updateASpecimen = async (formValue, helpers) => {
     const formData = {
       ...formValue,
-      max_archive_duration: formValue.max_archive_duration ? `${formValue.max_archive_duration} 00:00:00` : null
+      max_archive_duration: formValue.max_archive_duration ? parseInt(formValue.max_archive_duration) : null
     };
 
     try {

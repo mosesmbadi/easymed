@@ -367,10 +367,27 @@ class PatientSampleArchiveSerializer(serializers.ModelSerializer):
     patient_sample_code = serializers.ReadOnlyField(source='patient_sample.patient_sample_code')
     position_name = serializers.ReadOnlyField(source='position.name')
     created_by_name = serializers.ReadOnlyField(source='created_by.get_fullname')
+    expiry_date = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
 
     class Meta:
         model = PatientSampleArchive
         fields = '__all__'
+
+    def get_expiry_date(self, obj):
+        from datetime import timedelta
+        specimen = obj.patient_sample.specimen
+        if specimen and specimen.max_archive_duration and obj.archiving_date:
+            return obj.archiving_date + timedelta(days=specimen.max_archive_duration)
+        return None
+
+    def get_status(self, obj):
+        from django.utils import timezone
+        expiry_date = self.get_expiry_date(obj)
+        if expiry_date and timezone.now().date() > expiry_date:
+            return 'expired'
+        return 'not_expired'
+
 
     def validate(self, attrs):
         position = attrs.get('position')

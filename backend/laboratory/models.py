@@ -136,7 +136,7 @@ class LabTestProfile(models.Model):
 
 class Specimen(models.Model):
     name = models.CharField(max_length=255)
-    max_archive_duration = models.DurationField(null=True, blank=True, help_text="Maximum duration a specimen can be archived")
+    max_archive_duration = models.PositiveIntegerField(default=1, null=True, blank=True, help_text="Maximum duration a specimen can be archived (in days)")
 
     def __str__(self):
         return self.name
@@ -567,10 +567,6 @@ class ArchivePosition(models.Model):
         return f"{self.rack.name} - {self.name}"
 
 class PatientSampleArchive(models.Model):
-    STATUS_CHOICES = (
-        ('not_expired', 'Not Expired'),
-        ('expired', 'Expired'),
-    )
     ACTION_CHOICES = (
         ('dispose', 'Dispose'),
         ('retest', 'Retest'),
@@ -580,25 +576,10 @@ class PatientSampleArchive(models.Model):
     patient_sample = models.OneToOneField(PatientSample, on_delete=models.CASCADE, related_name='archive_record')
     position = models.OneToOneField(ArchivePosition, on_delete=models.CASCADE, related_name='sample_archive')
     archiving_date = models.DateField(auto_now_add=True)
-    expiry_date = models.DateField(null=True, blank=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='not_expired')
     action = models.CharField(max_length=20, choices=ACTION_CHOICES, null=True, blank=True)
     created_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True)
 
-    def save(self, *args, **kwargs):
-        if not self.pk:
-            # On creation, calculate expiry_date based on specimen's max_archive_duration
-            specimen = self.patient_sample.specimen
-            collected_on = self.patient_sample.collected_on
-            if specimen.max_archive_duration and collected_on:
-                self.expiry_date = (collected_on + specimen.max_archive_duration).date()
-            
-            # Update status if already expired
-            if self.expiry_date and timezone.now().date() > self.expiry_date:
-                self.status = 'expired'
-                
-        super().save(*args, **kwargs)
-
     def __str__(self):
         return f"{self.patient_sample.patient_sample_code} at {self.position.name}"
+
 
