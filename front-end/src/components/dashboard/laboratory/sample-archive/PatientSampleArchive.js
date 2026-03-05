@@ -63,6 +63,7 @@ const PatientSampleArchive = () => {
     const [selectedRowData, setSelectedRowData] = useState({})
     const [retestOpen, setRetestOpen] = useState(false);
     const [retestProcess, setRetestProcess] = useState(null);
+    const [retestArchiveId, setRetestArchiveId] = useState(null);
 
     // Cascading dropdown states
     const [selectedArchive, setSelectedArchive] = useState("");
@@ -124,12 +125,12 @@ const PatientSampleArchive = () => {
             setSelectedRowData(data);
             setEditOpen(true);
         } else if (menu.action === "action_retest") {
-            // Fetch full AttendanceProcess record then open lab modal
             try {
                 const results = await fetchAllAttendanceProcesses(auth, data.attendance_process_id);
                 const process = Array.isArray(results) ? results[0] : results;
                 if (process) {
                     setRetestProcess(process);
+                    setRetestArchiveId(data.id);
                     setRetestOpen(true);
                 } else {
                     toast.error('Could not find the attendance process for this sample');
@@ -142,8 +143,6 @@ const PatientSampleArchive = () => {
             let payload = {};
             if (menu.action === "action_dispose") {
                 payload = { action: "dispose" };
-            } else if (menu.action === "action_retest") {
-                payload = { action: "retest" };
             } else if (menu.action === "action_released") {
                 payload = { action: "released" };
             }
@@ -433,6 +432,8 @@ const PatientSampleArchive = () => {
                         labOpen={retestOpen}
                         setLabOpen={setRetestOpen}
                         selectedRowData={retestProcess}
+                        isRetest={true}
+                        archiveId={retestArchiveId}
                     />
                 )}
             </div>
