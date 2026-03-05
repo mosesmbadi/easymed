@@ -11,7 +11,7 @@ import { LuMoreHorizontal } from 'react-icons/lu';
 import { useDispatch, useSelector } from 'react-redux';
 import { Column, Pager, Paging, Scrolling, Lookup } from "devextreme-react/data-grid";
 import { BiEdit } from 'react-icons/bi';
-import { getAllPatientSampleArchives, getAllArchivePositions, getAllArchiveSections, getAllArchiveComponents, getAllArchives, getAllPhlebotomySamples } from '@/redux/features/laboratory';
+import { getAllPatientSampleArchives, getAllArchivePositions, getAllArchiveRacks, getAllArchiveSections, getAllArchiveComponents, getAllArchives, getAllPhlebotomySamples } from '@/redux/features/laboratory';
 import { createPatientSampleArchive } from '@/redux/service/laboratory';
 import EditPatientSampleArchiveModal from './modals/EditPatientSampleArchive';
 
@@ -42,18 +42,20 @@ const PatientSampleArchive = () => {
     const [showPageSizeSelector, setShowPageSizeSelector] = useState(true);
     const [showInfo, setShowInfo] = useState(true);
     const [showNavButtons, setShowNavButtons] = useState(true);
-    const { patientSampleArchives, archivePositions, archiveSections, archiveComponents, archives, phlebotomySamples } = useSelector((store) => store.laboratory);
+    const { patientSampleArchives, archivePositions, archiveRacks, archiveSections, archiveComponents, archives, phlebotomySamples } = useSelector((store) => store.laboratory);
     const [selectedRowData, setSelectedRowData] = useState({})
 
     // Cascading dropdown states
     const [selectedArchive, setSelectedArchive] = useState("");
     const [selectedComponent, setSelectedComponent] = useState("");
     const [selectedSection, setSelectedSection] = useState("");
+    const [selectedRack, setSelectedRack] = useState("");
 
     // Filtered lists
     const filteredComponents = archiveComponents.filter(c => c.archive === selectedArchive);
     const filteredSections = archiveSections.filter(s => s.component === selectedComponent);
-    const filteredPositions = archivePositions.filter(p => p.section === selectedSection);
+    const filteredRacks = archiveRacks.filter(r => r.section === selectedSection);
+    const filteredPositions = archivePositions.filter(p => p.rack === selectedRack);
 
     const initialValues = {
         patient_sample: "",
@@ -76,6 +78,7 @@ const PatientSampleArchive = () => {
             setSelectedArchive("");
             setSelectedComponent("");
             setSelectedSection("");
+            setSelectedRack("");
             toast.success('Patient Sample Archive created successfully')
         } catch (error) {
             setLoading(false)
@@ -90,6 +93,7 @@ const PatientSampleArchive = () => {
     useEffect(() => {
         dispatch(getAllPatientSampleArchives(auth))
         dispatch(getAllArchivePositions(auth))
+        dispatch(getAllArchiveRacks(auth))
         dispatch(getAllArchiveSections(auth))
         dispatch(getAllArchiveComponents(auth))
         dispatch(getAllArchives(auth))
@@ -161,6 +165,7 @@ const PatientSampleArchive = () => {
                                             setSelectedArchive(e.target.value);
                                             setSelectedComponent("");
                                             setSelectedSection("");
+                                            setSelectedRack("");
                                             handleChange({ target: { name: 'position', value: '' } }); // Reset position
                                         }}
                                         displayEmpty
@@ -183,6 +188,7 @@ const PatientSampleArchive = () => {
                                         onChange={(e) => {
                                             setSelectedComponent(e.target.value);
                                             setSelectedSection("");
+                                            setSelectedRack("");
                                             handleChange({ target: { name: 'position', value: '' } }); // Reset position
                                         }}
                                         displayEmpty
@@ -205,6 +211,7 @@ const PatientSampleArchive = () => {
                                         value={selectedSection}
                                         onChange={(e) => {
                                             setSelectedSection(e.target.value);
+                                            setSelectedRack("");
                                             handleChange({ target: { name: 'position', value: '' } }); // Reset position
                                         }}
                                         displayEmpty
@@ -224,12 +231,34 @@ const PatientSampleArchive = () => {
                             <Grid item md={5} xs={12}>
                                 <FormControl fullWidth>
                                     <Select
+                                        value={selectedRack}
+                                        onChange={(e) => {
+                                            setSelectedRack(e.target.value);
+                                            handleChange({ target: { name: 'position', value: '' } }); // Reset position
+                                        }}
+                                        displayEmpty
+                                        disabled={!selectedSection}
+                                        className="block border border-gray w-full"
+                                    >
+                                        <MenuItem value="">Select Rack (Filter)</MenuItem>
+                                        {filteredRacks.map((r) => (
+                                            <MenuItem key={r.id} value={r.id}>
+                                                {r.name}
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+
+                            <Grid item md={5} xs={12}>
+                                <FormControl fullWidth>
+                                    <Select
                                         name="position"
                                         value={values.position}
                                         onChange={handleChange}
                                         onBlur={handleBlur}
                                         displayEmpty
-                                        disabled={!selectedSection}
+                                        disabled={!selectedRack}
                                         className="block border border-gray w-full"
                                     >
                                         <MenuItem value="" disabled>Select Position *</MenuItem>
@@ -315,7 +344,7 @@ const PatientSampleArchive = () => {
                         caption="Position"
                         cellRender={(data) => {
                             const position = archivePositions.find(p => p.id === data.value);
-                            return position ? `${position.section_name ? `[${position.section_name}] ` : ''}${position.name}` : data.value;
+                            return position ? `${position.rack_name ? `[${position.rack_name}] ` : ''}${position.name}` : data.value;
                         }}
                     />
                     <Column

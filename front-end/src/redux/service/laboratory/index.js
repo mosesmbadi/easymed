@@ -835,7 +835,7 @@ export const createArchive = (payload, auth) => {
 export const updateArchive = (id, payload, auth) => {
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve, reject) => {
-        axiosInstance.patch(`${APP_API_URL.ARCHIVE}${id}/`, payload)
+        axiosInstance.patch(`${APP_API_URL.ARCHIVE}?id=${id}`, payload)
             .then((res) => resolve(res.data))
             .catch((err) => reject(err.message))
     })
@@ -844,7 +844,7 @@ export const updateArchive = (id, payload, auth) => {
 export const deleteArchive = (id, auth) => {
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve, reject) => {
-        axiosInstance.delete(`${APP_API_URL.ARCHIVE}${id}/`)
+        axiosInstance.delete(`${APP_API_URL.ARCHIVE}?id=${id}`)
             .then((res) => resolve(res.data))
             .catch((err) => reject(err.message))
     })
@@ -872,7 +872,7 @@ export const createArchiveComponent = (payload, auth) => {
 export const updateArchiveComponent = (id, payload, auth) => {
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve, reject) => {
-        axiosInstance.patch(`${APP_API_URL.ARCHIVE_COMPONENT}${id}/`, payload)
+        axiosInstance.patch(`${APP_API_URL.ARCHIVE_COMPONENT}?id=${id}`, payload)
             .then((res) => resolve(res.data))
             .catch((err) => reject(err.message))
     })
@@ -881,7 +881,7 @@ export const updateArchiveComponent = (id, payload, auth) => {
 export const deleteArchiveComponent = (id, auth) => {
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve, reject) => {
-        axiosInstance.delete(`${APP_API_URL.ARCHIVE_COMPONENT}${id}/`)
+        axiosInstance.delete(`${APP_API_URL.ARCHIVE_COMPONENT}?id=${id}`)
             .then((res) => resolve(res.data))
             .catch((err) => reject(err.message))
     })
@@ -909,7 +909,7 @@ export const createArchiveSection = (payload, auth) => {
 export const updateArchiveSection = (id, payload, auth) => {
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve, reject) => {
-        axiosInstance.patch(`${APP_API_URL.ARCHIVE_SECTION}${id}/`, payload)
+        axiosInstance.patch(`${APP_API_URL.ARCHIVE_SECTION}?id=${id}`, payload)
             .then((res) => resolve(res.data))
             .catch((err) => reject(err.message))
     })
@@ -918,7 +918,44 @@ export const updateArchiveSection = (id, payload, auth) => {
 export const deleteArchiveSection = (id, auth) => {
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve, reject) => {
-        axiosInstance.delete(`${APP_API_URL.ARCHIVE_SECTION}${id}/`)
+        axiosInstance.delete(`${APP_API_URL.ARCHIVE_SECTION}?id=${id}`)
+            .then((res) => resolve(res.data))
+            .catch((err) => reject(err.message))
+    })
+}
+
+// Rack CRUD
+export const fetchArchiveRacks = (auth) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+        axiosInstance.get(`${APP_API_URL.ARCHIVE_RACK}`)
+            .then((res) => resolve(res.data))
+            .catch((err) => reject(err.message))
+    })
+}
+
+export const createArchiveRack = (payload, auth) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+        axiosInstance.post(`${APP_API_URL.ARCHIVE_RACK}`, payload)
+            .then((res) => resolve(res.data))
+            .catch((err) => reject(err.message))
+    })
+}
+
+export const updateArchiveRack = (id, payload, auth) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+        axiosInstance.patch(`${APP_API_URL.ARCHIVE_RACK}?id=${id}`, payload)
+            .then((res) => resolve(res.data))
+            .catch((err) => reject(err.message))
+    })
+}
+
+export const deleteArchiveRack = (id, auth) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+        axiosInstance.delete(`${APP_API_URL.ARCHIVE_RACK}?id=${id}`)
             .then((res) => resolve(res.data))
             .catch((err) => reject(err.message))
     })
@@ -946,7 +983,7 @@ export const createArchivePosition = (payload, auth) => {
 export const updateArchivePosition = (id, payload, auth) => {
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve, reject) => {
-        axiosInstance.patch(`${APP_API_URL.ARCHIVE_POSITION}${id}/`, payload)
+        axiosInstance.patch(`${APP_API_URL.ARCHIVE_POSITION}?id=${id}`, payload)
             .then((res) => resolve(res.data))
             .catch((err) => reject(err.message))
     })
@@ -955,7 +992,7 @@ export const updateArchivePosition = (id, payload, auth) => {
 export const deleteArchivePosition = (id, auth) => {
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve, reject) => {
-        axiosInstance.delete(`${APP_API_URL.ARCHIVE_POSITION}${id}/`)
+        axiosInstance.delete(`${APP_API_URL.ARCHIVE_POSITION}?id=${id}`)
             .then((res) => resolve(res.data))
             .catch((err) => reject(err.message))
     })
@@ -983,7 +1020,7 @@ export const createPatientSampleArchive = (payload, auth) => {
 export const updatePatientSampleArchive = (id, payload, auth) => {
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve, reject) => {
-        axiosInstance.patch(`${APP_API_URL.PATIENT_SAMPLE_ARCHIVE}${id}/`, payload)
+        axiosInstance.patch(`${APP_API_URL.PATIENT_SAMPLE_ARCHIVE}?id=${id}`, payload)
             .then((res) => resolve(res.data))
             .catch((err) => reject(err.message))
     })
@@ -992,7 +1029,7 @@ export const updatePatientSampleArchive = (id, payload, auth) => {
 export const deletePatientSampleArchive = (id, auth) => {
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve, reject) => {
-        axiosInstance.delete(`${APP_API_URL.PATIENT_SAMPLE_ARCHIVE}${id}/`)
+        axiosInstance.delete(`${APP_API_URL.PATIENT_SAMPLE_ARCHIVE}?id=${id}`)
             .then((res) => resolve(res.data))
             .catch((err) => reject(err.message))
     })

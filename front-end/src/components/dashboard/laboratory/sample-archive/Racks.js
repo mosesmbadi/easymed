@@ -11,9 +11,9 @@ import { LuMoreHorizontal } from 'react-icons/lu';
 import { useDispatch, useSelector } from 'react-redux';
 import { Column, Pager, Paging, Scrolling } from "devextreme-react/data-grid";
 import { BiEdit } from 'react-icons/bi';
-import { getAllArchivePositions, getAllArchiveRacks } from '@/redux/features/laboratory';
-import { createArchivePosition } from '@/redux/service/laboratory';
-import EditPositionModal from './modals/EditPosition';
+import { getAllArchiveRacks, getAllArchiveSections } from '@/redux/features/laboratory';
+import { createArchiveRack } from '@/redux/service/laboratory';
+import EditRackModal from './modals/EditRack';
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
     ssr: false,
@@ -34,7 +34,7 @@ const getActions = () => {
 };
 
 
-const Positions = () => {
+const Racks = () => {
     const auth = useAuth()
     const userActions = getActions();
     const dispatch = useDispatch()
@@ -43,38 +43,38 @@ const Positions = () => {
     const [showPageSizeSelector, setShowPageSizeSelector] = useState(true);
     const [showInfo, setShowInfo] = useState(true);
     const [showNavButtons, setShowNavButtons] = useState(true);
-    const { archivePositions, archiveRacks } = useSelector((store) => store.laboratory);
+    const { archiveRacks, archiveSections } = useSelector((store) => store.laboratory);
     const [selectedRowData, setSelectedRowData] = useState({})
 
     const initialValues = {
-        rack: "",
+        section: "",
         name: "",
-        description: "",
+        description: ""
     }
 
     const validationSchema = Yup.object().shape({
-        rack: Yup.string().required("Field is required!"),
+        section: Yup.string().required("Field is required!"),
         name: Yup.string().required("Field is required!"),
     });
 
-    const addNewPosition = async (values, helpers) => {
+    const addNewRack = async (values, helpers) => {
         setLoading(true)
         try {
-            await createArchivePosition(values, auth)
-            dispatch(getAllArchivePositions(auth))
+            await createArchiveRack(values, auth)
+            dispatch(getAllArchiveRacks(auth))
             setLoading(false)
             helpers.resetForm();
-            toast.success('Position created succesfully')
+            toast.success('Rack created succesfully')
         } catch (error) {
             setLoading(false)
-            toast.error('Error Creating Position')
+            toast.error('Error Creating Rack')
             console.log("ERR", error)
         }
     }
 
     useEffect(() => {
-        dispatch(getAllArchivePositions(auth))
         dispatch(getAllArchiveRacks(auth))
+        dispatch(getAllArchiveSections(auth))
     }, [])
 
     const onMenuClick = async (menu, data) => {
@@ -101,11 +101,11 @@ const Positions = () => {
 
     return (
         <div className='p-4'>
-            <h2 className='my-6 font-bold text-xl'>Add Position (e.g. A1, Well 1)</h2>
+            <h2 className='my-6 font-bold text-xl'>Add Rack (e.g. Shelf, Drawer)</h2>
             <Formik
                 initialValues={initialValues}
                 validationSchema={validationSchema}
-                onSubmit={addNewPosition}
+                onSubmit={addNewRack}
             >
                 {({ values, handleChange, handleBlur }) => (
                     <Form>
@@ -113,23 +113,23 @@ const Positions = () => {
                             <Grid item md={3} xs={12}>
                                 <FormControl fullWidth>
                                     <Select
-                                        name="rack"
-                                        value={values.rack}
+                                        name="section"
+                                        value={values.section}
                                         onChange={handleChange}
                                         onBlur={handleBlur}
                                         displayEmpty
                                         className="block border border-gray w-full"
                                     >
-                                        <MenuItem value="" disabled>Select Rack</MenuItem>
-                                        {archiveRacks.map((ra) => (
-                                            <MenuItem key={ra.id} value={ra.id}>
-                                                {ra.section_name ? `[${ra.section_name}] ` : ''}{ra.name}
+                                        <MenuItem value="" disabled>Select Section</MenuItem>
+                                        {archiveSections.map((sec) => (
+                                            <MenuItem key={sec.id} value={sec.id}>
+                                                {reqArchiveName(sec)} {sec.name}
                                             </MenuItem>
                                         ))}
                                     </Select>
                                 </FormControl>
                                 <ErrorMessage
-                                    name="rack"
+                                    name="section"
                                     component="div"
                                     className="text-warning text-xs"
                                 />
@@ -138,7 +138,7 @@ const Positions = () => {
                                 <Field
                                     className="block border border-gray py-3 px-4 focus:outline-none w-full"
                                     type="text"
-                                    placeholder="Position (e.g., A1)"
+                                    placeholder="Rack Name"
                                     name="name"
                                 />
                                 <ErrorMessage
@@ -186,7 +186,7 @@ const Positions = () => {
                                                 ></path>
                                             </svg>
                                         )}
-                                        Add Position
+                                        Add Rack
                                     </button>
                                 </div>
                             </Grid>
@@ -196,7 +196,7 @@ const Positions = () => {
             </Formik>
             <div className='my-10'>
                 <DataGrid
-                    dataSource={archivePositions}
+                    dataSource={archiveRacks}
                     allowColumnReordering={true}
                     rowAlternationEnabled={true}
                     showBorders={true}
@@ -219,11 +219,11 @@ const Positions = () => {
                     />
                     <Column
                         dataField="name"
-                        caption="Position Name"
+                        caption="Rack Name"
                     />
                     <Column
-                        dataField="rack_name"
-                        caption="Rack"
+                        dataField="section_name"
+                        caption="Section"
                     />
                     <Column
                         dataField="description"
@@ -236,10 +236,17 @@ const Positions = () => {
                         cellRender={actionsFunc}
                     />
                 </DataGrid>
-                <EditPositionModal open={editOpen} setOpen={setEditOpen} selectedRowData={selectedRowData} />
+                <EditRackModal open={editOpen} setOpen={setEditOpen} selectedRowData={selectedRowData} />
             </div>
         </div>
     )
 }
 
-export default Positions
+function reqArchiveName(sec) {
+    if (sec && sec.component_name) {
+        return `[${sec.component_name}] `;
+    }
+    return '';
+}
+
+export default Racks
