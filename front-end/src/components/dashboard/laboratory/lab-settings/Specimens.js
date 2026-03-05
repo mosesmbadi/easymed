@@ -61,7 +61,7 @@ const Specimens = () => {
     try {
       const payload = {
         ...values,
-        max_archive_duration: values.max_archive_duration ? `${values.max_archive_duration} 00:00:00` : null
+        max_archive_duration: values.max_archive_duration ? parseInt(values.max_archive_duration) : null
       }
       const response = await createSpecimen(payload, auth)
       dispatch(addSpecimenToStore(response))
@@ -202,8 +202,8 @@ const Specimens = () => {
             dataField="max_archive_duration"
             caption="Max Archive Duration (Days)"
             cellRender={(data) => {
-              if (data.value) {
-                return `${data.value.split(' ')[0]} Days`;
+              if (data.value != null) {
+                return `${data.value} Days`;
               }
               return "-";
             }}

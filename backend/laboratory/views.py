@@ -41,8 +41,11 @@ from .models import (
     Archive,
     ArchiveComponent,
     ArchiveSection,
+    ArchiveRack,
     ArchivePosition,
-    PatientSampleArchive
+    PatientSampleArchive,
+    DisposedSample,
+    RetestSample
 )
 
 from .serializers import (
@@ -66,8 +69,11 @@ from .serializers import (
     ArchiveSerializer,
     ArchiveComponentSerializer,
     ArchiveSectionSerializer,
+    ArchiveRackSerializer,
     ArchivePositionSerializer,
-    PatientSampleArchiveSerializer
+    PatientSampleArchiveSerializer,
+    DisposedSampleSerializer,
+    RetestSampleSerializer
 )
 
 from authperms.permissions import (
@@ -719,6 +725,12 @@ class ArchiveSectionViewSet(viewsets.ModelViewSet):
     permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser | IsReceptionistUser | IsSystemsAdminUser,)
 
 
+class ArchiveRackViewSet(viewsets.ModelViewSet):
+    queryset = ArchiveRack.objects.all().order_by('-id')
+    serializer_class = ArchiveRackSerializer
+    permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser | IsReceptionistUser | IsSystemsAdminUser,)
+
+
 class ArchivePositionViewSet(viewsets.ModelViewSet):
     queryset = ArchivePosition.objects.all().order_by('-id')
     serializer_class = ArchivePositionSerializer
@@ -730,3 +742,14 @@ class PatientSampleArchiveViewSet(viewsets.ModelViewSet):
     serializer_class = PatientSampleArchiveSerializer
     permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser | IsReceptionistUser | IsSystemsAdminUser,)
 
+
+class DisposedSampleViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = DisposedSample.objects.all().order_by('-id')
+    serializer_class = DisposedSampleSerializer
+    permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser | IsReceptionistUser | IsSystemsAdminUser,)
+
+
+class RetestSampleViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = RetestSample.objects.all().order_by('-id')
+    serializer_class = RetestSampleSerializer
+    permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser | IsReceptionistUser | IsSystemsAdminUser,)

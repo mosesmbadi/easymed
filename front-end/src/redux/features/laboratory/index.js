@@ -17,6 +17,7 @@ import {
   fetchArchives,
   fetchArchiveComponents,
   fetchArchiveSections,
+  fetchArchiveRacks,
   fetchArchivePositions,
   fetchPatientSampleArchives
 } from "@/redux/service/laboratory";
@@ -44,6 +45,7 @@ const initialState = {
   archives: [],
   archiveComponents: [],
   archiveSections: [],
+  archiveRacks: [],
   archivePositions: [],
   patientSampleArchives: []
 };
@@ -253,6 +255,9 @@ const LaboratorySlice = createSlice({
     setArchiveSections: (state, action) => {
       state.archiveSections = action.payload;
     },
+    setArchiveRacks: (state, action) => {
+      state.archiveRacks = action.payload;
+    },
     setArchivePositions: (state, action) => {
       state.archivePositions = action.payload;
     },
@@ -273,6 +278,7 @@ export const { setLabResults,
   setLabTestInterpretations, addLabTestInterpretationToStoreOnCreate, updateLabTestInterpretationToStoreOnPatch, deleteLabTestInterpretationFromStore,
   setArchives, setArchiveComponents,
   setArchiveSections,
+  setArchiveRacks,
   setArchivePositions,
   setPatientSampleArchives
 } = LaboratorySlice.actions;
@@ -555,6 +561,15 @@ export const getAllArchiveSections = (auth) => async (dispatch) => {
     dispatch(setArchiveSections(response));
   } catch (error) {
     console.log("ARCHIVE_SECTIONS_ERROR ", error);
+  }
+};
+
+export const getAllArchiveRacks = (auth) => async (dispatch) => {
+  try {
+    const response = await fetchArchiveRacks(auth);
+    dispatch(setArchiveRacks(response));
+  } catch (error) {
+    console.log("ARCHIVE_RACKS_ERROR ", error);
   }
 };
 

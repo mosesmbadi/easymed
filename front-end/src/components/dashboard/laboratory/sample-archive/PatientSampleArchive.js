@@ -10,10 +10,12 @@ import CmtDropdownMenu from '@/assets/DropdownMenu';
 import { LuMoreHorizontal } from 'react-icons/lu';
 import { useDispatch, useSelector } from 'react-redux';
 import { Column, Pager, Paging, Scrolling, Lookup } from "devextreme-react/data-grid";
-import { BiEdit } from 'react-icons/bi';
-import { getAllPatientSampleArchives, getAllArchivePositions, getAllArchiveSections, getAllArchiveComponents, getAllArchives, getAllPhlebotomySamples } from '@/redux/features/laboratory';
-import { createPatientSampleArchive } from '@/redux/service/laboratory';
+import { BiEdit, BiTrash, BiRevision, BiPaperPlane } from 'react-icons/bi';
+import { getAllPatientSampleArchives, getAllArchivePositions, getAllArchiveRacks, getAllArchiveSections, getAllArchiveComponents, getAllArchives, getAllPhlebotomySamples } from '@/redux/features/laboratory';
+import { createPatientSampleArchive, updatePatientSampleArchive } from '@/redux/service/laboratory';
+import { fetchAllAttendanceProcesses } from '@/redux/service/patients';
 import EditPatientSampleArchiveModal from './modals/EditPatientSampleArchive';
+import LabModal from '@/components/dashboard/doctor-desk/lab-modal';
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
     ssr: false,
@@ -27,6 +29,21 @@ const getActions = () => {
             action: "update",
             label: "Edit Item",
             icon: <BiEdit className="text-success text-xl mx-2" />,
+        },
+        {
+            action: "action_dispose",
+            label: "Action: Dispose",
+            icon: <BiTrash className="text-warning text-xl mx-2" />,
+        },
+        {
+            action: "action_retest",
+            label: "Action: Retest",
+            icon: <BiRevision className="text-primary text-xl mx-2" />,
+        },
+        {
+            action: "action_released",
+            label: "Action: Released",
+            icon: <BiPaperPlane className="text-success text-xl mx-2" />,
         },
     ];
 
@@ -42,18 +59,23 @@ const PatientSampleArchive = () => {
     const [showPageSizeSelector, setShowPageSizeSelector] = useState(true);
     const [showInfo, setShowInfo] = useState(true);
     const [showNavButtons, setShowNavButtons] = useState(true);
-    const { patientSampleArchives, archivePositions, archiveSections, archiveComponents, archives, phlebotomySamples } = useSelector((store) => store.laboratory);
+    const { patientSampleArchives, archivePositions, archiveRacks, archiveSections, archiveComponents, archives, phlebotomySamples } = useSelector((store) => store.laboratory);
     const [selectedRowData, setSelectedRowData] = useState({})
+    const [retestOpen, setRetestOpen] = useState(false);
+    const [retestProcess, setRetestProcess] = useState(null);
+    const [retestArchiveId, setRetestArchiveId] = useState(null);
 
     // Cascading dropdown states
     const [selectedArchive, setSelectedArchive] = useState("");
     const [selectedComponent, setSelectedComponent] = useState("");
     const [selectedSection, setSelectedSection] = useState("");
+    const [selectedRack, setSelectedRack] = useState("");
 
     // Filtered lists
     const filteredComponents = archiveComponents.filter(c => c.archive === selectedArchive);
     const filteredSections = archiveSections.filter(s => s.component === selectedComponent);
-    const filteredPositions = archivePositions.filter(p => p.section === selectedSection);
+    const filteredRacks = archiveRacks.filter(r => r.section === selectedSection);
+    const filteredPositions = archivePositions.filter(p => p.rack === selectedRack);
 
     const initialValues = {
         patient_sample: "",
@@ -76,6 +98,7 @@ const PatientSampleArchive = () => {
             setSelectedArchive("");
             setSelectedComponent("");
             setSelectedSection("");
+            setSelectedRack("");
             toast.success('Patient Sample Archive created successfully')
         } catch (error) {
             setLoading(false)
@@ -90,6 +113,7 @@ const PatientSampleArchive = () => {
     useEffect(() => {
         dispatch(getAllPatientSampleArchives(auth))
         dispatch(getAllArchivePositions(auth))
+        dispatch(getAllArchiveRacks(auth))
         dispatch(getAllArchiveSections(auth))
         dispatch(getAllArchiveComponents(auth))
         dispatch(getAllArchives(auth))
@@ -100,6 +124,42 @@ const PatientSampleArchive = () => {
         if (menu.action === "update") {
             setSelectedRowData(data);
             setEditOpen(true);
+        } else if (menu.action === "action_retest") {
+            try {
+                const results = await fetchAllAttendanceProcesses(auth, data.attendance_process_id);
+                const process = Array.isArray(results) ? results[0] : results;
+                if (process) {
+                    setRetestProcess(process);
+                    setRetestArchiveId(data.id);
+                    setRetestOpen(true);
+                } else {
+                    toast.error('Could not find the attendance process for this sample');
+                }
+            } catch (error) {
+                console.error('Error fetching attendance process:', error);
+                toast.error('Error loading process for retest');
+            }
+        } else {
+            let payload = {};
+            if (menu.action === "action_dispose") {
+                payload = { action: "dispose" };
+            } else if (menu.action === "action_released") {
+                payload = { action: "released" };
+            }
+
+            if (Object.keys(payload).length > 0) {
+                setLoading(true);
+                try {
+                    await updatePatientSampleArchive(data.id, payload, auth);
+                    dispatch(getAllPatientSampleArchives(auth));
+                    toast.success("Archive updated successfully");
+                } catch (error) {
+                    console.error("Error updating archive:", error);
+                    toast.error("Error updating archive");
+                } finally {
+                    setLoading(false);
+                }
+            }
         }
     };
 
@@ -140,7 +200,7 @@ const PatientSampleArchive = () => {
                                         className="block border border-gray w-full"
                                     >
                                         <MenuItem value="" disabled>Select Patient Sample</MenuItem>
-                                        {phlebotomySamples.map((ps) => (
+                                        {phlebotomySamples.filter(ps => !ps.is_archived && !ps.is_disposed).map((ps) => (
                                             <MenuItem key={ps.id} value={ps.id}>
                                                 {ps.patient_sample_code || `Sample #${ps.id}`}
                                             </MenuItem>
@@ -153,7 +213,7 @@ const PatientSampleArchive = () => {
                                     className="text-warning text-xs"
                                 />
                             </Grid>
-                            <Grid item md={6} xs={12}>
+                            <Grid item md={4} xs={12}>
                                 <FormControl fullWidth>
                                     <Select
                                         value={selectedArchive}
@@ -161,6 +221,7 @@ const PatientSampleArchive = () => {
                                             setSelectedArchive(e.target.value);
                                             setSelectedComponent("");
                                             setSelectedSection("");
+                                            setSelectedRack("");
                                             handleChange({ target: { name: 'position', value: '' } }); // Reset position
                                         }}
                                         displayEmpty
@@ -176,13 +237,14 @@ const PatientSampleArchive = () => {
                                 </FormControl>
                             </Grid>
 
-                            <Grid item md={6} xs={12}>
+                            <Grid item md={4} xs={12}>
                                 <FormControl fullWidth>
                                     <Select
                                         value={selectedComponent}
                                         onChange={(e) => {
                                             setSelectedComponent(e.target.value);
                                             setSelectedSection("");
+                                            setSelectedRack("");
                                             handleChange({ target: { name: 'position', value: '' } }); // Reset position
                                         }}
                                         displayEmpty
@@ -199,12 +261,13 @@ const PatientSampleArchive = () => {
                                 </FormControl>
                             </Grid>
 
-                            <Grid item md={5} xs={12}>
+                            <Grid item md={4} xs={12}>
                                 <FormControl fullWidth>
                                     <Select
                                         value={selectedSection}
                                         onChange={(e) => {
                                             setSelectedSection(e.target.value);
+                                            setSelectedRack("");
                                             handleChange({ target: { name: 'position', value: '' } }); // Reset position
                                         }}
                                         displayEmpty
@@ -221,7 +284,29 @@ const PatientSampleArchive = () => {
                                 </FormControl>
                             </Grid>
 
-                            <Grid item md={5} xs={12}>
+                            <Grid item md={4} xs={12}>
+                                <FormControl fullWidth>
+                                    <Select
+                                        value={selectedRack}
+                                        onChange={(e) => {
+                                            setSelectedRack(e.target.value);
+                                            handleChange({ target: { name: 'position', value: '' } }); // Reset position
+                                        }}
+                                        displayEmpty
+                                        disabled={!selectedSection}
+                                        className="block border border-gray w-full"
+                                    >
+                                        <MenuItem value="">Select Rack (Filter)</MenuItem>
+                                        {filteredRacks.map((r) => (
+                                            <MenuItem key={r.id} value={r.id}>
+                                                {r.name}
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+
+                            <Grid item md={4} xs={12}>
                                 <FormControl fullWidth>
                                     <Select
                                         name="position"
@@ -229,7 +314,7 @@ const PatientSampleArchive = () => {
                                         onChange={handleChange}
                                         onBlur={handleBlur}
                                         displayEmpty
-                                        disabled={!selectedSection}
+                                        disabled={!selectedRack}
                                         className="block border border-gray w-full"
                                     >
                                         <MenuItem value="" disabled>Select Position *</MenuItem>
@@ -247,7 +332,7 @@ const PatientSampleArchive = () => {
                                 />
                             </Grid>
 
-                            <Grid item md={2} xs={12}>
+                            <Grid item md={12} xs={12}>
                                 <div className="flex justify-end gap-2 h-full">
                                     <button
                                         type="submit"
@@ -315,7 +400,7 @@ const PatientSampleArchive = () => {
                         caption="Position"
                         cellRender={(data) => {
                             const position = archivePositions.find(p => p.id === data.value);
-                            return position ? `${position.section_name ? `[${position.section_name}] ` : ''}${position.name}` : data.value;
+                            return position ? `${position.rack_name ? `[${position.rack_name}] ` : ''}${position.name}` : data.value;
                         }}
                     />
                     <Column
@@ -331,8 +416,8 @@ const PatientSampleArchive = () => {
                         caption="Status"
                     />
                     <Column
-                        dataField="action"
-                        caption="Action"
+                        dataField="process_reference"
+                        caption="Process Track No."
                     />
                     <Column
                         dataField=""
@@ -342,6 +427,15 @@ const PatientSampleArchive = () => {
                     />
                 </DataGrid>
                 <EditPatientSampleArchiveModal open={editOpen} setOpen={setEditOpen} selectedRowData={selectedRowData} />
+                {retestProcess && (
+                    <LabModal
+                        labOpen={retestOpen}
+                        setLabOpen={setRetestOpen}
+                        selectedRowData={retestProcess}
+                        isRetest={true}
+                        archiveId={retestArchiveId}
+                    />
+                )}
             </div>
         </div>
     )

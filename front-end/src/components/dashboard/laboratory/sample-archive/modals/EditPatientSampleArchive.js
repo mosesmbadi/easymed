@@ -9,6 +9,7 @@ import { toast } from 'react-toastify';
 import { useAuth } from '@/assets/hooks/use-auth';
 import { updatePatientSampleArchive } from "@/redux/service/laboratory";
 import { getAllPatientSampleArchives } from "@/redux/features/laboratory";
+import { getAllArchiveRacks } from "@/redux/features/laboratory";
 import { useEffect } from "react";
 
 const EditPatientSampleArchiveModal = ({ open, setOpen, selectedRowData }) => {
@@ -17,12 +18,13 @@ const EditPatientSampleArchiveModal = ({ open, setOpen, selectedRowData }) => {
     const auth = useAuth();
 
     // Fetch options from redux store
-    const { archivePositions, archiveSections, archiveComponents, archives, phlebotomySamples } = useSelector((store) => store.laboratory);
+    const { archivePositions, archiveRacks, archiveSections, archiveComponents, archives, phlebotomySamples } = useSelector((store) => store.laboratory);
 
     // Cascading dropdown states
     const [selectedArchive, setSelectedArchive] = useState("");
     const [selectedComponent, setSelectedComponent] = useState("");
     const [selectedSection, setSelectedSection] = useState("");
+    const [selectedRack, setSelectedRack] = useState("");
 
     const handleClose = () => {
         setOpen(false);
@@ -34,27 +36,34 @@ const EditPatientSampleArchiveModal = ({ open, setOpen, selectedRowData }) => {
             const posId = selectedRowData.position;
             const position = archivePositions.find(p => p.id === posId);
             if (position) {
-                const secId = position.section;
-                setSelectedSection(secId);
+                const rackId = position.rack;
+                setSelectedRack(rackId);
 
-                const section = archiveSections.find(s => s.id === secId);
-                if (section) {
-                    const compId = section.component;
-                    setSelectedComponent(compId);
+                const rack = archiveRacks.find(r => r.id === rackId);
+                if (rack) {
+                    const secId = rack.section;
+                    setSelectedSection(secId);
 
-                    const component = archiveComponents.find(c => c.id === compId);
-                    if (component) {
-                        setSelectedArchive(component.archive);
+                    const section = archiveSections.find(s => s.id === secId);
+                    if (section) {
+                        const compId = section.component;
+                        setSelectedComponent(compId);
+
+                        const component = archiveComponents.find(c => c.id === compId);
+                        if (component) {
+                            setSelectedArchive(component.archive);
+                        }
                     }
                 }
             }
         }
-    }, [open, selectedRowData, archivePositions, archiveSections, archiveComponents]);
+    }, [open, selectedRowData, archivePositions, archiveRacks, archiveSections, archiveComponents]);
 
     // Filtered lists
     const filteredComponents = archiveComponents.filter(c => c.archive === selectedArchive);
     const filteredSections = archiveSections.filter(s => s.component === selectedComponent);
-    const filteredPositions = archivePositions.filter(p => p.section === selectedSection);
+    const filteredRacks = archiveRacks.filter(r => r.section === selectedSection);
+    const filteredPositions = archivePositions.filter(p => p.rack === selectedRack);
 
     const initialValues = {
         patient_sample: selectedRowData?.patient_sample || "",
@@ -113,7 +122,7 @@ const EditPatientSampleArchiveModal = ({ open, setOpen, selectedRowData }) => {
                         {({ values, handleChange, handleBlur }) => (
                             <Form>
                                 <Grid container spacing={2}>
-                                    <Grid item md={6} xs={12}>
+                                    <Grid item md={4} xs={12}>
                                         <FormControl fullWidth>
                                             <Select
                                                 name="patient_sample"
@@ -137,7 +146,7 @@ const EditPatientSampleArchiveModal = ({ open, setOpen, selectedRowData }) => {
                                             className="text-warning text-xs"
                                         />
                                     </Grid>
-                                    <Grid item md={6} xs={12}>
+                                    <Grid item md={4} xs={12}>
                                         <FormControl fullWidth>
                                             <Select
                                                 value={selectedArchive}
@@ -145,6 +154,7 @@ const EditPatientSampleArchiveModal = ({ open, setOpen, selectedRowData }) => {
                                                     setSelectedArchive(e.target.value);
                                                     setSelectedComponent("");
                                                     setSelectedSection("");
+                                                    setSelectedRack("");
                                                     handleChange({ target: { name: 'position', value: '' } }); // Reset position
                                                 }}
                                                 displayEmpty
@@ -160,13 +170,14 @@ const EditPatientSampleArchiveModal = ({ open, setOpen, selectedRowData }) => {
                                         </FormControl>
                                     </Grid>
 
-                                    <Grid item md={6} xs={12}>
+                                    <Grid item md={4} xs={12}>
                                         <FormControl fullWidth>
                                             <Select
                                                 value={selectedComponent}
                                                 onChange={(e) => {
                                                     setSelectedComponent(e.target.value);
                                                     setSelectedSection("");
+                                                    setSelectedRack("");
                                                     handleChange({ target: { name: 'position', value: '' } }); // Reset position
                                                 }}
                                                 displayEmpty
@@ -183,12 +194,13 @@ const EditPatientSampleArchiveModal = ({ open, setOpen, selectedRowData }) => {
                                         </FormControl>
                                     </Grid>
 
-                                    <Grid item md={6} xs={12}>
+                                    <Grid item md={4} xs={12}>
                                         <FormControl fullWidth>
                                             <Select
                                                 value={selectedSection}
                                                 onChange={(e) => {
                                                     setSelectedSection(e.target.value);
+                                                    setSelectedRack("");
                                                     handleChange({ target: { name: 'position', value: '' } }); // Reset position
                                                 }}
                                                 displayEmpty
@@ -205,7 +217,29 @@ const EditPatientSampleArchiveModal = ({ open, setOpen, selectedRowData }) => {
                                         </FormControl>
                                     </Grid>
 
-                                    <Grid item md={6} xs={12}>
+                                    <Grid item md={4} xs={12}>
+                                        <FormControl fullWidth>
+                                            <Select
+                                                value={selectedRack}
+                                                onChange={(e) => {
+                                                    setSelectedRack(e.target.value);
+                                                    handleChange({ target: { name: 'position', value: '' } }); // Reset position
+                                                }}
+                                                displayEmpty
+                                                disabled={!selectedSection}
+                                                className="block border border-gray w-full"
+                                            >
+                                                <MenuItem value="">Select Rack (Filter)</MenuItem>
+                                                {filteredRacks.map((r) => (
+                                                    <MenuItem key={r.id} value={r.id}>
+                                                        {r.name}
+                                                    </MenuItem>
+                                                ))}
+                                            </Select>
+                                        </FormControl>
+                                    </Grid>
+
+                                    <Grid item md={4} xs={12}>
                                         <FormControl fullWidth>
                                             <Select
                                                 name="position"
@@ -213,7 +247,7 @@ const EditPatientSampleArchiveModal = ({ open, setOpen, selectedRowData }) => {
                                                 onChange={handleChange}
                                                 onBlur={handleBlur}
                                                 displayEmpty
-                                                disabled={!selectedSection}
+                                                disabled={!selectedRack}
                                                 className="block border border-gray w-full"
                                             >
                                                 <MenuItem value="" disabled>Select Position</MenuItem>
@@ -231,47 +265,11 @@ const EditPatientSampleArchiveModal = ({ open, setOpen, selectedRowData }) => {
                                         />
                                     </Grid>
 
-                                    <Grid item md={6} xs={12}>
-                                        <FormControl fullWidth>
-                                            <Select
-                                                name="status"
-                                                value={values.status}
-                                                onChange={handleChange}
-                                                displayEmpty
-                                                className="block border border-gray w-full"
-                                            >
-                                                <MenuItem value="not_expired">Not Expired</MenuItem>
-                                                <MenuItem value="expired">Expired</MenuItem>
-                                            </Select>
-                                        </FormControl>
-                                        <ErrorMessage
-                                            name="status"
-                                            component="div"
-                                            className="text-warning text-xs"
-                                        />
-                                    </Grid>
-                                    <Grid item md={6} xs={12}>
-                                        <FormControl fullWidth>
-                                            <Select
-                                                name="action"
-                                                value={values.action}
-                                                onChange={handleChange}
-                                                displayEmpty
-                                                className="block border border-gray w-full"
-                                            >
-                                                <MenuItem value="">-- No Action --</MenuItem>
-                                                <MenuItem value="dispose">Dispose</MenuItem>
-                                                <MenuItem value="retest">Retest</MenuItem>
-                                                <MenuItem value="released">Released</MenuItem>
-                                            </Select>
-                                        </FormControl>
-                                    </Grid>
-
                                     <Grid item md={12} xs={12}>
                                         <div className="flex justify-end gap-2 h-full">
                                             <button
                                                 type="submit"
-                                                className="bg-primary px-4 py-2 text-white h-[54px] rounded-lg"
+                                                className="bg-primary px-4 py-2 text-white w-48 h-[54px] rounded-lg"
                                             >
                                                 {loading && (
                                                     <svg

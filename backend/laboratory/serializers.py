@@ -25,8 +25,11 @@ from .models import (
     Archive,
     ArchiveComponent,
     ArchiveSection,
+    ArchiveRack,
     ArchivePosition,
-    PatientSampleArchive
+    PatientSampleArchive,
+    DisposedSample,
+    RetestSample
     )
 
 
@@ -205,6 +208,9 @@ class ProcessTestRequestSerializer(serializers.ModelSerializer):
 
 class PatientSampleSerializer(serializers.ModelSerializer):
     specimen_name = serializers.SerializerMethodField()
+    is_archived = serializers.SerializerMethodField()
+    is_disposed = serializers.SerializerMethodField()
+    is_retested = serializers.SerializerMethodField()
 
     class Meta:
         model = PatientSample
@@ -215,7 +221,11 @@ class PatientSampleSerializer(serializers.ModelSerializer):
             'specimen',
             'specimen_name',
             'lab_test_request',
-            'process'
+            'process',
+            'is_archived',
+            'is_disposed',
+            'is_retested',
+            'collected_on',
         ]
         read_only_fields = [
             'patient_sample_code',
@@ -223,6 +233,17 @@ class PatientSampleSerializer(serializers.ModelSerializer):
 
     def get_specimen_name(self, obj):
         return obj.specimen.name
+
+    def get_is_archived(self, obj):
+        return hasattr(obj, 'archive_record')
+
+    def get_is_disposed(self, obj):
+        from .models import DisposedSample
+        return DisposedSample.objects.filter(patient_sample_code=obj.patient_sample_code).exists()
+
+    def get_is_retested(self, obj):
+        from .models import RetestSample
+        return RetestSample.objects.filter(patient_sample_code=obj.patient_sample_code).exists()
 
 class SpecimenSerializer(serializers.ModelSerializer):
     class Meta:
@@ -346,8 +367,16 @@ class ArchiveSectionSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class ArchivePositionSerializer(serializers.ModelSerializer):
+class ArchiveRackSerializer(serializers.ModelSerializer):
     section_name = serializers.ReadOnlyField(source='section.name')
+
+    class Meta:
+        model = ArchiveRack
+        fields = '__all__'
+
+
+class ArchivePositionSerializer(serializers.ModelSerializer):
+    rack_name = serializers.ReadOnlyField(source='rack.name')
 
     class Meta:
         model = ArchivePosition
@@ -358,10 +387,29 @@ class PatientSampleArchiveSerializer(serializers.ModelSerializer):
     patient_sample_code = serializers.ReadOnlyField(source='patient_sample.patient_sample_code')
     position_name = serializers.ReadOnlyField(source='position.name')
     created_by_name = serializers.ReadOnlyField(source='created_by.get_fullname')
+    process_reference = serializers.ReadOnlyField(source='patient_sample.process.reference')
+    attendance_process_id = serializers.ReadOnlyField(source='patient_sample.process.attendanceprocess.id')
+    expiry_date = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
 
     class Meta:
         model = PatientSampleArchive
         fields = '__all__'
+
+    def get_expiry_date(self, obj):
+        from datetime import timedelta
+        specimen = obj.patient_sample.specimen
+        if specimen and specimen.max_archive_duration and obj.archiving_date:
+            return obj.archiving_date + timedelta(days=specimen.max_archive_duration)
+        return None
+
+    def get_status(self, obj):
+        from django.utils import timezone
+        expiry_date = self.get_expiry_date(obj)
+        if expiry_date and timezone.now().date() > expiry_date:
+            return 'Expired'
+        return 'Not Expired'
+
 
     def validate(self, attrs):
         position = attrs.get('position')
@@ -390,3 +438,18 @@ class PatientSampleArchiveSerializer(serializers.ModelSerializer):
 
         return attrs
 
+
+class DisposedSampleSerializer(serializers.ModelSerializer):
+    disposed_by_name = serializers.ReadOnlyField(source='disposed_by.get_fullname')
+
+    class Meta:
+        model = DisposedSample
+        fields = '__all__'
+
+
+class RetestSampleSerializer(serializers.ModelSerializer):
+    retested_by_name = serializers.ReadOnlyField(source='retested_by.get_fullname')
+
+    class Meta:
+        model = RetestSample
+        fields = '__all__'

@@ -7,42 +7,42 @@ import { Grid, MenuItem, Select, FormControl } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from 'react-toastify'
 import { useAuth } from '@/assets/hooks/use-auth';
-import { updateArchivePosition } from "@/redux/service/laboratory";
-import { getAllArchivePositions, getAllArchiveRacks } from "@/redux/features/laboratory";
+import { updateArchiveRack } from "@/redux/service/laboratory";
+import { getAllArchiveRacks } from "@/redux/features/laboratory";
 
-const EditPositionModal = ({ open, setOpen, selectedRowData }) => {
+const EditRackModal = ({ open, setOpen, selectedRowData }) => {
     const [loading, setLoading] = useState(false);
     const dispatch = useDispatch();
     const auth = useAuth();
 
-    const { archiveRacks } = useSelector((store) => store.laboratory);
+    const { archiveSections } = useSelector((store) => store.laboratory);
 
     const handleClose = () => {
         setOpen(false);
     };
 
     const initialValues = {
-        rack: selectedRowData?.rack || "",
+        section: selectedRowData?.section || "",
         name: selectedRowData?.name || "",
         description: selectedRowData?.description || "",
     };
 
     const validationSchema = Yup.object().shape({
-        rack: Yup.string().required("Field is Required!"),
+        section: Yup.string().required("Field is Required!"),
         name: Yup.string().required("Field is Required!"),
     });
 
-    const updateAPosition = async (formValue, helpers) => {
+    const updateARack = async (formValue, helpers) => {
         try {
             setLoading(true);
-            await updateArchivePosition(parseInt(selectedRowData?.id), formValue, auth)
-            dispatch(getAllArchivePositions(auth));
+            await updateArchiveRack(parseInt(selectedRowData?.id), formValue, auth)
+            dispatch(getAllArchiveRacks(auth));
             setLoading(false);
-            toast.success("Position Updated Successfully!");
+            toast.success("Rack Updated Successfully!");
             handleClose();
         } catch (err) {
             setLoading(false);
-            toast.error("Error updating position.");
+            toast.error("Error updating rack.");
             console.log("EDIT_ERROR ", err);
         }
     };
@@ -58,12 +58,12 @@ const EditPositionModal = ({ open, setOpen, selectedRowData }) => {
                 aria-describedby="alert-dialog-description"
             >
                 <DialogContent>
-                    <h2 className='my-10 font-bold text-xl'>Edit Archive Position</h2>
+                    <h2 className='my-10 font-bold text-xl'>Edit Archive Rack</h2>
 
                     <Formik
                         initialValues={initialValues}
                         validationSchema={validationSchema}
-                        onSubmit={updateAPosition}
+                        onSubmit={updateARack}
                         enableReinitialize
                     >
                         {({ values, handleChange, handleBlur }) => (
@@ -72,23 +72,23 @@ const EditPositionModal = ({ open, setOpen, selectedRowData }) => {
                                     <Grid item md={4} xs={12}>
                                         <FormControl fullWidth>
                                             <Select
-                                                name="rack"
-                                                value={values.rack}
+                                                name="section"
+                                                value={values.section}
                                                 onChange={handleChange}
                                                 onBlur={handleBlur}
                                                 displayEmpty
                                                 className="block border border-gray w-full"
                                             >
-                                                <MenuItem value="" disabled>Select Rack</MenuItem>
-                                                {archiveRacks.map((ra) => (
-                                                    <MenuItem key={ra.id} value={ra.id}>
-                                                        {ra.section_name ? `[${ra.section_name}] ` : ''}{ra.name}
+                                                <MenuItem value="" disabled>Select Section</MenuItem>
+                                                {archiveSections.map((sec) => (
+                                                    <MenuItem key={sec.id} value={sec.id}>
+                                                        {sec.component_name ? `[${sec.component_name}] ` : ''}{sec.name}
                                                     </MenuItem>
                                                 ))}
                                             </Select>
                                         </FormControl>
                                         <ErrorMessage
-                                            name="rack"
+                                            name="section"
                                             component="div"
                                             className="text-warning text-xs"
                                         />
@@ -97,7 +97,7 @@ const EditPositionModal = ({ open, setOpen, selectedRowData }) => {
                                         <Field
                                             className="block border border-gray py-3 px-4 focus:outline-none w-full"
                                             type="text"
-                                            placeholder="Position (e.g., A1)"
+                                            placeholder="Rack Name"
                                             name="name"
                                         />
                                         <ErrorMessage
@@ -158,4 +158,4 @@ const EditPositionModal = ({ open, setOpen, selectedRowData }) => {
     );
 };
 
-export default EditPositionModal;
+export default EditRackModal;
