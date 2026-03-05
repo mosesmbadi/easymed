@@ -122,7 +122,7 @@ const EditPatientSampleArchiveModal = ({ open, setOpen, selectedRowData }) => {
                         {({ values, handleChange, handleBlur }) => (
                             <Form>
                                 <Grid container spacing={2}>
-                                    <Grid item md={6} xs={12}>
+                                    <Grid item md={4} xs={12}>
                                         <FormControl fullWidth>
                                             <Select
                                                 name="patient_sample"
@@ -146,7 +146,7 @@ const EditPatientSampleArchiveModal = ({ open, setOpen, selectedRowData }) => {
                                             className="text-warning text-xs"
                                         />
                                     </Grid>
-                                    <Grid item md={6} xs={12}>
+                                    <Grid item md={4} xs={12}>
                                         <FormControl fullWidth>
                                             <Select
                                                 value={selectedArchive}
@@ -170,7 +170,7 @@ const EditPatientSampleArchiveModal = ({ open, setOpen, selectedRowData }) => {
                                         </FormControl>
                                     </Grid>
 
-                                    <Grid item md={6} xs={12}>
+                                    <Grid item md={4} xs={12}>
                                         <FormControl fullWidth>
                                             <Select
                                                 value={selectedComponent}
@@ -194,7 +194,7 @@ const EditPatientSampleArchiveModal = ({ open, setOpen, selectedRowData }) => {
                                         </FormControl>
                                     </Grid>
 
-                                    <Grid item md={6} xs={12}>
+                                    <Grid item md={4} xs={12}>
                                         <FormControl fullWidth>
                                             <Select
                                                 value={selectedSection}
@@ -217,7 +217,7 @@ const EditPatientSampleArchiveModal = ({ open, setOpen, selectedRowData }) => {
                                         </FormControl>
                                     </Grid>
 
-                                    <Grid item md={6} xs={12}>
+                                    <Grid item md={4} xs={12}>
                                         <FormControl fullWidth>
                                             <Select
                                                 value={selectedRack}
@@ -239,7 +239,7 @@ const EditPatientSampleArchiveModal = ({ open, setOpen, selectedRowData }) => {
                                         </FormControl>
                                     </Grid>
 
-                                    <Grid item md={6} xs={12}>
+                                    <Grid item md={4} xs={12}>
                                         <FormControl fullWidth>
                                             <Select
                                                 name="position"
@@ -265,7 +265,7 @@ const EditPatientSampleArchiveModal = ({ open, setOpen, selectedRowData }) => {
                                         />
                                     </Grid>
 
-                                    <Grid item md={6} xs={12}>
+                                    <Grid item md={4} xs={12}>
                                         <FormControl fullWidth>
                                             <Select
                                                 name="status"
@@ -284,7 +284,7 @@ const EditPatientSampleArchiveModal = ({ open, setOpen, selectedRowData }) => {
                                             className="text-warning text-xs"
                                         />
                                     </Grid>
-                                    <Grid item md={6} xs={12}>
+                                    <Grid item md={4} xs={12}>
                                         <FormControl fullWidth>
                                             <Select
                                                 name="action"
@@ -305,7 +305,7 @@ const EditPatientSampleArchiveModal = ({ open, setOpen, selectedRowData }) => {
                                         <div className="flex justify-end gap-2 h-full">
                                             <button
                                                 type="submit"
-                                                className="bg-primary px-4 py-2 text-white h-[54px] rounded-lg"
+                                                className="bg-primary px-4 py-2 text-white w-48 h-[54px] rounded-lg"
                                             >
                                                 {loading && (
                                                     <svg

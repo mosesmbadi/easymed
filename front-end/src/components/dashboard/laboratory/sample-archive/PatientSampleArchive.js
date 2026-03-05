@@ -157,7 +157,7 @@ const PatientSampleArchive = () => {
                                     className="text-warning text-xs"
                                 />
                             </Grid>
-                            <Grid item md={6} xs={12}>
+                            <Grid item md={4} xs={12}>
                                 <FormControl fullWidth>
                                     <Select
                                         value={selectedArchive}
@@ -181,7 +181,7 @@ const PatientSampleArchive = () => {
                                 </FormControl>
                             </Grid>
 
-                            <Grid item md={6} xs={12}>
+                            <Grid item md={4} xs={12}>
                                 <FormControl fullWidth>
                                     <Select
                                         value={selectedComponent}
@@ -205,7 +205,7 @@ const PatientSampleArchive = () => {
                                 </FormControl>
                             </Grid>
 
-                            <Grid item md={5} xs={12}>
+                            <Grid item md={4} xs={12}>
                                 <FormControl fullWidth>
                                     <Select
                                         value={selectedSection}
@@ -228,7 +228,7 @@ const PatientSampleArchive = () => {
                                 </FormControl>
                             </Grid>
 
-                            <Grid item md={5} xs={12}>
+                            <Grid item md={4} xs={12}>
                                 <FormControl fullWidth>
                                     <Select
                                         value={selectedRack}
@@ -250,7 +250,7 @@ const PatientSampleArchive = () => {
                                 </FormControl>
                             </Grid>
 
-                            <Grid item md={5} xs={12}>
+                            <Grid item md={4} xs={12}>
                                 <FormControl fullWidth>
                                     <Select
                                         name="position"
@@ -276,11 +276,11 @@ const PatientSampleArchive = () => {
                                 />
                             </Grid>
 
-                            <Grid item md={2} xs={12}>
+                            <Grid item md={12} xs={12}>
                                 <div className="flex justify-end gap-2 h-full">
                                     <button
                                         type="submit"
-                                        className="bg-primary px-4 py-2 text-white w-full h-[54px] rounded-lg"
+                                        className="bg-primary px-4 py-2 text-white w-48 h-[54px] rounded-lg"
                                     >
                                         {loading && (
                                             <svg
