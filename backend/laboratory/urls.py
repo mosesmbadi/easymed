@@ -32,7 +32,8 @@ from .views import (
     ArchiveSectionViewSet,
     ArchiveRackViewSet,
     ArchivePositionViewSet,
-    PatientSampleArchiveViewSet
+    PatientSampleArchiveViewSet,
+    DisposedSampleViewSet
 )
 
 router = DefaultRouter()
@@ -59,6 +60,7 @@ router.register(r'archive-section', ArchiveSectionViewSet, basename='archive-sec
 router.register(r'archive-rack', ArchiveRackViewSet, basename='archive-rack')
 router.register(r'archive-position', ArchivePositionViewSet, basename='archive-position')
 router.register(r'patient-sample-archive', PatientSampleArchiveViewSet, basename='patient-sample-archive')
+router.register(r'disposed-samples', DisposedSampleViewSet, basename='disposed-samples')
 
 
 

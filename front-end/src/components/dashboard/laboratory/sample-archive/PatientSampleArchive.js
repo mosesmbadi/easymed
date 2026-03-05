@@ -182,7 +182,7 @@ const PatientSampleArchive = () => {
                                         className="block border border-gray w-full"
                                     >
                                         <MenuItem value="" disabled>Select Patient Sample</MenuItem>
-                                        {phlebotomySamples.map((ps) => (
+                                        {phlebotomySamples.filter(ps => !ps.is_archived && !ps.is_disposed).map((ps) => (
                                             <MenuItem key={ps.id} value={ps.id}>
                                                 {ps.patient_sample_code || `Sample #${ps.id}`}
                                             </MenuItem>
@@ -396,6 +396,10 @@ const PatientSampleArchive = () => {
                     <Column
                         dataField="status"
                         caption="Status"
+                    />
+                    <Column
+                        dataField="process_reference"
+                        caption="Process Track No."
                     />
                     <Column
                         dataField=""

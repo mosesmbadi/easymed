@@ -583,3 +583,13 @@ class PatientSampleArchive(models.Model):
         return f"{self.patient_sample.patient_sample_code} at {self.position.name}"
 
 
+class DisposedSample(models.Model):
+    """Records samples that have been disposed from the archive."""
+    patient_sample_code = models.CharField(max_length=255)
+    position_name = models.CharField(max_length=255)
+    archiving_date = models.DateField()
+    disposed_on = models.DateField(auto_now_add=True)
+    disposed_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.patient_sample_code} - Disposed on {self.disposed_on}"

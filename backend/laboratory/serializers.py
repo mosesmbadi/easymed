@@ -27,7 +27,8 @@ from .models import (
     ArchiveSection,
     ArchiveRack,
     ArchivePosition,
-    PatientSampleArchive
+    PatientSampleArchive,
+    DisposedSample
     )
 
 
@@ -206,6 +207,7 @@ class ProcessTestRequestSerializer(serializers.ModelSerializer):
 
 class PatientSampleSerializer(serializers.ModelSerializer):
     specimen_name = serializers.SerializerMethodField()
+    is_archived = serializers.SerializerMethodField()
 
     class Meta:
         model = PatientSample
@@ -216,7 +218,10 @@ class PatientSampleSerializer(serializers.ModelSerializer):
             'specimen',
             'specimen_name',
             'lab_test_request',
-            'process'
+            'process',
+            'is_archived',
+            'is_disposed',
+            'collected_on',
         ]
         read_only_fields = [
             'patient_sample_code',
@@ -224,6 +229,13 @@ class PatientSampleSerializer(serializers.ModelSerializer):
 
     def get_specimen_name(self, obj):
         return obj.specimen.name
+
+    def get_is_archived(self, obj):
+        return hasattr(obj, 'archive_record')
+
+    def get_is_disposed(self, obj):
+        from .models import DisposedSample
+        return DisposedSample.objects.filter(patient_sample_code=obj.patient_sample_code).exists()
 
 class SpecimenSerializer(serializers.ModelSerializer):
     class Meta:
@@ -367,6 +379,8 @@ class PatientSampleArchiveSerializer(serializers.ModelSerializer):
     patient_sample_code = serializers.ReadOnlyField(source='patient_sample.patient_sample_code')
     position_name = serializers.ReadOnlyField(source='position.name')
     created_by_name = serializers.ReadOnlyField(source='created_by.get_fullname')
+    process_reference = serializers.ReadOnlyField(source='patient_sample.process.reference')
+    attendance_process_id = serializers.ReadOnlyField(source='patient_sample.process.attendanceprocess.id')
     expiry_date = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
 
@@ -416,3 +430,10 @@ class PatientSampleArchiveSerializer(serializers.ModelSerializer):
 
         return attrs
 
+
+class DisposedSampleSerializer(serializers.ModelSerializer):
+    disposed_by_name = serializers.ReadOnlyField(source='disposed_by.get_fullname')
+
+    class Meta:
+        model = DisposedSample
+        fields = '__all__'
