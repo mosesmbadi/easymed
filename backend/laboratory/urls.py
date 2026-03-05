@@ -30,6 +30,7 @@ from .views import (
     ArchiveViewSet,
     ArchiveComponentViewSet,
     ArchiveSectionViewSet,
+    ArchiveRackViewSet,
     ArchivePositionViewSet,
     PatientSampleArchiveViewSet
 )
@@ -55,6 +56,7 @@ router.register(r'lab-settings', LabSettingsViewSet, basename='lab-settings')
 router.register(r'archive', ArchiveViewSet, basename='archive')
 router.register(r'archive-component', ArchiveComponentViewSet, basename='archive-component')
 router.register(r'archive-section', ArchiveSectionViewSet, basename='archive-section')
+router.register(r'archive-rack', ArchiveRackViewSet, basename='archive-rack')
 router.register(r'archive-position', ArchivePositionViewSet, basename='archive-position')
 router.register(r'patient-sample-archive', PatientSampleArchiveViewSet, basename='patient-sample-archive')
 

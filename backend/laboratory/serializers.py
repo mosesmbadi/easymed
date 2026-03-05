@@ -25,6 +25,7 @@ from .models import (
     Archive,
     ArchiveComponent,
     ArchiveSection,
+    ArchiveRack,
     ArchivePosition,
     PatientSampleArchive
     )
@@ -346,8 +347,16 @@ class ArchiveSectionSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class ArchivePositionSerializer(serializers.ModelSerializer):
+class ArchiveRackSerializer(serializers.ModelSerializer):
     section_name = serializers.ReadOnlyField(source='section.name')
+
+    class Meta:
+        model = ArchiveRack
+        fields = '__all__'
+
+
+class ArchivePositionSerializer(serializers.ModelSerializer):
+    rack_name = serializers.ReadOnlyField(source='rack.name')
 
     class Meta:
         model = ArchivePosition

@@ -550,13 +550,21 @@ class ArchiveSection(models.Model):
     def __str__(self):
         return f"{self.component.name} - {self.name}"
 
-class ArchivePosition(models.Model):
-    section = models.ForeignKey(ArchiveSection, on_delete=models.CASCADE, related_name='positions')
+class ArchiveRack(models.Model):
+    section = models.ForeignKey(ArchiveSection, on_delete=models.CASCADE, related_name='racks')
     name = models.CharField(max_length=255)
     description = models.TextField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.section.name} - {self.name}"
+
+class ArchivePosition(models.Model):
+    rack = models.ForeignKey(ArchiveRack, on_delete=models.CASCADE, related_name='positions', null=True, blank=True)
+    name = models.CharField(max_length=255)
+    description = models.TextField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.rack.name} - {self.name}"
 
 class PatientSampleArchive(models.Model):
     STATUS_CHOICES = (

@@ -41,6 +41,7 @@ from .models import (
     Archive,
     ArchiveComponent,
     ArchiveSection,
+    ArchiveRack,
     ArchivePosition,
     PatientSampleArchive
 )
@@ -66,6 +67,7 @@ from .serializers import (
     ArchiveSerializer,
     ArchiveComponentSerializer,
     ArchiveSectionSerializer,
+    ArchiveRackSerializer,
     ArchivePositionSerializer,
     PatientSampleArchiveSerializer
 )
@@ -716,6 +718,12 @@ class ArchiveComponentViewSet(viewsets.ModelViewSet):
 class ArchiveSectionViewSet(viewsets.ModelViewSet):
     queryset = ArchiveSection.objects.all().order_by('-id')
     serializer_class = ArchiveSectionSerializer
+    permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser | IsReceptionistUser | IsSystemsAdminUser,)
+
+
+class ArchiveRackViewSet(viewsets.ModelViewSet):
+    queryset = ArchiveRack.objects.all().order_by('-id')
+    serializer_class = ArchiveRackSerializer
     permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser | IsReceptionistUser | IsSystemsAdminUser,)
 
 
