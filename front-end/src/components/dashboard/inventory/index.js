@@ -85,10 +85,10 @@ const InventoryDataGrid = ({ department }) => {
       totalValue += price * quantity;
     });
 
-    return { shortExpiries, reorderLevels, totalValue };
+    return { shortExpiries, reorderLevels, totalValue, totalItems: filteredInventories.length };
   }, [filteredInventories]);
 
-  const MetricCard = ({ title, value, icon, color }) => (
+  const MetricCard = ({ title, value, icon, color, subtitle, smallValue }) => (
     <Card sx={{ height: '100%', boxShadow: 2, borderRadius: 1 }}>
       <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1} sx={{ mb: 1 }}>
@@ -103,9 +103,14 @@ const InventoryDataGrid = ({ department }) => {
             {React.cloneElement(icon, { fontSize: 'small' })}
           </Box>
           <Box sx={{ textAlign: 'right' }}>
-            <Typography variant="h5" fontWeight="bold" color={`${color}.main`}>
+            <Typography variant={smallValue ? "h6" : "h5"} fontWeight="bold" color={`${color}.main`}>
               {value}
             </Typography>
+            {subtitle && (
+              <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.2, display: 'block' }}>
+                {subtitle}
+              </Typography>
+            )}
             <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1, textTransform: 'uppercase', fontWeight: 'bold' }}>
               {title}
             </Typography>
@@ -174,6 +179,8 @@ const InventoryDataGrid = ({ department }) => {
             value={`Ksh ${metrics.totalValue.toLocaleString()}`}
             icon={<AttachMoneyIcon sx={{ color: 'success.main' }} />}
             color="success"
+            smallValue
+            subtitle={`${metrics.totalItems} item${metrics.totalItems !== 1 ? 's' : ''}`}
           />
         </Grid>
       </Grid>
