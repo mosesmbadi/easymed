@@ -4,14 +4,15 @@ module.exports = {
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/utils/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
-    colors:{
+    colors: {
       primary: '#212751',
       primary_light: "#43a3c7",
       light: "#daedf4",
       white: '#ffffff',
-      white_light:'#FAF9F6',
+      white_light: '#FAF9F6',
       background: '#F2F2F6',
       warning: '#FF3333',
       success: '#2E7D32',
@@ -33,10 +34,10 @@ module.exports = {
       sm: '0.8rem',
       base: '1rem',
       xl: '1.25rem',
-    '2xl': '1.563rem',
-    '3xl': '1.953rem',
-    '4xl': '2.441rem',
-    '5xl': '3.052rem',
+      '2xl': '1.563rem',
+      '3xl': '1.953rem',
+      '4xl': '2.441rem',
+      '5xl': '3.052rem',
     }
 
   },

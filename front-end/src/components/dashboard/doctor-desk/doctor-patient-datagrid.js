@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import { Column, Paging, Pager,
+import {
+  Column, Paging, Pager,
   HeaderFilter, Scrolling,
- } from "devextreme-react/data-grid";
+} from "devextreme-react/data-grid";
 import { Chip } from "@mui/material";
 import CmtDropdownMenu from "@/assets/DropdownMenu";
 import { LuMoreHorizontal } from "react-icons/lu";
@@ -10,7 +11,7 @@ import ReferPatientModal from "../patient/refer-patient-modal";
 import ConsultPatientModal from "./consult-modal";
 import PrescribePatientModal from "./prescribe-patient-modal";
 import { BiTransferAlt } from "react-icons/bi";
-import { FaBed, FaRobot } from "react-icons/fa";
+import { FaBed, FaRobot, FaExclamationTriangle } from "react-icons/fa";
 import { MdOutlineContactSupport } from "react-icons/md";
 import { useDispatch, useSelector } from "react-redux";
 import { getAllPatients, getAllProcesses } from "@/redux/features/patients";
@@ -45,8 +46,8 @@ const getActions = () => {
     },
     {
       action: "admit",
-      label:"Admit",
-      icon:<FaBed className="text-card text-xl mx-2"/>,
+      label: "Admit",
+      icon: <FaBed className="text-card text-xl mx-2" />,
     },
     {
       action: "prescribe",
@@ -73,7 +74,7 @@ const DoctorPatientDataGrid = () => {
   const [selectedRecords, setSelectedRecords] = useState([]);
   const [selectedRowData, setSelectedRowData] = React.useState({});
   const [open, setOpen] = useState(false);
-  const [resultOpen, setResultOpen]=useState(false)
+  const [resultOpen, setResultOpen] = useState(false)
   const [consultOpen, setConsultOpen] = useState(false);
   const [prescribeOpen, setPrescribeOpen] = useState(false);
   const [labOpen, setLabOpen] = useState(false);
@@ -86,25 +87,25 @@ const DoctorPatientDataGrid = () => {
   const [showPageSizeSelector, setShowPageSizeSelector] = useState(true);
   const [showInfo, setShowInfo] = useState(true);
   const [showNavButtons, setShowNavButtons] = useState(true);
-  const { processes, patients } = useSelector((store)=> store.patient)
+  const { processes, patients } = useSelector((store) => store.patient)
   const [processFilter, setProcessFilter] = useState({ track: 'doctor', search: "" });
-  const actionsWhenOnDoctorTrack = userActions.filter((action)=> action.action !== "results")
-  const actionsWhenOnResultedTrack = userActions.filter((action)=> action.action !== "send to lab")
-  const [selectedSearchFilter, setSelectedSearchFilter] = useState({label: "", value: ""})
+  const actionsWhenOnDoctorTrack = userActions.filter((action) => action.action !== "results")
+  const actionsWhenOnResultedTrack = userActions.filter((action) => action.action !== "send to lab")
+  const [selectedSearchFilter, setSelectedSearchFilter] = useState({ label: "", value: "" })
 
   const items = [
-    {label: "None", value: ""},
-    {label: "Patient First Name", value: "patient__first_name"},
-    {label: "Patient Second Name", value: "patient__second_name"},
-    {label: "Patient Id", value: "patient_number"},
+    { label: "None", value: "" },
+    { label: "Patient First Name", value: "patient__first_name" },
+    { label: "Patient Second Name", value: "patient__second_name" },
+    { label: "Patient Id", value: "patient_number" },
     // {label: "Track Number", value: "track_number"},
-    {label: "Doctor First Name", value: "doctor__first_name"},
-    {label: "Doctor Last Name", value: "doctor__last_name"},
+    { label: "Doctor First Name", value: "doctor__first_name" },
+    { label: "Doctor Last Name", value: "doctor__last_name" },
     // {label: "Lab Tech First Name", value: "lab_tech__first_name"},
     // {label: "Lab Tech Last Name", value: "lab_tech__last_name"},
     // {label: "Pharmacist First Name", value: "pharmacist__first_name"},
     // {label: "Pharmacist Last Name", value: "pharmacist__last_name"},
-    {label: "Reason", value: "reason"},
+    { label: "Reason", value: "reason" },
     // {label: "Diagnosis", value: "clinical_note__diagnosis"},
     // {label: "Doctors Notes", value: "clinical_note__doctors_note"},
     // {label: "Signs And Symptoms", value: "clinical_note__signs_and_symptoms"},
@@ -113,11 +114,19 @@ const DoctorPatientDataGrid = () => {
   ]
 
 
-  const doctorsSchedules = processes.filter((process)=> process.track.includes(processFilter.track))
+  const doctorsSchedules = processes.filter((process) => process.track.includes(processFilter.track))
 
   const patientNameRender = (cellData) => {
     const patient = patients.find((patient) => patient.id === cellData.data.patient);
-    return patient ? `${patient.first_name} ${patient.second_name}` : ""
+    const hasCriticalTriage = cellData.data.has_critical_triage;
+    return (
+      <div className="flex items-center gap-2">
+        <span>{patient ? `${patient.first_name} ${patient.second_name}` : ""}</span>
+        {hasCriticalTriage && (
+          <FaExclamationTriangle className="text-warning text-sm" title="Critical Triage Values Detected" />
+        )}
+      </div>
+    );
   }
 
   useEffect(() => {
@@ -136,13 +145,13 @@ const DoctorPatientDataGrid = () => {
       setConsultOpen(true);
     } else if (menu.action === "prescribe") {
       router.push(`/dashboard/doctor-desk/${data.id}/${data.prescription}`);
-    } else if(menu.action === "send to lab"){
+    } else if (menu.action === "send to lab") {
       setSelectedRowData(data);
       setLabOpen(true);
-    }else if(menu.action === "results"){
+    } else if (menu.action === "results") {
       setSelectedRowData(data);
       setResultOpen(true);
-    }else if (menu.action === "admit") {
+    } else if (menu.action === "admit") {
       setSelectedRowData(data);
       setAdmitOpen(true);
     }
@@ -156,8 +165,8 @@ const DoctorPatientDataGrid = () => {
   const robotIconFunc = ({ data }) => {
     return (
       <div className="flex justify-center">
-        <FaRobot 
-          className="cursor-pointer text-purple-600 hover:text-purple-800 text-xl transition-colors duration-200" 
+        <FaRobot
+          className="cursor-pointer text-purple-600 hover:text-purple-800 text-xl transition-colors duration-200"
           onClick={() => handleAITriageClick(data)}
           title="AI Triage Analysis"
         />
@@ -170,7 +179,7 @@ const DoctorPatientDataGrid = () => {
       <>
         <CmtDropdownMenu
           sx={{ cursor: "pointer" }}
-          items={processFilter === 'lab' ?  actionsWhenOnResultedTrack : actionsWhenOnDoctorTrack }
+          items={processFilter === 'lab' ? actionsWhenOnResultedTrack : actionsWhenOnDoctorTrack}
           onItemClick={(menu) => onMenuClick(menu, data)}
           TriggerComponent={
             <LuMoreHorizontal className="cursor-pointer text-xl" />
@@ -186,24 +195,24 @@ const DoctorPatientDataGrid = () => {
   };
 
   useEffect(() => {
-      // This effect handles the debouncing logic
-      const timerId = setTimeout(() => {
-          // Dispatch the action only after a 500ms delay
-          dispatch(getAllProcesses(auth, null, processFilter, selectedSearchFilter))
-      }, 500); // 500ms delay, adjust as needed
+    // This effect handles the debouncing logic
+    const timerId = setTimeout(() => {
+      // Dispatch the action only after a 500ms delay
+      dispatch(getAllProcesses(auth, null, processFilter, selectedSearchFilter))
+    }, 500); // 500ms delay, adjust as needed
 
-      // Cleanup function: clears the timer if searchTerm changes before the delay is over
-      return () => {
-          clearTimeout(timerId);
-      };
+    // Cleanup function: clears the timer if searchTerm changes before the delay is over
+    return () => {
+      clearTimeout(timerId);
+    };
   }, [processFilter.search]); // The effect re-runs only when the local `searchTerm` state changes
 
   return (
     <section>
-      <ProcessFilter 
-        selectedFilter={processFilter} 
+      <ProcessFilter
+        selectedFilter={processFilter}
         setProcessFilter={setProcessFilter}
-        selectedSearchFilter={selectedSearchFilter} 
+        selectedSearchFilter={selectedSearchFilter}
         setSelectedSearchFilter={setSelectedSearchFilter}
         items={items}
       />
@@ -220,7 +229,7 @@ const DoctorPatientDataGrid = () => {
         wordWrapEnabled={true}
         allowPaging={true}
         className="shadow-xl w-full"
-        // height={"70vh"}
+      // height={"70vh"}
       >
         <HeaderFilter visible={true} />
         <Scrolling rowRenderingMode='virtual'></Scrolling>
@@ -278,10 +287,10 @@ const DoctorPatientDataGrid = () => {
       />)}
       {/* {resultOpen && (<ViewAddedResults resultOpen={resultOpen} setResultOpen={setResultOpen} selectedData={selectedRowData}
       />)} */}
-      {resultOpen && (<ApproveResults selectedData={selectedRowData} approveOpen={resultOpen} setApproveOpen={setResultOpen}/>)}
-      
+      {resultOpen && (<ApproveResults selectedData={selectedRowData} approveOpen={resultOpen} setApproveOpen={setResultOpen} />)}
+
       {admitOpen && (<AdmitModal admitOpen={admitOpen} setAdmitOpen={setAdmitOpen} selectedRowdata={selectedRowData} />)}
-      
+
       {aiTriageOpen && (<AITriageModal
         open={aiTriageOpen}
         setOpen={setAiTriageOpen}

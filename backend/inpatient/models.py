@@ -169,6 +169,7 @@ class InPatientTriage(models.Model):
     pulse = models.PositiveIntegerField(null=True)
     diastolic = models.PositiveIntegerField(null=True)
     systolic = models.PositiveIntegerField(null=True)
+    spo2 = models.PositiveIntegerField(null=True)
     bmi = models.DecimalField(max_digits=10, decimal_places=1, null=True)
     fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     notes = models.CharField(max_length=300, blank=True, null=True)

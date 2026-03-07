@@ -4,11 +4,13 @@ import { Container } from "@mui/material";
 import AuthGuard from "@/assets/hoc/auth-guard";
 import NursePatientDataGrid from '@/components/dashboard/nursing-station';
 import ProtectedRoute from "@/assets/hoc/protected-route";
+import NursingNav from '@/components/dashboard/nursing-station/NursingNav';
 
 
 const NursingInterface = () => {
   return (
     <Container maxWidth="xl mt-8">
+      <NursingNav />
       <NursePatientDataGrid />
     </Container>
   );

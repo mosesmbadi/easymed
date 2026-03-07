@@ -139,6 +139,7 @@ class Triage(models.Model):
     pulse = models.PositiveIntegerField(null=True)
     diastolic = models.PositiveIntegerField(null=True)
     systolic = models.PositiveIntegerField(null=True)
+    spo2 = models.PositiveIntegerField(null=True)
     bmi = models.DecimalField(max_digits=10, decimal_places=1, null=True)
     fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     notes = models.CharField(max_length=300, blank=True, null=True)
@@ -308,3 +309,36 @@ class AttendanceProcess(models.Model):
 
     def __str__(self):
         return f"{self.id} - {self.patient.first_name}"
+
+
+class TriageSettings(models.Model):
+    # SPO2
+    spo2_min = models.PositiveIntegerField(default=90)
+    spo2_warning_level = models.PositiveIntegerField(default=94)
+    
+    # Blood Pressure (Systolic)
+    systolic_min = models.PositiveIntegerField(default=90)
+    systolic_max = models.PositiveIntegerField(default=180)
+    
+    # Blood Pressure (Diastolic)
+    diastolic_min = models.PositiveIntegerField(default=60)
+    diastolic_max = models.PositiveIntegerField(default=120)
+    
+    # Temperature (°C)
+    temperature_min = models.DecimalField(max_digits=5, decimal_places=2, default=35.0)
+    temperature_max = models.DecimalField(max_digits=5, decimal_places=2, default=40.0)
+    
+    # Pulse
+    pulse_min = models.PositiveIntegerField(default=40)
+    pulse_max = models.PositiveIntegerField(default=120)
+    
+    # Active Toggle
+    is_active = models.BooleanField(default=True)
+    
+    def save(self, *args, **kwargs):
+        # Override to ensure only a single configuration instance exists
+        self.pk = 1
+        super(TriageSettings, self).save(*args, **kwargs)
+
+    def __str__(self):
+        return "Triage Critical Values Settings"

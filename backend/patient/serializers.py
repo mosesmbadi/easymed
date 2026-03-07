@@ -12,6 +12,7 @@ from .models import (
     Referral,
     Triage,
     AttendanceProcess,
+    TriageSettings,
 )
 from company.serializers import InsuranceCompanySerializer
 from inventory.models import (
@@ -181,6 +182,7 @@ class AttendanceProcessSerializer(serializers.ModelSerializer):
     invoice_items = serializers.SerializerMethodField()
     assigned_doctor = serializers.CharField(source='doctor.get_fullname', read_only=True)
     patient_name = serializers.SerializerMethodField()
+    has_critical_triage = serializers.SerializerMethodField()
     referral = ReferralSerializer(read_only=True)
     clinical_note = ConsultationSerializer(read_only=True)
     class Meta:
@@ -199,4 +201,33 @@ class AttendanceProcessSerializer(serializers.ModelSerializer):
         invoice_items = InvoiceItem.objects.filter(invoice=invoice)
         serialized_items = InvoiceItemSerializer(invoice_items, many=True)
         return serialized_items.data
+
+    def get_has_critical_triage(self, obj):
+        from .models import TriageSettings
+        triage = obj.triage
+        if not triage:
+            return False
+
+        settings = TriageSettings.objects.first()
+        if not settings or not settings.is_active:
+            return False
+
+        # Threshold checking
+        if triage.spo2 is not None and triage.spo2 < settings.spo2_min:
+            return True
+        if triage.systolic is not None and (triage.systolic < settings.systolic_min or triage.systolic > settings.systolic_max):
+            return True
+        if triage.diastolic is not None and (triage.diastolic < settings.diastolic_min or triage.diastolic > settings.diastolic_max):
+            return True
+        if triage.temperature is not None and (triage.temperature < settings.temperature_min or triage.temperature > settings.temperature_max):
+            return True
+        if triage.pulse is not None and (triage.pulse < settings.pulse_min or triage.pulse > settings.pulse_max):
+            return True
+
+        return False
+
+class TriageSettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TriageSettings
+        fields = '__all__'
     

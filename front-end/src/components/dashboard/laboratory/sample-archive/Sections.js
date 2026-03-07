@@ -120,7 +120,7 @@ const Sections = () => {
                                         displayEmpty
                                         className="block border border-gray w-full"
                                     >
-                                        <MenuItem value="" disabled>Select Component</MenuItem>
+                                        <MenuItem value="" disabled>Select Compartment</MenuItem>
                                         {archiveComponents.map((comp) => (
                                             <MenuItem key={comp.id} value={comp.id}>
                                                 {reqArchiveName(comp, archiveComponents)} {comp.name}

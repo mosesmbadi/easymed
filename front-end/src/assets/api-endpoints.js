@@ -17,6 +17,7 @@ export const API_URL = {
 
   /***************** PATIENT APIS **********************/
   CREATE_PATIENT: "/patients/patients/",
+  TRIAGE_SETTINGS: "/patients/triage-settings/",
   EDIT_PATIENT: "/patients/patients",
   DELETE_PATIENT: "/patients/patients/",
   FETCH_PATIENT: "/patients/patients/",
@@ -209,6 +210,7 @@ export const APP_API_URL = {
 
   /***************** PATIENT APIS **********************/
   CREATE_PATIENT: "/api/patient",
+  TRIAGE_SETTINGS: "/api/patient/triage-settings",
   EDIT_PATIENT: "/api/patient/edit-patient",
   DELETE_PATIENT: "/api/patient/delete-patient",
   FETCH_PATIENT: "/api/patient",
