@@ -9,8 +9,9 @@ import { useContext } from "react";
 import { authContext } from "@/components/use-context";
 import { toast } from "react-toastify";
 import { useDispatch, useSelector } from "react-redux";
-import { getPatientTriage, updateAttendanceProcessStoreClinicalNotesData } from "@/redux/features/patients";
+import { getPatientTriage, updateAttendanceProcessStoreClinicalNotesData, getTriageSettings } from "@/redux/features/patients";
 import { useAuth } from "@/assets/hooks/use-auth";
+import { getVitalSignColor } from "@/utils/triage-flags";
 
 const ConsultPatientModal = ({
   selectedRowData,
@@ -20,7 +21,7 @@ const ConsultPatientModal = ({
   const [loading, setLoading] = React.useState(false);
   const { user } = useContext(authContext);
   const auth = useAuth()
-  const { patientTriage, patients } = useSelector((store) => store.patient);
+  const { patientTriage, patients, triageSettings } = useSelector((store) => store.patient);
   const dispatch = useDispatch();
 
   const patient = patients.find((patient) => patient.id === selectedRowData.patient)
@@ -79,6 +80,7 @@ const ConsultPatientModal = ({
 
   useEffect(() => {
     dispatch(getPatientTriage(selectedRowData?.triage, auth));
+    if (!triageSettings) dispatch(getTriageSettings(auth));
   }, [selectedRowData]);
 
   return (
@@ -107,13 +109,20 @@ const ConsultPatientModal = ({
             {({ values }) => (
               <Form>
                 <section className="space-y-2">
-                  <h1 className="">Triage Information</h1>
+                  <div className="flex items-center justify-between">
+                    <h1 className="">Triage Information</h1>
+                    <div className="flex gap-4 text-xs">
+                      <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-success"></span> Normal</span>
+                      <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange"></span> Warning</span>
+                      <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-warning"></span> Critical</span>
+                    </div>
+                  </div>
                   <section className="flex items-center justify-between text-sm border-b bg-background p-1 rounded border-gray">
                     <div className="flex items-center gap-2">
                       <span>
                         Temperature :
                       </span>
-                      <span>{patientTriage?.temperature}</span>
+                      <span className={getVitalSignColor("temperature", patientTriage?.temperature, triageSettings)}>{patientTriage?.temperature}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span>Height :</span>
@@ -129,19 +138,19 @@ const ConsultPatientModal = ({
                     </div>
                     <div className="flex items-center gap-2">
                       <span>Pulse :</span>
-                      <span>{patientTriage?.pulse}</span>
+                      <span className={getVitalSignColor("pulse", patientTriage?.pulse, triageSettings)}>{patientTriage?.pulse}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span>Systolic :</span>
-                      <span>{patientTriage?.systolic}</span>
+                      <span className={getVitalSignColor("systolic", patientTriage?.systolic, triageSettings)}>{patientTriage?.systolic}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span>Diastolic :</span>
-                      <span>{patientTriage?.diastolic}</span>
+                      <span className={getVitalSignColor("diastolic", patientTriage?.diastolic, triageSettings)}>{patientTriage?.diastolic}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span>SPO2 :</span>
-                      <span>{patientTriage?.spo2}</span>
+                      <span className={getVitalSignColor("spo2", patientTriage?.spo2, triageSettings)}>{patientTriage?.spo2}</span>
                     </div>
                   </section>
                   <section className="flex items-center justify-between text-sm border-b bg-background p-1 rounded border-gray">

@@ -1,13 +1,14 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { fetchPrescriptionsPrescribedDrugs } from "@/redux/service/pharmacy";
-import { 
+import {
   fetchServices,
-  fetchPatient, 
-  fetchPatientProfile, 
-  fetchPatientTriage, 
-  searchPatients, 
-  fetchPatientPrescribeDrugs, 
+  fetchPatient,
+  fetchPatientProfile,
+  fetchPatientTriage,
+  searchPatients,
+  fetchPatientPrescribeDrugs,
   fetchAllAttendanceProcesses,
+  fetchTriageSettings,
 } from "@/redux/service/patients";
 
 
@@ -21,6 +22,7 @@ const initialState = {
   searchedPatients: [],
   profileDetails: {},
   patientTriage: {},
+  triageSettings: null,
 };
 
 const PatientSlice = createSlice({
@@ -51,6 +53,9 @@ const PatientSlice = createSlice({
     setPatientTriage: (state, action) => {
       state.patientTriage = action.payload;
     },
+    setTriageSettings: (state, action) => {
+      state.triageSettings = action.payload;
+    },
     setPrescriptionItem: (state, action) => {
       state.prescriptionItems = action.payload
 
@@ -59,22 +64,24 @@ const PatientSlice = createSlice({
       state.processes = state.processes.map((process) => {
         return (
           process.id === action.payload.attendance_process ? { ...process, referral: action.payload } : process
-        )}
+        )
+      }
       );
     },
     updateAttendaceProcessStoreClinicalNotes: (state, action) => {
       state.processes = state.processes.map((process) => {
-      
+
         return (
-           process.id === action.payload.attendance_process ? { ...process, clinical_note: action.payload } : process
-      )});
+          process.id === action.payload.attendance_process ? { ...process, clinical_note: action.payload } : process
+        )
+      });
     },
     setPatientPrescriptionItem: (state, action) => {
-      const prescriptionItem = state.prescriptionItems.find(item => item.item === action.payload.item );
+      const prescriptionItem = state.prescriptionItems.find(item => item.item === action.payload.item);
       if (prescriptionItem) {
         // If prescriptionItem is found, update the existing item in the array
         state.prescriptionItems = state.prescriptionItems.map(item =>
-          item.item === action.payload.item ? { ...item, dosage:action.payload.dosage, frequency:action.payload.frequency, duration:action.payload.duration, note:action.payload.note } : item
+          item.item === action.payload.item ? { ...item, dosage: action.payload.dosage, frequency: action.payload.frequency, duration: action.payload.duration, note: action.payload.note } : item
         );
       } else {
         // If prescriptionItem is not found, add the new item to the array
@@ -82,20 +89,21 @@ const PatientSlice = createSlice({
       }
     },
     removePrescriptionItem: (state, action) => {
-      const prescriptionItem = state.prescriptionItems.filter(item => item.item != action.payload.item );
+      const prescriptionItem = state.prescriptionItems.filter(item => item.item != action.payload.item);
       state.prescriptionItems = prescriptionItem;
     },
-    clearPrescriptionItems: (state, action)=>{
+    clearPrescriptionItems: (state, action) => {
       state.prescriptionItems = [];
     },
   },
 });
 
-export const { 
+export const {
   setServices,
   setPatients,
   setProfile,
   setPatientTriage,
+  setTriageSettings,
   setSearchedPatients,
   removePrescriptionItem,
   setPatientPrescriptionItem,
@@ -108,7 +116,7 @@ export const {
   updateAttendaceProcessStoreRefer
 } = PatientSlice.actions;
 
-export const getAllProcesses = (auth, process_id=null,  processsFilter, selectedSearchFilter) => async (dispatch) => {
+export const getAllProcesses = (auth, process_id = null, processsFilter, selectedSearchFilter) => async (dispatch) => {
   try {
     console.log("REDUX ACTION: Calling fetchAllAttendanceProcesses with:", { auth, process_id, processsFilter, selectedSearchFilter });
     const response = await fetchAllAttendanceProcesses(auth, process_id, processsFilter, selectedSearchFilter);
@@ -151,7 +159,16 @@ export const getAllPatients = (auth, processsFilter, selectedSearchFilter) => as
     const response = await fetchPatient(auth, processsFilter, selectedSearchFilter);
     dispatch(setPatients(response));
   } catch (error) {
-    console.log("PATIENTS_ERROR ", error);
+    console.log("PATIENT_ERROR ", error);
+  }
+};
+
+export const getTriageSettings = (auth) => async (dispatch) => {
+  try {
+    const response = await fetchTriageSettings(auth);
+    dispatch(setTriageSettings(response));
+  } catch (error) {
+    console.log("TRIAGE_SETTINGS_ERROR ", error);
   }
 };
 

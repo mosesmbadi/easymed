@@ -7,15 +7,16 @@ import { Checkbox, DialogTitle, Grid } from "@mui/material";
 import { toast } from "react-toastify";
 import { sendLabRequests, sendLabRequestsPanels, updateLabRequest } from "@/redux/service/laboratory";
 import { useAuth } from "@/assets/hooks/use-auth";
-import { getPatientTriage, getAllPatients } from "@/redux/features/patients";
+import { getPatientTriage, getAllPatients, getTriageSettings } from "@/redux/features/patients";
 import { useDispatch, useSelector } from "react-redux";
 import { updateAttendanceProcesses } from "@/redux/service/patients";
 import { updatePatientSampleArchive } from "@/redux/service/laboratory";
 import { billingInvoiceItems } from "@/redux/service/billing";
 import MultiTestProfileSelector from "@/components/common/MultiTestProfileSelector";
+import { getVitalSignColor } from "@/utils/triage-flags";
 
 const LabModal = ({ labOpen, setLabOpen, selectedRowData, isRetest = false, archiveId = null }) => {
-  const { patientTriage, patients } = useSelector((store) => store.patient);
+  const { patientTriage, patients, triageSettings } = useSelector((store) => store.patient);
   const [loading, setLoading] = React.useState(false);
   const [testProfileSections, setTestProfileSections] = useState([]);
   const auth = useAuth();
@@ -126,6 +127,7 @@ const LabModal = ({ labOpen, setLabOpen, selectedRowData, isRetest = false, arch
   useEffect(() => {
     dispatch(getAllPatients(auth));
     dispatch(getPatientTriage(selectedRowData?.triage, auth));
+    if (!triageSettings) dispatch(getTriageSettings(auth));
   }, [selectedRowData]);
 
   return (
@@ -160,13 +162,20 @@ const LabModal = ({ labOpen, setLabOpen, selectedRowData, isRetest = false, arch
             {({ values, handleChange }) => (
               <Form>
                 <section className="space-y-2">
-                  <h1 className="">Triage Information</h1>
+                  <div className="flex items-center justify-between">
+                    <h1 className="">Triage Information</h1>
+                    <div className="flex gap-4 text-xs">
+                      <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-success"></span> Normal</span>
+                      <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange"></span> Warning</span>
+                      <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-warning"></span> Critical</span>
+                    </div>
+                  </div>
                   <section className="flex items-center justify-between text-sm border-b bg-background p-1 rounded border-gray">
                     <div className="flex items-center gap-2">
                       <span>
                         Temperature :
                       </span>
-                      <span>{patientTriage?.temperature}</span>
+                      <span className={getVitalSignColor("temperature", patientTriage?.temperature, triageSettings)}>{patientTriage?.temperature}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span>Height :</span>
@@ -182,19 +191,19 @@ const LabModal = ({ labOpen, setLabOpen, selectedRowData, isRetest = false, arch
                     </div>
                     <div className="flex items-center gap-2">
                       <span>Pulse :</span>
-                      <span>{patientTriage?.pulse}</span>
+                      <span className={getVitalSignColor("pulse", patientTriage?.pulse, triageSettings)}>{patientTriage?.pulse}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span>Systolic :</span>
-                      <span>{patientTriage?.systolic}</span>
+                      <span className={getVitalSignColor("systolic", patientTriage?.systolic, triageSettings)}>{patientTriage?.systolic}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span>Diastolic :</span>
-                      <span>{patientTriage?.diastolic}</span>
+                      <span className={getVitalSignColor("diastolic", patientTriage?.diastolic, triageSettings)}>{patientTriage?.diastolic}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span>SPO2 :</span>
-                      <span>{patientTriage?.spo2}</span>
+                      <span className={getVitalSignColor("spo2", patientTriage?.spo2, triageSettings)}>{patientTriage?.spo2}</span>
                     </div>
                   </section>
                   <section className="flex items-center justify-between text-sm border-b bg-background p-1 rounded border-gray">
