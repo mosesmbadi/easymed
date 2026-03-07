@@ -29,7 +29,8 @@ from .models import (
     ArchivePosition,
     PatientSampleArchive,
     DisposedSample,
-    RetestSample
+    RetestSample,
+    ReleasedSample
     )
 
 
@@ -211,6 +212,7 @@ class PatientSampleSerializer(serializers.ModelSerializer):
     is_archived = serializers.SerializerMethodField()
     is_disposed = serializers.SerializerMethodField()
     is_retested = serializers.SerializerMethodField()
+    is_released = serializers.SerializerMethodField()
 
     class Meta:
         model = PatientSample
@@ -225,6 +227,7 @@ class PatientSampleSerializer(serializers.ModelSerializer):
             'is_archived',
             'is_disposed',
             'is_retested',
+            'is_released',
             'collected_on',
         ]
         read_only_fields = [
@@ -244,6 +247,9 @@ class PatientSampleSerializer(serializers.ModelSerializer):
     def get_is_retested(self, obj):
         from .models import RetestSample
         return RetestSample.objects.filter(patient_sample_code=obj.patient_sample_code).exists()
+
+    def get_is_released(self, obj):
+        return hasattr(obj, 'release_record')
 
 class SpecimenSerializer(serializers.ModelSerializer):
     class Meta:
@@ -452,4 +458,12 @@ class RetestSampleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = RetestSample
+        fields = '__all__'
+
+
+class ReleasedSampleSerializer(serializers.ModelSerializer):
+    released_by_name = serializers.ReadOnlyField(source='released_by.get_fullname')
+
+    class Meta:
+        model = ReleasedSample
         fields = '__all__'

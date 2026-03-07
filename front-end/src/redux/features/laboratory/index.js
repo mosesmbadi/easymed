@@ -19,7 +19,8 @@ import {
   fetchArchiveSections,
   fetchArchiveRacks,
   fetchArchivePositions,
-  fetchPatientSampleArchives
+  fetchPatientSampleArchives,
+  fetchReleasedSamples
 } from "@/redux/service/laboratory";
 
 
@@ -47,7 +48,8 @@ const initialState = {
   archiveSections: [],
   archiveRacks: [],
   archivePositions: [],
-  patientSampleArchives: []
+  patientSampleArchives: [],
+  releasedSamples: []
 };
 
 const LaboratorySlice = createSlice({
@@ -261,6 +263,9 @@ const LaboratorySlice = createSlice({
     setArchivePositions: (state, action) => {
       state.archivePositions = action.payload;
     },
+    setReleasedSamples: (state, action) => {
+      state.releasedSamples = action.payload;
+    },
   },
 });
 
@@ -280,7 +285,8 @@ export const { setLabResults,
   setArchiveSections,
   setArchiveRacks,
   setArchivePositions,
-  setPatientSampleArchives
+  setPatientSampleArchives,
+  setReleasedSamples
 } = LaboratorySlice.actions;
 
 
@@ -588,6 +594,15 @@ export const getAllPatientSampleArchives = (auth) => async (dispatch) => {
     dispatch(setPatientSampleArchives(response));
   } catch (error) {
     console.log("PATIENT_SAMPLE_ARCHIVES_ERROR ", error);
+  }
+};
+
+export const getAllReleasedSamples = (auth) => async (dispatch) => {
+  try {
+    const response = await fetchReleasedSamples(auth);
+    dispatch(setReleasedSamples(response));
+  } catch (error) {
+    console.log("RELEASED_SAMPLES_ERROR ", error);
   }
 };
 
