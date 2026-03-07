@@ -9,6 +9,8 @@ import { toast } from "react-toastify";
 import { useAuth } from "@/assets/hooks/use-auth";
 import { getAllProcesses, getPatientTriage } from "@/redux/features/patients";
 import { updateAttendanceProcesses, updatePatientTriage } from "@/redux/service/patients";
+import { getVitalSignColor } from "@/utils/triage-flags";
+import { getTriageSettings } from "@/redux/features/patients";
 
 export default function AddTriageModal({
   triageOpen,
@@ -18,7 +20,7 @@ export default function AddTriageModal({
   const [loading, setLoading] = useState(false);
   const auth = useAuth();
   const dispatch = useDispatch();
-  const { patientTriage, patients } = useSelector((store) => store.patient)
+  const { patientTriage, patients, triageSettings } = useSelector((store) => store.patient)
 
   const triagePatient = patients.find((patient) => patient.id === selectedRowData?.patient)
 
@@ -26,6 +28,9 @@ export default function AddTriageModal({
   useEffect(() => {
     if (auth && selectedRowData) {
       fetchPatientTriage(selectedRowData.triage)
+    }
+    if (!triageSettings && auth) {
+      dispatch(getTriageSettings(auth));
     }
   }, [triageOpen])
 
@@ -147,7 +152,7 @@ export default function AddTriageModal({
                     <section className="flex items-center justify-between gap-2 py-2 w-full">
                       <div className="w-full">
                         <Field
-                          className="block border text-sm border-gray rounded-xl py-2 px-4 focus:outline-none w-full"
+                          className={`block border text-sm border-gray rounded-xl py-2 px-4 focus:outline-none w-full ${getVitalSignColor("temperature", values.temperature, triageSettings)}`}
                           type="text"
                           placeholder="Temperature"
                           name="temperature"
@@ -205,7 +210,7 @@ export default function AddTriageModal({
                     <section className="flex items-center justify-between gap-2 py-2 w-full">
                       <div className="w-full">
                         <Field
-                          className="block border text-sm border-gray rounded-xl py-2 px-4 focus:outline-none w-full"
+                          className={`block border text-sm border-gray rounded-xl py-2 px-4 focus:outline-none w-full ${getVitalSignColor("pulse", values.pulse, triageSettings)}`}
                           type="text"
                           placeholder="Pulse"
                           name="pulse"
@@ -218,7 +223,7 @@ export default function AddTriageModal({
                       </div>
                       <div className="w-full">
                         <Field
-                          className="block border text-sm border-gray rounded-xl py-2 px-4 focus:outline-none w-full"
+                          className={`block border text-sm border-gray rounded-xl py-2 px-4 focus:outline-none w-full ${getVitalSignColor("spo2", values.spo2, triageSettings)}`}
                           type="text"
                           placeholder="SPO2(%)"
                           name="spo2"
@@ -231,7 +236,7 @@ export default function AddTriageModal({
                       </div>
                       <div className="w-full">
                         <Field
-                          className="block border text-sm border-gray rounded-xl py-2 px-4 focus:outline-none w-full"
+                          className={`block border text-sm border-gray rounded-xl py-2 px-4 focus:outline-none w-full ${getVitalSignColor("systolic", values.systolic, triageSettings)}`}
                           type="text"
                           placeholder="Systolic"
                           name="systolic"
@@ -244,7 +249,7 @@ export default function AddTriageModal({
                       </div>
                       <div className="w-full">
                         <Field
-                          className="block border text-sm border-gray rounded-xl py-2 px-4 focus:outline-none w-full"
+                          className={`block border text-sm border-gray rounded-xl py-2 px-4 focus:outline-none w-full ${getVitalSignColor("diastolic", values.diastolic, triageSettings)}`}
                           type="text"
                           placeholder="diastolic"
                           name="diastolic"
