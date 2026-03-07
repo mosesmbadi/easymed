@@ -153,7 +153,9 @@ class LabTestRequestPanelSerializer(serializers.ModelSerializer):
         if reference_value:
             return {
                 "low": reference_value.ref_value_low,
-                "high": reference_value.ref_value_high
+                "high": reference_value.ref_value_high,
+                "critical_low": reference_value.critical_low,
+                "critical_high": reference_value.critical_high,
             }
         return None
     

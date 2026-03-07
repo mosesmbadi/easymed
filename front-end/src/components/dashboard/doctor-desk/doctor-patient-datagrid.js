@@ -89,8 +89,8 @@ const DoctorPatientDataGrid = () => {
   const [showNavButtons, setShowNavButtons] = useState(true);
   const { processes, patients } = useSelector((store) => store.patient)
   const [processFilter, setProcessFilter] = useState({ track: 'doctor', search: "" });
-  const actionsWhenOnDoctorTrack = userActions.filter((action) => action.action !== "results")
-  const actionsWhenOnResultedTrack = userActions.filter((action) => action.action !== "send to lab")
+  const actionsWhenOnDoctorTrack = userActions;
+  const actionsWhenOnResultedTrack = userActions.filter((action) => action.action !== "send to lab");
   const [selectedSearchFilter, setSelectedSearchFilter] = useState({ label: "", value: "" })
 
   const items = [
@@ -179,7 +179,7 @@ const DoctorPatientDataGrid = () => {
       <>
         <CmtDropdownMenu
           sx={{ cursor: "pointer" }}
-          items={processFilter === 'lab' ? actionsWhenOnResultedTrack : actionsWhenOnDoctorTrack}
+          items={processFilter.track === 'lab' ? actionsWhenOnResultedTrack : actionsWhenOnDoctorTrack}
           onItemClick={(menu) => onMenuClick(menu, data)}
           TriggerComponent={
             <LuMoreHorizontal className="cursor-pointer text-xl" />
