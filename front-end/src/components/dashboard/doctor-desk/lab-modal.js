@@ -194,16 +194,16 @@ const LabModal = ({ labOpen, setLabOpen, selectedRowData, isRetest = false, arch
                       <span className={getVitalSignColor("pulse", patientTriage?.pulse, triageSettings)}>{patientTriage?.pulse}</span>
                     </div>
                     <div className="flex items-center gap-2">
+                      <span>SPO2 :</span>
+                      <span className={getVitalSignColor("spo2", patientTriage?.spo2, triageSettings)}>{patientTriage?.spo2}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
                       <span>Systolic :</span>
                       <span className={getVitalSignColor("systolic", patientTriage?.systolic, triageSettings)}>{patientTriage?.systolic}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span>Diastolic :</span>
                       <span className={getVitalSignColor("diastolic", patientTriage?.diastolic, triageSettings)}>{patientTriage?.diastolic}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span>SPO2 :</span>
-                      <span className={getVitalSignColor("spo2", patientTriage?.spo2, triageSettings)}>{patientTriage?.spo2}</span>
                     </div>
                   </section>
                   <section className="flex items-center justify-between text-sm border-b bg-background p-1 rounded border-gray">
