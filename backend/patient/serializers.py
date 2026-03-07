@@ -12,6 +12,7 @@ from .models import (
     Referral,
     Triage,
     AttendanceProcess,
+    TriageSettings,
 )
 from company.serializers import InsuranceCompanySerializer
 from inventory.models import (
@@ -199,4 +200,9 @@ class AttendanceProcessSerializer(serializers.ModelSerializer):
         invoice_items = InvoiceItem.objects.filter(invoice=invoice)
         serialized_items = InvoiceItemSerializer(invoice_items, many=True)
         return serialized_items.data
+
+class TriageSettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TriageSettings
+        fields = '__all__'
     

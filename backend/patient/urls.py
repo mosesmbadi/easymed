@@ -18,6 +18,7 @@ from .views import (
 
     download_prescription_pdf,
     generate_lab_tests_report,
+    TriageSettingsView,
 )
 
 router = DefaultRouter()
@@ -54,4 +55,5 @@ urlpatterns = [
     path('reports/lab-tests/', generate_lab_tests_report, name='generate_lab_tests_report'),
 
     path('prescribed-drugs/', PrescribedDrugViewSet.as_view({'get': 'list', 'post': 'create'}), name='prescribeddrug-list'),
+    path('triage-settings/', TriageSettingsView.as_view(), name='triage-settings'),
 ]

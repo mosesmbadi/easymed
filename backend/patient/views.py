@@ -29,6 +29,7 @@ from .models import (
     Referral,
     Triage,
     AttendanceProcess,
+    TriageSettings
 )
 from .serializers import (
     ContactDetailsSerializer,
@@ -41,6 +42,7 @@ from .serializers import (
     ReferralSerializer,
     TriageSerializer,
     AttendanceProcessSerializer,
+    TriageSettingsSerializer,
 )
 from .filters import (
     AttendanceProcessFilter,
@@ -206,6 +208,24 @@ class AttendanceProcessViewSet(viewsets.ModelViewSet):
     ]
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
+
+class TriageSettingsView(APIView):
+    """
+    Get or update the global triage settings.
+    Since it's a singleton, there is only one instance.
+    """
+    def get(self, request, *args, **kwargs):
+        settings, _ = TriageSettings.objects.get_or_create(pk=1)
+        serializer = TriageSettingsSerializer(settings)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def patch(self, request, *args, **kwargs):
+        settings, _ = TriageSettings.objects.get_or_create(pk=1)
+        serializer = TriageSettingsSerializer(settings, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 # VIEWS FOR REPORTS GENERATION WILL GO HERE
