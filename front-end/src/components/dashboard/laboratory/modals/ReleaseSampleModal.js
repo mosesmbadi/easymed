@@ -7,8 +7,8 @@ import { FiX } from 'react-icons/fi'
 import { useDispatch } from 'react-redux'
 
 import { useAuth } from '@/assets/hooks/use-auth'
-import { createReleasedSample } from '@/redux/service/laboratory'
-import { getAllReleasedSamples, getAllPhlebotomySamples } from '@/redux/features/laboratory'
+import { createReleasedSample, deletePatientSampleArchive } from '@/redux/service/laboratory'
+import { getAllReleasedSamples, getAllPhlebotomySamples, getAllPatientSampleArchives } from '@/redux/features/laboratory'
 
 const style = {
     position: 'absolute',
@@ -23,7 +23,7 @@ const style = {
     outline: 'none',
 }
 
-const ReleaseSampleModal = ({ open, setOpen, selectedSample }) => {
+const ReleaseSampleModal = ({ open, setOpen, selectedSample, archiveId = null }) => {
     const auth = useAuth()
     const dispatch = useDispatch()
     const [loading, setLoading] = useState(false)
@@ -52,6 +52,15 @@ const ReleaseSampleModal = ({ open, setOpen, selectedSample }) => {
                 ...values,
             }
             await createReleasedSample(payload, auth)
+            // If triggered from archive — delete the archive record
+            if (archiveId) {
+                try {
+                    await deletePatientSampleArchive(archiveId, auth)
+                    dispatch(getAllPatientSampleArchives(auth))
+                } catch (err) {
+                    console.error('Error deleting archive record:', err)
+                }
+            }
             dispatch(getAllReleasedSamples(auth))
             dispatch(getAllPhlebotomySamples(auth))
             toast.success('Sample released successfully')

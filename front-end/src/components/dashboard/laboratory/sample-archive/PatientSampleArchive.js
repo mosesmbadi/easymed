@@ -11,11 +11,12 @@ import { LuMoreHorizontal } from 'react-icons/lu';
 import { useDispatch, useSelector } from 'react-redux';
 import { Column, Pager, Paging, Scrolling, Lookup } from "devextreme-react/data-grid";
 import { BiEdit, BiTrash, BiRevision, BiPaperPlane } from 'react-icons/bi';
-import { getAllPatientSampleArchives, getAllArchivePositions, getAllArchiveRacks, getAllArchiveSections, getAllArchiveComponents, getAllArchives, getAllPhlebotomySamples } from '@/redux/features/laboratory';
+import { getAllPatientSampleArchives, getAllArchivePositions, getAllArchiveRacks, getAllArchiveSections, getAllArchiveComponents, getAllArchives, getAllPhlebotomySamples, getAllReleasedSamples } from '@/redux/features/laboratory';
 import { createPatientSampleArchive, updatePatientSampleArchive } from '@/redux/service/laboratory';
 import { fetchAllAttendanceProcesses } from '@/redux/service/patients';
 import EditPatientSampleArchiveModal from './modals/EditPatientSampleArchive';
 import LabModal from '@/components/dashboard/doctor-desk/lab-modal';
+import ReleaseSampleModal from '@/components/dashboard/laboratory/modals/ReleaseSampleModal';
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
     ssr: false,
@@ -59,11 +60,14 @@ const PatientSampleArchive = () => {
     const [showPageSizeSelector, setShowPageSizeSelector] = useState(true);
     const [showInfo, setShowInfo] = useState(true);
     const [showNavButtons, setShowNavButtons] = useState(true);
-    const { patientSampleArchives, archivePositions, archiveRacks, archiveSections, archiveComponents, archives, phlebotomySamples } = useSelector((store) => store.laboratory);
+    const { patientSampleArchives, archivePositions, archiveRacks, archiveSections, archiveComponents, archives, phlebotomySamples, releasedSamples } = useSelector((store) => store.laboratory);
     const [selectedRowData, setSelectedRowData] = useState({})
     const [retestOpen, setRetestOpen] = useState(false);
     const [retestProcess, setRetestProcess] = useState(null);
     const [retestArchiveId, setRetestArchiveId] = useState(null);
+    const [releaseOpen, setReleaseOpen] = useState(false);
+    const [releaseSample, setReleaseSample] = useState(null);
+    const [releaseArchiveId, setReleaseArchiveId] = useState(null);
 
     // Cascading dropdown states
     const [selectedArchive, setSelectedArchive] = useState("");
@@ -118,6 +122,7 @@ const PatientSampleArchive = () => {
         dispatch(getAllArchiveComponents(auth))
         dispatch(getAllArchives(auth))
         dispatch(getAllPhlebotomySamples(auth))
+        dispatch(getAllReleasedSamples(auth))
     }, [])
 
     const onMenuClick = async (menu, data) => {
@@ -139,12 +144,20 @@ const PatientSampleArchive = () => {
                 console.error('Error fetching attendance process:', error);
                 toast.error('Error loading process for retest');
             }
+        } else if (menu.action === "action_released") {
+            // Find the corresponding sample object
+            const sample = phlebotomySamples.find(ps => ps.id === data.patient_sample);
+            if (sample) {
+                setReleaseSample(sample);
+                setReleaseArchiveId(data.id);
+                setReleaseOpen(true);
+            } else {
+                toast.error('Could not find the sample record');
+            }
         } else {
             let payload = {};
             if (menu.action === "action_dispose") {
                 payload = { action: "dispose" };
-            } else if (menu.action === "action_released") {
-                payload = { action: "released" };
             }
 
             if (Object.keys(payload).length > 0) {
@@ -367,7 +380,7 @@ const PatientSampleArchive = () => {
             </Formik>
             <div className='my-10'>
                 <DataGrid
-                    dataSource={patientSampleArchives}
+                    dataSource={patientSampleArchives.filter(a => !releasedSamples.some(rs => rs.patient_sample === a.patient_sample))}
                     allowColumnReordering={true}
                     rowAlternationEnabled={true}
                     showBorders={true}
@@ -436,6 +449,12 @@ const PatientSampleArchive = () => {
                         archiveId={retestArchiveId}
                     />
                 )}
+                <ReleaseSampleModal
+                    open={releaseOpen}
+                    setOpen={setReleaseOpen}
+                    selectedSample={releaseSample}
+                    archiveId={releaseArchiveId}
+                />
             </div>
         </div>
     )
