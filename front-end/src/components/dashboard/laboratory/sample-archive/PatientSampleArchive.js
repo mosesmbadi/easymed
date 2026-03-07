@@ -33,17 +33,17 @@ const getActions = () => {
         },
         {
             action: "action_dispose",
-            label: "Action: Dispose",
+            label: "Dispose",
             icon: <BiTrash className="text-warning text-xl mx-2" />,
         },
         {
             action: "action_retest",
-            label: "Action: Retest",
+            label: "Retest",
             icon: <BiRevision className="text-primary text-xl mx-2" />,
         },
         {
             action: "action_released",
-            label: "Action: Released",
+            label: "Release",
             icon: <BiPaperPlane className="text-success text-xl mx-2" />,
         },
     ];
