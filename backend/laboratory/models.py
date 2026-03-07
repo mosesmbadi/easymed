@@ -605,3 +605,22 @@ class RetestSample(models.Model):
 
     def __str__(self):
         return f"{self.patient_sample_code} - Retested on {self.retested_on}"
+
+
+class ReleasedSample(models.Model):
+    """Records samples that have been released to an external facility."""
+    patient_sample = models.OneToOneField(
+        PatientSample, on_delete=models.CASCADE, related_name='release_record'
+    )
+    patient_sample_code = models.CharField(max_length=255)
+    facility_name = models.CharField(max_length=255)
+    receiving_lab_tech = models.CharField(max_length=255)
+    reason = models.TextField(null=True, blank=True)
+    notes = models.TextField(null=True, blank=True)
+    released_on = models.DateTimeField(auto_now_add=True)
+    released_by = models.ForeignKey(
+        CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='released_samples'
+    )
+
+    def __str__(self):
+        return f"{self.patient_sample_code} - Released to {self.facility_name}"

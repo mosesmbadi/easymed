@@ -34,7 +34,8 @@ from .views import (
     ArchivePositionViewSet,
     PatientSampleArchiveViewSet,
     DisposedSampleViewSet,
-    RetestSampleViewSet
+    RetestSampleViewSet,
+    ReleasedSampleViewSet
 )
 
 router = DefaultRouter()
@@ -63,6 +64,7 @@ router.register(r'archive-position', ArchivePositionViewSet, basename='archive-p
 router.register(r'patient-sample-archive', PatientSampleArchiveViewSet, basename='patient-sample-archive')
 router.register(r'disposed-samples', DisposedSampleViewSet, basename='disposed-samples')
 router.register(r'retest-samples', RetestSampleViewSet, basename='retest-samples')
+router.register(r'released-samples', ReleasedSampleViewSet, basename='released-samples')
 
 
 

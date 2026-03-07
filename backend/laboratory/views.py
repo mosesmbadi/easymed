@@ -45,7 +45,8 @@ from .models import (
     ArchivePosition,
     PatientSampleArchive,
     DisposedSample,
-    RetestSample
+    RetestSample,
+    ReleasedSample
 )
 
 from .serializers import (
@@ -73,7 +74,8 @@ from .serializers import (
     ArchivePositionSerializer,
     PatientSampleArchiveSerializer,
     DisposedSampleSerializer,
-    RetestSampleSerializer
+    RetestSampleSerializer,
+    ReleasedSampleSerializer
 )
 
 from authperms.permissions import (
@@ -753,3 +755,12 @@ class RetestSampleViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = RetestSample.objects.all().order_by('-id')
     serializer_class = RetestSampleSerializer
     permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser | IsReceptionistUser | IsSystemsAdminUser,)
+
+
+class ReleasedSampleViewSet(viewsets.ModelViewSet):
+    queryset = ReleasedSample.objects.all().order_by('-id')
+    serializer_class = ReleasedSampleSerializer
+    permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser | IsReceptionistUser | IsSystemsAdminUser,)
+
+    def perform_create(self, serializer):
+        serializer.save(released_by=self.request.user)
