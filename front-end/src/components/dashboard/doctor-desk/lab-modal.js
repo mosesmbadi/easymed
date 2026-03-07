@@ -192,6 +192,10 @@ const LabModal = ({ labOpen, setLabOpen, selectedRowData, isRetest = false, arch
                       <span>Diastolic :</span>
                       <span>{patientTriage?.diastolic}</span>
                     </div>
+                    <div className="flex items-center gap-2">
+                      <span>SPO2 :</span>
+                      <span>{patientTriage?.spo2}</span>
+                    </div>
                   </section>
                   <section className="flex items-center justify-between text-sm border-b bg-background p-1 rounded border-gray">
                     <div className="flex items-center gap-2">

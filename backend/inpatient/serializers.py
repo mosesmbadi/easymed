@@ -116,7 +116,7 @@ class InPatientTriageSerializer(serializers.ModelSerializer):
         model = InPatientTriage
         fields = [
             'id', 'created_by', 'date_created', 'temperature', 'height', 'weight', 'pulse',
-            'diastolic', 'systolic', 'bmi', 'fee', 'notes', 'patient_admission', 'attendance_id'
+            'diastolic', 'systolic', 'spo2', 'bmi', 'fee', 'notes', 'patient_admission', 'attendance_id'
         ]
 
     def get_attendance_id(self, obj):
