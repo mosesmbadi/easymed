@@ -208,6 +208,8 @@ class ReferenceValue(models.Model):
     age_max = models.IntegerField(null=True, blank=True)  # Maximum age for this reference range
     ref_value_low = models.DecimalField(max_digits=10, decimal_places=2)
     ref_value_high = models.DecimalField(max_digits=10, decimal_places=2)
+    critical_low = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    critical_high = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
 
     def __str__(self):
         return f"{self.lab_test_panel.name} - {self.sex} - {self.age_min}-{self.age_max}: {self.ref_value_low} - {self.ref_value_high}"

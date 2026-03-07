@@ -63,6 +63,8 @@ const ReferenceValues = () => {
     age_max: "",
     ref_value_low: "",
     ref_value_high: "",
+    critical_low: "",
+    critical_high: "",
   };
 
   const validationSchema = Yup.object().shape({
@@ -78,6 +80,14 @@ const ReferenceValues = () => {
       .typeError("Age max must be a number"),
     ref_value_low: Yup.number().required("Field is required!").typeError("Must be a number"),
     ref_value_high: Yup.number().required("Field is required!").typeError("Must be a number"),
+    critical_low: Yup.number()
+      .nullable()
+      .transform((value, originalValue) => (originalValue === "" ? null : value))
+      .typeError("Must be a number"),
+    critical_high: Yup.number()
+      .nullable()
+      .transform((value, originalValue) => (originalValue === "" ? null : value))
+      .typeError("Must be a number"),
   });
 
   const addNewReferenceValue = async (values, helpers) => {
@@ -90,6 +100,8 @@ const ReferenceValues = () => {
         age_max: values.age_max === "" ? null : Number(values.age_max),
         ref_value_low: Number(values.ref_value_low),
         ref_value_high: Number(values.ref_value_high),
+        critical_low: values.critical_low === "" ? null : Number(values.critical_low),
+        critical_high: values.critical_high === "" ? null : Number(values.critical_high),
       };
       const response = await createReferenceValue(payload, auth);
       dispatch(addReferenceValueToStore(response));
@@ -138,7 +150,7 @@ const ReferenceValues = () => {
       >
         <Form>
           <Grid container spacing={2}>
-            <Grid item md={4} xs={12}>
+            <Grid item md={3} xs={12}>
               <SeachableSelect
                 label="Test Panel"
                 name="lab_test_panel"
@@ -149,7 +161,7 @@ const ReferenceValues = () => {
               />
               <ErrorMessage name="lab_test_panel" component="div" className="text-warning text-xs" />
             </Grid>
-            <Grid item md={4} xs={12}>
+            <Grid item md={3} xs={12}>
               <SeachableSelect
                 label="Sex"
                 name="sex"
@@ -157,7 +169,7 @@ const ReferenceValues = () => {
               />
               <ErrorMessage name="sex" component="div" className="text-warning text-xs" />
             </Grid>
-            <Grid item md={4} xs={12}>
+            <Grid item md={3} xs={12}>
               <Field
                 className="block border border-gray py-3 px-4 focus:outline-none w-full"
                 type="number"
@@ -166,7 +178,7 @@ const ReferenceValues = () => {
               />
               <ErrorMessage name="age_min" component="div" className="text-warning text-xs" />
             </Grid>
-            <Grid item md={4} xs={12}>
+            <Grid item md={3} xs={12}>
               <Field
                 className="block border border-gray py-3 px-4 focus:outline-none w-full"
                 type="number"
@@ -175,7 +187,7 @@ const ReferenceValues = () => {
               />
               <ErrorMessage name="age_max" component="div" className="text-warning text-xs" />
             </Grid>
-            <Grid item md={4} xs={12}>
+            <Grid item md={3} xs={12}>
               <Field
                 className="block border border-gray py-3 px-4 focus:outline-none w-full"
                 type="number"
@@ -185,7 +197,7 @@ const ReferenceValues = () => {
               />
               <ErrorMessage name="ref_value_low" component="div" className="text-warning text-xs" />
             </Grid>
-            <Grid item md={4} xs={12}>
+            <Grid item md={3} xs={12}>
               <Field
                 className="block border border-gray py-3 px-4 focus:outline-none w-full"
                 type="number"
@@ -194,6 +206,26 @@ const ReferenceValues = () => {
                 name="ref_value_high"
               />
               <ErrorMessage name="ref_value_high" component="div" className="text-warning text-xs" />
+            </Grid>
+            <Grid item md={3} xs={12}>
+              <Field
+                className="block border border-gray py-3 px-4 focus:outline-none w-full"
+                type="number"
+                step="0.01"
+                placeholder="Critical Low (Optional)"
+                name="critical_low"
+              />
+              <ErrorMessage name="critical_low" component="div" className="text-warning text-xs" />
+            </Grid>
+            <Grid item md={3} xs={12}>
+              <Field
+                className="block border border-gray py-3 px-4 focus:outline-none w-full"
+                type="number"
+                step="0.01"
+                placeholder="Critical High (Optional)"
+                name="critical_high"
+              />
+              <ErrorMessage name="critical_high" component="div" className="text-warning text-xs" />
             </Grid>
             <Grid item md={12} xs={12}>
               <div className="flex justify-end gap-2 h-full">
@@ -252,6 +284,8 @@ const ReferenceValues = () => {
           <Column dataField="age_max" caption="Age Max" />
           <Column dataField="ref_value_low" caption="Low" />
           <Column dataField="ref_value_high" caption="High" />
+          <Column dataField="critical_low" caption="C. Low" />
+          <Column dataField="critical_high" caption="C. High" />
           <Column dataField="" caption="" width={50} cellRender={actionsFunc} />
         </DataGrid>
         <EditReferenceValueModal

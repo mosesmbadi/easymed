@@ -46,6 +46,8 @@ const EditReferenceValueModal = ({ open, setOpen, selectedRowData }) => {
     age_max: selectedRowData?.age_max ?? "",
     ref_value_low: selectedRowData?.ref_value_low ?? "",
     ref_value_high: selectedRowData?.ref_value_high ?? "",
+    critical_low: selectedRowData?.critical_low ?? "",
+    critical_high: selectedRowData?.critical_high ?? "",
   };
 
   const validationSchema = Yup.object().shape({
@@ -61,6 +63,14 @@ const EditReferenceValueModal = ({ open, setOpen, selectedRowData }) => {
       .typeError("Age max must be a number"),
     ref_value_low: Yup.number().required("Field is required!").typeError("Must be a number"),
     ref_value_high: Yup.number().required("Field is required!").typeError("Must be a number"),
+    critical_low: Yup.number()
+      .nullable()
+      .transform((value, originalValue) => (originalValue === "" ? null : value))
+      .typeError("Must be a number"),
+    critical_high: Yup.number()
+      .nullable()
+      .transform((value, originalValue) => (originalValue === "" ? null : value))
+      .typeError("Must be a number"),
   });
 
   const updateAReferenceValue = async (formValue) => {
@@ -71,6 +81,8 @@ const EditReferenceValueModal = ({ open, setOpen, selectedRowData }) => {
       age_max: formValue.age_max === "" ? null : Number(formValue.age_max),
       ref_value_low: Number(formValue.ref_value_low),
       ref_value_high: Number(formValue.ref_value_high),
+      critical_low: formValue.critical_low === "" ? null : Number(formValue.critical_low),
+      critical_high: formValue.critical_high === "" ? null : Number(formValue.critical_high),
     };
 
     try {
@@ -107,7 +119,7 @@ const EditReferenceValueModal = ({ open, setOpen, selectedRowData }) => {
           >
             <Form>
               <Grid container spacing={2}>
-                <Grid item md={4} xs={12}>
+                <Grid item md={3} xs={12}>
                   <SeachableSelect
                     label="Test Panel"
                     name="lab_test_panel"
@@ -118,11 +130,11 @@ const EditReferenceValueModal = ({ open, setOpen, selectedRowData }) => {
                   />
                   <ErrorMessage name="lab_test_panel" component="div" className="text-warning text-xs" />
                 </Grid>
-                <Grid item md={4} xs={12}>
+                <Grid item md={3} xs={12}>
                   <SeachableSelect label="Sex" name="sex" options={sexOptions} />
                   <ErrorMessage name="sex" component="div" className="text-warning text-xs" />
                 </Grid>
-                <Grid item md={4} xs={12}>
+                <Grid item md={3} xs={12}>
                   <Field
                     className="block border border-gray py-3 px-4 focus:outline-none w-full"
                     type="number"
@@ -131,7 +143,7 @@ const EditReferenceValueModal = ({ open, setOpen, selectedRowData }) => {
                   />
                   <ErrorMessage name="age_min" component="div" className="text-warning text-xs" />
                 </Grid>
-                <Grid item md={4} xs={12}>
+                <Grid item md={3} xs={12}>
                   <Field
                     className="block border border-gray py-3 px-4 focus:outline-none w-full"
                     type="number"
@@ -140,7 +152,7 @@ const EditReferenceValueModal = ({ open, setOpen, selectedRowData }) => {
                   />
                   <ErrorMessage name="age_max" component="div" className="text-warning text-xs" />
                 </Grid>
-                <Grid item md={4} xs={12}>
+                <Grid item md={3} xs={12}>
                   <Field
                     className="block border border-gray py-3 px-4 focus:outline-none w-full"
                     type="number"
@@ -150,7 +162,7 @@ const EditReferenceValueModal = ({ open, setOpen, selectedRowData }) => {
                   />
                   <ErrorMessage name="ref_value_low" component="div" className="text-warning text-xs" />
                 </Grid>
-                <Grid item md={4} xs={12}>
+                <Grid item md={3} xs={12}>
                   <Field
                     className="block border border-gray py-3 px-4 focus:outline-none w-full"
                     type="number"
@@ -159,6 +171,26 @@ const EditReferenceValueModal = ({ open, setOpen, selectedRowData }) => {
                     name="ref_value_high"
                   />
                   <ErrorMessage name="ref_value_high" component="div" className="text-warning text-xs" />
+                </Grid>
+                <Grid item md={3} xs={12}>
+                  <Field
+                    className="block border border-gray py-3 px-4 focus:outline-none w-full"
+                    type="number"
+                    step="0.01"
+                    placeholder="Critical Low (Optional)"
+                    name="critical_low"
+                  />
+                  <ErrorMessage name="critical_low" component="div" className="text-warning text-xs" />
+                </Grid>
+                <Grid item md={3} xs={12}>
+                  <Field
+                    className="block border border-gray py-3 px-4 focus:outline-none w-full"
+                    type="number"
+                    step="0.01"
+                    placeholder="Critical High (Optional)"
+                    name="critical_high"
+                  />
+                  <ErrorMessage name="critical_high" component="div" className="text-warning text-xs" />
                 </Grid>
                 <Grid item md={12} xs={12}>
                   <div className="flex justify-end gap-2 h-full">
