@@ -45,7 +45,7 @@ const SampleArchiveNav = () => {
                                 } `}
                             onClick={() => setCurrentTab(2)}
                         >
-                            Component
+                            Compartment
                         </p>
                     </div>
 
