@@ -8,9 +8,9 @@ export const getVitalSignColor = (key, value, settings) => {
 
     switch (key) {
         case "spo2":
-            if (val < settings.spo2_min) return "text-warning font-bold";
             if (val <= settings.spo2_warning_level) return "text-orange font-bold";
             return "text-success font-bold";
+            if (val < settings.spo2_min) return "text-warning font-bold";
 
         case "systolic":
             if (val < settings.systolic_min || val > settings.systolic_max) return "text-warning font-bold";
