@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'drf_spectacular',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
     'weasyprint',
     'django_filters',
     'corsheaders',
@@ -218,9 +219,12 @@ SPECTACULAR_SETTINGS = {
 
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=36000),
-    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
-    'SLIDING_TOKEN_LIFETIME': timedelta(days=1),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),       # Short-lived; client must use refresh token to get a new one
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),          # User stays logged in for up to 7 days without re-authenticating
+    'ROTATE_REFRESH_TOKENS': True,                        # Issue a new refresh token on every refresh (reduces replay risk)
+    'BLACKLIST_AFTER_ROTATION': True,                     # Invalidate old refresh tokens after rotation
+    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=7),
+    'SLIDING_TOKEN_LIFETIME': timedelta(minutes=30),
     'SLIDING_TOKEN_REFRESH_LIFETIME_GRACE_PERIOD': timedelta(days=2),
     'SLIDING_TOKEN_REFRESH_SCOPE': None,
     'SLIDING_TOKEN_TYPES': {'access': 'a', 'refresh': 'r'},
