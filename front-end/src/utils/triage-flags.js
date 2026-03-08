@@ -1,6 +1,6 @@
 export const getVitalSignColor = (key, value, settings) => {
     if (!settings || !settings.is_active || value === null || value === undefined || value === "") {
-        return ""; // Default text color if inactive or no value
+        return "";
     }
 
     const val = Number(value);
