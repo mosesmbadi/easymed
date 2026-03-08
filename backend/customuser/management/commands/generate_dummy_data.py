@@ -1,5 +1,6 @@
 from django.core.management.base import BaseCommand
 from customuser.management.utils.data_generators import (
+    create_units,
     create_dummy_users,
     create_dummy_companies,
     create_dummy_insurance_companies,
@@ -33,6 +34,10 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         DEFAULT_COUNT = 50
+
+        # Always ensure all units of measurement exist first
+        units = create_units()
+        self.stdout.write(self.style.SUCCESS(f"Ensured {len(units)} units of measurement."))
 
         if CustomUser.objects.count() >= DEFAULT_COUNT:
             self.stdout.write(self.style.WARNING("Skipping users: already have 50 or more records."))
@@ -146,15 +151,18 @@ class Command(BaseCommand):
         if TestPanelReagent.objects.exists() and TestKitCounter.objects.exists():
             self.stdout.write(self.style.WARNING("Skipping real-world lab data: already exists."))
         else:
-            lab_data = create_real_world_lab_data()
-            self.stdout.write(self.style.SUCCESS(
-                f"Created real-world lab data: "
-                f"{len(lab_data['reagents'])} reagents, "
-                f"{len(lab_data['inventory_records'])} inventory records, "
-                f"{len(lab_data['panels'])} panels, "
-                f"{len(lab_data['links'])} reagent links, "
-                f"{len(lab_data['counters'])} stock counters"
-            ))
+            try:
+                lab_data = create_real_world_lab_data()
+                self.stdout.write(self.style.SUCCESS(
+                    f"Created real-world lab data: "
+                    f"{len(lab_data['reagents'])} reagents, "
+                    f"{len(lab_data['inventory_records'])} inventory records, "
+                    f"{len(lab_data['panels'])} panels, "
+                    f"{len(lab_data['links'])} reagent links, "
+                    f"{len(lab_data['counters'])} stock counters"
+                ))
+            except Exception as e:
+                self.stdout.write(self.style.ERROR(f"Error creating real-world lab data (non-fatal): {e}"))
         
         # Ensure all service items (lab tests, appointments) have inventory
         self.stdout.write(self.style.NOTICE("\nEnsuring service items have inventory records..."))

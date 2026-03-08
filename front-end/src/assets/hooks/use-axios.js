@@ -1,5 +1,22 @@
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { API_URL } from '@/assets/api-endpoints';
+
+const parseStoredToken = (key) => {
+    if (typeof window === 'undefined') return null;
+    const item = localStorage.getItem(key);
+    if (!item) return null;
+    try { return JSON.parse(item); } catch { return item; }
+};
+
+const forceLogout = (message = 'Your session has expired. Please login again.') => {
+    if (typeof window !== 'undefined') {
+        localStorage.removeItem('token');
+        localStorage.removeItem('refresh');
+        toast.error(message);
+        window.location.href = '/auth/login';
+    }
+};
 
 const UseAxios = (useAuth) => {
     const user = useAuth;
@@ -12,41 +29,43 @@ const UseAxios = (useAuth) => {
 
     // Add response interceptor to handle token expiration
     axiosInstance.interceptors.response.use(
-        (response) => {
-            // Return successful responses as-is
-            return response;
-        },
-        (error) => {
+        (response) => response,
+        async (error) => {
+            const originalRequest = error.config;
+
             // Handle 401 Unauthorized errors (token expired/invalid)
-            if (error.response?.status === 401) {
-                const errorData = error.response?.data;
-                
-                // Check if it's a token validation error
-                if (errorData?.code === 'token_not_valid' || 
-                    errorData?.detail?.includes('token') ||
-                    errorData?.detail?.includes('Token')) {
-                    
-                    console.log('Token expired/invalid, logging out user');
-                    
-                    // Clear storage
-                    if (typeof window !== 'undefined') {
-                        localStorage.removeItem('token');
-                        localStorage.removeItem('refresh');
+            if (error.response?.status === 401 && !originalRequest._retry) {
+                originalRequest._retry = true; // prevent infinite retry loop
+
+                const refreshToken = parseStoredToken('refresh');
+
+                if (refreshToken) {
+                    try {
+                        // Attempt silent token refresh
+                        const { data } = await axios.post(API_URL.REFRESH_TOKEN, { refresh: refreshToken });
+                        const newAccessToken = data.access;
+
+                        // Persist the new tokens
+                        localStorage.setItem('token', JSON.stringify(newAccessToken));
+                        if (data.refresh) {
+                            // simplejwt rotates the refresh token when ROTATE_REFRESH_TOKENS=True
+                            localStorage.setItem('refresh', JSON.stringify(data.refresh));
+                        }
+
+                        // Retry original request with the new access token
+                        originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
+                        return axiosInstance(originalRequest);
+                    } catch (refreshError) {
+                        // Refresh token is also invalid/expired — force logout
+                        forceLogout();
+                        return Promise.reject(refreshError);
                     }
-                    
-                    // Show user-friendly message
-                    toast.error('Your session has expired. Please login again.');
-                    
-                    // Redirect to login
-                    if (typeof window !== 'undefined') {
-                        window.location.href = '/auth/login';
-                    }
-                    
-                    return Promise.reject(error);
                 }
+
+                // No refresh token stored — force logout
+                forceLogout();
             }
-            
-            // For other errors, just reject normally
+
             return Promise.reject(error);
         }
     );

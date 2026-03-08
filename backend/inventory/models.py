@@ -89,15 +89,6 @@ class Item(AbstractBaseModel):
     '''
     Refer to the docs above
     '''
-    UNIT_CHOICES = [
-        ('unit', 'Unit'),
-        ('kits', 'Kits'),
-        ('mg', 'Milligram'),
-        ('g', 'Gram'),
-        ('kg', 'Kilogram'),
-        ('ml', 'Milliliter'),
-        ('L', 'Liter'),
-    ]
     CATEGORY_CHOICES = [
         ('SurgicalEquipment', 'Surgical Equipment'),
         ('LabReagent', 'Lab Reagent'), # lab Test Kit
@@ -112,7 +103,7 @@ class Item(AbstractBaseModel):
     name = models.CharField(max_length=255)
     desc = models.CharField(max_length=255)
     category = models.CharField(max_length=255, choices=CATEGORY_CHOICES)
-    units_of_measure = models.CharField(max_length=255, choices=UNIT_CHOICES, blank=True, default='')
+    units_of_measure = models.CharField(max_length=255, blank=True, default='')
     units = models.ForeignKey(Unit, on_delete=models.SET_NULL, null=True, blank=True, related_name='items')
     lab_test_item = models.OneToOneField(
         'self',
