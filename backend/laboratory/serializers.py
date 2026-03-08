@@ -63,6 +63,7 @@ class LabTestPanelSerializer(serializers.ModelSerializer):
     item_name = serializers.ReadOnlyField(source='item.name')
     test_profile_name = serializers.ReadOnlyField(source='test_profile.name')
     specimen_name = serializers.ReadOnlyField(source='specimen.name')
+    unit_symbol = serializers.ReadOnlyField(source='units.symbol')
 
     class Meta:
         model = LabTestPanel

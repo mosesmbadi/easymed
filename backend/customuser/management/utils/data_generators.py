@@ -1,7 +1,7 @@
 import random
 from faker import Faker
 
-from inventory.models import Item, Department, Supplier
+from inventory.models import Item, Department, Supplier, Unit
 from customuser.models import CustomUser
 from company.models import Company, CompanyBranch, InsuranceCompany
 from authperms.models import Permission, Group
@@ -110,6 +110,136 @@ GROUP_PERMISSIONS = {
     "LAB_TECH": ["CAN_ACCESS_LABORATORY_DASHBOARD", "CAN_RECEIVE_INVENTORY_NOTIFICATIONS"],
     "NURSE": ["CAN_ACCESS_NURSING_DASHBOARD"],
 }
+
+
+MASTER_LAB_UNITS = [
+    # (symbol, name, category)
+    # 1. Mass / Weight
+    ('kg', 'kilogram', 'mass'),
+    ('g', 'gram', 'mass'),
+    ('mg', 'milligram', 'mass'),
+    ('µg', 'microgram', 'mass'),
+    ('ng', 'nanogram', 'mass'),
+    ('pg', 'picogram', 'mass'),
+    ('fg', 'femtogram', 'mass'),
+    # 2. Volume
+    ('L', 'litre', 'volume'),
+    ('dL', 'decilitre', 'volume'),
+    ('mL', 'millilitre', 'volume'),
+    ('µL', 'microlitre', 'volume'),
+    ('nL', 'nanolitre', 'volume'),
+    ('fL', 'femtolitre', 'volume'),
+    # 3. Length
+    ('m', 'meter', 'length'),
+    ('cm', 'centimeter', 'length'),
+    ('mm', 'millimeter', 'length'),
+    ('µm', 'micrometer', 'length'),
+    ('nm', 'nanometer', 'length'),
+    ('pm', 'picometer', 'length'),
+    # 4. Concentration
+    ('g/L', 'grams per litre', 'concentration'),
+    ('g/dL', 'grams per decilitre', 'concentration'),
+    ('mg/dL', 'milligrams per decilitre', 'concentration'),
+    ('mg/L', 'milligrams per litre', 'concentration'),
+    ('µg/mL', 'micrograms per millilitre', 'concentration'),
+    ('µg/L', 'micrograms per litre', 'concentration'),
+    ('ng/mL', 'nanograms per millilitre', 'concentration'),
+    ('pg/mL', 'picograms per millilitre', 'concentration'),
+    ('mol/L', 'moles per litre', 'concentration'),
+    ('mmol/L', 'millimoles per litre', 'concentration'),
+    ('µmol/L', 'micromoles per litre', 'concentration'),
+    ('nmol/L', 'nanomoles per litre', 'concentration'),
+    ('pmol/L', 'picomoles per litre', 'concentration'),
+    ('Eq/L', 'equivalents per litre', 'concentration'),
+    ('mEq/L', 'milliequivalents per litre', 'concentration'),
+    # 5. Hematology
+    ('×10⁹/µL', '10^9 per microlitre', 'hematology'),
+    ('×10³/µL', '10^3 per microlitre', 'hematology'),
+    ('x10³/µL', '10^3 per microlitre (alt)', 'hematology'),
+    ('x10⁶/µL', '10^6 per microlitre', 'hematology'),
+    ('10^9/L', '10^9 per litre', 'hematology'),
+    ('cells/µL', 'cells per microlitre', 'hematology'),
+    ('cells/mm³', 'cells per cubic millimetre', 'hematology'),
+    ('%', 'percent', 'hematology'),
+    # 6. Enzyme Activity
+    ('U/L', 'units per litre', 'enzyme'),
+    ('IU/L', 'international units per litre', 'enzyme'),
+    ('IU', 'international unit', 'enzyme'),
+    ('mIU/mL', 'milli-IU per millilitre', 'enzyme'),
+    ('kU/L', 'kilo units per litre', 'enzyme'),
+    # 7. Hormones & Tumor Markers
+    ('IU/mL', 'international units per millilitre', 'hormone'),
+    ('mIU/L', 'milli-IU per litre', 'hormone'),
+    ('AU/mL', 'arbitrary units per millilitre', 'hormone'),
+    # 8. Microbiology
+    ('CFU/mL', 'colony forming units per millilitre', 'microbiology'),
+    ('CFU/g', 'colony forming units per gram', 'microbiology'),
+    ('PFU/mL', 'plaque forming units per millilitre', 'microbiology'),
+    ('copies/mL', 'copies per millilitre', 'microbiology'),
+    # 9. Urinalysis
+    ('mg/24h', 'milligrams per 24 hours', 'urinalysis'),
+    ('mmol/24h', 'millimoles per 24 hours', 'urinalysis'),
+    ('cells/HPF', 'cells per high power field', 'urinalysis'),
+    ('casts/LPF', 'casts per low power field', 'urinalysis'),
+    # 10. Coagulation
+    ('sec', 'seconds', 'coagulation'),
+    ('INR', 'international normalised ratio', 'coagulation'),
+    # 11. Blood Gas
+    ('mmHg', 'millimetres of mercury', 'blood_gas'),
+    ('kPa', 'kilopascal', 'blood_gas'),
+    # 12. Osmolality & Density
+    ('mOsm/kg', 'milliosmoles per kilogram', 'osmolality'),
+    ('Osm/kg', 'osmoles per kilogram', 'osmolality'),
+    ('g/mL', 'grams per millilitre', 'osmolality'),
+    ('kg/L', 'kilograms per litre', 'osmolality'),
+    # 13. Molecular Biology
+    ('ng/µL', 'nanograms per microlitre', 'molecular'),
+    ('bp', 'base pairs', 'molecular'),
+    ('kb', 'kilobase', 'molecular'),
+    ('Mb', 'megabase', 'molecular'),
+    # 14. Dose & Ratio
+    ('mg/kg', 'milligrams per kilogram', 'dose'),
+    ('µg/kg', 'micrograms per kilogram', 'dose'),
+    ('mg/g', 'milligrams per gram', 'dose'),
+    ('mmol/kg', 'millimoles per kilogram', 'dose'),
+    ('mL/kg', 'millilitres per kilogram', 'dose'),
+    ('ratio', 'ratio', 'dose'),
+    ('index', 'index', 'dose'),
+    ('score', 'score', 'dose'),
+    # General
+    ('unit', 'unit', 'general'),
+    ('kits', 'kits', 'general'),
+    ('tablets', 'tablets', 'general'),
+    ('capsules', 'capsules', 'general'),
+    ('vials', 'vials', 'general'),
+    ('ampoules', 'ampoules', 'general'),
+    ('bags', 'bags', 'general'),
+    ('inhalers', 'inhalers', 'general'),
+    ('sachets', 'sachets', 'general'),
+    ('bottles', 'bottles', 'general'),
+    ('rolls', 'rolls', 'general'),
+    ('pieces', 'pieces', 'general'),
+    ('pairs', 'pairs', 'general'),
+]
+
+
+def create_units():
+    """Create all master lab units of measurement."""
+    created = []
+    for symbol, name, category in MASTER_LAB_UNITS:
+        unit, _ = Unit.objects.get_or_create(
+            symbol=symbol,
+            defaults={'name': name, 'category': category}
+        )
+        created.append(unit)
+    return created
+
+
+def _get_unit(symbol):
+    """Return a Unit instance by symbol, or None if not found."""
+    if not symbol:
+        return None
+    return Unit.objects.filter(symbol=symbol).first()
 
 
 def create_dummy_users(count=10, role=CustomUser.PATIENT):
@@ -413,10 +543,12 @@ def create_demo_lab_profiles_and_panels():
                 name=panel["name"],
                 specimen=specimens[panel["specimen"]],
                 test_profile=profile,
-                unit=panel.get("unit", "unit") or "unit",
                 item=item,
-                is_qualitative=panel["is_qualitative"],
-                is_quantitative=panel["is_quantitative"],
+                defaults={
+                    'units': _get_unit(panel.get("unit", "")),
+                    'is_qualitative': panel["is_qualitative"],
+                    'is_quantitative': panel["is_quantitative"],
+                }
             )
             created_panels.append(lab_panel)
     return created_profiles, created_panels
@@ -890,34 +1022,33 @@ def create_lab_test_interpretations():
     
     # Create interpretations
     for test_name, interpretations in lab_interpretations.items():
-        # Find the lab test panel
+        # Find the lab test panel to get its profile
         try:
-            lab_panel = LabTestPanel.objects.get(name=test_name)
-            
+            lab_panel = LabTestPanel.objects.filter(name=test_name).first()
+            if lab_panel is None:
+                print(f"Warning: Lab test panel '{test_name}' not found. Skipping interpretations.")
+                continue
+
+            test_profile = lab_panel.test_profile
+
             for interp_data in interpretations:
-                range_type, sex, age_min, age_max, value_min, value_max, interpretation, clinical_action, requires_attention = interp_data
-                
-                # Create or get the interpretation
+                _range_type, _sex, _age_min, _age_max, _value_min, _value_max, interpretation, clinical_action, requires_attention = interp_data
+
+                # Create or get the interpretation linked to the test profile
                 interp, created = LabTestInterpretation.objects.get_or_create(
-                    lab_test_panel=lab_panel,
-                    range_type=range_type,
-                    sex=sex,
-                    age_min=age_min,
-                    age_max=age_max,
-                    value_min=value_min,
-                    value_max=value_max,
+                    test_profile=test_profile,
+                    interpretation=interpretation,
                     defaults={
-                        'interpretation': interpretation,
                         'clinical_action': clinical_action,
                         'requires_immediate_attention': requires_attention,
                     }
                 )
-                
+
                 if created:
                     interpretations_created.append(interp)
-                    
-        except LabTestPanel.DoesNotExist:
-            print(f"Warning: Lab test panel '{test_name}' not found. Skipping interpretations.")
+
+        except Exception as e:
+            print(f"Warning: Error creating interpretations for '{test_name}': {e}. Skipping.")
             continue
     
     return interpretations_created
@@ -1059,7 +1190,7 @@ def create_real_world_lab_data():
             test_profile=cbc_profile,
             defaults={
                 'specimen': blood_specimen,
-                'unit': unit,
+                'units': _get_unit(unit),
                 'item': panel_item,
                 'is_qualitative': is_qual,
                 'is_quantitative': is_quant,
@@ -1179,7 +1310,7 @@ def create_real_world_lab_data():
             test_profile=lft_profile,
             defaults={
                 'specimen': serum_specimen,
-                'unit': unit,
+                'units': _get_unit(unit),
                 'item': panel_item,
                 'is_qualitative': False,
                 'is_quantitative': True,
@@ -1283,7 +1414,7 @@ def create_real_world_lab_data():
             test_profile=lipid_profile,
             defaults={
                 'specimen': serum_specimen,
-                'unit': unit,
+                'units': _get_unit(unit),
                 'item': panel_item,
                 'is_qualitative': False,
                 'is_quantitative': True,
@@ -1386,7 +1517,7 @@ def create_real_world_lab_data():
             test_profile=kft_profile,
             defaults={
                 'specimen': serum_specimen,
-                'unit': unit,
+                'units': _get_unit(unit),
                 'item': panel_item,
                 'is_qualitative': False,
                 'is_quantitative': True,
@@ -1459,7 +1590,7 @@ def create_real_world_lab_data():
             test_profile=tft_profile,
             defaults={
                 'specimen': serum_specimen,
-                'unit': unit,
+                'units': _get_unit(unit),
                 'item': panel_item,
                 'is_qualitative': False,
                 'is_quantitative': True,
@@ -1529,7 +1660,7 @@ def create_real_world_lab_data():
             test_profile=electrolytes_profile,
             defaults={
                 'specimen': serum_specimen,
-                'unit': unit,
+                'units': _get_unit(unit),
                 'item': panel_item,
                 'is_qualitative': False,
                 'is_quantitative': True,
@@ -1612,7 +1743,7 @@ def create_real_world_lab_data():
             test_profile=glucose_profile,
             defaults={
                 'specimen': serum_specimen if 'HbA1c' not in panel_name else blood_specimen,
-                'unit': unit,
+                'units': _get_unit(unit),
                 'item': panel_item,
                 'is_qualitative': False,
                 'is_quantitative': True,

@@ -161,22 +161,9 @@ class TestPanelReagent(models.Model):
 
 
 class LabTestPanel(models.Model):
-    UNITS_OPTIONS = (
-        ('mL', 'mL'),
-        ('uL', 'uL'),
-        ('L', 'L'),
-        ('mg', 'mg'),
-        ('ug', 'ug'),
-        ('g', 'g'),
-        ('IU', 'IU'),
-        ('IU/ml', 'IU/ml'),
-        ('ng/ml', 'ng/ml'),
-        ('ng', 'ng'),
-    )
     name = models.CharField(max_length=255)
     specimen = models.ForeignKey(Specimen, on_delete=models.CASCADE, null=True, blank=True)
     test_profile = models.ForeignKey(LabTestProfile, on_delete=models.CASCADE)
-    unit = models.CharField(max_length=10, choices=UNITS_OPTIONS, default='mL')
     units = models.ForeignKey('inventory.Unit', on_delete=models.SET_NULL, null=True, blank=True, related_name='lab_test_panels')
     # TODO: To get back to. Change to Inventory from 'inventory.Item'
     item = models.ForeignKey('inventory.Item', on_delete=models.CASCADE)
@@ -186,7 +173,8 @@ class LabTestPanel(models.Model):
     tat = models.DurationField(null=True, blank=True)
 
     def __str__(self):
-        return f"{self.name} {self.unit} - {self.test_profile.name}"
+        unit_symbol = self.units.symbol if self.units else ''
+        return f"{self.name} {unit_symbol} - {self.test_profile.name}"
 
 
 class ReferenceValue(models.Model):
