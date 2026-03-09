@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
 import * as Yup from "yup";
-import { Formik, Field, Form, ErrorMessage, useFormikContext } from "formik";
+import { Formik, Field, Form, ErrorMessage } from "formik";
 import { Grid } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from 'react-toastify'
@@ -10,28 +10,27 @@ import SeachableSelect from "@/components/select/Searchable";
 import { useAuth } from '@/assets/hooks/use-auth';
 import { updateLabTestPanel } from "@/redux/service/laboratory";
 import { updateTestPanelStoreOnPatch } from "@/redux/features/laboratory";
-
-const UnitBadge = () => {
-  const { values } = useFormikContext();
-  const symbol = values.item?.unitSymbol;
-  if (!symbol) return null;
-  return (
-    <span className="inline-block bg-gray-100 border border-gray-300 text-gray-700 text-xs rounded px-2 py-1">
-      Unit: <strong>{symbol}</strong>
-    </span>
-  );
-};
+import { fetchUnits } from "@/redux/service/inventory";
 
 const EditTestPanelModal = ({ open, setOpen, selectedRowData }) => {
   const [loading, setLoading] = useState(false);
+  const [unitOptions, setUnitOptions] = useState([]);
   const dispatch = useDispatch();
   const auth = useAuth();
   const { item } = useSelector((store) => store.inventory)
   const { specimens, labTestProfiles } = useSelector((store) => store.laboratory)
 
-  const getUnits = () => {
-    // not needed anymore; units come from the selected item
-    return undefined;
+  useEffect(() => {
+    if (!auth?.token) return;
+    fetchUnits(auth).then((data) => {
+      const results = Array.isArray(data) ? data : (data?.results ?? []);
+      setUnitOptions(results.map((u) => ({ value: u.id, label: `${u.symbol} — ${u.name}` })));
+    }).catch(() => {});
+  }, [auth?.token]);
+
+  const getSelectedUnit = () => {
+    if (!selectedRowData?.units) return null;
+    return unitOptions.find((u) => u.value === selectedRowData?.units) ?? null;
   }
 
   const getSpecimens = () => {
@@ -58,6 +57,7 @@ const EditTestPanelModal = ({ open, setOpen, selectedRowData }) => {
     specimen: getSpecimens() || "",
     test_profile: getTestProfile() || "",
     name: selectedRowData?.name || "",
+    units: getSelectedUnit() || "",
     is_qualitative: selectedRowData?.is_qualitative || false,
     is_quantitative: selectedRowData?.is_quantitative || true,
     tat: selectedRowData?.tat ? (() => {
@@ -81,7 +81,7 @@ const EditTestPanelModal = ({ open, setOpen, selectedRowData }) => {
       ...formValue,
       specimen: formValue.specimen.value,
       test_profile: formValue.test_profile.value,
-      units: formValue.item?.unitsId || null,
+      units: formValue.units?.value || null,
       item: formValue.item.value,
       is_quantitative: formValue.is_quantitative ? true : false,
       tat: formValue.tat ? (() => {
@@ -159,14 +159,21 @@ const EditTestPanelModal = ({ open, setOpen, selectedRowData }) => {
                       <SeachableSelect
                         label="Select Item"
                         name="item"
-                        options={item?.filter((i) => i.category.toLowerCase().includes('lab test')).map((i) => ({ value: i.id, label: i.name, unitsId: i.units, unitSymbol: i.unit_symbol }))}
+                        options={item?.filter((i) => i.category.toLowerCase().includes('lab test')).map((i) => ({ value: i.id, label: i.name }))}
                       />
                       <ErrorMessage
                         name="item"
                         component="div"
                         className="text-warning text-xs"
                       />
-                      <div className="mt-1"><UnitBadge /></div>
+                    </Grid>
+                    <Grid className='my-2' item md={4} xs={12}>
+                      <SeachableSelect
+                        label="Units of Measure (Panel)"
+                        name="units"
+                        options={unitOptions}
+                      />
+                      <ErrorMessage name="units" component="div" className="text-warning text-xs" />
                     </Grid>
                     <Grid className='my-2' item md={6} xs={12}>
                       <SeachableSelect

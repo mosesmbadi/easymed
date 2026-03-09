@@ -250,6 +250,8 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'Africa/Nairobi'
 # If true == sync mode, if False == async mode
 CELERY_TASK_ALWAYS_EAGER = False
+# Retry connecting to broker on startup instead of raising an error immediately
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
 CHANNELS_ROUTING = 'easymed.asgi.application'
 CHANNEL_LAYERS = {
