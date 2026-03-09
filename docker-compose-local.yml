@@ -34,6 +34,12 @@ services:
     networks:
       - mks
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
     deploy:
       resources:
         limits:
@@ -55,8 +61,10 @@ services:
       - ./.env.local
     restart: unless-stopped
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - mks
     healthcheck:
@@ -81,9 +89,9 @@ services:
     entrypoint: [] # Skip entrypoint to avoid running migrations
     depends_on:
       backend:
-        condition: service_healthy # Wait for backend to be healthy (migrations complete)
+        condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
     networks:
       - mks
     deploy:
@@ -102,9 +110,9 @@ services:
     restart: unless-stopped
     depends_on:
       backend:
-        condition: service_healthy # Wait for backend to be healthy (migrations complete)
+        condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
     networks:
       - mks
     deploy:

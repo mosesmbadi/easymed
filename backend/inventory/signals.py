@@ -161,7 +161,13 @@ def create_default_insurance_prices(sender, instance, created, **kwargs):
     billing
     '''
     if created:
-        create_insurance_prices_for_inventory.delay(instance.id)
+        try:
+            create_insurance_prices_for_inventory.delay(instance.id)
+        except Exception as e:
+            logger.warning(
+                f"Could not dispatch insurance price task for inventory {instance.id} "
+                f"(Redis may not be available): {e}"
+            )
 
 
 @receiver(post_save, sender=Item)

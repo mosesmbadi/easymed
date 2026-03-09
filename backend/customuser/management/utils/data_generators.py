@@ -302,7 +302,7 @@ def create_dummy_items(count=50):
     items = []
     # Exclude appointment categories from random assignment - these should be created separately
     categories = [c[0] for c in Item.CATEGORY_CHOICES if c[0] not in ['General Appointment', 'Specialized Appointment']]
-    units = [u[0] for u in Item.UNIT_CHOICES]
+    units = list(Unit.objects.values_list('symbol', flat=True)) or ['unit', 'g', 'mg', 'ml', 'L', 'kg']
     
     created_count = 0
     attempts = 0

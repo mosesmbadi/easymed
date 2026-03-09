@@ -12,17 +12,7 @@ import { getItems } from "@/redux/features/inventory";
 import { IoMdAdd } from "react-icons/io";
 import { getAllLabTestProfiles, getSpecimens, updateTestPanelsStore } from "@/redux/features/laboratory";
 import { createLabTestPanels } from "@/redux/service/laboratory";
-
-const UnitBadge = () => {
-  const { values } = useFormikContext();
-  const symbol = values.item?.unitSymbol;
-  if (!symbol) return null;
-  return (
-    <span className="inline-block bg-gray-100 border border-gray-300 text-gray-700 text-xs rounded px-2 py-1">
-      Unit: <strong>{symbol}</strong>
-    </span>
-  );
-};
+import { fetchUnits } from "@/redux/service/inventory";
 
 const ItemSelectWithAutofill = ({ options }) => {
   const { values, setFieldValue } = useFormikContext();
@@ -40,7 +30,6 @@ const ItemSelectWithAutofill = ({ options }) => {
         setSelectedItem={handleItemChange}
       />
       <ErrorMessage name="item" component="div" className="text-warning text-xs" />
-      <div className="mt-1"><UnitBadge /></div>
     </>
   );
 };
@@ -48,6 +37,7 @@ const ItemSelectWithAutofill = ({ options }) => {
 const CreateTestPanelModal = () => {
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const [unitOptions, setUnitOptions] = useState([]);
   const dispatch = useDispatch();
   const auth = useAuth();
   const { item } = useSelector((store) => store.inventory)
@@ -90,6 +80,10 @@ const CreateTestPanelModal = () => {
       fetchItems()
       fetchAllSpecimens(auth)
       fetchAllTestProfiles(auth)
+      fetchUnits(auth).then((data) => {
+        const results = Array.isArray(data) ? data : (data?.results ?? []);
+        setUnitOptions(results.map((u) => ({ value: u.id, label: `${u.symbol} — ${u.name}` })));
+      }).catch(() => {});
     }
   }, [])
 
@@ -99,6 +93,7 @@ const CreateTestPanelModal = () => {
     specimen: "",
     test_profile: "",
     name: "",
+    units: "",
     is_qualitative: false,
     is_quantitative: true,
     tat: ""
@@ -116,7 +111,7 @@ const CreateTestPanelModal = () => {
       ...formValue,
       specimen: formValue.specimen.value,
       test_profile: formValue.test_profile.value,
-      units: formValue.item.unitsId || null,
+      units: formValue.units?.value || null,
       item: formValue.item.value,
       is_quantitative: formValue.is_qualitative ? false : formValue.is_quantitative,
       tat: formValue.tat ? (() => {
@@ -202,8 +197,16 @@ const CreateTestPanelModal = () => {
                         <Grid className='my-2' item md={4} xs={12}>
                           <ItemSelectWithAutofill
                             options={item?.filter((i) => i.category === 'Lab Test')
-                              .map((i) => ({ value: i.id, label: i.name, unitsId: i.units, unitSymbol: i.unit_symbol }))}
+                              .map((i) => ({ value: i.id, label: i.name }))}
                           />
+                        </Grid>
+                        <Grid className='my-2' item md={4} xs={12}>
+                          <SeachableSelect
+                            label="Units of Measure (Panel)"
+                            name="units"
+                            options={unitOptions}
+                          />
+                          <ErrorMessage name="units" component="div" className="text-warning text-xs" />
                         </Grid>
                         <Grid className='my-2' item md={6} xs={12}>
                             <SeachableSelect
