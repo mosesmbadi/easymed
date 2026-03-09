@@ -11,7 +11,7 @@ import ReferPatientModal from "../patient/refer-patient-modal";
 import ConsultPatientModal from "./consult-modal";
 import PrescribePatientModal from "./prescribe-patient-modal";
 import { BiTransferAlt } from "react-icons/bi";
-import { FaBed, FaRobot, FaExclamationTriangle } from "react-icons/fa";
+import { FaBed, FaRobot, FaExclamationTriangle, FaFlask } from "react-icons/fa";
 import { MdOutlineContactSupport } from "react-icons/md";
 import { useDispatch, useSelector } from "react-redux";
 import { getAllPatients, getAllProcesses } from "@/redux/features/patients";
@@ -119,11 +119,15 @@ const DoctorPatientDataGrid = () => {
   const patientNameRender = (cellData) => {
     const patient = patients.find((patient) => patient.id === cellData.data.patient);
     const hasCriticalTriage = cellData.data.has_critical_triage;
+    const hasApprovedLabResults = cellData.data.has_approved_lab_results;
     return (
       <div className="flex items-center gap-2">
         <span>{patient ? `${patient.first_name} ${patient.second_name}` : ""}</span>
         {hasCriticalTriage && (
           <FaExclamationTriangle className="text-warning text-sm" title="Critical Triage Values Detected" />
+        )}
+        {hasApprovedLabResults && (
+          <FaFlask className="text-success text-sm" title="Approved Lab Results Available" />
         )}
       </div>
     );

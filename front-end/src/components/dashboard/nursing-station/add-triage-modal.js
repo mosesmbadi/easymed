@@ -190,6 +190,7 @@ export default function AddTriageModal({
                             setFieldValue("weight", e.target.value);
                             setFieldValue("bmi", calculateBMI(values.height, e.target.value));
                           }}
+                          
                         />
                         <ErrorMessage
                           name="weight"
