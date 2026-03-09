@@ -7,6 +7,7 @@ import TestProfile from './TestProfile'
 import Specimens from './Specimens'
 import ReferenceValues from './ReferenceValues'
 import ProfessionalInterpretation from './ProfessionalInterpretation'
+import ArchiveSettings from './ArchiveSettings'
 import GlobalSettings from './GlobalSettings'
 
 const LabSettingsNav = () => {
@@ -99,6 +100,18 @@ const LabSettingsNav = () => {
                 } `}
               onClick={() => setCurrentTab(6)}
             >
+              Archive Settings
+            </p>
+          </div>
+
+          <div>
+            <p
+              className={`${currentTab === 7
+                ? "cursor-pointer text-primary p-4 border-b-2 border-primary text-center"
+                : "cursor-pointer text-center p-4"
+                } `}
+              onClick={() => setCurrentTab(7)}
+            >
               Global Settings
             </p>
           </div>
@@ -111,7 +124,8 @@ const LabSettingsNav = () => {
         {currentTab === 3 && <TestPanels />}
         {currentTab === 4 && <ReferenceValues />}
         {currentTab === 5 && <ProfessionalInterpretation />}
-        {currentTab === 6 && <GlobalSettings />}
+        {currentTab === 6 && <ArchiveSettings />}
+        {currentTab === 7 && <GlobalSettings />}
       </div>
     </>
   )
