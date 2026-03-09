@@ -183,6 +183,7 @@ class AttendanceProcessSerializer(serializers.ModelSerializer):
     assigned_doctor = serializers.CharField(source='doctor.get_fullname', read_only=True)
     patient_name = serializers.SerializerMethodField()
     has_critical_triage = serializers.SerializerMethodField()
+    has_approved_lab_results = serializers.SerializerMethodField()
     referral = ReferralSerializer(read_only=True)
     clinical_note = ConsultationSerializer(read_only=True)
     class Meta:
@@ -225,6 +226,16 @@ class AttendanceProcessSerializer(serializers.ModelSerializer):
             return True
 
         return False
+
+    def get_has_approved_lab_results(self, obj):
+        from laboratory.models import LabTestRequestPanel
+        if not obj.process_test_req:
+            return False
+            
+        return LabTestRequestPanel.objects.filter(
+            lab_test_request__process=obj.process_test_req,
+            result_approved=True
+        ).exists()
 
 class TriageSettingsSerializer(serializers.ModelSerializer):
     class Meta:
