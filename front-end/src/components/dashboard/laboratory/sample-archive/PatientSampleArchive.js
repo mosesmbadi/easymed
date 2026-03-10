@@ -75,11 +75,22 @@ const PatientSampleArchive = () => {
     const [selectedSection, setSelectedSection] = useState("");
     const [selectedRack, setSelectedRack] = useState("");
 
-    // Filtered lists
-    const filteredComponents = archiveComponents.filter(c => c.archive === selectedArchive);
-    const filteredSections = archiveSections.filter(s => s.component === selectedComponent);
-    const filteredRacks = archiveRacks.filter(r => r.section === selectedSection);
-    const filteredPositions = archivePositions.filter(p => p.rack === selectedRack);
+    // 1. Identify all truly free positions
+    const occupiedPositions = new Set((patientSampleArchives || []).map(a => a.position));
+    const allFreePositions = (archivePositions || []).filter(p => !occupiedPositions.has(p.id));
+
+    // 2. Map available IDs for recursive filtering
+    const availableRackIds = new Set(allFreePositions.map(p => p.rack));
+    const availableSectionIds = new Set((archiveRacks || []).filter(r => availableRackIds.has(r.id)).map(r => r.section));
+    const availableComponentIds = new Set((archiveSections || []).filter(s => availableSectionIds.has(s.id)).map(s => s.component));
+    const availableArchiveIds = new Set((archiveComponents || []).filter(c => availableComponentIds.has(c.id)).map(c => c.archive));
+
+    // 3. Filtered lists for dropdowns
+    const availableArchives = (archives || []).filter(a => availableArchiveIds.has(a.id));
+    const filteredComponents = (archiveComponents || []).filter(c => c.archive === selectedArchive && availableComponentIds.has(c.id));
+    const filteredSections = (archiveSections || []).filter(s => s.component === selectedComponent && availableSectionIds.has(s.id));
+    const filteredRacks = (archiveRacks || []).filter(r => r.section === selectedSection && availableRackIds.has(r.id));
+    const filteredPositions = (archivePositions || []).filter(p => p.rack === selectedRack && !occupiedPositions.has(p.id));
 
     const initialValues = {
         patient_sample: "",
@@ -213,7 +224,7 @@ const PatientSampleArchive = () => {
                                         className="block border border-gray w-full"
                                     >
                                         <MenuItem value="" disabled>Select Patient Sample</MenuItem>
-                                        {phlebotomySamples.filter(ps => !ps.is_archived && !ps.is_disposed).map((ps) => (
+                                        {(phlebotomySamples || []).filter(ps => !ps.is_archived && !ps.is_disposed).map((ps) => (
                                             <MenuItem key={ps.id} value={ps.id}>
                                                 {ps.patient_sample_code || `Sample #${ps.id}`}
                                             </MenuItem>
@@ -241,7 +252,7 @@ const PatientSampleArchive = () => {
                                         className="block border border-gray w-full"
                                     >
                                         <MenuItem value="">Select Archive (Filter)</MenuItem>
-                                        {archives.map((a) => (
+                                        {(availableArchives || []).map((a) => (
                                             <MenuItem key={a.id} value={a.id}>
                                                 {a.name}
                                             </MenuItem>
@@ -380,7 +391,7 @@ const PatientSampleArchive = () => {
             </Formik>
             <div className='my-10'>
                 <DataGrid
-                    dataSource={patientSampleArchives.filter(a => !releasedSamples.some(rs => rs.patient_sample === a.patient_sample))}
+                    dataSource={(patientSampleArchives || []).filter(a => !(releasedSamples || []).some(rs => rs.patient_sample === a.patient_sample))}
                     allowColumnReordering={true}
                     rowAlternationEnabled={true}
                     showBorders={true}
@@ -410,10 +421,62 @@ const PatientSampleArchive = () => {
                     />
                     <Column
                         dataField="position"
+                        caption="Archive"
+                        cellRender={(data) => {
+                            const position = (archivePositions || []).find(p => p.id === data.value);
+                            if (!position) return '-';
+                            const rack = (archiveRacks || []).find(r => r.id === position.rack);
+                            if (!rack) return '-';
+                            const section = (archiveSections || []).find(s => s.id === rack.section);
+                            if (!section) return '-';
+                            const component = (archiveComponents || []).find(c => c.id === section.component);
+                            if (!component) return '-';
+                            const archive = (archives || []).find(a => a.id === component.archive);
+                            return archive ? archive.name : '-';
+                        }}
+                    />
+                    <Column
+                        dataField="position"
+                        caption="Compartment"
+                        cellRender={(data) => {
+                            const position = (archivePositions || []).find(p => p.id === data.value);
+                            if (!position) return '-';
+                            const rack = (archiveRacks || []).find(r => r.id === position.rack);
+                            if (!rack) return '-';
+                            const section = (archiveSections || []).find(s => s.id === rack.section);
+                            if (!section) return '-';
+                            const component = (archiveComponents || []).find(c => c.id === section.component);
+                            return component ? component.name : '-';
+                        }}
+                    />
+                    <Column
+                        dataField="position"
+                        caption="Section"
+                        cellRender={(data) => {
+                            const position = (archivePositions || []).find(p => p.id === data.value);
+                            if (!position) return '-';
+                            const rack = (archiveRacks || []).find(r => r.id === position.rack);
+                            if (!rack) return '-';
+                            const section = (archiveSections || []).find(s => s.id === rack.section);
+                            return section ? section.name : '-';
+                        }}
+                    />
+                    <Column
+                        dataField="position"
+                        caption="Rack"
+                        cellRender={(data) => {
+                            const position = (archivePositions || []).find(p => p.id === data.value);
+                            if (!position) return '-';
+                            const rack = (archiveRacks || []).find(r => r.id === position.rack);
+                            return rack ? rack.name : '-';
+                        }}
+                    />
+                    <Column
+                        dataField="position"
                         caption="Position"
                         cellRender={(data) => {
-                            const position = archivePositions.find(p => p.id === data.value);
-                            return position ? `${position.rack_name ? `[${position.rack_name}] ` : ''}${position.name}` : data.value;
+                            const position = (archivePositions || []).find(p => p.id === data.value);
+                            return position ? position.name : data.value;
                         }}
                     />
                     <Column

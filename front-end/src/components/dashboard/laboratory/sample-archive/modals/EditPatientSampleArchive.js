@@ -18,7 +18,7 @@ const EditPatientSampleArchiveModal = ({ open, setOpen, selectedRowData }) => {
     const auth = useAuth();
 
     // Fetch options from redux store
-    const { archivePositions, archiveRacks, archiveSections, archiveComponents, archives, phlebotomySamples } = useSelector((store) => store.laboratory);
+    const { patientSampleArchives, archivePositions, archiveRacks, archiveSections, archiveComponents, archives, phlebotomySamples } = useSelector((store) => store.laboratory);
 
     // Cascading dropdown states
     const [selectedArchive, setSelectedArchive] = useState("");
@@ -34,22 +34,22 @@ const EditPatientSampleArchiveModal = ({ open, setOpen, selectedRowData }) => {
     useEffect(() => {
         if (open && selectedRowData?.position) {
             const posId = selectedRowData.position;
-            const position = archivePositions.find(p => p.id === posId);
+            const position = (archivePositions || []).find(p => p.id === posId);
             if (position) {
                 const rackId = position.rack;
                 setSelectedRack(rackId);
 
-                const rack = archiveRacks.find(r => r.id === rackId);
+                const rack = (archiveRacks || []).find(r => r.id === rackId);
                 if (rack) {
                     const secId = rack.section;
                     setSelectedSection(secId);
 
-                    const section = archiveSections.find(s => s.id === secId);
+                    const section = (archiveSections || []).find(s => s.id === secId);
                     if (section) {
                         const compId = section.component;
                         setSelectedComponent(compId);
 
-                        const component = archiveComponents.find(c => c.id === compId);
+                        const component = (archiveComponents || []).find(c => c.id === compId);
                         if (component) {
                             setSelectedArchive(component.archive);
                         }
@@ -59,11 +59,29 @@ const EditPatientSampleArchiveModal = ({ open, setOpen, selectedRowData }) => {
         }
     }, [open, selectedRowData, archivePositions, archiveRacks, archiveSections, archiveComponents]);
 
-    // Filtered lists
-    const filteredComponents = archiveComponents.filter(c => c.archive === selectedArchive);
-    const filteredSections = archiveSections.filter(s => s.component === selectedComponent);
-    const filteredRacks = archiveRacks.filter(r => r.section === selectedSection);
-    const filteredPositions = archivePositions.filter(p => p.rack === selectedRack);
+    // 1. Identify "available" positions (either free or the current one)
+    const currentPositionId = selectedRowData?.position;
+    const occupiedPositions = new Set((patientSampleArchives || []).map(a => a.position));
+    const isAvailable = (posId) => !occupiedPositions.has(posId) || posId === currentPositionId;
+
+    const allPositions = archivePositions || [];
+    const allRacks = archiveRacks || [];
+    const allSections = archiveSections || [];
+    const allComponents = archiveComponents || [];
+    const allArchives = archives || [];
+
+    // 2. Map available IDs for recursive filtering
+    const availableRackIds = new Set(allPositions.filter(p => isAvailable(p.id)).map(p => p.rack));
+    const availableSectionIds = new Set(allRacks.filter(r => availableRackIds.has(r.id)).map(r => r.section));
+    const availableComponentIds = new Set(allSections.filter(s => availableSectionIds.has(s.id)).map(s => s.component));
+    const availableArchiveIds = new Set(allComponents.filter(c => availableComponentIds.has(c.id)).map(c => c.archive));
+
+    // 3. Filtered lists for dropdowns
+    const availableArchives = allArchives.filter(a => availableArchiveIds.has(a.id));
+    const filteredComponents = allComponents.filter(c => c.archive === selectedArchive && availableComponentIds.has(c.id));
+    const filteredSections = allSections.filter(s => s.component === selectedComponent && availableSectionIds.has(s.id));
+    const filteredRacks = allRacks.filter(r => r.section === selectedSection && availableRackIds.has(r.id));
+    const filteredPositions = allPositions.filter(p => p.rack === selectedRack && isAvailable(p.id));
 
     const initialValues = {
         patient_sample: selectedRowData?.patient_sample || "",
@@ -133,7 +151,7 @@ const EditPatientSampleArchiveModal = ({ open, setOpen, selectedRowData }) => {
                                                 className="block border border-gray w-full"
                                             >
                                                 <MenuItem value="" disabled>Select Patient Sample</MenuItem>
-                                                {phlebotomySamples.map((ps) => (
+                                                {(phlebotomySamples || []).map((ps) => (
                                                     <MenuItem key={ps.id} value={ps.id}>
                                                         {ps.patient_sample_code || `Sample #${ps.id}`}
                                                     </MenuItem>
@@ -161,7 +179,7 @@ const EditPatientSampleArchiveModal = ({ open, setOpen, selectedRowData }) => {
                                                 className="block border border-gray w-full"
                                             >
                                                 <MenuItem value="">Select Archive (Filter)</MenuItem>
-                                                {archives.map((a) => (
+                                                {(availableArchives || []).map((a) => (
                                                     <MenuItem key={a.id} value={a.id}>
                                                         {a.name}
                                                     </MenuItem>
