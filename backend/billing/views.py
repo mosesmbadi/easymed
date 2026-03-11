@@ -2,7 +2,7 @@ from django.shortcuts import render, Http404
 from rest_framework import viewsets, status
 from django.template.loader import get_template
 
-from .models import Invoice, InvoiceItem, PaymentMode
+from .models import Invoice, InvoiceItem, PaymentMode, MainAccount, SubAccount
 from inventory.models import IncomingItem
 from rest_framework import generics
 from django.http import HttpResponse
@@ -30,7 +30,8 @@ from authperms.permissions import (
 from .serializers import (
     InvoiceItemSerializer, InvoiceSerializer,
     PaymentModeSerializer, InvoicePaymentSerializer,
-    PaymentReceiptSerializer, AllocatePaymentRequestSerializer
+    PaymentReceiptSerializer, AllocatePaymentRequestSerializer,
+    MainAccountSerializer, SubAccountSerializer
     )
 
 
@@ -119,6 +120,16 @@ class InvoicePaymentViewset(viewsets.ModelViewSet):
 class PaymentModeViewset(viewsets.ModelViewSet):
         queryset = PaymentMode.objects.all()
         serializer_class = PaymentModeSerializer
+
+
+class MainAccountViewSet(viewsets.ModelViewSet):
+    queryset = MainAccount.objects.all().order_by('-id')
+    serializer_class = MainAccountSerializer
+
+
+class SubAccountViewSet(viewsets.ModelViewSet):
+    queryset = SubAccount.objects.all().order_by('-id')
+    serializer_class = SubAccountSerializer
 
 
 class PaymentReceiptViewset(viewsets.ReadOnlyModelViewSet):

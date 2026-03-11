@@ -15,7 +15,9 @@ from .views import (
     InvoiceItemsByInvoiceId,
     InvoiceItemsByInsuranceCompany,
     PaymentBreakdownView,
-    InvoicePaymentViewset
+    InvoicePaymentViewset,
+    MainAccountViewSet,
+    SubAccountViewSet
 )
 
 router = DefaultRouter()
@@ -25,6 +27,8 @@ router.register(r'invoice-items', InvoiceItemViewset)
 router.register(r'payment-modes', PaymentModeViewset)
 router.register(r'payment-receipts', PaymentReceiptViewset)
 router.register(r'invoice-payments', InvoicePaymentViewset)
+router.register(r'main-accounts', MainAccountViewSet)
+router.register(r'sub-accounts', SubAccountViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),

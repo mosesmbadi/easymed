@@ -284,3 +284,81 @@ export const updatePaymentModes = (auth, payload, payment_mode_id) =>{
             })
     })
 }
+
+export const fetchMainAccounts = (auth) =>{
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve,reject) =>{
+        axiosInstance.get(`${APP_API_URL.MAIN_ACCOUNTS}`)
+            .then((res) =>{
+                resolve(res.data)
+            })
+            .catch((err) =>{
+                reject(err.message)
+            })
+    })
+}
+
+export const createMainAccount = (auth, payload) =>{
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve,reject) =>{
+        axiosInstance.post(`${APP_API_URL.MAIN_ACCOUNTS}`, payload)
+            .then((res) =>{
+                resolve(res.data)
+            })
+            .catch((err) =>{
+                reject(err.message)
+            })
+    })
+}
+
+export const updateMainAccount = (auth, payload, main_account_id) =>{
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve,reject) =>{
+        axiosInstance.patch(`${APP_API_URL.MAIN_ACCOUNTS}${main_account_id}/`, payload)
+            .then((res) =>{
+                resolve(res.data)
+            })
+            .catch((err) =>{
+                reject(err.message)
+            })
+    })
+}
+
+export const fetchSubAccounts = (auth) =>{
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve,reject) =>{
+        axiosInstance.get(`${APP_API_URL.SUB_ACCOUNTS}`)
+            .then((res) =>{
+                resolve(res.data)
+            })
+            .catch((err) =>{
+                reject(err.message)
+            })
+    })
+}
+
+export const createSubAccount = (auth, payload) =>{
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve,reject) =>{
+        axiosInstance.post(`${APP_API_URL.SUB_ACCOUNTS}`, payload)
+            .then((res) =>{
+                resolve(res.data)
+            })
+            .catch((err) =>{
+                reject(err.message)
+            })
+    })
+}
+
+export const updateSubAccount = (auth, payload, sub_account_id) =>{
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve,reject) =>{
+        axiosInstance.patch(`${APP_API_URL.SUB_ACCOUNTS}${sub_account_id}/`, payload)
+            .then((res) =>{
+                resolve(res.data)
+            })
+            .catch((err) =>{
+                reject(err.message)
+            })
+    })
+}

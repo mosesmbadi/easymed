@@ -134,6 +134,8 @@ export const API_URL = {
   FETCH_INVOICE_ITEMS_BY_INVOICE: "/billing/invoices/items/",
   TOTALS_OF_THE_DAY: "/reports/total_payment_mode_amount/",
   PAYMENT_MODES: "/billing/payment-modes/",
+  MAIN_ACCOUNTS: "/billing/main-accounts/",
+  SUB_ACCOUNTS: "/billing/sub-accounts/",
   INSURANCE_INVENTORY_PRICES: "/inventory/insurance-item-prices/",
 
   /***************** PRESCRIPRION **********************/
@@ -329,6 +331,8 @@ export const APP_API_URL = {
   FETCH_INVOICE_ITEMS_BY_INVOICE: "/api/billing/fetch-invoices-items-by-invoice/",
   TOTALS_OF_THE_DAY: "/api/billing/transactionAday/",
   PAYMENT_MODES: "/api/billing/payment-modes/",
+  MAIN_ACCOUNTS: "/api/billing/main-accounts/",
+  SUB_ACCOUNTS: "/api/billing/sub-accounts/",
   INSURANCE_INVENTORY_PRICES: "/api/insurance/insurance-prices",
 
 
