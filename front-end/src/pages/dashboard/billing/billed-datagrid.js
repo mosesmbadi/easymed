@@ -277,9 +277,9 @@ const BilledDataGrid = () => {
                         Daily Cash Total.
                     </button>
                 </div>
-                <div onClick={()=> getTransactionPerDayForAPaymentMethod("mpesa")} className='w-full gap-2 flex justify-center items-center bg-white rounded-lg cursor-pointer'>
+                <div onClick={()=> getTransactionPerDayForAPaymentMethod("mobile_money")} className='w-full gap-2 flex justify-center items-center bg-white rounded-lg cursor-pointer'>
                     <button>
-                        Daily Mpesa Total.
+                        Daily Mobile Money Total.
                     </button>
                 </div>
                 <div onClick={()=>getTransactionPerDayForAPaymentMethod("insurance")} className='w-full gap-2 flex justify-center items-center bg-white rounded-lg cursor-pointer'>

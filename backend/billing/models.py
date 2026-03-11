@@ -20,8 +20,8 @@ class PaymentMode(models.Model):
     PAYMENT_CATEGORY_CHOICES = (
         ('cash', 'Cash'),
         ('insurance', 'Insurance'),
-        ('mpesa', 'MPesa'),
-        ('cheque', 'CHEQUE'),
+        ('mobile_money', 'Mobile Money'),
+        ('bank_transfer', 'Bank Transfer'),
         ('direct_to_bank', 'DIRECT_TO_BANK')
     )
     payment_mode = models.CharField(max_length=100, blank=True, null=True, default='cash')
@@ -162,6 +162,10 @@ class InvoiceItem(models.Model):
     actual_total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     status = models.CharField(
         max_length=10, choices=STATUS_CHOICES, default='pending')
+    source_tag = models.ForeignKey(
+        'inventory.Department', on_delete=models.SET_NULL, null=True, blank=True, 
+        help_text="Used for departmental revenue tracking (e.g. Lab, Pharmacy, Main)"
+    )
 
     @property
     def sale_price(self):
@@ -304,3 +308,43 @@ class PaymentAllocation(models.Model):
 
     def __str__(self):
         return f"Allocation {self.amount_applied} to {self.invoice_item_id} for receipt {self.receipt_id}"
+
+
+class MainAccount(models.Model):
+    """
+    The 'Parent' accounts: e.g., Cash, KCB Bank, Co-op Bank.
+    Summarizes the total liquidity across all departments.
+    """
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True, null=True)
+    payment_mode = models.OneToOneField('PaymentMode', on_delete=models.SET_NULL, null=True, blank=True, related_name='main_account')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def total_balance(self):
+        # Dynamically calculate total balance from all sub-accounts
+        return sum(sub.balance for sub in self.subaccounts.all())
+
+
+class SubAccount(models.Model):
+    main_account = models.ForeignKey(MainAccount, on_delete=models.CASCADE, related_name='subaccounts')
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True, null=True)
+    opening_bal = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    min_bal = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    max_bal = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    min_trans = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    max_trans = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.main_account.name})"
+
+    @property
+    def balance(self):
+        # Placeholder for actual balance calculation once transactions are modeled
+        return self.opening_bal

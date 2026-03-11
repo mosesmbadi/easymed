@@ -15,7 +15,10 @@ from .views import (
     InvoiceItemsByInvoiceId,
     InvoiceItemsByInsuranceCompany,
     PaymentBreakdownView,
-    InvoicePaymentViewset
+    InvoicePaymentViewset,
+    MainAccountViewSet,
+    SubAccountViewSet,
+    AccountingSummaryView
 )
 
 router = DefaultRouter()
@@ -25,6 +28,8 @@ router.register(r'invoice-items', InvoiceItemViewset)
 router.register(r'payment-modes', PaymentModeViewset)
 router.register(r'payment-receipts', PaymentReceiptViewset)
 router.register(r'invoice-payments', InvoicePaymentViewset)
+router.register(r'main-accounts', MainAccountViewSet)
+router.register(r'sub-accounts', SubAccountViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
@@ -35,6 +40,7 @@ urlpatterns = [
     path('invoices/items/<int:invoice_id>/', InvoiceItemsByInvoiceId.as_view()),
     path('invoice-items-by-insurance-company/', InvoiceItemsByInsuranceCompany.as_view(), name='invoice-items-by-insurance-company'),
     path('payment-modes-breakdown/', PaymentBreakdownView.as_view(), name='payment-breakdown'),
+    path('accounting-summary/', AccountingSummaryView.as_view(), name='accounting-summary'),
 ]
 
 if settings.DEBUG:

@@ -97,6 +97,12 @@ export const menus = [
         icon: <FaMoneyBillWave className="" />,
         requiredPermission: "CAN_ACCESS_BILLING_DASHBOARD",
       },
+      {
+        label: "Cash and Cash equivalents",
+        href: "/dashboard/finance/cash-equivalents",
+        icon: <FaMoneyBillWave className="" />,
+        requiredPermission: "CAN_ACCESS_BILLING_DASHBOARD",
+      },
     ],
   },
 
@@ -143,13 +149,13 @@ export const dashboardData = [
     icon: <FaCodePullRequest className="text-xl" />,
   },
 ];
-export const AdminData = ()=> {
+export const AdminData = () => {
   // get data from redux store for display
   const { doctors } = useSelector((store) => store.doctor);
   const { patients } = useSelector((store) => store.patient);
   const { labRequests } = useSelector((store) => store.laboratory);
 
-  return([
+  return ([
     {
       label: "No. of Patients",
       number: patients.length,
@@ -302,7 +308,7 @@ export const InventoryDisplayStats = () => {
     const purchaseYear = purchaseDate.getFullYear();
     const purchaseMonth = purchaseDate.getMonth();
     const purchaseDay = purchaseDate.getDate();
-  
+
     return todayYear === purchaseYear && todayMonth === purchaseMonth && todayDay === purchaseDay;
   });
 
@@ -311,7 +317,7 @@ export const InventoryDisplayStats = () => {
     const saleYear = saleDate.getFullYear();
     const saleMonth = saleDate.getMonth();
     const saleDay = saleDate.getDate();
-  
+
     return todayYear === saleYear && todayMonth === saleMonth && todayDay === saleDay;
   });
 

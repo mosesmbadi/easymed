@@ -26,8 +26,8 @@ const CreatePaymodeModal = () => {
 
     {value: "cash", label: "Cash"},
     {value: "insurance", label: "Insurance"},
-    {value: "mpesa", label: "Mpesa"},
-    {value: "cheque", label: "Cheque"},
+    {value: "mobile_money", label: "Mobile Money"},
+    {value: "bank_transfer", label: "Bank Transfer"},
     {value: "direct_to_bank", label: "Direct to Bank"},
 
   ]

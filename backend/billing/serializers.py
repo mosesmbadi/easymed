@@ -3,7 +3,8 @@ from django.core.exceptions import ValidationError
 from .models import (
     Invoice, InvoiceItem,
     PaymentMode, InvoicePayment,
-    PaymentReceipt, PaymentAllocation
+    PaymentReceipt, PaymentAllocation,
+    MainAccount, SubAccount
 )
 
 
@@ -15,6 +16,7 @@ class InvoiceItemSerializer(serializers.ModelSerializer):
     insurance_company_id = serializers.SerializerMethodField()
     sale_price = serializers.SerializerMethodField()
     price_source = serializers.SerializerMethodField()
+    source_tag_name = serializers.CharField(source='source_tag.name', read_only=True)
 
     class Meta:
         model = InvoiceItem
@@ -190,3 +192,21 @@ class AllocatePaymentRequestSerializer(serializers.Serializer):
             )
         
         return data
+
+
+class SubAccountSerializer(serializers.ModelSerializer):
+    main_account_name = serializers.CharField(source='main_account.name', read_only=True)
+
+    class Meta:
+        model = SubAccount
+        fields = '__all__'
+
+
+class MainAccountSerializer(serializers.ModelSerializer):
+    subaccounts = SubAccountSerializer(many=True, read_only=True)
+    total_balance = serializers.DecimalField(max_digits=15, decimal_places=2, read_only=True)
+    payment_mode_name = serializers.CharField(source='payment_mode.payment_mode', read_only=True)
+
+    class Meta:
+        model = MainAccount
+        fields = '__all__'

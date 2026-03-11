@@ -2,7 +2,7 @@ from django.shortcuts import render, Http404
 from rest_framework import viewsets, status
 from django.template.loader import get_template
 
-from .models import Invoice, InvoiceItem, PaymentMode
+from .models import Invoice, InvoiceItem, PaymentMode, MainAccount, SubAccount
 from inventory.models import IncomingItem
 from rest_framework import generics
 from django.http import HttpResponse
@@ -30,7 +30,8 @@ from authperms.permissions import (
 from .serializers import (
     InvoiceItemSerializer, InvoiceSerializer,
     PaymentModeSerializer, InvoicePaymentSerializer,
-    PaymentReceiptSerializer, AllocatePaymentRequestSerializer
+    PaymentReceiptSerializer, AllocatePaymentRequestSerializer,
+    MainAccountSerializer, SubAccountSerializer
     )
 
 
@@ -119,6 +120,16 @@ class InvoicePaymentViewset(viewsets.ModelViewSet):
 class PaymentModeViewset(viewsets.ModelViewSet):
         queryset = PaymentMode.objects.all()
         serializer_class = PaymentModeSerializer
+
+
+class MainAccountViewSet(viewsets.ModelViewSet):
+    queryset = MainAccount.objects.all().order_by('-id')
+    serializer_class = MainAccountSerializer
+
+
+class SubAccountViewSet(viewsets.ModelViewSet):
+    queryset = SubAccount.objects.all().order_by('-id')
+    serializer_class = SubAccountSerializer
 
 
 class PaymentReceiptViewset(viewsets.ReadOnlyModelViewSet):
@@ -365,3 +376,74 @@ def download_invoice_pdf(request, invoice_id):
     response['Content-Disposition'] = f'inline; filename="invoice_report_{invoice_id}.pdf"'
 
     return response
+class AccountingSummaryView(APIView):
+    """
+    API View to summarize accounting data based on the source_tag of InvoiceItems.
+    """
+    permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser | IsReceptionistUser,)
+
+    def get(self, request):
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+
+        # Filter billed invoice items (which represent revenue)
+        queryset = InvoiceItem.objects.filter(status='billed')
+
+        if start_date:
+            queryset = queryset.filter(item_created_at__date__gte=start_date)
+        if end_date:
+            queryset = queryset.filter(item_created_at__date__lte=end_date)
+            
+        # 1. Drill-down view: Individual transactions
+        transactions = []
+        for item in queryset.select_related('invoice__patient', 'source_tag'):
+            source_name = item.source_tag.name if item.source_tag else 'Main Account'
+            customer_name = "Unknown"
+            if item.invoice and item.invoice.patient:
+                customer_name = f"{item.invoice.patient.first_name} {item.invoice.patient.second_name}"
+                
+            transactions.append({
+                'id': item.id,
+                'date': item.item_created_at.date(),
+                'invoice_number': item.invoice.invoice_number if item.invoice else "N/A",
+                'customer': customer_name,
+                'tag': source_name,
+                'action': 'Debit',
+                'amount': item.item_amount,
+            })
+            
+        # 2. Bird's Eye View: Departmental Aggregation
+        totals_dict = {}
+        for trans in transactions:
+            tag = trans['tag']
+            if tag not in totals_dict:
+                totals_dict[tag] = {
+                    'tag': tag,
+                    'total_debited': 0,
+                    'total_credited': 0,
+                    'net_balance': 0
+                }
+            
+            # For simplicity, we assume an invoice item is a debit (revenue generation)
+            # In a full accounting system, refunds/write-offs would be credits
+            totals_dict[tag]['total_debited'] += float(trans['amount'])
+            totals_dict[tag]['net_balance'] += float(trans['amount'])
+            
+        # Convert dictionary to list
+        totals = list(totals_dict.values())
+        
+        # Calculate Grand Totals
+        grand_total = sum(t['net_balance'] for t in totals)
+        if totals:
+            totals.append({
+                'tag': 'TOTAL',
+                'total_debited': sum(t['total_debited'] for t in totals),
+                'total_credited': sum(t['total_credited'] for t in totals),
+                'net_balance': grand_total,
+                'is_summary': True
+            })
+
+        return Response({
+            'totals': totals,
+            'transactions': transactions
+        })
