@@ -136,6 +136,7 @@ export const API_URL = {
   PAYMENT_MODES: "/billing/payment-modes/",
   MAIN_ACCOUNTS: "/billing/main-accounts/",
   SUB_ACCOUNTS: "/billing/sub-accounts/",
+  ACCOUNTING_SUMMARY: "/billing/accounting-summary/",
   INSURANCE_INVENTORY_PRICES: "/inventory/insurance-item-prices/",
 
   /***************** PRESCRIPRION **********************/
@@ -333,6 +334,7 @@ export const APP_API_URL = {
   PAYMENT_MODES: "/api/billing/payment-modes/",
   MAIN_ACCOUNTS: "/api/billing/main-accounts/",
   SUB_ACCOUNTS: "/api/billing/sub-accounts/",
+  ACCOUNTING_SUMMARY: "/api/billing/accounting-summary",
   INSURANCE_INVENTORY_PRICES: "/api/insurance/insurance-prices",
 
 

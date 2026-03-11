@@ -362,3 +362,24 @@ export const updateSubAccount = (auth, payload, sub_account_id) =>{
             })
     })
 }
+
+export const getAccountingSummary = (auth, filters = {}) => {
+    const axiosInstance = UseAxios(auth);
+    let url = `${APP_API_URL.ACCOUNTING_SUMMARY}`;
+    
+    // Add query params if any
+    const queryParams = new URLSearchParams(filters).toString();
+    if (queryParams) {
+        url += `?${queryParams}`;
+    }
+
+    return new Promise((resolve, reject) => {
+        axiosInstance.get(url)
+            .then((res) => {
+                resolve(res.data);
+            })
+            .catch((err) => {
+                reject(err.message);
+            });
+    });
+}

@@ -1,0 +1,564 @@
+
+> front-end@0.1.0 build
+> next build
+
+  ▲ Next.js 14.2.5
+
+   Linting and checking validity of types ...
+
+Failed to compile.
+
+./src/components/account/AccountProfile.js
+23:6  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/account/ProfileEdit.js
+27:6  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+80:15  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/announcement/AnnouncementPosts.js
+18:8  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+58:17  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/announcement/ChannelCards.js
+24:11  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/announcement/NewPost.js
+26:8  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/admin-interface/admin-create-user.js
+55:6  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/admin-interface/announcements/channels.js
+73:7  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/admin-interface/company/CompanyDetails.js
+60:8  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/admin-interface/doctors-datagrid.js
+57:6  Warning: React Hook useEffect has missing dependencies: 'authUser' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+88:11  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+88:11  Warning: img elements must have an alt prop, either with meaningful text, or an empty string for decorative images.  jsx-a11y/alt-text
+
+./src/components/dashboard/admin-interface/edit-patient-details-modal.js
+24:5  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/admin-interface/patients-datagrid.js
+56:5  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+108:11  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+108:11  Warning: img elements must have an alt prop, either with meaningful text, or an empty string for decorative images.  jsx-a11y/alt-text
+
+./src/components/dashboard/admin-interface/permissions/GroupPermissionItem.js
+90:6  Warning: React Hook useEffect has a missing dependency: 'auth'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/admin-interface/permissions/GroupsAndPermissions.js
+22:6  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/admin-interface/users-datagrid.js
+58:6  Warning: React Hook useEffect has missing dependencies: 'dispatch' and 'role'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+94:11  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+94:11  Warning: img elements must have an alt prop, either with meaningful text, or an empty string for decorative images.  jsx-a11y/alt-text
+
+./src/components/dashboard/admit/AdmissionDetails.js
+14:6  Warning: React Hook useEffect has missing dependencies: 'admission_id', 'auth', and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/admit/AdmissionVitals.js
+28:6  Warning: React Hook useEffect has missing dependencies: 'admission_id', 'auth', 'dispatch', and 'triage'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/admit/AdmittedInvoices.js
+35:6  Warning: React Hook useEffect has missing dependencies: 'auth', 'dispatch', and 'invoice'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/admit/AdmittedPatientDetails.js
+19:6  Warning: React Hook useEffect has a missing dependency: 'auth'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/admit/AdmittedPrescription.js
+29:6  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/admit/AdmittedTests.js
+74:6  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/admit/Beds.js
+84:6  Warning: React Hook useEffect has missing dependencies: 'auth.token' and 'fetchTheBeds'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/admit/Duties.js
+82:7  Warning: React Hook useEffect has missing dependencies: 'auth', 'dispatch', and 'ward_id'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+89:21  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/dashboard/admit/Schedules.js
+74:6  Warning: React Hook useEffect has missing dependencies: 'admission_id', 'auth', and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/admit/admit-patient-datagrid.js
+156:6  Warning: React Hook useEffect has missing dependencies: 'auth', 'dispatch', 'processFilter', 'selectedSearchFilter', and 'ward_id'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/admit/modals/AddInpatientTestModal.js
+118:6  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/admit/modals/AddScheduleModal.js
+52:6  Warning: React Hook useEffect has a missing dependency: 'auth'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/admit/modals/NurseDutiesModal.js
+72:6  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/admit/modals/PrescribeDrug.js
+96:8  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/admit/modals/TestResultPanels.js
+30:6  Warning: React Hook useEffect has a missing dependency: 'auth'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/admit/modals/UpdateAdmissionModal.js
+69:7  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/admit/wards.js
+88:7  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+95:21  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/dashboard/billing/PaymentReceiptsList.js
+48:6  Warning: React Hook useEffect has a missing dependency: 'loadReceipts'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/billing/ViewInvoiceItemsModal.js
+32:6  Warning: React Hook useEffect has missing dependencies: 'auth', 'dispatch', and 'selectedRowData.id'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/billing/billing-invoices.js
+51:5  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/billing/billing-settings/Insurance.js
+55:6  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/billing/billing-settings/PayModes.js
+61:6  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+99:11  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+99:11  Warning: img elements must have an alt prop, either with meaningful text, or an empty string for decorative images.  jsx-a11y/alt-text
+
+./src/components/dashboard/billing/billing-settings/insurancePrices.js
+58:6  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+95:11  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+95:11  Warning: img elements must have an alt prop, either with meaningful text, or an empty string for decorative images.  jsx-a11y/alt-text
+
+./src/components/dashboard/billing/billing-settings/modals/paymodes/CreatePayMode.js
+39:5  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/billing/billing-settings/modals/prices/CreateInsurancePriceModal.js
+28:5  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/billing/billing-settings/modals/prices/EditInsurancePricesModal.js
+73:5  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/billing/overdue-invoices/OverdueInvoiceDatagrid.js
+143:8  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/billing/reports/Reports.js
+104:7  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/cards/AppointmentCard.js
+193:8  Warning: React Hook useEffect has missing dependencies: 'auth', 'dispatch', 'processsFilter', and 'selectedSearchFilter'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/doctor-desk/ViewAddedResults.js
+35:7  Warning: React Hook useEffect has missing dependencies: 'dispatch' and 'selectedData'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/doctor-desk/admit-modal.js
+75:5  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/doctor-desk/consult-modal.js
+84:6  Warning: React Hook useEffect has missing dependencies: 'auth', 'dispatch', and 'triageSettings'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/doctor-desk/doctor-patient-datagrid.js
+141:6  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+212:6  Warning: React Hook useEffect has missing dependencies: 'auth', 'dispatch', 'processFilter', and 'selectedSearchFilter'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/doctor-desk/lab-modal.js
+131:6  Warning: React Hook useEffect has missing dependencies: 'auth', 'dispatch', and 'triageSettings'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/doctor-desk/prescriptionItemDialog.js
+70:8  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/finance/cash-equivalents/AccountingSummaryDashboard.js
+48:6  Warning: React Hook useEffect has a missing dependency: 'loadData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+94:90  Error: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+144:92  Error: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+144:103  Error: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+
+./src/components/dashboard/finance/cash-equivalents/MainAccountDataGrid.js
+38:6  Warning: React Hook useEffect has a missing dependency: 'loadData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+44:6  Warning: React Hook useEffect has a missing dependency: 'loadData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/finance/cash-equivalents/SubAccountDataGrid.js
+38:6  Warning: React Hook useEffect has a missing dependency: 'loadData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+44:6  Warning: React Hook useEffect has a missing dependency: 'loadData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/inventory/AddInventory.js
+73:6  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+78:43  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/dashboard/inventory/AddProductPurchase.js
+55:6  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+110:29  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/dashboard/inventory/CreateRequisition.js
+141:6  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+147:11  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/dashboard/inventory/PurchaseOrdersDatagrid.js
+139:8  Warning: React Hook useEffect has missing dependencies: 'dispatch', 'processFilter', and 'selectedSearchFilter'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/inventory/RequisitionDatagrid.js
+160:6  Warning: React Hook useEffect has missing dependencies: 'dispatch', 'processFilter', and 'selectedSearchFilter'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/inventory/create-purchase-order-dialog.js
+73:6  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/inventory/incomingItems/IncomingItemsGrid.js
+52:6  Warning: React Hook useEffect has missing dependencies: 'dispatch', 'processFilter', and 'selectedSearchFilter'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/inventory/incomingItems/NewItems.js
+81:8  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+87:9  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/dashboard/inventory/incomingItems/POListGrid.js
+111:6  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+128:11  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+128:11  Warning: img elements must have an alt prop, either with meaningful text, or an empty string for decorative images.  jsx-a11y/alt-text
+
+./src/components/dashboard/inventory/incomingItems/ReceiveIncomingItems.js
+153:8  Warning: React Hook useEffect has missing dependencies: 'getCreatedIncomingItemsForPartialPO' and 'selectedRowData?.status'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/inventory/incomingItems/UpdateReceivedItemModal.js
+112:6  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/inventory/index.js
+130:6  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+147:6  Warning: React Hook useEffect has missing dependencies: 'auth', 'dispatch', 'processFilter', and 'selectedSearchFilter'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/inventory/inventory-info-cards-item.js
+20:9  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/dashboard/inventory/item/EditItemModal.js
+39:8  Warning: React Hook useEffect has a missing dependency: 'auth'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/inventory/item/Item.js
+24:8  Warning: React Hook useEffect has a missing dependency: 'auth'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+83:9  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/dashboard/inventory/item/Itemgrid.js
+61:6  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+142:11  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+142:11  Warning: img elements must have an alt prop, either with meaningful text, or an empty string for decorative images.  jsx-a11y/alt-text
+
+./src/components/dashboard/inventory/modals/requisition/AddRequisitionItemModal.js
+76:6  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/inventory/modals/requisition/EditRequisitionItemModal.js
+101:6  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/inventory/requisition-modal.js
+89:6  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/inventory/supplier-invoices.js
+32:6  Warning: React Hook useEffect has a missing dependency: 'auth'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+81:11  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/dashboard/laboratory/PatientSampleList.js
+64:8  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/laboratory/RecentReagentUsage.js
+58:8  Warning: React Hook useEffect has a missing dependency: 'fetchMetrics'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/laboratory/RequestInfoModal.js
+36:8  Warning: React Hook useEffect has missing dependencies: 'auth', 'dispatch', and 'getPatientDetailsForThisTestRequest'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/laboratory/TestPanelsItem.js
+32:6  Warning: React Hook useEffect has a missing dependency: 'auth'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/laboratory/TestResultsItems.js
+30:6  Warning: React Hook useEffect has a missing dependency: 'auth'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/laboratory/add-result/AddTestResults.js
+73:6  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+176:11  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/dashboard/laboratory/add-result/ApproveResults.js
+36:8  Warning: React Hook useEffect has missing dependencies: 'auth', 'dispatch', and 'getPatientDetailsForThisTestRequest'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/laboratory/add-result/LabItemModal.js
+88:6  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/laboratory/convert-req-modal.js
+32:8  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/laboratory/equipment-modal.js
+37:6  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/laboratory/lab-request-datagrid.js
+131:6  Warning: React Hook useEffect has missing dependencies: 'dispatch', 'processFilter', and 'selectedSearchFilter'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/laboratory/lab-results-datagrid.js
+124:11  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+124:11  Warning: img elements must have an alt prop, either with meaningful text, or an empty string for decorative images.  jsx-a11y/alt-text
+
+./src/components/dashboard/laboratory/lab-settings/GlobalSettings.js
+40:8  Warning: React Hook useEffect has a missing dependency: 'fetchSettings'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/laboratory/lab-settings/LabEquipments.js
+58:6  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+95:11  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+95:11  Warning: img elements must have an alt prop, either with meaningful text, or an empty string for decorative images.  jsx-a11y/alt-text
+
+./src/components/dashboard/laboratory/lab-settings/ProfessionalInterpretation.js
+111:6  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/laboratory/lab-settings/ReferenceValues.js
+121:6  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/laboratory/lab-settings/Specimens.js
+80:6  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/laboratory/lab-settings/TestPanels.js
+57:6  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+94:11  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+94:11  Warning: img elements must have an alt prop, either with meaningful text, or an empty string for decorative images.  jsx-a11y/alt-text
+
+./src/components/dashboard/laboratory/lab-settings/TestProfile.js
+74:7  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/laboratory/lab-settings/modals/panels/CreateTestPanel.js
+74:6  Warning: React Hook useEffect has missing dependencies: 'auth', 'fetchAllSpecimens', 'fetchAllTestProfiles', and 'fetchItems'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/laboratory/public-lab-requests-datagrid.js
+51:6  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/laboratory/sample-archive/Archive.js
+75:8  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/laboratory/sample-archive/Component.js
+78:8  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/laboratory/sample-archive/PatientSampleArchive.js
+137:8  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/laboratory/sample-archive/Positions.js
+78:8  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/laboratory/sample-archive/Racks.js
+78:8  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/laboratory/sample-archive/ReleasedSamples.js
+25:8  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/laboratory/sample-archive/Sections.js
+78:8  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/nursing-station/add-triage-modal.js
+35:6  Warning: React Hook useEffect has missing dependencies: 'auth', 'dispatch', 'fetchPatientTriage', 'selectedRowData', and 'triageSettings'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/nursing-station/index.js
+79:5  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+132:6  Warning: React Hook useEffect has missing dependencies: 'auth', 'dispatch', 'processFilter', and 'selectedSearchFilter'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/nursing-station/settings/TriageSettingsForm.js
+18:8  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/patient/add-patient-modal.js
+32:6  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/patient/patient-data-grid.js
+127:6  Warning: React Hook useEffect has missing dependencies: 'auth', 'dispatch', 'processsFilter', and 'selectedSearchFilter'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/patient/refer-patient-modal.js
+103:6  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/pharmacy/DrugCategories.js
+66:8  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/pharmacy/DrugModes.js
+62:8  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/pharmacy/DrugStates.js
+62:8  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/pharmacy/Drugs.js
+74:8  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/pharmacy/PharmacyDashboardCards.js
+55:8  Warning: React Hook useEffect has a missing dependency: 'fetchMetrics'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/pharmacy/index.js
+126:6  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+164:6  Warning: React Hook useEffect has missing dependencies: 'auth', 'dispatch', 'processsFilter', and 'selectedSearchFilter'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/pharmacy/public-prescriptions/PublicPrescriptionsDatagrid.js
+29:5  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/prescribe/PrescribePatient.js
+86:6  Warning: React Hook useEffect has missing dependencies: 'auth' and 'getPatientDetailsForThisTestRequest'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+178:9  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/dashboard/reception/UnifiedCheckInForm.js
+46:6  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/reception-interface/assign-doctor-modal.js
+40:6  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/reception-interface/reception-patient-datagrid.js
+76:5  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/layout/rightbar/NewsItem.js
+6:8  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+6:8  Warning: img elements must have an alt prop, either with meaningful text, or an empty string for decorative images.  jsx-a11y/alt-text
+
+./src/components/layout/rightbar/doctors.js
+17:6  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+29:17  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/layout/sidebar/index.js
+26:6  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+60:11  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/notifications/Notifications.js
+46:6  Warning: React Hook useEffect has a missing dependency: 'setNotifications'. Either include it or remove the dependency array. If 'setNotifications' changes too often, find the parent component that defines it and wrap that definition in useCallback.  react-hooks/exhaustive-deps
+
+./src/components/patient-profile/appointments/upcoming-appointments.js
+32:6  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/patient-profile/lab/AddLabReq.js
+123:8  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/patient-profile/lab/LabRequestsGrid.js
+45:8  Warning: React Hook useEffect has missing dependencies: 'dispatch' and 'loggedInPatient?.id'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/patient-profile/personal-details.js
+22:6  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/patient-profile/prescriptions/MyPrescriptions.js
+30:6  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/patient-profile/prescriptions/PatientPrescriptionRequest.js
+111:8  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/splash-screen/index.js
+6:8  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/use-context/index.js
+143:6  Warning: React Hook useEffect has missing dependencies: 'dispatch' and 'logoutUser'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/pages/auth/register.js
+94:6  Warning: React Hook useEffect has missing dependencies: 'dispatch' and 'payload.name'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/pages/book-appointment/book-appointment-form.js
+62:6  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/pages/book-appointment/lab-service.js
+72:6  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/pages/dashboard/admit/patients/[admission_process_id]/[patient_admission]/index.js
+41:6  Warning: React Hook useEffect has a missing dependency: 'auth'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/pages/dashboard/announcements/channel/[channel_name].js
+24:8  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/pages/dashboard/announcements/index.js
+21:6  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/pages/dashboard/billing/appointment-billing.js
+22:6  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/pages/dashboard/billing/billed-datagrid.js
+200:8  Warning: React Hook useEffect has missing dependencies: 'dispatch', 'processFilter', and 'selectedSearchFilter'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+215:8  Warning: React Hook useEffect has missing dependencies: 'auth', 'dispatch', and 'processFilter'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/pages/dashboard/billing/create-invoice/Appointments.js
+27:8  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/pages/dashboard/billing/create-invoice/CategorizedItems.js
+89:6  Warning: React Hook useEffect has missing dependencies: 'auth', 'patient_insurance', and 'selectedPayMethod'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/pages/dashboard/billing/create-invoice/InvoiceItems.js
+38:8  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+93:8  Warning: React Hook useEffect has missing dependencies: 'groupedItems', 'resetTotals', 'totalAppointmentSum', 'totalLabReqSum', and 'totalPrescribedDrugsSum'. Either include them or remove the dependency array. If 'totalAppointmentSum' changes too often, find the parent component that defines it and wrap that definition in useCallback.  react-hooks/exhaustive-deps
+
+./src/pages/dashboard/billing/create-invoice/NewInvoice.js
+83:8  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+94:10  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/pages/dashboard/billing/create-invoice/lab-test-requests.js
+27:8  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/pages/dashboard/billing/create-invoice/prescribed-drug.js
+27:8  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/pages/dashboard/billing/index.js
+9:6  Warning: React Hook useEffect has a missing dependency: 'router'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/pages/dashboard/billing/lab-request-billing.js
+22:6  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/pages/dashboard/billing/new-invoice.js
+26:6  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/pages/dashboard/billing/overdue-invoices/index.js
+9:6  Warning: React Hook useEffect has a missing dependency: 'router'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/pages/dashboard/billing/prescription-billing.js
+22:6  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/pages/dashboard/billing/report/index.js
+9:6  Warning: React Hook useEffect has a missing dependency: 'router'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/pages/dashboard/billing/triage-billing.js
+22:6  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/pages/dashboard/doctor-desk/[process_id]/[prescription_id]/index.js
+141:6  Warning: React Hook useEffect has missing dependencies: 'auth', 'dispatch', and 'params.prescription_id'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/pages/dashboard/finance/accounts-receivable/invoices.js
+78:6  Warning: React Hook useEffect has a missing dependency: 'auth'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/pages/dashboard/finance/accounts-receivable/report.js
+19:6  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/pages/dashboard/finance/cash-equivalents/settings.js
+60:8  Warning: React Hook useEffect has a missing dependency: 'loadLookups'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/pages/dashboard/index.js
+19:5  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/pages/dashboard/inventory/index.js
+24:6  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/pages/dashboard/laboratory/index.js
+23:6  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/pages/dashboard/laboratory/lab-requests.js
+23:6  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/pages/dashboard/laboratory/lab-results.js
+20:6  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/pages/dashboard/laboratory/public-lab-requests.js
+24:6  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/pages/dashboard/phamarcy/index.js
+33:11  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/pages/dashboard/reception/check-in.js
+29:6  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/pages/dashboard/reception-interface/index.js
+21:5  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/pages/dashboard/reception-interface/patient-appointments.js
+16:5  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/pages/index.js
+18:6  Warning: React Hook useEffect has a missing dependency: 'router'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/pages/patient-overview/book-appointment-modal.js
+46:6  Warning: React Hook useEffect has missing dependencies: 'auth' and 'dispatch'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/pages/patient-overview/bookings/index.js
+25:6  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/pages/patient-overview/index.js
+67:6  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/pages/patient-overview/lab-service-modal.js
+80:6  Warning: React Hook useEffect has a missing dependency: 'dispatch'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/basic-features/eslint#disabling-rules
