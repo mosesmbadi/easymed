@@ -128,7 +128,7 @@ const PaymentModeStep = ({
                 />
                 {!selectedPayMode && (
                   <div className="text-xs text-gray-500 mt-1">
-                    Cash, Mpesa, Cheque, or Online Banking
+                    Cash, Mobile Money, Bank Transfer, or Online Banking
                   </div>
                 )}
               </Grid>
@@ -142,7 +142,7 @@ const PaymentModeStep = ({
                   id="reference_number"
                   name="reference_number"
                   className="block border rounded-md text-sm border-gray py-2.5 px-4 focus:outline-card w-full"
-                  placeholder="Mpesa Code, Cheque Number, Mobile Banking Code"
+                  placeholder="Mobile Money Code, Bank Transfer Number, Mobile Banking Code"
                 />
                 <ErrorMessage
                   name="reference_number"

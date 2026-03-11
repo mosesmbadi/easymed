@@ -1,5 +1,5 @@
 import React from 'react'
-import MpesaPayModal from './MpesaPayModal'
+import MobileMoneyPayModal from './MobileMoneyPayModal'
 import { ErrorMessage, Field } from 'formik'
 
 const PayAmountsDisplay = (

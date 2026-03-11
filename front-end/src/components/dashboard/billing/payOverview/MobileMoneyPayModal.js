@@ -8,7 +8,7 @@ import { CiMoneyCheck1 } from 'react-icons/ci'
 import FormButton from '@/components/common/button/FormButton'
 import { formatMoney } from '@/functions/money'
 
-const MpesaPayModal = ({patient_id, amount}) => {
+const MobileMoneyPayModal = ({patient_id, amount}) => {
     const [open, setOpen]=useState(false)
     const [loading, setLoading]=useState(false)
     const { patients } = useSelector((store) => store.patient);
@@ -34,13 +34,13 @@ const MpesaPayModal = ({patient_id, amount}) => {
         try{
 
             setLoading(true)
-            toast.success("HEY, IM PAYING VIA MPESA")
+            toast.success("HEY, IM PAYING VIA MOBILE MONEY")
             setLoading(false)
             handleClose();
 
         }catch(error){
             setLoading(false)
-            toast.error("error mpesa paying", error)
+            toast.error("error mobile money paying", error)
         }
 
     }
@@ -57,7 +57,7 @@ const MpesaPayModal = ({patient_id, amount}) => {
             aria-labelledby="alert-dialog-title"
             aria-describedby="alert-dialog-description"
         >
-        <DialogTitle id="alert-dialog-slide-title">{`Pay ${formatMoney(amount)} with mpesa ?`}</DialogTitle>
+        <DialogTitle id="alert-dialog-slide-title">{`Pay ${formatMoney(amount)} with mobile money ?`}</DialogTitle>
         <DialogContent>
             <Formik
                 initialValues={initialValues}
@@ -88,7 +88,7 @@ const MpesaPayModal = ({patient_id, amount}) => {
                         </button>
                         <FormButton
                         loading={loading}
-                        label={`Pay with Mpesa`}
+                        label={`Pay with Mobile Money`}
                         />
                         </div>
                     </div>
@@ -100,4 +100,4 @@ const MpesaPayModal = ({patient_id, amount}) => {
   )
 }
 
-export default MpesaPayModal
+export default MobileMoneyPayModal

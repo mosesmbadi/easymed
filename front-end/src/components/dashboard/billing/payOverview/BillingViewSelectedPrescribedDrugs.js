@@ -33,12 +33,12 @@ const BillingViewSelectedPrescribedDrugs = ({selectedPrescribedDrugs, setSelecte
                     <div className='flex gap-2 text-xs w-full px-2'>
                         <div className='flex gap-2 text-xs'>
                         <p
-                            className={`text-success ${drug.payMethod === 'mpesa' ? 'font-bold' : ''}`}
+                            className={`text-success ${drug.payMethod === 'mobile_money' ? 'font-bold' : ''}`}
                            
                         >
-                            M-Pesa
+                            Mobile Money
                         </p>
-                        <input  onClick={() => handleToggle(drug.id, 'mpesa')} type='checkbox' checked={drug.payMethod === 'mpesa'} />
+                        <input  onClick={() => handleToggle(drug.id, 'mobile_money')} type='checkbox' checked={drug.payMethod === 'mobile_money'} />
                         </div>
                         <div className='flex gap-2 text-xs'>
                         <p

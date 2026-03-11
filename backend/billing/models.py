@@ -20,8 +20,8 @@ class PaymentMode(models.Model):
     PAYMENT_CATEGORY_CHOICES = (
         ('cash', 'Cash'),
         ('insurance', 'Insurance'),
-        ('mpesa', 'MPesa'),
-        ('cheque', 'CHEQUE'),
+        ('mobile_money', 'Mobile Money'),
+        ('bank_transfer', 'Bank Transfer'),
         ('direct_to_bank', 'DIRECT_TO_BANK')
     )
     payment_mode = models.CharField(max_length=100, blank=True, null=True, default='cash')

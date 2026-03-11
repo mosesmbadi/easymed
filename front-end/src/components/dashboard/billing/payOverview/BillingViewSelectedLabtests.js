@@ -35,12 +35,12 @@ const BillingViewSelectedLabtests = ({selectedLabRequests, setSelectedLabRequest
                 <div className='flex gap-2 text-xs w-full px-2'>
                     <div className='flex gap-2 text-xs'>
                     <p
-                        className={`text-success ${testReq.payMethod === 'mpesa' ? 'font-bold' : ''}`}
+                        className={`text-success ${testReq.payMethod === 'mobile_money' ? 'font-bold' : ''}`}
                         
                     >
-                        M-Pesa
+                        Mobile Money
                     </p>
-                    <input onClick={() => handleToggle(testReq.id, 'mpesa')} type='checkbox' checked={testReq.payMethod === 'mpesa'} />
+                    <input onClick={() => handleToggle(testReq.id, 'mobile_money')} type='checkbox' checked={testReq.payMethod === 'mobile_money'} />
                     </div>
                     <div className='flex gap-2 text-xs'>
                     <p

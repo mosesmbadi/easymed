@@ -35,12 +35,12 @@ const BillingViewSelectedAppointments = ({selectedAppointments, setSelectedAppoi
                 <div className='flex gap-2 text-xs w-full px-2'>
                     <div className='flex gap-2 text-xs'>
                     <p
-                        className={`text-success ${appointment.payMethod === 'mpesa' ? 'font-bold' : ''}`}
+                        className={`text-success ${appointment.payMethod === 'mobile_money' ? 'font-bold' : ''}`}
                         
                     >
-                        M-Pesa
+                        Mobile Money
                     </p>
-                    <input onClick={() => handleToggle(appointment.id, 'mpesa')} type='checkbox' checked={appointment.payMethod === 'mpesa'} />
+                    <input onClick={() => handleToggle(appointment.id, 'mobile_money')} type='checkbox' checked={appointment.payMethod === 'mobile_money'} />
                     </div>
                     <div className='flex gap-2 text-xs'>
                     <p
