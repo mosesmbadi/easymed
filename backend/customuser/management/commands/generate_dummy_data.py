@@ -1,5 +1,6 @@
 from django.core.management.base import BaseCommand
 from customuser.management.utils.data_generators import (
+    create_units,
     create_dummy_users,
     create_dummy_companies,
     create_dummy_insurance_companies,
@@ -33,6 +34,10 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         DEFAULT_COUNT = 50
+
+        # Always ensure all units of measurement exist first
+        units = create_units()
+        self.stdout.write(self.style.SUCCESS(f"Ensured {len(units)} units of measurement."))
 
         if CustomUser.objects.count() >= DEFAULT_COUNT:
             self.stdout.write(self.style.WARNING("Skipping users: already have 50 or more records."))
@@ -110,22 +115,6 @@ class Command(BaseCommand):
         else:
             profiles, panels = create_demo_lab_profiles_and_panels()
             self.stdout.write(self.style.SUCCESS(f"Created {len(profiles)} lab test profiles and {len(panels)} panels."))
-        
-        # Create reference values for lab test panels
-        from laboratory.models import ReferenceValue
-        if ReferenceValue.objects.exists():
-            self.stdout.write(self.style.WARNING("Skipping reference values: already exist."))
-        else:
-            reference_values = create_reference_values()
-            self.stdout.write(self.style.SUCCESS(f"Created {len(reference_values)} reference values for lab test panels."))
-        
-        # Create lab test interpretations
-        from laboratory.models import LabTestInterpretation
-        if LabTestInterpretation.objects.exists():
-            self.stdout.write(self.style.WARNING("Skipping lab test interpretations: already exist."))
-        else:
-            interpretations = create_lab_test_interpretations()
-            self.stdout.write(self.style.SUCCESS(f"Created {len(interpretations)} lab test interpretations for common tests."))
 
         # create departments
         if Department.objects.exists():
@@ -146,16 +135,35 @@ class Command(BaseCommand):
         if TestPanelReagent.objects.exists() and TestKitCounter.objects.exists():
             self.stdout.write(self.style.WARNING("Skipping real-world lab data: already exists."))
         else:
-            lab_data = create_real_world_lab_data()
-            self.stdout.write(self.style.SUCCESS(
-                f"Created real-world lab data: "
-                f"{len(lab_data['reagents'])} reagents, "
-                f"{len(lab_data['inventory_records'])} inventory records, "
-                f"{len(lab_data['panels'])} panels, "
-                f"{len(lab_data['links'])} reagent links, "
-                f"{len(lab_data['counters'])} stock counters"
-            ))
-        
+            try:
+                lab_data = create_real_world_lab_data()
+                self.stdout.write(self.style.SUCCESS(
+                    f"Created real-world lab data: "
+                    f"{len(lab_data['reagents'])} reagents, "
+                    f"{len(lab_data['inventory_records'])} inventory records, "
+                    f"{len(lab_data['panels'])} panels, "
+                    f"{len(lab_data['links'])} reagent links, "
+                    f"{len(lab_data['counters'])} stock counters"
+                ))
+            except Exception as e:
+                self.stdout.write(self.style.ERROR(f"Error creating real-world lab data (non-fatal): {e}"))
+
+        # Create reference values for lab test panels (runs after all panels are created)
+        from laboratory.models import ReferenceValue
+        reference_values = create_reference_values()
+        if reference_values:
+            self.stdout.write(self.style.SUCCESS(f"Created {len(reference_values)} reference values for lab test panels."))
+        else:
+            self.stdout.write(self.style.WARNING("Reference values: all up to date."))
+
+        # Create lab test interpretations (runs after all panels are created)
+        from laboratory.models import LabTestInterpretation
+        interpretations = create_lab_test_interpretations()
+        if interpretations:
+            self.stdout.write(self.style.SUCCESS(f"Created {len(interpretations)} lab test interpretations for common tests."))
+        else:
+            self.stdout.write(self.style.WARNING("Lab test interpretations: all up to date."))
+
         # Ensure all service items (lab tests, appointments) have inventory
         self.stdout.write(self.style.NOTICE("\nEnsuring service items have inventory records..."))
         from inventory.models import Inventory

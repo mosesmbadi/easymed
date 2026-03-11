@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
 import * as Yup from "yup";
@@ -10,31 +10,27 @@ import SeachableSelect from "@/components/select/Searchable";
 import { useAuth } from '@/assets/hooks/use-auth';
 import { updateLabTestPanel } from "@/redux/service/laboratory";
 import { updateTestPanelStoreOnPatch } from "@/redux/features/laboratory";
+import { fetchUnits } from "@/redux/service/inventory";
+
 const EditTestPanelModal = ({ open, setOpen, selectedRowData }) => {
   const [loading, setLoading] = useState(false);
+  const [unitOptions, setUnitOptions] = useState([]);
   const dispatch = useDispatch();
   const auth = useAuth();
   const { item } = useSelector((store) => store.inventory)
   const { specimens, labTestProfiles } = useSelector((store) => store.laboratory)
 
-  const units = [
-    { value: 'mL', label: 'mL' },
-    { value: 'uL', label: 'uL' },
-    { value: 'L', label: 'L' },
-    { value: 'mg', label: 'mg' },
-    { value: 'ug', label: 'ug' },
-    { value: 'g', label: 'g' },
-    { value: 'IU', label: 'IU' },
-    { value: 'IU/ml', label: 'IU/ml' },
-    { value: 'ng/ml', label: 'ng/ml' },
-    { value: 'ng', label: 'ng' }
-  ]
+  useEffect(() => {
+    if (!auth?.token) return;
+    fetchUnits(auth).then((data) => {
+      const results = Array.isArray(data) ? data : (data?.results ?? []);
+      setUnitOptions(results.map((u) => ({ value: u.id, label: `${u.symbol} — ${u.name}` })));
+    }).catch(() => {});
+  }, [auth?.token]);
 
-  console.log('selected', item)
-
-  const getUnits = () => {
-    const unit = units.find((unit) => unit.value === selectedRowData?.unit)
-    return unit
+  const getSelectedUnit = () => {
+    if (!selectedRowData?.units) return null;
+    return unitOptions.find((u) => u.value === selectedRowData?.units) ?? null;
   }
 
   const getSpecimens = () => {
@@ -48,9 +44,8 @@ const EditTestPanelModal = ({ open, setOpen, selectedRowData }) => {
   }
 
   const getItem = () => {
-    const anItem = item.find((item) => parseInt(item.id) === parseInt(selectedRowData?.item))
-    console.log("PLACE", anItem)
-    return { value: anItem?.id, label: anItem?.name }
+    const anItem = item.find((i) => parseInt(i.id) === parseInt(selectedRowData?.item))
+    return anItem ? { value: anItem.id, label: anItem.name, unitsId: anItem.units, unitSymbol: anItem.unit_symbol } : ""
   }
 
   const handleClose = () => {
@@ -62,7 +57,7 @@ const EditTestPanelModal = ({ open, setOpen, selectedRowData }) => {
     specimen: getSpecimens() || "",
     test_profile: getTestProfile() || "",
     name: selectedRowData?.name || "",
-    unit: getUnits() || "",
+    units: getSelectedUnit() || "",
     is_qualitative: selectedRowData?.is_qualitative || false,
     is_quantitative: selectedRowData?.is_quantitative || true,
     tat: selectedRowData?.tat ? (() => {
@@ -79,7 +74,6 @@ const EditTestPanelModal = ({ open, setOpen, selectedRowData }) => {
     item: Yup.object().required("Field is Required!"),
     specimen: Yup.object().required("Field is Required!"),
     test_profile: Yup.object().required("Field is Required!"),
-    unit: Yup.object().required("Field is Required!"),
   });
 
   const handleEditTestPanel = async (formValue, helpers) => {
@@ -87,7 +81,7 @@ const EditTestPanelModal = ({ open, setOpen, selectedRowData }) => {
       ...formValue,
       specimen: formValue.specimen.value,
       test_profile: formValue.test_profile.value,
-      unit: formValue.unit.value,
+      units: formValue.units?.value || null,
       item: formValue.item.value,
       is_quantitative: formValue.is_quantitative ? true : false,
       tat: formValue.tat ? (() => {
@@ -165,7 +159,7 @@ const EditTestPanelModal = ({ open, setOpen, selectedRowData }) => {
                       <SeachableSelect
                         label="Select Item"
                         name="item"
-                        options={item?.filter((item) => item.category.toLowerCase().includes('lab test')).map((item) => ({ value: item.id, label: `${item?.name}` }))}
+                        options={item?.filter((i) => i.category.toLowerCase().includes('lab test')).map((i) => ({ value: i.id, label: i.name }))}
                       />
                       <ErrorMessage
                         name="item"
@@ -173,17 +167,13 @@ const EditTestPanelModal = ({ open, setOpen, selectedRowData }) => {
                         className="text-warning text-xs"
                       />
                     </Grid>
-                    <Grid className='my-2' item md={6} xs={12}>
+                    <Grid className='my-2' item md={4} xs={12}>
                       <SeachableSelect
-                        label="Select Unit"
-                        name="unit"
-                        options={units.map((item) => ({ value: item.value, label: `${item?.label}` }))}
+                        label="Units of Measure (Panel)"
+                        name="units"
+                        options={unitOptions}
                       />
-                      <ErrorMessage
-                        name="unit"
-                        component="div"
-                        className="text-warning text-xs"
-                      />
+                      <ErrorMessage name="units" component="div" className="text-warning text-xs" />
                     </Grid>
                     <Grid className='my-2' item md={6} xs={12}>
                       <SeachableSelect

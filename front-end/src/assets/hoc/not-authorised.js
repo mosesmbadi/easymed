@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import { useDispatch } from "react-redux";
 import Link from "next/link";
 import { BiArrowBack, BiHome } from "react-icons/bi";
 import { MdContactSupport } from "react-icons/md";
 import { useAuth } from '../hooks/use-auth';
 import { getAllPatients } from "@/redux/features/patients";
-import jwtDecode from "jwt-decode";
+import { authContext } from "@/components/use-context";
 
 // Map roles to their default dashboard paths
 const getRoleDashboard = (role) => {
@@ -44,6 +44,7 @@ const getPermissionName = (permission) => {
 const NotAuthorized = ({ isAuthenticated = false, requiredPermission = null, userRole = null }) => {
   const dispatch = useDispatch();
   const auth = useAuth();
+  const { isTokenValid } = useContext(authContext);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -70,8 +71,13 @@ const NotAuthorized = ({ isAuthenticated = false, requiredPermission = null, use
     );
   }
 
-  // Scenario A: User is authenticated but lacks permission (403)
-  if (isAuthenticated) {
+  // If the token is missing or expired/invalid, always show the login page
+  // regardless of the isAuthenticated prop (handles backend-rejected tokens and
+  // cases where the prop was set before the expiry was detected client-side)
+  const tokenCurrentlyValid = auth?.token && isTokenValid(auth.token);
+
+  // Scenario A: User is authenticated AND token is valid but lacks permission (403)
+  if (isAuthenticated && tokenCurrentlyValid) {
     const dashboardUrl = getRoleDashboard(userRole);
     const permissionName = getPermissionName(requiredPermission);
 
@@ -108,12 +114,10 @@ const NotAuthorized = ({ isAuthenticated = false, requiredPermission = null, use
           </div>
 
           <div className="pt-2">
-            <Link href="/dashboard/admin-interface">
-              <span className="text-sm text-gray-500 hover:text-primary flex items-center justify-center gap-1 cursor-pointer">
-                <MdContactSupport />
-                Contact Support
-              </span>
-            </Link>
+            <span className="text-sm text-gray-500 flex items-center justify-center gap-1">
+              <MdContactSupport />
+              Contact Support — ask your system administrator to update your permissions.
+            </span>
           </div>
         </div>
       </section>

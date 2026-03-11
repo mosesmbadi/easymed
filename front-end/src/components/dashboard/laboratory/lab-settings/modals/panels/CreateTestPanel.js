@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
 import * as Yup from "yup";
-import { Formik, Field, Form, ErrorMessage } from "formik";
+import { Formik, Field, Form, ErrorMessage, useFormikContext } from "formik";
 import { Grid } from "@mui/material";
 import { useSelector, useDispatch } from "react-redux";
 import { toast } from 'react-toastify'
@@ -12,26 +12,36 @@ import { getItems } from "@/redux/features/inventory";
 import { IoMdAdd } from "react-icons/io";
 import { getAllLabTestProfiles, getSpecimens, updateTestPanelsStore } from "@/redux/features/laboratory";
 import { createLabTestPanels } from "@/redux/service/laboratory";
+import { fetchUnits } from "@/redux/service/inventory";
+
+const ItemSelectWithAutofill = ({ options }) => {
+  const { values, setFieldValue } = useFormikContext();
+  const handleItemChange = (selected) => {
+    if (selected && !values.name) {
+      setFieldValue('name', selected.label);
+    }
+  };
+  return (
+    <>
+      <SeachableSelect
+        label="Select Item (Lab Test Panel)"
+        name="item"
+        options={options}
+        setSelectedItem={handleItemChange}
+      />
+      <ErrorMessage name="item" component="div" className="text-warning text-xs" />
+    </>
+  );
+};
+
 const CreateTestPanelModal = () => {
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const [unitOptions, setUnitOptions] = useState([]);
   const dispatch = useDispatch();
   const auth = useAuth();
   const { item } = useSelector((store) => store.inventory)
   const { specimens, labTestProfiles } = useSelector((store) => store.laboratory)
-
-  const units = [
-    { value: 'mL', label: 'mL' },
-    { value: 'uL', label: 'uL' },
-    { value: 'L', label: 'L' },
-    { value: 'mg', label: 'mg' },
-    { value: 'ug', label: 'ug' },
-    { value: 'g', label: 'g' },
-    { value: 'IU', label: 'IU' },
-    { value: 'IU/ml', label: 'IU/ml' },
-    { value: 'ng/ml', label: 'ng/ml' },
-    { value: 'ng', label: 'ng' }
-  ]
 
   const handleClose = () => {
     setOpen(false);
@@ -70,6 +80,10 @@ const CreateTestPanelModal = () => {
       fetchItems()
       fetchAllSpecimens(auth)
       fetchAllTestProfiles(auth)
+      fetchUnits(auth).then((data) => {
+        const results = Array.isArray(data) ? data : (data?.results ?? []);
+        setUnitOptions(results.map((u) => ({ value: u.id, label: `${u.symbol} — ${u.name}` })));
+      }).catch(() => {});
     }
   }, [])
 
@@ -79,7 +93,7 @@ const CreateTestPanelModal = () => {
     specimen: "",
     test_profile: "",
     name: "",
-    unit: "",
+    units: "",
     is_qualitative: false,
     is_quantitative: true,
     tat: ""
@@ -90,7 +104,6 @@ const CreateTestPanelModal = () => {
     item: Yup.object().required("Field is Required!"),
     specimen: Yup.object().required("Field is Required!"),
     test_profile: Yup.object().required("Field is Required!"),
-    unit: Yup.object().required("Field is Required!"),
   });
 
   const handleCreateTestPanel = async (formValue, helpers) => {
@@ -98,7 +111,7 @@ const CreateTestPanelModal = () => {
       ...formValue,
       specimen: formValue.specimen.value,
       test_profile: formValue.test_profile.value,
-      unit: formValue.unit.value,
+      units: formValue.units?.value || null,
       item: formValue.item.value,
       is_quantitative: formValue.is_qualitative ? false : formValue.is_quantitative,
       tat: formValue.tat ? (() => {
@@ -182,29 +195,18 @@ const CreateTestPanelModal = () => {
                             />
                         </Grid>
                         <Grid className='my-2' item md={4} xs={12}>
-                          <SeachableSelect
-                            label="Select Item (Lab Test Panel)"
-                            name="item"
-                            options={item?.filter((item)=> item.category === 'Lab Test')
-                              .map((item) => ({ value: item.id, label: `${item?.name}` }))}
+                          <ItemSelectWithAutofill
+                            options={item?.filter((i) => i.category === 'Lab Test')
+                              .map((i) => ({ value: i.id, label: i.name }))}
                           />
-                            <ErrorMessage
-                                name="item"
-                                component="div"
-                                className="text-warning text-xs"
-                            />
                         </Grid>
-                        <Grid className='my-2' item md={6} xs={12}>
-                            <SeachableSelect
-                                label="Select Unit"
-                                name="unit"
-                                options={units.map((item) => ({ value: item.value, label: `${item?.label}` }))}
-                            />
-                            <ErrorMessage
-                                name="unit"
-                                component="div"
-                                className="text-warning text-xs"
-                            />
+                        <Grid className='my-2' item md={4} xs={12}>
+                          <SeachableSelect
+                            label="Units of Measure (Panel)"
+                            name="units"
+                            options={unitOptions}
+                          />
+                          <ErrorMessage name="units" component="div" className="text-warning text-xs" />
                         </Grid>
                         <Grid className='my-2' item md={6} xs={12}>
                             <SeachableSelect
