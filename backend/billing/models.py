@@ -162,6 +162,10 @@ class InvoiceItem(models.Model):
     actual_total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     status = models.CharField(
         max_length=10, choices=STATUS_CHOICES, default='pending')
+    source_tag = models.ForeignKey(
+        'inventory.Department', on_delete=models.SET_NULL, null=True, blank=True, 
+        help_text="Used for departmental revenue tracking (e.g. Lab, Pharmacy, Main)"
+    )
 
     @property
     def sale_price(self):

@@ -16,6 +16,7 @@ class InvoiceItemSerializer(serializers.ModelSerializer):
     insurance_company_id = serializers.SerializerMethodField()
     sale_price = serializers.SerializerMethodField()
     price_source = serializers.SerializerMethodField()
+    source_tag_name = serializers.CharField(source='source_tag.name', read_only=True)
 
     class Meta:
         model = InvoiceItem
