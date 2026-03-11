@@ -680,246 +680,59 @@ def create_reference_values():
 
 def create_lab_test_interpretations():
     """
-    Create common interpretations for lab test panels.
-    This provides realistic, medically-accurate interpretation ranges for common tests.
+    Create common interpretations for lab test profiles.
     """
     interpretations_created = []
-    
-    # Define interpretations for common lab tests
-    # Format: {test_name: [(range_type, sex, age_min, age_max, value_min, value_max, interpretation, clinical_action, requires_attention)]}
-    
-    lab_interpretations = {
-        "Hemoglobin": [
-            # Critical Low - Male
-            ('critical_low', 'M', None, None, None, 7.0, 
-             "Critically low hemoglobin (severe anemia). Immediate intervention required.",
-             "Urgent blood transfusion may be needed. Investigate cause: blood loss, hemolysis, bone marrow failure.",
-             True),
-            # Low - Male
-            ('low', 'M', 18, None, 7.0, 13.0,
-             "Low hemoglobin (anemia). May cause fatigue, weakness, and shortness of breath.",
-             "Check iron levels, B12, folate. Evaluate for chronic disease, bleeding, or nutritional deficiency.",
-             False),
-            # Normal - Male
-            ('normal', 'M', 18, None, 13.0, 17.0,
-             "Hemoglobin level is within normal range for adult males.",
-             "No immediate action required. Continue routine monitoring.",
-             False),
-            # High - Male
-            ('high', 'M', 18, None, 17.0, 20.0,
-             "Elevated hemoglobin (polycythemia). May increase blood viscosity.",
-             "Check for dehydration, smoking, sleep apnea, or polycythemia vera. Consider hydration status.",
-             False),
-            # Critical High - Male
-            ('critical_high', 'M', None, None, 20.0, None,
-             "Critically high hemoglobin. Risk of thrombosis and cardiovascular complications.",
-             "Urgent hematology consultation. Rule out polycythemia vera. Consider phlebotomy.",
-             True),
-            # Critical Low - Female
-            ('critical_low', 'F', None, None, None, 7.0,
-             "Critically low hemoglobin (severe anemia). Immediate intervention required.",
-             "Urgent blood transfusion may be needed. Investigate cause: blood loss, hemolysis, bone marrow failure.",
-             True),
-            # Low - Female
-            ('low', 'F', 18, None, 7.0, 12.0,
-             "Low hemoglobin (anemia). Common causes include iron deficiency, menstrual blood loss.",
-             "Check iron studies, assess menstrual history. Consider iron supplementation if deficiency confirmed.",
-             False),
-            # Normal - Female
-            ('normal', 'F', 18, None, 12.0, 15.5,
-             "Hemoglobin level is within normal range for adult females.",
-             "No immediate action required. Continue routine monitoring.",
-             False),
-            # High - Female
-            ('high', 'F', 18, None, 15.5, 18.0,
-             "Elevated hemoglobin (polycythemia). May increase blood viscosity.",
-             "Check for dehydration, smoking, or underlying conditions. Evaluate hydration status.",
-             False),
-        ],
-        
-        "White Blood Cell Count": [
-            # Critical Low
-            ('critical_low', 'B', None, None, None, 2.0,
-             "Critically low WBC count (severe leukopenia). High infection risk.",
-             "Neutropenic precautions. Investigate cause: chemotherapy, bone marrow failure, severe infection. Consider G-CSF.",
-             True),
-            # Low
-            ('low', 'B', None, None, 2.0, 4.0,
-             "Low WBC count (leukopenia). Increased susceptibility to infections.",
-             "Monitor for infections. Check differential count. Evaluate for viral illness, medications, or autoimmune conditions.",
-             False),
-            # Normal
-            ('normal', 'B', None, None, 4.0, 11.0,
-             "White blood cell count is within normal range.",
-             "No immediate action required. Continue routine monitoring.",
-             False),
-            # High
-            ('high', 'B', None, None, 11.0, 20.0,
-             "Elevated WBC count (leukocytosis). May indicate infection or inflammation.",
-             "Check differential count. Evaluate for infection, inflammation, stress, or hematologic disorders.",
-             False),
-            # Critical High
-            ('critical_high', 'B', None, None, 20.0, None,
-             "Critically high WBC count. Possible severe infection, leukemia, or extreme stress.",
-             "Urgent evaluation needed. Perform differential count, blood smear. Rule out leukemia or severe sepsis.",
-             True),
-        ],
-        
-        "Platelet Count": [
-            # Critical Low
-            ('critical_low', 'B', None, None, None, 50.0,
-             "Critically low platelet count (severe thrombocytopenia). High bleeding risk.",
-             "Bleeding precautions. Avoid invasive procedures. Consider platelet transfusion if <20 or bleeding. Investigate cause.",
-             True),
-            # Low
-            ('low', 'B', None, None, 50.0, 150.0,
-             "Low platelet count (thrombocytopenia). Increased bleeding risk.",
-             "Monitor for bleeding. Evaluate medications, viral infections, ITP, or bone marrow disorders.",
-             False),
-            # Normal
-            ('normal', 'B', None, None, 150.0, 400.0,
-             "Platelet count is within normal range.",
-             "No immediate action required. Continue routine monitoring.",
-             False),
-            # High
-            ('high', 'B', None, None, 400.0, 600.0,
-             "Elevated platelet count (thrombocytosis). May increase clotting risk.",
-             "Evaluate for reactive causes: infection, inflammation, iron deficiency. Consider myeloproliferative disorders if persistent.",
-             False),
-            # Critical High
-            ('critical_high', 'B', None, None, 600.0, None,
-             "Critically high platelet count. Increased risk of thrombosis or bleeding paradox.",
-             "Hematology consultation. Rule out essential thrombocythemia. Consider antiplatelet therapy if high thrombotic risk.",
-             True),
-        ],
-        
-        "ALT (SGPT)": [
-            # Normal
-            ('normal', 'M', None, None, 0, 41.0,
-             "ALT level is within normal range. Liver function appears normal.",
-             "No immediate action required. Continue routine monitoring.",
-             False),
-            ('normal', 'F', None, None, 0, 33.0,
-             "ALT level is within normal range. Liver function appears normal.",
-             "No immediate action required. Continue routine monitoring.",
-             False),
-            # High
-            ('high', 'B', None, None, 41.0, 200.0,
-             "Elevated ALT. Indicates mild to moderate liver injury or inflammation.",
-             "Evaluate for hepatitis (viral, alcoholic, drug-induced), fatty liver disease, or other liver conditions.",
-             False),
-            # Critical High
-            ('critical_high', 'B', None, None, 200.0, None,
-             "Severely elevated ALT. Indicates significant liver damage.",
-             "Urgent hepatology consultation. Rule out acute hepatitis, drug toxicity, ischemic hepatitis. Check other liver enzymes.",
-             True),
-        ],
-        
-        "Creatinine": [
-            # Normal - Male
-            ('normal', 'M', 18, None, 0.7, 1.3,
-             "Creatinine level is within normal range. Kidney function appears normal.",
-             "No immediate action required. Continue routine monitoring.",
-             False),
-            # Normal - Female
-            ('normal', 'F', 18, None, 0.6, 1.1,
-             "Creatinine level is within normal range. Kidney function appears normal.",
-             "No immediate action required. Continue routine monitoring.",
-             False),
-            # High
-            ('high', 'B', None, None, 1.3, 3.0,
-             "Elevated creatinine. Indicates reduced kidney function (chronic kidney disease or acute kidney injury).",
-             "Calculate eGFR. Evaluate hydration, medications (NSAIDs, ACE inhibitors). Check urinalysis. Monitor potassium.",
-             False),
-            # Critical High
-            ('critical_high', 'B', None, None, 3.0, None,
-             "Severely elevated creatinine. Indicates significant kidney impairment.",
-             "Urgent nephrology consultation. Check electrolytes, especially potassium. Consider dialysis if symptomatic uremia.",
-             True),
-        ],
-        
-        "Urea": [
-            # Normal
-            ('normal', 'B', None, None, 7.0, 20.0,
-             "Urea level is within normal range.",
-             "No immediate action required. Continue routine monitoring.",
-             False),
-            # High
-            ('high', 'B', None, None, 20.0, 50.0,
-             "Elevated urea. May indicate kidney dysfunction, dehydration, or high protein catabolism.",
-             "Assess hydration status. Check creatinine for kidney function. Evaluate for GI bleeding if BUN/Cr ratio >20:1.",
-             False),
-            # Critical High
-            ('critical_high', 'B', None, None, 50.0, None,
-             "Severely elevated urea (uremia). Risk of encephalopathy and other complications.",
-             "Urgent nephrology consultation. Monitor for uremic symptoms. Consider dialysis if indicated.",
-             True),
-        ],
-        
-        "Urine Glucose": [
-            # Normal
-            ('normal', 'B', None, None, 0, 15.0,
-             "No glucose detected in urine. Normal finding.",
-             "No immediate action required.",
-             False),
-            # High
-            ('high', 'B', None, None, 15.0, None,
-             "Glucose detected in urine (glycosuria). May indicate diabetes or renal glycosuria.",
-             "Check fasting blood glucose and HbA1c. Rule out diabetes mellitus. Consider renal threshold disorders.",
-             False),
-        ],
-        
-        "Urine Protein": [
-            # Normal
-            ('normal', 'B', None, None, 0, 15.0,
-             "Trace or no protein in urine. Normal finding.",
-             "No immediate action required.",
-             False),
-            # High
-            ('high', 'B', None, None, 15.0, 150.0,
-             "Mild proteinuria detected. May be transient or indicate early kidney disease.",
-             "Repeat test. If persistent, evaluate for kidney disease, hypertension, diabetes. Consider 24-hour urine collection.",
-             False),
-            # Critical High
-            ('critical_high', 'B', None, None, 150.0, None,
-             "Significant proteinuria. Indicates kidney damage (nephrotic or nephritic syndrome).",
-             "Urgent nephrology referral. Check albumin, lipids, kidney function. Rule out nephrotic syndrome.",
-             True),
-        ],
+
+    profile_interpretations = {
+        "Complete Blood Count (CBC)": (
+            "This profile evaluates overall health and detects a wide range of disorders, including anemia, infection, and leukemia.",
+            "Review full CBC parameters. Correlate with clinical findings.",
+            False
+        ),
+        "Liver Function Test (LFT)": (
+            "Evaluates liver health, detects liver damage or disease.",
+            "If abnormal, consider imaging or further viral hepatitis screening.",
+            False
+        ),
+        "Renal Function Test (RFT)": (
+            "Assesses kidney function and hydration status.",
+            "Adjust renally cleared medications if eGFR is reduced.",
+            False
+        ),
+        "Urinalysis": (
+            "Detects and manages a wide range of disorders, such as urinary tract infections, kidney disease and diabetes.",
+            "If signs of UTI, consider urine culture.",
+            False
+        ),
+        "COVID-19 PCR": (
+            "Detects the presence of SARS-CoV-2 RNA.",
+            "If positive, isolate patient and initiate contact tracing.",
+            True
+        ),
+        "Malaria Test": (
+            "Detects the presence of malaria parasites in the blood.",
+            "If positive, initiate antimalarial therapy immediately.",
+            True
+        )
     }
-    
-    # Create interpretations
-    for test_name, interpretations in lab_interpretations.items():
-        # Find the lab test panel
+
+    for profile_name, (interpretation, clinical_action, requires_attention) in profile_interpretations.items():
         try:
-            lab_panel = LabTestPanel.objects.get(name=test_name)
-            
-            for interp_data in interpretations:
-                range_type, sex, age_min, age_max, value_min, value_max, interpretation, clinical_action, requires_attention = interp_data
-                
-                # Create or get the interpretation
-                interp, created = LabTestInterpretation.objects.get_or_create(
-                    lab_test_panel=lab_panel,
-                    range_type=range_type,
-                    sex=sex,
-                    age_min=age_min,
-                    age_max=age_max,
-                    value_min=value_min,
-                    value_max=value_max,
-                    defaults={
-                        'interpretation': interpretation,
-                        'clinical_action': clinical_action,
-                        'requires_immediate_attention': requires_attention,
-                    }
-                )
-                
-                if created:
-                    interpretations_created.append(interp)
-                    
-        except LabTestPanel.DoesNotExist:
-            print(f"Warning: Lab test panel '{test_name}' not found. Skipping interpretations.")
-            continue
-    
+            profile = LabTestProfile.objects.get(name=profile_name)
+            interp, created = LabTestInterpretation.objects.get_or_create(
+                test_profile=profile,
+                defaults={
+                    'interpretation': interpretation,
+                    'clinical_action': clinical_action,
+                    'requires_immediate_attention': requires_attention,
+                }
+            )
+            if created:
+                interpretations_created.append(interp)
+        except LabTestProfile.DoesNotExist:
+            print(f"Warning: Lab test profile '{profile_name}' not found. Skipping interpretation.")
+
     return interpretations_created
 
 
