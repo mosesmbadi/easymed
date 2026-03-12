@@ -387,7 +387,11 @@ class AccountingSummaryView(APIView):
         end_date = request.query_params.get('end_date')
 
         # Filter billed invoice items (which represent revenue)
-        queryset = InvoiceItem.objects.filter(status='billed')
+        queryset = InvoiceItem.objects.filter(status='billed').select_related(
+            'invoice__patient', 
+            'source_tag', 
+            'payment_mode__main_account'
+        )
 
         if start_date:
             queryset = queryset.filter(item_created_at__date__gte=start_date)
@@ -396,8 +400,17 @@ class AccountingSummaryView(APIView):
             
         # 1. Drill-down view: Individual transactions
         transactions = []
-        for item in queryset.select_related('invoice__patient', 'source_tag'):
-            source_name = item.source_tag.name if item.source_tag else 'Main Account'
+        for item in queryset:
+            # Logic: 
+            # 1. Use source_tag name if present (e.g., Lab, Pharmacy)
+            # 2. Fallback to the MainAccount name linked to the PaymentMode (e.g., KCB Bank, Main Cash)
+            # 3. Default to 'Main Account'
+            source_name = 'Main Account'
+            if item.source_tag:
+                source_name = item.source_tag.name
+            elif item.payment_mode and hasattr(item.payment_mode, 'main_account'):
+                source_name = item.payment_mode.main_account.name
+
             customer_name = "Unknown"
             if item.invoice and item.invoice.patient:
                 customer_name = f"{item.invoice.patient.first_name} {item.invoice.patient.second_name}"
