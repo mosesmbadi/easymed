@@ -105,6 +105,29 @@ const PaymentReceiptsList = () => {
     return formatMoney(cellData.value || 0);
   };
 
+  const getPaidInvoicesFromReceipt = (receipt) => {
+    if (!receipt) return [];
+
+    if (Array.isArray(receipt.invoice_numbers) && receipt.invoice_numbers.length > 0) {
+      return receipt.invoice_numbers.filter(Boolean);
+    }
+
+    if (Array.isArray(receipt.allocations) && receipt.allocations.length > 0) {
+      const fromAllocations = receipt.allocations
+        .map((alloc) => alloc?.invoice_number)
+        .filter(Boolean);
+      return Array.from(new Set(fromAllocations));
+    }
+
+    return [];
+  };
+
+  const renderLinkedInvoices = (cellData) => {
+    const invoices = getPaidInvoicesFromReceipt(cellData.data);
+    if (!invoices.length) return 'N/A';
+    return invoices.join(', ');
+  };
+
   const renderDate = (cellData) => {
     const date = cellData.value ? new Date(cellData.value) : null;
     return date ? date.toLocaleDateString('en-GB') : 'N/A';
@@ -157,9 +180,17 @@ const PaymentReceiptsList = () => {
           />
 
           <Column
-            dataField="payment_mode.mode_name"
+            dataField="payment_mode_name"
             caption="Payment Mode"
             width={150}
+          />
+
+          <Column
+            dataField="invoice_numbers"
+            caption="Paid Invoice(s)"
+            width={260}
+            cellRender={renderLinkedInvoices}
+            allowHeaderFiltering={false}
           />
 
           <Column
@@ -179,14 +210,6 @@ const PaymentReceiptsList = () => {
           <Column
             dataField="payment_date"
             caption="Payment Date"
-            cellRender={renderDate}
-            width={120}
-            dataType="date"
-          />
-
-          <Column
-            dataField="created_at"
-            caption="Created At"
             cellRender={renderDate}
             width={120}
             dataType="date"

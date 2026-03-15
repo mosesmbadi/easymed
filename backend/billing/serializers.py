@@ -144,27 +144,56 @@ class InvoicePaymentSerializer(serializers.ModelSerializer):
 
 
 class PaymentAllocationSerializer(serializers.ModelSerializer):
+    invoice_id = serializers.IntegerField(source='invoice_item.invoice.id', read_only=True)
+    invoice_number = serializers.CharField(source='invoice_item.invoice.invoice_number', read_only=True)
+
     class Meta:
         model = PaymentAllocation
-        fields = ['invoice_item', 'amount_applied', 'applied_at']
+        fields = ['invoice_item', 'invoice_id', 'invoice_number', 'amount_applied', 'applied_at']
 
 
 class PaymentReceiptSerializer(serializers.ModelSerializer):
     allocations = PaymentAllocationSerializer(many=True, read_only=True)
     insurance_name = serializers.SerializerMethodField()
     patient_name = serializers.SerializerMethodField()
+    payment_mode_name = serializers.CharField(source='payment_mode.payment_mode', read_only=True)
+    invoice_numbers = serializers.SerializerMethodField()
+    invoice_ids = serializers.SerializerMethodField()
 
     class Meta:
         model = PaymentReceipt
         fields = ['id', 'patient', 'patient_name', 'insurance', 'insurance_name', 
-                  'payment_mode', 'total_amount', 'reference_number', 'payment_date', 
+                  'payment_mode', 'payment_mode_name', 'invoice_numbers', 'invoice_ids',
+                  'total_amount', 'reference_number', 'payment_date', 
                   'created_at', 'allocations']
 
     def get_insurance_name(self, obj):
         return obj.insurance.name if obj.insurance else None
     
     def get_patient_name(self, obj):
-        return f"{obj.patient.first_name} {obj.patient.last_name}" if obj.patient else None
+        if not obj.patient:
+            return None
+
+        first_name = getattr(obj.patient, 'first_name', '') or ''
+        # Patient model uses `second_name`; keep `last_name` fallback for compatibility.
+        second_name = getattr(obj.patient, 'second_name', None)
+        if second_name is None:
+            second_name = getattr(obj.patient, 'last_name', '') or ''
+
+        full_name = f"{first_name} {second_name}".strip()
+        return full_name or None
+
+    def get_invoice_numbers(self, obj):
+        invoice_numbers = obj.allocations.values_list(
+            'invoice_item__invoice__invoice_number', flat=True
+        ).distinct()
+        return [num for num in invoice_numbers if num]
+
+    def get_invoice_ids(self, obj):
+        invoice_ids = obj.allocations.values_list(
+            'invoice_item__invoice_id', flat=True
+        ).distinct()
+        return list(invoice_ids)
 
 
 class AllocatePaymentRequestSerializer(serializers.Serializer):

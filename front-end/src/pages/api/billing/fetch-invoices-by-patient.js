@@ -14,13 +14,16 @@ export default async function handler(req, res) {
             // if (!req.headers?.authorization){
             //     res.status(401).send('Unauthorized');
             // }
+            const query = req.query
+
             const config = {
                 headers: {
                     'Authorization': req.headers.authorization,
-                }
+                },
+                params: {
+                    status: query.status,
+                },
             };
-
-            const query = req.query
 
             await backendAxiosInstance.get(`${API_URL.FeTCH_PATIENT_INVOICES}${query.patient_id}/`, config).then(response => {
                 res.status(200).json(response.data);

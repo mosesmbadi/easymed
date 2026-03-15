@@ -194,12 +194,31 @@ export const fetchInvoices = (auth, processFilter, selectedSearchFilter, status)
     })
 }
 
-export const fetchPatientInvoices = (auth, patient_id) =>{
+export const fetchPatientInvoices = (auth, patient_id, status) =>{
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve,reject) =>{
         axiosInstance.get(`${APP_API_URL.FeTCH_PATIENT_INVOICES}`,{
             params:{
                 patient_id: patient_id,
+                status: status,
+            }
+        })
+            .then((res) =>{
+                resolve(res.data)
+            })
+            .catch((err) =>{
+                reject(err.message)
+            })
+    })
+}
+
+export const fetchInsuranceInvoices = (auth, insurance_id, status) =>{
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve,reject) =>{
+        axiosInstance.get(`${APP_API_URL.FETCH_INSURANCE_INVOICES}`,{
+            params:{
+                insurance_id: insurance_id,
+                status: status,
             }
         })
             .then((res) =>{

@@ -1,162 +1,332 @@
 <!doctype html>
 {% load money %}
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Payment Receipt</title>
-    <style>
-      table {
-        border-collapse: collapse;
-        width: 100%;
-        margin-bottom: 10px;
-      }
-      th,
-      td {
-        border: 1px solid black;
-        padding: 8px;
-        text-align: left;
-      }
-      th {
-        background-color: #f2f2f2;
-      }
-      .header {
-        text-align: center;
-        margin-bottom: 20px;
-      }
-      .logo {
-        max-width: 150px;
-        max-height: 150px;
-      }
-      .footer {
-        position: fixed;
-        bottom: 0;
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Payment Receipt</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 1cm;
+      margin-bottom: 2cm;
+
+      @bottom-center {
+        content: element(footer-content);
         width: 100%;
         text-align: center;
-        margin-top: 20px;
-        font-size: 10px;
-        font-style: italic;
-        color: gray;
-        font-weight: bold;
       }
-      .info-section {
-        margin-bottom: 20px;
-      }
-      .info-row {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 5px;
-      }
-      .info-label {
-        font-weight: bold;
-        width: 40%;
-      }
-      .info-value {
-        width: 60%;
-      }
-      .summary-table {
-        border: 1px solid black;
-        border-collapse: collapse;
-        width: 35%;
-        float: right;
-        margin-top: -1px;
-      }
-      .summary-table th,
-      .summary-table td {
-        padding: 8px;
-        text-align: right;
-      }
-      .summary-table th {
-        background-color: #f2f2f2;
-      }
-      .summary-table td {
-        text-align: left;
-      }
-      .invoice-section {
-        margin-top: 20px;
-        margin-bottom: 20px;
-      }
-      .invoice-title {
-        background-color: #f2f2f2;
-        padding: 8px;
-        margin-top: 15px;
-        margin-bottom: 5px;
-        font-weight: bold;
-        border: 1px solid black;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="header">
-      <div class="logo-column">
-        <img src="{{ company_logo_url }}" alt="Company Logo" class="logo" />
-      </div>
+    }
+
+    body {
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-size: 10px;
+      line-height: 1.4;
+      color: #333;
+    }
+
+    /* ── Header ── */
+    .header-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #555;
+      padding-bottom: 20px;
+      margin-bottom: 30px;
+      height: 150px;
+    }
+
+    .company-logo img {
+      max-width: 180px;
+      height: 100%;
+    }
+
+    .company-info {
+      text-align: right;
+      font-size: 11px;
+    }
+
+    .company-info h2 {
+      margin: 0 0 5px 0;
+      color: #555;
+      font-size: 18px;
+      text-transform: uppercase;
+    }
+
+    .company-info p {
+      margin: 2px 0;
+    }
+
+    /* ── Receipt Title ── */
+    .receipt-title {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .receipt-title h1 {
+      font-size: 24px;
+      color: #333;
+      margin: 0;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    /* ── Meta boxes ── */
+    .meta-container {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 30px;
+    }
+
+    .meta-box {
+      width: 48%;
+    }
+
+    .meta-box h3 {
+      font-size: 12px;
+      color: #555;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 5px;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+    }
+
+    .meta-row {
+      display: flex;
+      margin-bottom: 4px;
+    }
+
+    .meta-label {
+      font-weight: bold;
+      width: 110px;
+      color: #555;
+    }
+
+    .meta-value {
+      flex: 1;
+    }
+
+    /* ── Allocation tables ── */
+    .allocation-section {
+      margin-top: 10px;
+      margin-bottom: 30px;
+    }
+
+    .allocation-section h3 {
+      font-size: 12px;
+      color: #555;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 5px;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+    }
+
+    .invoice-group-title {
+      background-color: #555;
+      color: white;
+      padding: 8px 10px;
+      margin-top: 15px;
+      margin-bottom: 0;
+      font-weight: 600;
+      font-size: 11px;
+    }
+
+    table.alloc-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 10px;
+    }
+
+    table.alloc-table th {
+      background-color: #777;
+      color: white;
+      padding: 8px 10px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 10px;
+      text-transform: uppercase;
+    }
+
+    table.alloc-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #eee;
+      color: #444;
+    }
+
+    table.alloc-table tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+
+    table.alloc-table th:last-child,
+    table.alloc-table td:last-child {
+      text-align: right;
+    }
+
+    /* ── Summary ── */
+    .summary-section {
+      width: 100%;
+      margin-bottom: 30px;
+    }
+
+    .summary-table {
+      width: 40%;
+      float: right;
+      border-collapse: collapse;
+    }
+
+    .summary-table td {
+      padding: 8px 10px;
+      text-align: right;
+    }
+
+    .summary-table .label {
+      font-weight: bold;
+      color: #555;
+    }
+
+    .summary-table .amount {
+      font-weight: 600;
+    }
+
+    .summary-table tr.total-row {
+      background-color: #555;
+      color: white;
+    }
+
+    .summary-table tr.total-row .label,
+    .summary-table tr.total-row .amount {
+      color: white;
+      font-size: 12px;
+      padding: 10px;
+    }
+
+    /* ── Footer ── */
+    .footer {
+      position: running(footer-content);
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-size: 9px;
+      color: #888;
+      border-top: 1px solid #eee;
+      padding-top: 10px;
+      text-align: center;
+    }
+
+    .page::after {
+      content: counter(page) " of " counter(pages);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Running footer -->
+  <div class="footer">
+    Generated by EaSyMed-HMIS | Printed on: {% now "Y-m-d H:i" %} | Page <span class="page"></span>
+  </div>
+
+  <!-- Header -->
+  <div class="header-container">
+    <div class="company-logo">
+      <img src="{{ company_logo_url }}" alt="Logo" />
+    </div>
+    <div class="company-info">
       <h2>{{ company.name }}</h2>
       <p>{{ company.address1 }}</p>
-      <p>{{ company.phone1 }} | {{ company.email1 }}</p>
+      {% if company.address2 %}<p>{{ company.address2 }}</p>{% endif %}
+      <p>{{ company.phone1 }}{% if company.phone2 %} | {{ company.phone2 }}{% endif %}</p>
+      <p>{{ company.email1 }}</p>
     </div>
+  </div>
 
-    <h2>Payment Receipt</h2>
-    <p><strong>Receipt Number:</strong> #{{ receipt.id }}</p>
-    <p><strong>Receipt Date:</strong> {{ receipt.created_at|date:"d/m/Y" }}</p>
-    {% if receipt.payment_date %}
-    <p>
-      <strong>Payment Date:</strong> {{ receipt.payment_date|date:"d/m/Y" }}
-    </p>
-    {% endif %}
-    <p>
-      <strong>Paid by:</strong>
-      {% if receipt.patient %} {{ receipt.patient.first_name }} {{
-      receipt.patient.second_name }} (Cash Payment) {% elif receipt.insurance %}
-      {{ receipt.insurance.insurance_name }} (Credit Payment) {% else %} N/A {%
-      endif %}
-    </p>
-    <p><strong>Payment Mode:</strong> {{ receipt.payment_mode.mode_name }}</p>
-    <p><strong>Reference Number:</strong> {{ receipt.reference_number }}</p>
+  <!-- Title -->
+  <div class="receipt-title">
+    <h1>Payment Receipt</h1>
+  </div>
 
-    <div class="invoice-section">
-      <h3 style="margin-bottom: 10px">Payment Allocation Details</h3>
-
-      {% for invoice, allocations in allocations_grouped.items %}
-      <div class="invoice-title">
-        Invoice #{{ invoice.invoice_number }} - {{
-        invoice.invoice_date|date:"d/m/Y" }}
+  <!-- Meta -->
+  <div class="meta-container">
+    <div class="meta-box">
+      <h3>Receipt Details</h3>
+      <div class="meta-row">
+        <span class="meta-label">Receipt #:</span>
+        <span class="meta-value">#{{ receipt.id }}</span>
       </div>
-      <table>
-        <thead>
-          <tr>
-            <th>Item Name</th>
-            <th>Category</th>
-            <th>Amount Applied</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for alloc in allocations %}
-          <tr>
-            <td>{{ alloc.invoice_item.item.name }}</td>
-            <td>{{ alloc.invoice_item.item.category }}</td>
-            <td>{{ alloc.amount_applied|money }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-      {% endfor %}
+      <div class="meta-row">
+        <span class="meta-label">Receipt Date:</span>
+        <span class="meta-value">{{ receipt.created_at|date:"d/m/Y" }}</span>
+      </div>
+      {% if receipt.payment_date %}
+      <div class="meta-row">
+        <span class="meta-label">Payment Date:</span>
+        <span class="meta-value">{{ receipt.payment_date|date:"d/m/Y" }}</span>
+      </div>
+      {% endif %}
+      <div class="meta-row">
+        <span class="meta-label">Invoices Paid:</span>
+        <span class="meta-value">{% if invoice_numbers and invoice_numbers|length > 0 %}{{ invoice_numbers|join:", " }}{% else %}N/A{% endif %}</span>
+      </div>
     </div>
 
+    <div class="meta-box">
+      <h3>Payment Info</h3>
+      <div class="meta-row">
+        <span class="meta-label">Paid By:</span>
+        <span class="meta-value">
+          {% if receipt.patient %}{{ receipt.patient.first_name }} {{ receipt.patient.second_name }}{% elif receipt.insurance %}{{ receipt.insurance.name }}{% else %}N/A{% endif %}
+        </span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">Payment Type:</span>
+        <span class="meta-value">{% if receipt.insurance %}Credit (Insurance){% else %}Cash{% endif %}</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">Payment Mode:</span>
+        <span class="meta-value">{{ receipt.payment_mode.payment_mode }}</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">Reference #:</span>
+        <span class="meta-value">{{ receipt.reference_number|default:"—" }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Allocation Details -->
+  <div class="allocation-section">
+    <h3>Payment Allocation Details</h3>
+
+    {% for invoice, allocations in allocations_grouped.items %}
+    <div class="invoice-group-title">Invoice #{{ invoice.invoice_number }} &nbsp;|&nbsp; {{ invoice.invoice_date|date:"d/m/Y" }}</div>
+    <table class="alloc-table">
+      <thead>
+        <tr>
+          <th style="width: 40%">Item Name</th>
+          <th style="width: 30%">Category</th>
+          <th style="width: 30%">Amount Applied</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for alloc in allocations %}
+        <tr>
+          <td>{{ alloc.invoice_item.item.name }}</td>
+          <td>{{ alloc.invoice_item.item.category }}</td>
+          <td style="text-align: right">{{ alloc.amount_applied|money }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endfor %}
+  </div>
+
+  <!-- Summary -->
+  <div class="summary-section">
     <table class="summary-table">
       <tbody>
-        <tr>
-          <th>Total Amount Paid:</th>
-          <td>{{ receipt.total_amount|money }}</td>
+        <tr class="total-row">
+          <td class="label">Total Amount Paid:</td>
+          <td class="amount">{{ receipt.total_amount|money }}</td>
         </tr>
       </tbody>
     </table>
+  </div>
 
-    <section class="footer">
-      <span>
-        Generated by: EaSyMed-HMIS | Email: admin@proto-typesolution.com |
-        Printed: {% now "Y-m-d H:i" %}
-      </span>
-    </section>
-  </body>
+</body>
 </html>

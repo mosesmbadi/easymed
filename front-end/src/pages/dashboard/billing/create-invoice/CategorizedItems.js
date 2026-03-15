@@ -50,11 +50,9 @@ const CategorizedItems = ({
 
         setCashPrice(price);
 
-        // Auto-select cash as default if not already billed
+        // Auto-select the first entry (always Cash) if not already billed
         if (invoiceItem?.status !== 'billed' && !selectedPayMethod) {
-          const cashMode = patient_insurance?.find(
-            mode => mode.is_default || mode.payment_category === 'cash'
-          );
+          const cashMode = patient_insurance?.[0];
           if (cashMode) {
             setSelectedPayMethod(cashMode);
             setSelectedPrice(price);
@@ -73,9 +71,7 @@ const CategorizedItems = ({
         setCashPrice(price);
 
         if (invoiceItem?.status !== 'billed' && !selectedPayMethod) {
-          const cashMode = patient_insurance?.find(
-            mode => mode.is_default || mode.payment_category === 'cash'
-          );
+          const cashMode = patient_insurance?.[0];
           if (cashMode) {
             setSelectedPayMethod(cashMode);
             setSelectedPrice(price);
