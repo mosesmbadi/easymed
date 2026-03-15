@@ -27,9 +27,17 @@ const InvoiceItems = ({
     const itemRefs = useRef({});
     const [billAllLoading, setBillAllLoading] = useState(false);
 
-    const patient_insurance = paymodes.filter((mode) =>
-        mode.insurance === null || selectedPatient.insurances.some(insurance => insurance.id === mode.insurance)
-    );
+    // Show exactly: one "Cash" entry (default/first cash mode) + the patient's own insurance modes.
+    const defaultCashMode = paymodes.find((mode) => mode.is_default) ||
+        paymodes.find((mode) => mode.payment_category === 'cash');
+
+    const patient_insurance = [
+        ...(defaultCashMode ? [{ ...defaultCashMode, payment_mode: 'Cash' }] : []),
+        ...paymodes.filter((mode) =>
+            mode.payment_category === 'insurance' &&
+            selectedPatient?.insurances?.some((ins) => ins.id === mode.insurance)
+        ),
+    ];
 
     useEffect(() => {
         if (authUser) {

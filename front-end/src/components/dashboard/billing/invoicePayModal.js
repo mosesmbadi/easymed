@@ -3,7 +3,7 @@ import { toast } from "react-toastify";
 import { useSelector, useDispatch } from "react-redux";
 import { useAuth } from "@/assets/hooks/use-auth";
 import { allocatePayment } from "@/redux/service/billing";
-import { getPatientInvoices, getPaymentModes } from "@/redux/features/billing";
+import { getInsuranceInvoices, getPatientInvoices, getPaymentModes } from "@/redux/features/billing";
 import { getAllPatients } from "@/redux/features/patients";
 import ViewInvoiceItems from "./ViewInvoiceItemsModal";
 import { getAllInsurance } from "@/redux/features/insurance";
@@ -82,7 +82,9 @@ const InvoicePayModal = () => {
 
       // Refresh invoices
       if (formData.paymentCategory === 'cash') {
-        dispatch(getPatientInvoices(auth, formData.customer.value));
+        dispatch(getPatientInvoices(auth, formData.customer.value, 'pending'));
+      } else {
+        dispatch(getInsuranceInvoices(auth, formData.customer.value, 'pending'));
       }
 
       // Optionally reload the page or reset form state

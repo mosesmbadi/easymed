@@ -14,6 +14,7 @@ from rest_framework import serializers
 from rest_framework.response import Response
 from django.db.models import Sum, Q
 from django.db import transaction
+from decimal import Decimal
 from rest_framework.views import APIView
 from django_filters.rest_framework import DjangoFilterBackend
 
@@ -69,7 +70,71 @@ class InvoicesByPatientId(generics.ListAPIView):
 
     def get_queryset(self):
         patient_id = self.kwargs['patient_id']
-        return Invoice.objects.filter(patient_id=patient_id).order_by('-invoice_created_at')
+        queryset = Invoice.objects.filter(patient_id=patient_id)
+
+        status_filter = self.request.query_params.get('status')
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+
+        return queryset.order_by('-invoice_created_at')
+
+
+class InvoicesByInsuranceId(APIView):
+    permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser | IsReceptionistUser,)
+
+    def get(self, request, insurance_id):
+        status_filter = request.query_params.get('status')
+
+        invoices = Invoice.objects.filter(
+            invoice_items__payment_mode__insurance_id=insurance_id
+        ).select_related('patient').prefetch_related(
+            'invoice_items__payment_mode'
+        ).distinct().order_by('-invoice_created_at')
+
+        result = []
+        for inv in invoices:
+            insurance_items = inv.invoice_items.filter(payment_mode__insurance_id=insurance_id)
+
+            insurance_total = Decimal('0')
+            insurance_paid = Decimal('0')
+
+            for item in insurance_items:
+                component_total = item.actual_total or Decimal('0')
+                applied = item.allocations.filter(
+                    receipt__insurance_id=insurance_id
+                ).aggregate(total=Sum('amount_applied'))['total'] or Decimal('0')
+
+                insurance_total += component_total
+                insurance_paid += applied
+
+            insurance_balance = insurance_total - insurance_paid
+            if insurance_balance < 0:
+                insurance_balance = Decimal('0')
+
+            insurance_status = 'paid' if insurance_balance <= 0 else 'pending'
+            if status_filter in ('pending', 'paid') and insurance_status != status_filter:
+                continue
+
+            result.append({
+                'id': inv.id,
+                'invoice_number': inv.invoice_number,
+                'invoice_date': inv.invoice_date,
+                'patient': {
+                    'id': inv.patient_id,
+                    'first_name': getattr(inv.patient, 'first_name', ''),
+                    'second_name': getattr(inv.patient, 'second_name', ''),
+                } if inv.patient_id else None,
+                # Keep compatibility with existing frontend columns/calculations.
+                'invoice_amount': insurance_total,
+                'cash_paid': insurance_paid,
+                'status': insurance_status,
+                # Explicit insurance-specific totals.
+                'insurance_total': insurance_total,
+                'insurance_paid': insurance_paid,
+                'insurance_balance': insurance_balance,
+            })
+
+        return Response(result)
 
 class InvoiceItemViewset(viewsets.ModelViewSet):
     queryset = InvoiceItem.objects.all().order_by('-id')
@@ -113,8 +178,12 @@ class InvoicePaymentViewset(viewsets.ModelViewSet):
         # Update invoice cash_paid and potentially status
         invoice = instance.invoice
         # Cash portion paid increments cash_paid
-        invoice.cash_paid = (invoice.cash_paid or 0) + (instance.payment_amount or 0)
-        invoice.save(update_fields=['cash_paid', 'invoice_updated_at'])
+        invoice.cash_paid = (invoice.cash_paid or Decimal('0')) + (instance.payment_amount or Decimal('0'))
+
+        invoice_total = invoice.invoice_amount or Decimal('0')
+        invoice.status = 'paid' if invoice.cash_paid >= invoice_total else 'pending'
+
+        invoice.save(update_fields=['cash_paid', 'status', 'invoice_updated_at'])
 
 
 class PaymentModeViewset(viewsets.ModelViewSet):
@@ -139,6 +208,8 @@ class PaymentReceiptViewset(viewsets.ReadOnlyModelViewSet):
     """
     queryset = PaymentReceipt.objects.all().select_related(
         'patient', 'insurance', 'payment_mode'
+    ).prefetch_related(
+        'allocations__invoice_item__invoice'
     ).order_by('-created_at')
     serializer_class = PaymentReceiptSerializer
     filter_backends = [DjangoFilterBackend]
@@ -241,8 +312,15 @@ class AllocatePaymentView(APIView):
             )
 
             remaining = float(amount)
-            # Fetch all items across invoices, oldest first
-            items = InvoiceItem.objects.filter(invoice__in=invoices).select_related('payment_mode', 'invoice', 'item').order_by('item_created_at', 'id')
+            is_insurance_payment = bool(insurance_id)
+
+            # Fetch allocatable items across invoices, oldest first.
+            # Insurance payments only apply to items billed with that insurance.
+            items_qs = InvoiceItem.objects.filter(invoice__in=invoices)
+            if is_insurance_payment:
+                items_qs = items_qs.filter(payment_mode__insurance_id=insurance_id)
+
+            items = items_qs.select_related('payment_mode', 'invoice', 'item').order_by('item_created_at', 'id')
 
             per_invoice_applied = {}
 
@@ -250,16 +328,32 @@ class AllocatePaymentView(APIView):
                 if remaining <= 0:
                     break
 
-                # Determine cash component for this item
-                if it.payment_mode and it.payment_mode.payment_category == 'insurance':
-                    # co-pay = item_amount - actual_total
-                    cash_component = float((it.item_amount or 0) - (it.actual_total or 0))
+                # Determine payable component for this item based on who is paying.
+                if is_insurance_payment:
+                    # Insurance pays the insurance-covered component (actual_total).
+                    payable_component = float(it.actual_total or 0)
+                    already_applied = float(
+                        it.allocations.filter(receipt__insurance_id=insurance_id).aggregate(
+                            total=Sum('amount_applied')
+                        )['total'] or 0
+                    )
                 else:
-                    cash_component = float(it.actual_total or 0)
+                    # Patient cash pays cash component:
+                    # - cash item -> actual_total
+                    # - insurance item -> co-pay = item_amount - actual_total
+                    if it.payment_mode and it.payment_mode.payment_category == 'insurance':
+                        payable_component = float((it.item_amount or 0) - (it.actual_total or 0))
+                    else:
+                        payable_component = float(it.actual_total or 0)
 
-                # Previous allocations to this item
-                already_applied = float(it.allocations.aggregate(total=Sum('amount_applied'))['total'] or 0)
-                outstanding = max(0.0, cash_component - already_applied)
+                    already_applied = float(
+                        it.allocations.filter(
+                            receipt__patient_id=patient_id,
+                            receipt__insurance__isnull=True,
+                        ).aggregate(total=Sum('amount_applied'))['total'] or 0
+                    )
+
+                outstanding = max(0.0, payable_component - already_applied)
 
                 if outstanding <= 0:
                     continue
@@ -277,9 +371,24 @@ class AllocatePaymentView(APIView):
             # Update invoices cash_paid
             for inv in invoices:
                 applied = per_invoice_applied.get(inv.id, 0.0)
+
+                # Fallback only for patient cash receipts when no allocatable items exist.
+                # For insurance receipts, allocation must remain tied to insurance items.
+                if not is_insurance_payment and applied <= 0 and remaining > 0:
+                    outstanding_invoice = float(max(Decimal('0'), (inv.invoice_amount or Decimal('0')) - (inv.cash_paid or Decimal('0'))))
+                    if outstanding_invoice > 0:
+                        invoice_level_apply = min(remaining, outstanding_invoice)
+                        if invoice_level_apply > 0:
+                            applied = invoice_level_apply
+                            remaining -= invoice_level_apply
+
                 if applied > 0:
-                    inv.cash_paid = (inv.cash_paid or 0) + applied
-                    inv.save(update_fields=['cash_paid', 'invoice_updated_at'])
+                    inv.cash_paid = (inv.cash_paid or Decimal('0')) + Decimal(str(applied))
+
+                    invoice_total = inv.invoice_amount or Decimal('0')
+                    inv.status = 'paid' if inv.cash_paid >= invoice_total else 'pending'
+
+                    inv.save(update_fields=['cash_paid', 'status', 'invoice_updated_at'])
 
             ser = PaymentReceiptSerializer(receipt)
             return Response(ser.data, status=status.HTTP_201_CREATED)
@@ -298,11 +407,14 @@ def download_payment_receipt_pdf(request, receipt_id):
         inv = alloc.invoice_item.invoice
         grouped.setdefault(inv, []).append(alloc)
 
+    invoice_numbers = [inv.invoice_number for inv in grouped.keys() if getattr(inv, 'invoice_number', None)]
+
     html_template = get_template('payment_receipt.html').render({
         'company_logo_url': company_logo_url,
         'company': company,
         'receipt': receipt,
         'allocations_grouped': grouped,
+        'invoice_numbers': invoice_numbers,
     })
 
     pdf_file = HTML(string=html_template).write_pdf()
@@ -378,7 +490,9 @@ def download_invoice_pdf(request, invoice_id):
     return response
 class AccountingSummaryView(APIView):
     """
-    API View to summarize accounting data based on the source_tag of InvoiceItems.
+    API View to summarize accounting data based on:
+    - Payments received from patients/insurers
+    - Payments made to suppliers
     """
     permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser | IsReceptionistUser,)
 
@@ -386,46 +500,128 @@ class AccountingSummaryView(APIView):
         start_date = request.query_params.get('start_date')
         end_date = request.query_params.get('end_date')
 
-        # Filter billed invoice items (which represent revenue)
-        queryset = InvoiceItem.objects.filter(status='billed').select_related(
-            'invoice__patient', 
-            'source_tag', 
-            'payment_mode__main_account'
+        # Payments received allocations
+        received_qs = PaymentAllocation.objects.select_related(
+            'receipt__patient',
+            'receipt__insurance',
+            'receipt__payment_mode__main_account',
+            'invoice_item__invoice',
+        )
+
+        # Payments made to suppliers allocations
+        from inventory.models import SupplierPaymentAllocation
+        supplier_paid_qs = SupplierPaymentAllocation.objects.select_related(
+            'receipt__supplier',
+            'receipt__payment_mode__main_account',
+            'supplier_invoice',
         )
 
         if start_date:
-            queryset = queryset.filter(item_created_at__date__gte=start_date)
+            received_qs = received_qs.filter(
+                Q(receipt__payment_date__gte=start_date) |
+                Q(receipt__payment_date__isnull=True, receipt__created_at__date__gte=start_date)
+            )
+            supplier_paid_qs = supplier_paid_qs.filter(
+                Q(receipt__payment_date__gte=start_date) |
+                Q(receipt__payment_date__isnull=True, receipt__created_at__date__gte=start_date)
+            )
         if end_date:
-            queryset = queryset.filter(item_created_at__date__lte=end_date)
+            received_qs = received_qs.filter(
+                Q(receipt__payment_date__lte=end_date) |
+                Q(receipt__payment_date__isnull=True, receipt__created_at__date__lte=end_date)
+            )
+            supplier_paid_qs = supplier_paid_qs.filter(
+                Q(receipt__payment_date__lte=end_date) |
+                Q(receipt__payment_date__isnull=True, receipt__created_at__date__lte=end_date)
+            )
             
         # 1. Drill-down view: Individual transactions
         transactions = []
-        for item in queryset:
-            # Logic: 
-            # 1. Use source_tag name if present (e.g., Lab, Pharmacy)
-            # 2. Fallback to the MainAccount name linked to the PaymentMode (e.g., KCB Bank, Main Cash)
-            # 3. Default to 'Main Account'
+        for alloc in received_qs:
+            # Prefer configured main account tag from payment mode, fallback to mode name.
             source_name = 'Main Account'
-            if item.source_tag:
-                source_name = item.source_tag.name
-            elif item.payment_mode and hasattr(item.payment_mode, 'main_account'):
-                source_name = item.payment_mode.main_account.name
+            pay_mode = getattr(alloc.receipt, 'payment_mode', None)
+            if pay_mode and hasattr(pay_mode, 'main_account') and pay_mode.main_account:
+                source_name = pay_mode.main_account.name
+            elif pay_mode and pay_mode.payment_mode:
+                source_name = pay_mode.payment_mode
 
             customer_name = "Unknown"
-            if item.invoice and item.invoice.patient:
-                customer_name = f"{item.invoice.patient.first_name} {item.invoice.patient.second_name}"
+            if alloc.receipt and alloc.receipt.patient:
+                customer_name = f"{alloc.receipt.patient.first_name} {alloc.receipt.patient.second_name}"
+            elif alloc.receipt and alloc.receipt.insurance:
+                customer_name = alloc.receipt.insurance.name
+
+            tx_date = alloc.receipt.payment_date or alloc.receipt.created_at.date()
+            invoice_number = alloc.invoice_item.invoice.invoice_number if alloc.invoice_item and alloc.invoice_item.invoice else "N/A"
                 
             transactions.append({
-                'id': item.id,
-                'date': item.item_created_at.date(),
-                'invoice_number': item.invoice.invoice_number if item.invoice else "N/A",
+                'id': alloc.id,
+                'date': tx_date,
+                'invoice_number': invoice_number,
                 'customer': customer_name,
                 'tag': source_name,
-                'action': 'Debit',
-                'amount': item.item_amount,
+                'sub_account': pay_mode.payment_mode if pay_mode else source_name,
+                'action': 'Received',
+                'amount': alloc.amount_applied,
             })
+
+        for alloc in supplier_paid_qs:
+            # Prefer configured main account tag from payment mode, fallback to mode name.
+            source_name = 'Main Account'
+            pay_mode = getattr(alloc.receipt, 'payment_mode', None)
+            if pay_mode and hasattr(pay_mode, 'main_account') and pay_mode.main_account:
+                source_name = pay_mode.main_account.name
+            elif pay_mode and pay_mode.payment_mode:
+                source_name = pay_mode.payment_mode
+
+            supplier_name = "Unknown Supplier"
+            if alloc.receipt and alloc.receipt.supplier:
+                supplier_name = alloc.receipt.supplier.official_name or alloc.receipt.supplier.common_name
+
+            tx_date = alloc.receipt.payment_date or alloc.receipt.created_at.date()
+            invoice_number = alloc.supplier_invoice.invoice_no if alloc.supplier_invoice else "N/A"
+
+            transactions.append({
+                'id': f"sp-{alloc.id}",
+                'date': tx_date,
+                'invoice_number': invoice_number,
+                'customer': supplier_name,
+                'tag': source_name,
+                'sub_account': pay_mode.payment_mode if pay_mode else source_name,
+                'action': 'Paid to Supplier',
+                'amount': alloc.amount_applied,
+            })
+
+        # Latest first for readability
+        transactions = sorted(transactions, key=lambda x: x['date'], reverse=True)
             
-        # 2. Bird's Eye View: Departmental Aggregation
+        # 2a. Sub-Account Aggregation: per (main_account, sub_account)
+        sub_account_totals_dict = {}
+        for trans in transactions:
+            key = (trans['tag'], trans.get('sub_account', trans['tag']))
+            if key not in sub_account_totals_dict:
+                sub_account_totals_dict[key] = {
+                    'main_account': trans['tag'],
+                    'sub_account': trans.get('sub_account', trans['tag']),
+                    'total_debited': 0,
+                    'total_credited': 0,
+                    'net_balance': 0,
+                }
+            amount = float(trans['amount'])
+            if trans['action'] == 'Received':
+                sub_account_totals_dict[key]['total_debited'] += amount
+                sub_account_totals_dict[key]['net_balance'] += amount
+            else:
+                sub_account_totals_dict[key]['total_credited'] += amount
+                sub_account_totals_dict[key]['net_balance'] -= amount
+
+        sub_account_totals = sorted(
+            sub_account_totals_dict.values(),
+            key=lambda x: (x['main_account'], x['sub_account'])
+        )
+
+        # 2b. Bird's Eye View: Departmental Aggregation
         totals_dict = {}
         for trans in transactions:
             tag = trans['tag']
@@ -437,10 +633,13 @@ class AccountingSummaryView(APIView):
                     'net_balance': 0
                 }
             
-            # For simplicity, we assume an invoice item is a debit (revenue generation)
-            # In a full accounting system, refunds/write-offs would be credits
-            totals_dict[tag]['total_debited'] += float(trans['amount'])
-            totals_dict[tag]['net_balance'] += float(trans['amount'])
+            amount = float(trans['amount'])
+            if trans['action'] == 'Received':
+                totals_dict[tag]['total_debited'] += amount
+                totals_dict[tag]['net_balance'] += amount
+            else:
+                totals_dict[tag]['total_credited'] += amount
+                totals_dict[tag]['net_balance'] -= amount
             
         # Convert dictionary to list
         totals = list(totals_dict.values())
@@ -458,5 +657,6 @@ class AccountingSummaryView(APIView):
 
         return Response({
             'totals': totals,
+            'sub_account_totals': list(sub_account_totals),
             'transactions': transactions
         })

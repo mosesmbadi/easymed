@@ -1,24 +1,38 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import dynamic from "next/dynamic";
+import {
+  Column,
+  Paging,
+  Pager,
+  SearchPanel,
+  FilterRow,
+  GroupPanel,
+  Grouping,
+  Summary,
+  TotalItem,
+  GroupItem,
+} from "devextreme-react/data-grid";
 import { getAccountingSummary } from "@/redux/service/billing";
 import { useAuth } from "@/assets/hooks/use-auth";
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), { ssr: false });
-const Column = dynamic(() => import("devextreme-react/data-grid").then(mod => mod.Column), { ssr: false });
-const Paging = dynamic(() => import("devextreme-react/data-grid").then(mod => mod.Paging), { ssr: false });
-const Pager = dynamic(() => import("devextreme-react/data-grid").then(mod => mod.Pager), { ssr: false });
-const Scrolling = dynamic(() => import("devextreme-react/data-grid").then(mod => mod.Scrolling), { ssr: false });
 
-const allowedPageSizes = [5, 10, 'all'];
+const allowedPageSizes = [5, 10, 25, "all"];
+
+const fmt = (value) =>
+  `Ksh ${Number(value || 0).toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
 
 const AccountingSummaryDashboard = () => {
-  const [totals, setTotals] = useState([]);
+  const [subAccountTotals, setSubAccountTotals] = useState([]);
   const [allTransactions, setAllTransactions] = useState([]);
   const [filteredTransactions, setFilteredTransactions] = useState([]);
   const [loading, setLoading] = useState(false);
   const auth = useAuth();
-  
+
   // Date filters
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -29,9 +43,9 @@ const AccountingSummaryDashboard = () => {
       const filters = {};
       if (startDate) filters.start_date = startDate;
       if (endDate) filters.end_date = endDate;
-      
+
       const res = await getAccountingSummary(auth, filters);
-      setTotals(res.totals || []);
+      setSubAccountTotals(res.sub_account_totals || []);
       setAllTransactions(res.transactions || []);
       setFilteredTransactions(res.transactions || []);
     } catch (error) {
@@ -47,138 +61,252 @@ const AccountingSummaryDashboard = () => {
     }
   }, [auth, startDate, endDate]);
 
-  const handleRowClick = (e) => {
-    // e.data contains the row data
-    const selectedTag = e.data.tag;
-    if (selectedTag === "TOTAL") {
-      setFilteredTransactions(allTransactions);
-    } else {
-      const filtered = allTransactions.filter(t => t.tag === selectedTag);
-      setFilteredTransactions(filtered);
+  // Click on sub-account row → filter transactions by both main + sub account
+  const handleSubAccountRowClick = (e) => {
+    const { main_account, sub_account } = e.data || {};
+    if (main_account && sub_account) {
+      setFilteredTransactions(
+        allTransactions.filter(
+          (t) => t.tag === main_account && t.sub_account === sub_account
+        )
+      );
     }
   };
 
+  const clearSubFilter = () => setFilteredTransactions(allTransactions);
+
   return (
     <div className="flex flex-col gap-8">
-      {/* Filters Header */}
+      {/* ── Header / Filters ── */}
       <div className="flex flex-wrap gap-4 items-center bg-white p-4 rounded shadow-sm">
-        <h2 className="text-xl font-bold mr-auto">Accounting Summary</h2>
+        <h2 className="text-xl font-bold mr-auto">
+          Cashflow Summary (Received &amp; Supplier Payments)
+        </h2>
+
         <div className="flex gap-2 items-center">
-            <label className="text-sm font-semibold">Start Date:</label>
-            <input 
-                type="date" 
-                className="border p-2 rounded"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-            />
+          <label className="text-sm font-semibold">From:</label>
+          <input
+            type="date"
+            className="border p-2 rounded text-sm"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+          />
         </div>
+
         <div className="flex gap-2 items-center">
-            <label className="text-sm font-semibold">End Date:</label>
-            <input 
-                type="date" 
-                className="border p-2 rounded"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-            />
+          <label className="text-sm font-semibold">To:</label>
+          <input
+            type="date"
+            className="border p-2 rounded text-sm"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+          />
         </div>
-        <button 
-            className="bg-primary text-white px-4 py-2 rounded"
-            onClick={loadData}
+
+        {(startDate || endDate) && (
+          <button
+            className="text-sm text-gray-500 underline"
+            onClick={() => {
+              setStartDate("");
+              setEndDate("");
+            }}
+          >
+            Clear dates
+          </button>
+        )}
+
+        <button
+          className="bg-primary text-white px-4 py-2 rounded text-sm"
+          onClick={loadData}
+          disabled={loading}
         >
-            Refresh
+          {loading ? "Loading…" : "Refresh"}
         </button>
       </div>
 
-      {/* Bird&apos;s Eye View (Totals) */}
+      {/* ── Sub-Account Summary ── */}
       <div className="bg-white rounded shadow-md p-4">
-        <h3 className="text-lg font-semibold mb-2 text-primary">Departmental Totals</h3>
-        <p className="text-sm mb-4 text-gray-500">Click a row to drill down into its specific transactions below.</p>
+        <h3 className="text-lg font-semibold mb-1 text-primary">Sub-Account Summary</h3>
+        <p className="text-sm mb-4 text-gray-500">
+          Total Debits, Credits and Balance per sub-account grouped by main account (Bank,
+          Cash, Petty Cash, Mobile Banking). Click a row to filter the transactions table.
+        </p>
         <DataGrid
-          dataSource={totals}
-          allowColumnReordering={true}
-          rowAlternationEnabled={true}
-          showBorders={true}
-          showColumnLines={true}
-          showRowLines={true}
-          wordWrapEnabled={true}
+          dataSource={subAccountTotals}
+          allowColumnReordering
+          rowAlternationEnabled
+          showBorders
+          showColumnLines
+          showRowLines
+          wordWrapEnabled
           className="shadow-sm cursor-pointer"
-          onRowClick={handleRowClick}
+          onRowClick={handleSubAccountRowClick}
         >
-          <Scrolling rowRenderingMode='virtual'></Scrolling>
-          <Column dataField="tag" caption="Account Tag" cellRender={(cell) => {
-              if(cell.data.is_summary) return <span className="font-bold">{cell.value}</span>;
-              return cell.value;
-          }}/>
-          <Column 
-            dataField="total_debited" 
-            caption="Total Debited (+)" 
-            customizeText={(cellInfo) => `$${Number(cellInfo.value).toLocaleString()}`}
+          <GroupPanel visible />
+          <Grouping autoExpandAll />
+          <SearchPanel visible placeholder="Search sub-accounts…" />
+          <Column dataField="main_account" caption="Main Account" groupIndex={0} sortIndex={0} sortOrder="asc" />
+          <Column dataField="sub_account" caption="Sub Account" sortIndex={1} sortOrder="asc" />
+          <Column
+            dataField="total_debited"
+            caption="Total Debits (+)"
+            customizeText={(c) => fmt(c.value)}
+            cellRender={(cell) => (
+              <span className="text-green-700">{fmt(cell.value)}</span>
+            )}
+          />
+          <Column
+            dataField="total_credited"
+            caption="Total Credits (-)"
+            customizeText={(c) => fmt(c.value)}
+            cellRender={(cell) => (
+              <span className="text-red-600">{fmt(cell.value)}</span>
+            )}
+          />
+          <Column
+            dataField="net_balance"
+            caption="Balance"
+            customizeText={(c) => fmt(c.value)}
             cellRender={(cell) => {
-                if(cell.data.is_summary) return <span className="font-bold">${Number(cell.value).toLocaleString()}</span>;
-                return `$${Number(cell.value).toLocaleString()}`;
+              const val = Number(cell.value || 0);
+              return (
+                <span className={val >= 0 ? "text-green-700 font-medium" : "text-red-600 font-medium"}>
+                  {fmt(val)}
+                </span>
+              );
             }}
           />
-          <Column 
-            dataField="total_credited" 
-            caption="Total Credited (-)" 
-            customizeText={(cellInfo) => `$${Number(cellInfo.value).toLocaleString()}`}
-            cellRender={(cell) => {
-                if(cell.data.is_summary) return <span className="font-bold">${Number(cell.value).toLocaleString()}</span>;
-                return `$${Number(cell.value).toLocaleString()}`;
-            }}
-          />
-          <Column 
-            dataField="net_balance" 
-            caption="Net Balance" 
-            customizeText={(cellInfo) => `$${Number(cellInfo.value).toLocaleString()}`}
-            cellRender={(cell) => {
-                if(cell.data.is_summary) return <span className="font-bold text-green-700">${Number(cell.value).toLocaleString()}</span>;
-                return `$${Number(cell.value).toLocaleString()}`;
-            }}
-          />
+          <Summary>
+            <TotalItem
+              column="sub_account"
+              summaryType="count"
+              customizeText={() => "TOTAL"}
+            />
+            <TotalItem
+              column="total_debited"
+              summaryType="sum"
+              valueFormat="fixedPoint"
+              customizeText={(e) => fmt(e.value)}
+            />
+            <TotalItem
+              column="total_credited"
+              summaryType="sum"
+              valueFormat="fixedPoint"
+              customizeText={(e) => fmt(e.value)}
+            />
+            <TotalItem
+              column="net_balance"
+              summaryType="sum"
+              valueFormat="fixedPoint"
+              customizeText={(e) => fmt(e.value)}
+            />
+            <GroupItem
+              column="total_debited"
+              summaryType="sum"
+              displayFormat="{0}"
+              customizeText={(e) => fmt(e.value)}
+              showInGroupFooter={false}
+              alignByColumn
+            />
+            <GroupItem
+              column="total_credited"
+              summaryType="sum"
+              displayFormat="{0}"
+              customizeText={(e) => fmt(e.value)}
+              showInGroupFooter={false}
+              alignByColumn
+            />
+            <GroupItem
+              column="net_balance"
+              summaryType="sum"
+              displayFormat="{0}"
+              customizeText={(e) => fmt(e.value)}
+              showInGroupFooter={false}
+              alignByColumn
+            />
+          </Summary>
         </DataGrid>
       </div>
 
-      {/* Granular View (Transactions) */}
+      {/* ── Transactions Drill-down ── */}
       <div className="bg-white rounded shadow-md p-4">
-        <h3 className="text-lg font-semibold mb-4 text-primary">Transaction Breakdown (The &quot;Drill Down&quot;)</h3>
+        <div className="flex items-center gap-4 mb-4">
+          <h3 className="text-lg font-semibold text-primary">
+            Transactions (Received &amp; Supplier Payments)
+          </h3>
+          {filteredTransactions.length !== allTransactions.length && (
+            <button
+              className="text-xs text-blue-600 underline"
+              onClick={clearSubFilter}
+            >
+              Show all ({allTransactions.length})
+            </button>
+          )}
+        </div>
         <DataGrid
           dataSource={filteredTransactions}
-          allowColumnReordering={true}
-          rowAlternationEnabled={true}
-          showBorders={true}
-          showColumnLines={true}
-          showRowLines={true}
-          wordWrapEnabled={true}
-          allowPaging={true}
+          allowColumnReordering
+          allowSorting
+          rowAlternationEnabled
+          showBorders
+          showColumnLines
+          showRowLines
+          wordWrapEnabled
           className="shadow-sm"
         >
+          <SearchPanel visible placeholder="Search transactions…" />
+          <FilterRow visible />
           <Paging defaultPageSize={10} />
           <Pager
-            visible={true}
+            visible
             allowedPageSizes={allowedPageSizes}
-            showPageSizeSelector={true}
-            showInfo={true}
-            showNavigationButtons={true}
+            showPageSizeSelector
+            showInfo
+            showNavigationButtons
           />
-          <Column dataField="date" caption="Date" width={120} />
-          <Column dataField="invoice_number" caption="Invoice #" />
-          <Column dataField="customer" caption="Customer" />
-          <Column dataField="tag" caption="Tag" cellRender={(cell) => {
-              // Highlight the tag
-              return <span className="px-2 py-1 bg-gray-100 rounded text-xs">{cell.value}</span>;
-          }}/>
-          <Column dataField="action" caption="Action" width={100} cellRender={(cell) => {
-              return <span className={cell.value === 'Debit' ? "text-green-600" : "text-red-500"}>{cell.value}</span>;
-          }}/>
-          <Column 
-            dataField="amount" 
-            caption="Amount" 
-            customizeText={(cellInfo) => `$${Number(cellInfo.value).toLocaleString()}`}
+          <Column dataField="date" caption="Date" width={120} defaultSortOrder="desc" sortIndex={0} />
+          <Column dataField="invoice_number" caption="Invoice #" width={130} />
+          <Column dataField="customer" caption="Particulars" />
+          <Column
+            dataField="tag"
+            caption="Sub Account"
+            cellRender={(cell) => (
+              <span className="px-2 py-0.5 bg-blue-50 rounded text-xs">{cell.value}</span>
+            )}
+          />
+          <Column
+            dataField="sub_account"
+            caption="Sub Account"
+            cellRender={(cell) => (
+              <span className="px-2 py-0.5 bg-gray-100 rounded text-xs">{cell.value}</span>
+            )}
+          />
+          <Column
+            dataField="action"
+            caption="Type"
+            width={120}
+            cellRender={(cell) => {
+              const isCredit = cell.value === "Received";
+              return (
+                <span
+                  className={
+                    isCredit
+                      ? "text-green-600 font-medium"
+                      : "text-red-500 font-medium"
+                  }
+                >
+                  {isCredit ? "Credit" : "Debit"}
+                </span>
+              );
+            }}
+          />
+          <Column
+            dataField="amount"
+            caption="Amount"
+            customizeText={(c) => fmt(c.value)}
           />
         </DataGrid>
       </div>
-
     </div>
   );
 };

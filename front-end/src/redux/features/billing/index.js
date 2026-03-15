@@ -4,7 +4,7 @@ import {
   fetchPatientBillingAppointments,
   fetchPatientBillingLabRequest,
   fetchPatientBillingPrescribedDrug,
-  getBillingInvoiceItems, fetchPaymentModes, fetchPatientInvoices,
+  getBillingInvoiceItems, fetchPaymentModes, fetchPatientInvoices, fetchInsuranceInvoices,
   fetchInvoiceItemsByInvoiceId
 } from "@/redux/service/billing";
 
@@ -126,12 +126,21 @@ export const getAllInvoices = (auth, processFilter, selectedSearchFilter, status
   }
 };
 
-export const getPatientInvoices = (auth, patient_id) => async (dispatch) => {
+export const getPatientInvoices = (auth, patient_id, status) => async (dispatch) => {
   try {
-    const response = await fetchPatientInvoices(auth, patient_id);
+    const response = await fetchPatientInvoices(auth, patient_id, status);
     dispatch(setInvoices(response));
   } catch (error) {
     console.log("PATIENT_INVOICES_ERROR ", error);
+  }
+};
+
+export const getInsuranceInvoices = (auth, insurance_id, status) => async (dispatch) => {
+  try {
+    const response = await fetchInsuranceInvoices(auth, insurance_id, status);
+    dispatch(setInvoices(response));
+  } catch (error) {
+    console.log("INSURANCE_INVOICES_ERROR ", error);
   }
 };
 
