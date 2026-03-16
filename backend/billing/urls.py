@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import download_invoice_pdf, download_payment_receipt_pdf, AllocatePaymentView
+from .views import download_invoice_pdf, download_payment_receipt_pdf, download_accounting_summary_pdf, AllocatePaymentView
 from django.conf.urls.static import static
 
 from django.conf import settings
@@ -43,6 +43,7 @@ urlpatterns = [
     path('invoice-items-by-insurance-company/', InvoiceItemsByInsuranceCompany.as_view(), name='invoice-items-by-insurance-company'),
     path('payment-modes-breakdown/', PaymentBreakdownView.as_view(), name='payment-breakdown'),
     path('accounting-summary/', AccountingSummaryView.as_view(), name='accounting-summary'),
+    path('accounting-summary/pdf/', download_accounting_summary_pdf, name='accounting-summary-pdf'),
 ]
 
 if settings.DEBUG:
