@@ -28,6 +28,7 @@ const AccountingSummaryDashboard = () => {
   const [allTransactions, setAllTransactions] = useState([]);
   const [filteredTransactions, setFilteredTransactions] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [activeFilter, setActiveFilter] = useState(null); // { type: 'main'|'sub', value, subValue? }
   const auth = useAuth();
 
   // Date filters
@@ -82,10 +83,21 @@ const AccountingSummaryDashboard = () => {
     }
   }, [auth, startDate, endDate]);
 
-  // Click on sub-account row → filter transactions by both main + sub account
-  const handleSubAccountRowClick = (e) => {
-    const { main_account, sub_account } = e.data || {};
-    if (main_account && sub_account) {
+  // Click on a cell → filter by main account or sub account
+  const handleCellClick = (e) => {
+    if (!e.data || e.rowType !== "data") return;
+    const { main_account, sub_account } = e.data;
+    const field = e.column?.dataField;
+
+    if (field === "main_account") {
+      // Filter transactions by main account only
+      setActiveFilter({ type: "main", value: main_account });
+      setFilteredTransactions(
+        allTransactions.filter((t) => t.tag === main_account)
+      );
+    } else if (field === "sub_account") {
+      // Filter transactions by specific sub account
+      setActiveFilter({ type: "sub", value: main_account, subValue: sub_account });
       setFilteredTransactions(
         allTransactions.filter(
           (t) => t.tag === main_account && t.sub_account === sub_account
@@ -94,7 +106,32 @@ const AccountingSummaryDashboard = () => {
     }
   };
 
-  const clearSubFilter = () => setFilteredTransactions(allTransactions);
+  const clearSubFilter = () => {
+    setActiveFilter(null);
+    setFilteredTransactions(allTransactions);
+  };
+
+  // Highlight helper: returns true if row matches the active filter
+  const isRowActive = (rowData) => {
+    if (!activeFilter) return false;
+    if (activeFilter.type === "main") {
+      return rowData.main_account === activeFilter.value;
+    }
+    if (activeFilter.type === "sub") {
+      return (
+        rowData.main_account === activeFilter.value &&
+        rowData.sub_account === activeFilter.subValue
+      );
+    }
+    return false;
+  };
+
+  const onRowPrepared = (e) => {
+    if (e.rowType === "data" && isRowActive(e.data)) {
+      e.rowElement.style.backgroundColor = "#dbeafe"; // blue-100
+      e.rowElement.style.fontWeight = "600";
+    }
+  };
 
   return (
     <div className="flex flex-col gap-8">
@@ -152,12 +189,42 @@ const AccountingSummaryDashboard = () => {
           showRowLines
           wordWrapEnabled
           className="shadow-sm cursor-pointer"
-          onRowClick={handleSubAccountRowClick}
+          onCellClick={handleCellClick}
+          onRowPrepared={onRowPrepared}
         >
           <FilterRow visible />
           <SearchPanel visible placeholder="Search sub-accounts…" />
-          <Column dataField="main_account" caption="Main Account" sortIndex={0} sortOrder="asc" />
-          <Column dataField="sub_account" caption="Sub Account" sortIndex={1} sortOrder="asc" />
+          <Column
+            dataField="main_account"
+            caption="Main Account"
+            sortIndex={0}
+            sortOrder="asc"
+            cellRender={(cell) => {
+              const isActive = activeFilter?.type === "main" && activeFilter.value === cell.value;
+              return (
+                <span className={`cursor-pointer hover:underline ${isActive ? "text-primary font-bold" : ""}`}>
+                  {cell.value}
+                </span>
+              );
+            }}
+          />
+          <Column
+            dataField="sub_account"
+            caption="Sub Account"
+            sortIndex={1}
+            sortOrder="asc"
+            cellRender={(cell) => {
+              const isActive =
+                activeFilter?.type === "sub" &&
+                activeFilter.value === cell.data.main_account &&
+                activeFilter.subValue === cell.value;
+              return (
+                <span className={`cursor-pointer hover:underline ${isActive ? "text-primary font-bold" : ""}`}>
+                  {cell.value}
+                </span>
+              );
+            }}
+          />
           <Column
             dataField="total_debit"
             caption="Total Debit"
@@ -221,6 +288,13 @@ const AccountingSummaryDashboard = () => {
           <h3 className="text-lg font-semibold text-primary">
             Transactions
           </h3>
+          {activeFilter && (
+            <span className="text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-medium">
+              {activeFilter.type === "main"
+                ? activeFilter.value
+                : `${activeFilter.value} › ${activeFilter.subValue}`}
+            </span>
+          )}
           {filteredTransactions.length !== allTransactions.length && (
             <button
               className="text-xs text-blue-600 underline"
