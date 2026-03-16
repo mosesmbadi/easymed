@@ -1,29 +1,51 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import { Grid, Switch, FormControlLabel, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import { createSubAccount, updateSubAccount } from "@/redux/service/billing";
 import { useAuth } from "@/assets/hooks/use-auth";
 
-const SubAccountModal = ({ open, setOpen, selectedItem, setSelectedItem, mainAccounts }) => {
+const SubAccountModal = ({ open, setOpen, selectedItem, setSelectedItem, mainAccounts, paymentModes }) => {
   const [loading, setLoading] = useState(false);
   const auth = useAuth();
   
   const [formData, setFormData] = useState({
-    name: selectedItem?.name || "",
-    description: selectedItem?.description || "",
-    main_account: selectedItem?.main_account || "",
-    opening_bal: selectedItem?.opening_bal || 0,
-    min_bal: selectedItem?.min_bal || 0,
-    max_bal: selectedItem?.max_bal || 0,
-    min_trans: selectedItem?.min_trans || 0,
-    max_trans: selectedItem?.max_trans || 0,
-    active: selectedItem?.active !== undefined ? selectedItem.active : true,
+    name: "",
+    description: "",
+    main_account: "",
+    payment_mode: "",
+    opening_bal: 0,
+    min_bal: 0,
+    max_bal: 0,
+    min_trans: 0,
+    max_trans: 0,
+    active: true,
   });
+
+  useEffect(() => {
+    if (open) {
+      setFormData({
+        name: selectedItem?.name || "",
+        description: selectedItem?.description || "",
+        main_account: selectedItem?.main_account || "",
+        payment_mode: selectedItem?.payment_mode || "",
+        opening_bal: selectedItem?.opening_bal || 0,
+        min_bal: selectedItem?.min_bal || 0,
+        max_bal: selectedItem?.max_bal || 0,
+        min_trans: selectedItem?.min_trans || 0,
+        max_trans: selectedItem?.max_trans || 0,
+        active: selectedItem?.active !== undefined ? selectedItem.active : true,
+      });
+    }
+  }, [selectedItem, open]);
 
   // Extract array from paginated response if applicable
   const parsedMainAccounts = Array.isArray(mainAccounts)
     ? mainAccounts
     : (mainAccounts?.results || []);
+
+  // Filter to non-insurance payment modes only
+  const modesData = (Array.isArray(paymentModes) ? paymentModes : (paymentModes?.results || []))
+    .filter((mode) => mode.payment_category !== 'insurance');
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -41,6 +63,7 @@ const SubAccountModal = ({ open, setOpen, selectedItem, setSelectedItem, mainAcc
         name: formData.name,
         description: formData.description,
         main_account: formData.main_account,
+        payment_mode: formData.payment_mode || null,
         opening_bal: formData.opening_bal,
         min_bal: formData.min_bal,
         max_bal: formData.max_bal,
@@ -105,6 +128,22 @@ const SubAccountModal = ({ open, setOpen, selectedItem, setSelectedItem, mainAcc
                 {parsedMainAccounts.map((acc) => (
                   <option key={acc.id} value={acc.id}>
                     {acc.name}
+                  </option>
+                ))}
+              </select>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <label>Payment Mode</label>
+              <select
+                className="w-full border p-2 rounded block bg-white"
+                name="payment_mode"
+                value={formData.payment_mode}
+                onChange={handleChange}
+              >
+                <option value="">-- None --</option>
+                {modesData.map((mode) => (
+                  <option key={mode.id} value={mode.id}>
+                    {mode.payment_mode}
                   </option>
                 ))}
               </select>

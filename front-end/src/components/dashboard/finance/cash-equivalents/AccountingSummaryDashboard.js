@@ -7,13 +7,10 @@ import {
   Pager,
   SearchPanel,
   FilterRow,
-  GroupPanel,
-  Grouping,
   Summary,
   TotalItem,
-  GroupItem,
 } from "devextreme-react/data-grid";
-import { getAccountingSummary } from "@/redux/service/billing";
+import { getAccountingSummary, fetchSubAccounts } from "@/redux/service/billing";
 import { useAuth } from "@/assets/hooks/use-auth";
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), { ssr: false });
@@ -27,10 +24,11 @@ const fmt = (value) =>
   })}`;
 
 const AccountingSummaryDashboard = () => {
-  const [subAccountTotals, setSubAccountTotals] = useState([]);
+  const [subAccountRows, setSubAccountRows] = useState([]);
   const [allTransactions, setAllTransactions] = useState([]);
   const [filteredTransactions, setFilteredTransactions] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [activeFilter, setActiveFilter] = useState(null); // { type: 'main'|'sub', value, subValue? }
   const auth = useAuth();
 
   // Date filters
@@ -44,10 +42,34 @@ const AccountingSummaryDashboard = () => {
       if (startDate) filters.start_date = startDate;
       if (endDate) filters.end_date = endDate;
 
-      const res = await getAccountingSummary(auth, filters);
-      setSubAccountTotals(res.sub_account_totals || []);
-      setAllTransactions(res.transactions || []);
-      setFilteredTransactions(res.transactions || []);
+      const [subAccounts, summary] = await Promise.all([
+        fetchSubAccounts(auth),
+        getAccountingSummary(auth, filters),
+      ]);
+
+      // Build lookup from summary totals keyed by "mainAccount::subAccount"
+      const lookup = {};
+      for (const row of summary.sub_account_totals || []) {
+        lookup[`${row.main_account}::${row.sub_account}`] = row;
+      }
+
+      // Merge: every sub-account appears, with debit/credit from summary
+      const merged = (subAccounts || []).map((sa) => {
+        const key = `${sa.main_account_name}::${sa.name}`;
+        const totals = lookup[key] || {};
+        return {
+          main_account: sa.main_account_name,
+          sub_account: sa.name,
+          total_debit: totals.total_debited || 0,
+          total_credit: totals.total_credited || 0,
+          opening_balance: parseFloat(sa.opening_bal) || 0,
+          balance: parseFloat(sa.balance) || 0,
+        };
+      });
+
+      setSubAccountRows(merged);
+      setAllTransactions(summary.transactions || []);
+      setFilteredTransactions(summary.transactions || []);
     } catch (error) {
       toast.error(error.message || "Failed to fetch accounting summary");
     } finally {
@@ -61,10 +83,21 @@ const AccountingSummaryDashboard = () => {
     }
   }, [auth, startDate, endDate]);
 
-  // Click on sub-account row → filter transactions by both main + sub account
-  const handleSubAccountRowClick = (e) => {
-    const { main_account, sub_account } = e.data || {};
-    if (main_account && sub_account) {
+  // Click on a cell → filter by main account or sub account
+  const handleCellClick = (e) => {
+    if (!e.data || e.rowType !== "data") return;
+    const { main_account, sub_account } = e.data;
+    const field = e.column?.dataField;
+
+    if (field === "main_account") {
+      // Filter transactions by main account only
+      setActiveFilter({ type: "main", value: main_account });
+      setFilteredTransactions(
+        allTransactions.filter((t) => t.tag === main_account)
+      );
+    } else if (field === "sub_account") {
+      // Filter transactions by specific sub account
+      setActiveFilter({ type: "sub", value: main_account, subValue: sub_account });
       setFilteredTransactions(
         allTransactions.filter(
           (t) => t.tag === main_account && t.sub_account === sub_account
@@ -73,16 +106,37 @@ const AccountingSummaryDashboard = () => {
     }
   };
 
-  const clearSubFilter = () => setFilteredTransactions(allTransactions);
+  const clearSubFilter = () => {
+    setActiveFilter(null);
+    setFilteredTransactions(allTransactions);
+  };
+
+  // Highlight helper: returns true if row matches the active filter
+  const isRowActive = (rowData) => {
+    if (!activeFilter) return false;
+    if (activeFilter.type === "main") {
+      return rowData.main_account === activeFilter.value;
+    }
+    if (activeFilter.type === "sub") {
+      return (
+        rowData.main_account === activeFilter.value &&
+        rowData.sub_account === activeFilter.subValue
+      );
+    }
+    return false;
+  };
+
+  const onRowPrepared = (e) => {
+    if (e.rowType === "data" && isRowActive(e.data)) {
+      e.rowElement.style.backgroundColor = "#dbeafe"; // blue-100
+      e.rowElement.style.fontWeight = "600";
+    }
+  };
 
   return (
     <div className="flex flex-col gap-8">
-      {/* ── Header / Filters ── */}
+      {/* ── Date Filters ── */}
       <div className="flex flex-wrap gap-4 items-center bg-white p-4 rounded shadow-sm">
-        <h2 className="text-xl font-bold mr-auto">
-          Cashflow Summary (Received &amp; Supplier Payments)
-        </h2>
-
         <div className="flex gap-2 items-center">
           <label className="text-sm font-semibold">From:</label>
           <input
@@ -124,15 +178,10 @@ const AccountingSummaryDashboard = () => {
         </button>
       </div>
 
-      {/* ── Sub-Account Summary ── */}
+      {/* ── Sub-Account Table ── */}
       <div className="bg-white rounded shadow-md p-4">
-        <h3 className="text-lg font-semibold mb-1 text-primary">Sub-Account Summary</h3>
-        <p className="text-sm mb-4 text-gray-500">
-          Total Debits, Credits and Balance per sub-account grouped by main account (Bank,
-          Cash, Petty Cash, Mobile Banking). Click a row to filter the transactions table.
-        </p>
         <DataGrid
-          dataSource={subAccountTotals}
+          dataSource={subAccountRows}
           allowColumnReordering
           rowAlternationEnabled
           showBorders
@@ -140,31 +189,60 @@ const AccountingSummaryDashboard = () => {
           showRowLines
           wordWrapEnabled
           className="shadow-sm cursor-pointer"
-          onRowClick={handleSubAccountRowClick}
+          onCellClick={handleCellClick}
+          onRowPrepared={onRowPrepared}
         >
-          <GroupPanel visible />
-          <Grouping autoExpandAll />
+          <FilterRow visible />
           <SearchPanel visible placeholder="Search sub-accounts…" />
-          <Column dataField="main_account" caption="Main Account" groupIndex={0} sortIndex={0} sortOrder="asc" />
-          <Column dataField="sub_account" caption="Sub Account" sortIndex={1} sortOrder="asc" />
           <Column
-            dataField="total_debited"
-            caption="Total Debits (+)"
+            dataField="main_account"
+            caption="Main Account"
+            sortIndex={0}
+            sortOrder="asc"
+            cellRender={(cell) => {
+              const isActive = activeFilter?.type === "main" && activeFilter.value === cell.value;
+              return (
+                <span className={`cursor-pointer hover:underline ${isActive ? "text-primary font-bold" : ""}`}>
+                  {cell.value}
+                </span>
+              );
+            }}
+          />
+          <Column
+            dataField="sub_account"
+            caption="Sub Account"
+            sortIndex={1}
+            sortOrder="asc"
+            cellRender={(cell) => {
+              const isActive =
+                activeFilter?.type === "sub" &&
+                activeFilter.value === cell.data.main_account &&
+                activeFilter.subValue === cell.value;
+              return (
+                <span className={`cursor-pointer hover:underline ${isActive ? "text-primary font-bold" : ""}`}>
+                  {cell.value}
+                </span>
+              );
+            }}
+          />
+          <Column
+            dataField="total_debit"
+            caption="Total Debit"
             customizeText={(c) => fmt(c.value)}
             cellRender={(cell) => (
               <span className="text-green-700">{fmt(cell.value)}</span>
             )}
           />
           <Column
-            dataField="total_credited"
-            caption="Total Credits (-)"
+            dataField="total_credit"
+            caption="Total Credit"
             customizeText={(c) => fmt(c.value)}
             cellRender={(cell) => (
               <span className="text-red-600">{fmt(cell.value)}</span>
             )}
           />
           <Column
-            dataField="net_balance"
+            dataField="balance"
             caption="Balance"
             customizeText={(c) => fmt(c.value)}
             cellRender={(cell) => {
@@ -183,46 +261,22 @@ const AccountingSummaryDashboard = () => {
               customizeText={() => "TOTAL"}
             />
             <TotalItem
-              column="total_debited"
+              column="total_debit"
               summaryType="sum"
               valueFormat="fixedPoint"
               customizeText={(e) => fmt(e.value)}
             />
             <TotalItem
-              column="total_credited"
+              column="total_credit"
               summaryType="sum"
               valueFormat="fixedPoint"
               customizeText={(e) => fmt(e.value)}
             />
             <TotalItem
-              column="net_balance"
+              column="balance"
               summaryType="sum"
               valueFormat="fixedPoint"
               customizeText={(e) => fmt(e.value)}
-            />
-            <GroupItem
-              column="total_debited"
-              summaryType="sum"
-              displayFormat="{0}"
-              customizeText={(e) => fmt(e.value)}
-              showInGroupFooter={false}
-              alignByColumn
-            />
-            <GroupItem
-              column="total_credited"
-              summaryType="sum"
-              displayFormat="{0}"
-              customizeText={(e) => fmt(e.value)}
-              showInGroupFooter={false}
-              alignByColumn
-            />
-            <GroupItem
-              column="net_balance"
-              summaryType="sum"
-              displayFormat="{0}"
-              customizeText={(e) => fmt(e.value)}
-              showInGroupFooter={false}
-              alignByColumn
             />
           </Summary>
         </DataGrid>
@@ -232,8 +286,15 @@ const AccountingSummaryDashboard = () => {
       <div className="bg-white rounded shadow-md p-4">
         <div className="flex items-center gap-4 mb-4">
           <h3 className="text-lg font-semibold text-primary">
-            Transactions (Received &amp; Supplier Payments)
+            Transactions
           </h3>
+          {activeFilter && (
+            <span className="text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-medium">
+              {activeFilter.type === "main"
+                ? activeFilter.value
+                : `${activeFilter.value} › ${activeFilter.subValue}`}
+            </span>
+          )}
           {filteredTransactions.length !== allTransactions.length && (
             <button
               className="text-xs text-blue-600 underline"
@@ -268,17 +329,10 @@ const AccountingSummaryDashboard = () => {
           <Column dataField="invoice_number" caption="Invoice #" width={130} />
           <Column dataField="customer" caption="Particulars" />
           <Column
-            dataField="tag"
-            caption="Sub Account"
-            cellRender={(cell) => (
-              <span className="px-2 py-0.5 bg-blue-50 rounded text-xs">{cell.value}</span>
-            )}
-          />
-          <Column
             dataField="sub_account"
             caption="Sub Account"
             cellRender={(cell) => (
-              <span className="px-2 py-0.5 bg-gray-100 rounded text-xs">{cell.value}</span>
+              <span className="px-2 py-0.5 bg-blue-50 rounded text-xs">{cell.value}</span>
             )}
           />
           <Column

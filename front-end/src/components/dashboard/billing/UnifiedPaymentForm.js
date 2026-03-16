@@ -33,6 +33,7 @@ const UnifiedPaymentForm = ({
   insurance, 
   invoices,
   paymodes,
+  subAccounts,
   onSubmit,
   onViewInvoiceItems,
   loading
@@ -82,7 +83,7 @@ const UnifiedPaymentForm = ({
       return Math.max(0, insuranceBalance || 0);
     }
 
-    const total = parseFloat(data.invoice_amount || 0);
+    const total = parseFloat(data.total_cash || 0);
     const alreadyPaid = parseFloat(data.cash_paid || 0);
     return Math.max(0, total - alreadyPaid);
   };
@@ -138,16 +139,18 @@ const UnifiedPaymentForm = ({
     const invoiceIds = selectedItems.selectedRowsData.map(inv => inv.id);
     const totalOwed = calculateTotalOwed();
 
-    onSubmit({
+    const submitData = {
       paymentCategory: paymentCategory.value,
       customer: selectedCustomer,
       invoiceIds,
       payAmount: parseFloat(payAmount),
       totalOwed,
-      payment_mode: selectedPayMode.value,
+      sub_account: selectedPayMode.value,
       reference_number: referenceNumber,
       payment_date: paymentDate,
-    });
+    };
+
+    onSubmit(submitData);
   };
 
   const getCustomerOptions = () => {
@@ -167,19 +170,11 @@ const UnifiedPaymentForm = ({
   };
 
   const getPaymodeOptions = () => {
-    return (paymodes || [])
-      .filter((pm) => {
-        if (!paymentCategory) return true;
-        if (paymentCategory.value === 'cash') {
-          return pm.payment_category !== 'insurance';
-        }
-        return pm.payment_category === 'insurance' && (
-          !selectedCustomer || pm.insurance === selectedCustomer.value
-        );
-      })
-      .map((pm) => ({
-        value: pm.id,
-        label: pm.payment_mode || pm.mode_name || 'Unnamed Payment Mode',
+    return (subAccounts || [])
+      .filter((sa) => sa.active !== false)
+      .map((sa) => ({
+        value: sa.id,
+        label: `${sa.name}${sa.main_account_name ? ` (${sa.main_account_name})` : ''}`,
       }));
   };
 
@@ -282,13 +277,13 @@ const UnifiedPaymentForm = ({
               calculateCellValue={(data) => `${data.patient?.first_name || ''} ${data.patient?.second_name || ''}`}
             />
             <Column 
-              caption={paymentCategory?.value === 'credit' ? 'Insurance Total' : 'Invoice Total'} 
+              caption={paymentCategory?.value === 'credit' ? 'Insurance Total' : 'Cash Total'} 
               width={120}
               alignment="right"
               calculateCellValue={(data) => {
                 const total = paymentCategory?.value === 'credit'
                   ? parseFloat((data.insurance_total ?? data.invoice_amount) || 0)
-                  : parseFloat(data.invoice_amount || 0);
+                  : parseFloat(data.total_cash || 0);
                 return total.toFixed(2);
               }}
             />
@@ -326,7 +321,7 @@ const UnifiedPaymentForm = ({
                   : parseFloat(cellData.data?.cash_paid || 0);
                 const total = paymentCategory?.value === 'credit'
                   ? parseFloat((cellData.data?.insurance_total ?? cellData.data?.invoice_amount) || 0)
-                  : parseFloat(cellData.data?.invoice_amount || 0);
+                  : parseFloat(cellData.data?.total_cash || 0);
                 const isPartial = paid > 0 && paid < total;
                 const statusValue = paymentCategory?.value === 'credit'
                   ? (cellData.data?.insurance_balance <= 0 ? 'paid' : 'pending')

@@ -427,6 +427,23 @@ export const fetchSupplierInvoice = (auth) => {
         });
     });
 };
+
+export const fetchSupplierInvoicesBySupplier = (auth, supplier_id) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+        axiosInstance.get(`${APP_API_URL.FETCH_SUPPLIER_INVOICE}`, {
+            params: {
+                supplier: supplier_id,
+            },
+        })
+        .then((res) => {
+            resolve(res.data);
+        })
+        .catch((err) => {
+            reject(err.message);
+        });
+    });
+};
 export const fetchInvoice = async (auth, supplier_id) => {
     if (!auth?.token) {
         console.error("Auth token is missing");

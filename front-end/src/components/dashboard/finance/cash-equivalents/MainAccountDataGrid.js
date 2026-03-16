@@ -12,7 +12,7 @@ const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
 
 const allowedPageSizes = [5, 10, 'all'];
 
-const MainAccountDataGrid = ({ paymentModes }) => {
+const MainAccountDataGrid = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -96,7 +96,6 @@ const MainAccountDataGrid = ({ paymentModes }) => {
         <Column dataField="id" caption="ID" width={70} />
         <Column dataField="name" caption="Name" />
         <Column dataField="description" caption="Description" />
-        <Column dataField="payment_mode_name" caption="Payment Mode" />
         <Column 
           dataField="total_balance" 
           caption="Total Balance" 
@@ -116,7 +115,6 @@ const MainAccountDataGrid = ({ paymentModes }) => {
         setOpen={setIsModalOpen}
         selectedItem={selectedItem}
         setSelectedItem={setSelectedItem}
-        paymentModes={paymentModes}
       />
     </div>
   );

@@ -8,7 +8,8 @@ import { formatMoney } from "@/functions/money";
 
 const PaymentModeStep = ({ 
   stepOneData, 
-  paymodes, 
+  paymodes,
+  subAccounts, 
   onConfirm, 
   onCancel,
   loading 
@@ -36,11 +37,13 @@ const PaymentModeStep = ({
       return;
     }
 
-    onConfirm({
-      payment_mode: selectedPayMode.value,
+    const confirmData = {
+      sub_account: selectedPayMode.value,
       reference_number: formValue.reference_number,
       payment_date: formValue.payment_date,
-    });
+    };
+
+    onConfirm(confirmData);
   };
 
   return (
@@ -120,11 +123,13 @@ const PaymentModeStep = ({
                   isSearchable
                   isClearable
                   onChange={setSelectedPayMode}
-                  options={(paymodes || []).map((pm) => ({
-                    value: pm.id,
-                    label: `${pm.payment_mode} (${pm.payment_category})`,
-                  }))}
-                  placeholder="How is the payment made?"
+                  options={
+                    (subAccounts || []).filter((sa) => sa.active !== false).map((sa) => ({
+                      value: sa.id,
+                      label: `${sa.name}${sa.main_account_name ? ` (${sa.main_account_name})` : ''}`,
+                    }))
+                  }
+                  placeholder="Select payment mode..."
                 />
                 {!selectedPayMode && (
                   <div className="text-xs text-gray-500 mt-1">

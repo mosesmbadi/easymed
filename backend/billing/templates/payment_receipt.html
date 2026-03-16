@@ -280,7 +280,7 @@
       </div>
       <div class="meta-row">
         <span class="meta-label">Payment Mode:</span>
-        <span class="meta-value">{{ receipt.payment_mode.payment_mode }}</span>
+        <span class="meta-value">{% if receipt.sub_account %}{{ receipt.sub_account.name }}{% elif receipt.payment_mode %}{{ receipt.payment_mode.payment_mode }}{% else %}—{% endif %}</span>
       </div>
       <div class="meta-row">
         <span class="meta-label">Reference #:</span>

@@ -1,6 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { fetchItem, fetchItems, fetchOrderBills, fetchSuppliers, fetchInventories, fetchRequisitions,
-   fetchPurchaseOrders, fetchIncomingItems, fetchAllRequisitionItems,fetchSupplierInvoice, fetchInvoice, fetchLowDrugs, } from "@/redux/service/inventory";
+   fetchPurchaseOrders, fetchIncomingItems, fetchAllRequisitionItems,fetchSupplierInvoice, fetchInvoice, fetchLowDrugs, fetchSupplierInvoicesBySupplier, } from "@/redux/service/inventory";
 
 
 const initialState = {
@@ -289,6 +289,15 @@ export const getAllSupplierInvoice = (auth) => async (dispatch) => {
   } catch (error) {
     console.error("SUPPLIERS_ERROR:", error);
     toast.error("Failed to fetch supplier invoices");
+  }
+};
+
+export const getSupplierInvoicesBySupplier = (auth, supplier_id) => async (dispatch) => {
+  try {
+    const response = await fetchSupplierInvoicesBySupplier(auth, supplier_id);
+    dispatch(setSupplierInvoice(response));
+  } catch (error) {
+    console.error("SUPPLIER_INVOICES_ERROR:", error);
   }
 };
 

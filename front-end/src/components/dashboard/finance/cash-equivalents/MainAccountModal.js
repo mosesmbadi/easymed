@@ -1,22 +1,25 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import { Grid, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import { createMainAccount, fetchMainAccounts, updateMainAccount } from "@/redux/service/billing";
 import { useAuth } from "@/assets/hooks/use-auth";
 
-const MainAccountModal = ({ open, setOpen, selectedItem, setSelectedItem, paymentModes }) => {
+const MainAccountModal = ({ open, setOpen, selectedItem, setSelectedItem }) => {
   const [loading, setLoading] = useState(false);
   const auth = useAuth();
   const [formData, setFormData] = useState({
-    name: selectedItem?.name || "",
-    description: selectedItem?.description || "",
-    payment_mode: selectedItem?.payment_mode || "",
+    name: "",
+    description: "",
   });
 
-  // Extract modes properly if paginated
-  const modesData = Array.isArray(paymentModes) 
-      ? paymentModes 
-      : (paymentModes?.results || []);
+  useEffect(() => {
+    if (open) {
+      setFormData({
+        name: selectedItem?.name || "",
+        description: selectedItem?.description || "",
+      });
+    }
+  }, [selectedItem, open]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -29,7 +32,6 @@ const MainAccountModal = ({ open, setOpen, selectedItem, setSelectedItem, paymen
       const payload = {
         name: formData.name,
         description: formData.description,
-        payment_mode: formData.payment_mode || null,
       };
 
       if (selectedItem?.id) {
@@ -84,22 +86,6 @@ const MainAccountModal = ({ open, setOpen, selectedItem, setSelectedItem, paymen
                 onChange={handleChange}
                 rows={3}
               />
-            </Grid>
-            <Grid item xs={12}>
-              <label>Payment Mode</label>
-              <select
-                className="w-full border p-2 rounded block bg-white"
-                name="payment_mode"
-                value={formData.payment_mode}
-                onChange={handleChange}
-              >
-                <option value="">-- None --</option>
-                {modesData.map((mode) => (
-                  <option key={mode.id} value={mode.id}>
-                    {mode.payment_mode}
-                  </option>
-                ))}
-              </select>
             </Grid>
           </Grid>
           <DialogActions className="mt-4">
