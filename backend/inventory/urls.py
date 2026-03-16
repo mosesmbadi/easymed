@@ -28,6 +28,7 @@ from .views import (
     download_purchaseorder_pdf,
     download_goods_receipt_note_pdf,
     download_supplier_invoice_pdf,
+    download_supplier_payment_receipt_pdf,
 )
 
 router = DefaultRouter()
@@ -71,6 +72,7 @@ urlpatterns = [
     path('receipt_note_pdf/<int:purchase_order_id>/', download_goods_receipt_note_pdf, name='incoming_items_pdf'),
     path('requisition_note_pdf/<int:requisition_id>/', download_requisition_pdf, name='download__requisition_pdf'),
     path('supplier_invoice_pdf/<int:supplier_id>/', download_supplier_invoice_pdf, name='download_supplier_invoice_pdf'),
+    path('supplier-payment-receipts/<int:receipt_id>/print/', download_supplier_payment_receipt_pdf, name='download_supplier_payment_receipt_pdf'),
     
 ]
 

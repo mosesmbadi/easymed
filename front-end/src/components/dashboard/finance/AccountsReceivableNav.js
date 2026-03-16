@@ -9,6 +9,7 @@ const AccountsReceivableNav = () => {
   const links = [
     { href: `${base}`, label: 'Billing', exact: true },
     { href: `${base}/payments`, label: 'Receive Payments' },
+    { href: `${base}/payment-receipts`, label: 'Payment Receipts' },
     { href: `${base}/invoices`, label: 'Invoices' },
     { href: `${base}/debtors`, label: 'Debtors' },
     { href: `${base}/report`, label: 'Reports' },
