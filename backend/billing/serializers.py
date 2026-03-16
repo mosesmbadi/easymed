@@ -225,6 +225,7 @@ class AllocatePaymentRequestSerializer(serializers.Serializer):
 
 class SubAccountSerializer(serializers.ModelSerializer):
     main_account_name = serializers.CharField(source='main_account.name', read_only=True)
+    payment_mode_name = serializers.CharField(source='payment_mode.payment_mode', read_only=True)
 
     class Meta:
         model = SubAccount
@@ -234,7 +235,6 @@ class SubAccountSerializer(serializers.ModelSerializer):
 class MainAccountSerializer(serializers.ModelSerializer):
     subaccounts = SubAccountSerializer(many=True, read_only=True)
     total_balance = serializers.DecimalField(max_digits=15, decimal_places=2, read_only=True)
-    payment_mode_name = serializers.CharField(source='payment_mode.payment_mode', read_only=True)
 
     class Meta:
         model = MainAccount

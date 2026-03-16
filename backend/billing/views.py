@@ -504,7 +504,7 @@ class AccountingSummaryView(APIView):
         received_qs = PaymentAllocation.objects.select_related(
             'receipt__patient',
             'receipt__insurance',
-            'receipt__payment_mode__main_account',
+            'receipt__payment_mode__sub_account__main_account',
             'invoice_item__invoice',
         )
 
@@ -512,7 +512,7 @@ class AccountingSummaryView(APIView):
         from inventory.models import SupplierPaymentAllocation
         supplier_paid_qs = SupplierPaymentAllocation.objects.select_related(
             'receipt__supplier',
-            'receipt__payment_mode__main_account',
+            'receipt__payment_mode__sub_account__main_account',
             'supplier_invoice',
         )
 
@@ -541,8 +541,8 @@ class AccountingSummaryView(APIView):
             # Prefer configured main account tag from payment mode, fallback to mode name.
             source_name = 'Main Account'
             pay_mode = getattr(alloc.receipt, 'payment_mode', None)
-            if pay_mode and hasattr(pay_mode, 'main_account') and pay_mode.main_account:
-                source_name = pay_mode.main_account.name
+            if pay_mode and hasattr(pay_mode, 'sub_account') and pay_mode.sub_account and pay_mode.sub_account.main_account:
+                source_name = pay_mode.sub_account.main_account.name
             elif pay_mode and pay_mode.payment_mode:
                 source_name = pay_mode.payment_mode
 
@@ -570,8 +570,8 @@ class AccountingSummaryView(APIView):
             # Prefer configured main account tag from payment mode, fallback to mode name.
             source_name = 'Main Account'
             pay_mode = getattr(alloc.receipt, 'payment_mode', None)
-            if pay_mode and hasattr(pay_mode, 'main_account') and pay_mode.main_account:
-                source_name = pay_mode.main_account.name
+            if pay_mode and hasattr(pay_mode, 'sub_account') and pay_mode.sub_account and pay_mode.sub_account.main_account:
+                source_name = pay_mode.sub_account.main_account.name
             elif pay_mode and pay_mode.payment_mode:
                 source_name = pay_mode.payment_mode
 

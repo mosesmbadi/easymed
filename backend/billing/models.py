@@ -312,12 +312,11 @@ class PaymentAllocation(models.Model):
 
 class MainAccount(models.Model):
     """
-    The 'Parent' accounts: e.g., Cash, KCB Bank, Co-op Bank.
+    The 'Parent' accounts: e.g., Cash, Petty Cash, Bank, Mobile Money.
     Summarizes the total liquidity across all departments.
     """
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True, null=True)
-    payment_mode = models.OneToOneField('PaymentMode', on_delete=models.SET_NULL, null=True, blank=True, related_name='main_account')
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -331,6 +330,7 @@ class MainAccount(models.Model):
 
 class SubAccount(models.Model):
     main_account = models.ForeignKey(MainAccount, on_delete=models.CASCADE, related_name='subaccounts')
+    payment_mode = models.OneToOneField('PaymentMode', on_delete=models.SET_NULL, null=True, blank=True, related_name='sub_account')
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
     opening_bal = models.DecimalField(max_digits=15, decimal_places=2, default=0)
