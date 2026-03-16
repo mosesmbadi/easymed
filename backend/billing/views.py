@@ -207,13 +207,13 @@ class PaymentReceiptViewset(viewsets.ReadOnlyModelViewSet):
     Read-only as receipts should not be edited or deleted.
     """
     queryset = PaymentReceipt.objects.all().select_related(
-        'patient', 'insurance', 'payment_mode'
+        'patient', 'insurance', 'payment_mode', 'sub_account__payment_mode', 'sub_account__main_account'
     ).prefetch_related(
         'allocations__invoice_item__invoice'
     ).order_by('-created_at')
     serializer_class = PaymentReceiptSerializer
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['patient', 'insurance', 'payment_mode', 'payment_date']
+    filterset_fields = ['patient', 'insurance', 'payment_date']
 
 
 class PaymentBreakdownView(APIView):
@@ -275,17 +275,33 @@ class AllocatePaymentView(APIView):
         patient_id = data.get('patient_id')
         insurance_id = data.get('insurance_id')
         invoice_ids = data['invoice_ids']
-        payment_mode_id = data['payment_mode']
+        sub_account_id = data.get('sub_account')
+        payment_mode_id = data.get('payment_mode')
         amount = data['amount']
         reference_number = data['reference_number']
         payment_date = data.get('payment_date')  # Optional field
+
+        # Resolve payment_mode from sub_account if provided
+        if sub_account_id:
+            try:
+                sub_account = SubAccount.objects.select_related('payment_mode').get(id=sub_account_id)
+            except SubAccount.DoesNotExist:
+                return Response({"detail": "Invalid sub account."}, status=status.HTTP_400_BAD_REQUEST)
+            if not sub_account.payment_mode:
+                return Response({"detail": "Selected sub account has no linked payment mode."}, status=status.HTTP_400_BAD_REQUEST)
+            paymode = sub_account.payment_mode
+        elif payment_mode_id:
+            try:
+                paymode = PaymentMode.objects.get(id=payment_mode_id)
+            except PaymentMode.DoesNotExist:
+                return Response({"detail": "Invalid payment mode."}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({"detail": "Either sub_account or payment_mode must be provided."}, status=status.HTTP_400_BAD_REQUEST)
 
         # Filter invoices based on whether it's patient or insurance payment
         if patient_id:
             invoices = Invoice.objects.filter(id__in=invoice_ids, patient_id=patient_id)
         elif insurance_id:
-            # For insurance payments, we need to filter invoices that have items with this insurance
-            # This ensures the invoice belongs to the selected insurance company
             invoices = Invoice.objects.filter(
                 id__in=invoice_ids,
                 invoice_items__payment_mode__insurance_id=insurance_id
@@ -296,16 +312,12 @@ class AllocatePaymentView(APIView):
         if not invoices.exists():
             return Response({"detail": "No invoices found for the selected customer/invoice selection."}, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            paymode = PaymentMode.objects.get(id=payment_mode_id)
-        except PaymentMode.DoesNotExist:
-            return Response({"detail": "Invalid payment mode."}, status=status.HTTP_400_BAD_REQUEST)
-
         with transaction.atomic():
             receipt = PaymentReceipt.objects.create(
                 patient_id=patient_id,
                 insurance_id=insurance_id,
-                payment_mode=paymode,
+                sub_account=sub_account if sub_account_id else None,
+                payment_mode=paymode if not sub_account_id else None,
                 total_amount=amount,
                 reference_number=reference_number,
                 payment_date=payment_date,
@@ -504,9 +516,11 @@ class AccountingSummaryView(APIView):
         received_qs = PaymentAllocation.objects.select_related(
             'receipt__patient',
             'receipt__insurance',
+            'receipt__sub_account__main_account',
+            'receipt__sub_account__payment_mode',
             'receipt__payment_mode',
             'invoice_item__invoice',
-        ).prefetch_related('receipt__payment_mode__sub_accounts__main_account')
+        )
 
         # Payments made to suppliers allocations
         from inventory.models import SupplierPaymentAllocation
@@ -514,7 +528,7 @@ class AccountingSummaryView(APIView):
             'receipt__supplier',
             'receipt__payment_mode',
             'supplier_invoice',
-        ).prefetch_related('receipt__payment_mode__sub_accounts__main_account')
+        )
 
         if start_date:
             received_qs = received_qs.filter(
@@ -540,8 +554,8 @@ class AccountingSummaryView(APIView):
         for alloc in received_qs:
             # Prefer configured main account tag from payment mode, fallback to mode name.
             source_name = 'Main Account'
+            sub_acct = getattr(alloc.receipt, 'sub_account', None)
             pay_mode = getattr(alloc.receipt, 'payment_mode', None)
-            sub_acct = pay_mode.sub_accounts.first() if pay_mode else None
             if sub_acct and sub_acct.main_account:
                 source_name = sub_acct.main_account.name
             elif pay_mode and pay_mode.payment_mode:
@@ -562,7 +576,7 @@ class AccountingSummaryView(APIView):
                 'invoice_number': invoice_number,
                 'customer': customer_name,
                 'tag': source_name,
-                'sub_account': pay_mode.payment_mode if pay_mode else source_name,
+                'sub_account': sub_acct.name if sub_acct else (pay_mode.payment_mode if pay_mode else source_name),
                 'action': 'Received',
                 'amount': alloc.amount_applied,
             })
@@ -571,6 +585,7 @@ class AccountingSummaryView(APIView):
             # Prefer configured main account tag from payment mode, fallback to mode name.
             source_name = 'Main Account'
             pay_mode = getattr(alloc.receipt, 'payment_mode', None)
+            # Supplier receipts still use payment_mode directly; resolve via sub_accounts reverse
             sub_acct = pay_mode.sub_accounts.first() if pay_mode else None
             if sub_acct and sub_acct.main_account:
                 source_name = sub_acct.main_account.name
@@ -590,7 +605,7 @@ class AccountingSummaryView(APIView):
                 'invoice_number': invoice_number,
                 'customer': supplier_name,
                 'tag': source_name,
-                'sub_account': pay_mode.payment_mode if pay_mode else source_name,
+                'sub_account': sub_acct.name if sub_acct else (pay_mode.payment_mode if pay_mode else source_name),
                 'action': 'Paid to Supplier',
                 'amount': alloc.amount_applied,
             })

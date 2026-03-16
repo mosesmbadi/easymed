@@ -271,7 +271,8 @@ class PaymentReceipt(models.Model):
     """
     patient = models.ForeignKey('patient.Patient', on_delete=models.SET_NULL, null=True, blank=True)
     insurance = models.ForeignKey('company.InsuranceCompany', on_delete=models.SET_NULL, null=True, blank=True)
-    payment_mode = models.ForeignKey(PaymentMode, on_delete=models.PROTECT)
+    sub_account = models.ForeignKey('SubAccount', on_delete=models.SET_NULL, null=True, blank=True, related_name='receipts')
+    payment_mode = models.ForeignKey(PaymentMode, on_delete=models.PROTECT, null=True, blank=True)
     total_amount = models.DecimalField(max_digits=12, decimal_places=2)
     reference_number = models.CharField(max_length=100)
     payment_date = models.DateField(null=True, blank=True)
@@ -346,5 +347,8 @@ class SubAccount(models.Model):
 
     @property
     def balance(self):
-        # Placeholder for actual balance calculation once transactions are modeled
-        return self.opening_bal
+        from django.db.models import Sum
+        received = self.receipts.aggregate(
+            total=Sum('total_amount')
+        )['total'] or 0
+        return self.opening_bal + received

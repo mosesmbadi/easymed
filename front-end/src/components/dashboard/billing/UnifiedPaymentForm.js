@@ -33,6 +33,7 @@ const UnifiedPaymentForm = ({
   insurance, 
   invoices,
   paymodes,
+  subAccounts,
   onSubmit,
   onViewInvoiceItems,
   loading
@@ -138,16 +139,24 @@ const UnifiedPaymentForm = ({
     const invoiceIds = selectedItems.selectedRowsData.map(inv => inv.id);
     const totalOwed = calculateTotalOwed();
 
-    onSubmit({
+    const submitData = {
       paymentCategory: paymentCategory.value,
       customer: selectedCustomer,
       invoiceIds,
       payAmount: parseFloat(payAmount),
       totalOwed,
-      payment_mode: selectedPayMode.value,
       reference_number: referenceNumber,
       payment_date: paymentDate,
-    });
+    };
+
+    // Cash payments send sub_account; insurance payments send payment_mode
+    if (paymentCategory.value === 'cash') {
+      submitData.sub_account = selectedPayMode.value;
+    } else {
+      submitData.payment_mode = selectedPayMode.value;
+    }
+
+    onSubmit(submitData);
   };
 
   const getCustomerOptions = () => {
@@ -167,12 +176,19 @@ const UnifiedPaymentForm = ({
   };
 
   const getPaymodeOptions = () => {
+    // For cash payments, show sub accounts (send sub_account ID)
+    if (paymentCategory?.value === 'cash') {
+      return (subAccounts || [])
+        .filter((sa) => sa.active !== false)
+        .map((sa) => ({
+          value: sa.id,
+          label: `${sa.name}${sa.main_account_name ? ` (${sa.main_account_name})` : ''}`,
+          isSub: true,
+        }));
+    }
+    // For insurance payments, keep using payment modes
     return (paymodes || [])
       .filter((pm) => {
-        if (!paymentCategory) return true;
-        if (paymentCategory.value === 'cash') {
-          return pm.payment_category !== 'insurance';
-        }
         return pm.payment_category === 'insurance' && (
           !selectedCustomer || pm.insurance === selectedCustomer.value
         );

@@ -108,7 +108,13 @@ const SubAccountDataGrid = ({ mainAccounts, paymentModes }) => {
         <Column 
           dataField="opening_bal" 
           caption="Opening Bal" 
-          width={120} 
+          width={130} 
+          customizeText={(cellInfo) => Number(cellInfo.value).toLocaleString()}
+        />
+        <Column 
+          dataField="balance" 
+          caption="Balance" 
+          width={130} 
           customizeText={(cellInfo) => Number(cellInfo.value).toLocaleString()}
         />
         <Column 

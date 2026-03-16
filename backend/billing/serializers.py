@@ -156,16 +156,28 @@ class PaymentReceiptSerializer(serializers.ModelSerializer):
     allocations = PaymentAllocationSerializer(many=True, read_only=True)
     insurance_name = serializers.SerializerMethodField()
     patient_name = serializers.SerializerMethodField()
-    payment_mode_name = serializers.CharField(source='payment_mode.payment_mode', read_only=True)
+    payment_mode_name = serializers.SerializerMethodField()
+    sub_account_name = serializers.SerializerMethodField()
     invoice_numbers = serializers.SerializerMethodField()
     invoice_ids = serializers.SerializerMethodField()
 
     class Meta:
         model = PaymentReceipt
         fields = ['id', 'patient', 'patient_name', 'insurance', 'insurance_name', 
-                  'payment_mode', 'payment_mode_name', 'invoice_numbers', 'invoice_ids',
+                  'sub_account', 'sub_account_name', 'payment_mode', 'payment_mode_name',
+                  'invoice_numbers', 'invoice_ids',
                   'total_amount', 'reference_number', 'payment_date', 
                   'created_at', 'allocations']
+
+    def get_payment_mode_name(self, obj):
+        if obj.sub_account and obj.sub_account.payment_mode:
+            return obj.sub_account.payment_mode.payment_mode
+        if obj.payment_mode:
+            return obj.payment_mode.payment_mode
+        return None
+
+    def get_sub_account_name(self, obj):
+        return obj.sub_account.name if obj.sub_account else None
 
     def get_insurance_name(self, obj):
         return obj.insurance.name if obj.insurance else None
@@ -200,7 +212,8 @@ class AllocatePaymentRequestSerializer(serializers.Serializer):
     patient_id = serializers.IntegerField(required=False, allow_null=True)
     insurance_id = serializers.IntegerField(required=False, allow_null=True)
     invoice_ids = serializers.ListField(child=serializers.IntegerField(), allow_empty=False)
-    payment_mode = serializers.IntegerField()
+    payment_mode = serializers.IntegerField(required=False, allow_null=True)
+    sub_account = serializers.IntegerField(required=False, allow_null=True)
     amount = serializers.DecimalField(max_digits=12, decimal_places=2)
     reference_number = serializers.CharField(max_length=100)
     payment_date = serializers.DateField(required=False, allow_null=True)
@@ -219,6 +232,12 @@ class AllocatePaymentRequestSerializer(serializers.Serializer):
             raise serializers.ValidationError(
                 "Cannot provide both patient_id and insurance_id."
             )
+
+        # Ensure either sub_account or payment_mode is provided
+        if not data.get('sub_account') and not data.get('payment_mode'):
+            raise serializers.ValidationError(
+                "Either sub_account or payment_mode must be provided."
+            )
         
         return data
 
@@ -226,6 +245,7 @@ class AllocatePaymentRequestSerializer(serializers.Serializer):
 class SubAccountSerializer(serializers.ModelSerializer):
     main_account_name = serializers.CharField(source='main_account.name', read_only=True)
     payment_mode_name = serializers.CharField(source='payment_mode.payment_mode', read_only=True)
+    balance = serializers.DecimalField(max_digits=15, decimal_places=2, read_only=True)
 
     class Meta:
         model = SubAccount
