@@ -145,16 +145,10 @@ const UnifiedPaymentForm = ({
       invoiceIds,
       payAmount: parseFloat(payAmount),
       totalOwed,
+      sub_account: selectedPayMode.value,
       reference_number: referenceNumber,
       payment_date: paymentDate,
     };
-
-    // Cash payments send sub_account; insurance payments send payment_mode
-    if (paymentCategory.value === 'cash') {
-      submitData.sub_account = selectedPayMode.value;
-    } else {
-      submitData.payment_mode = selectedPayMode.value;
-    }
 
     onSubmit(submitData);
   };
@@ -176,26 +170,11 @@ const UnifiedPaymentForm = ({
   };
 
   const getPaymodeOptions = () => {
-    // For cash payments, show sub accounts (send sub_account ID)
-    if (paymentCategory?.value === 'cash') {
-      return (subAccounts || [])
-        .filter((sa) => sa.active !== false)
-        .map((sa) => ({
-          value: sa.id,
-          label: `${sa.name}${sa.main_account_name ? ` (${sa.main_account_name})` : ''}`,
-          isSub: true,
-        }));
-    }
-    // For insurance payments, keep using payment modes
-    return (paymodes || [])
-      .filter((pm) => {
-        return pm.payment_category === 'insurance' && (
-          !selectedCustomer || pm.insurance === selectedCustomer.value
-        );
-      })
-      .map((pm) => ({
-        value: pm.id,
-        label: pm.payment_mode || pm.mode_name || 'Unnamed Payment Mode',
+    return (subAccounts || [])
+      .filter((sa) => sa.active !== false)
+      .map((sa) => ({
+        value: sa.id,
+        label: `${sa.name}${sa.main_account_name ? ` (${sa.main_account_name})` : ''}`,
       }));
   };
 

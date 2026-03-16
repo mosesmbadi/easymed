@@ -275,28 +275,19 @@ class AllocatePaymentView(APIView):
         patient_id = data.get('patient_id')
         insurance_id = data.get('insurance_id')
         invoice_ids = data['invoice_ids']
-        sub_account_id = data.get('sub_account')
-        payment_mode_id = data.get('payment_mode')
+        sub_account_id = data['sub_account']
         amount = data['amount']
         reference_number = data['reference_number']
         payment_date = data.get('payment_date')  # Optional field
 
-        # Resolve payment_mode from sub_account if provided
-        if sub_account_id:
-            try:
-                sub_account = SubAccount.objects.select_related('payment_mode').get(id=sub_account_id)
-            except SubAccount.DoesNotExist:
-                return Response({"detail": "Invalid sub account."}, status=status.HTTP_400_BAD_REQUEST)
-            if not sub_account.payment_mode:
-                return Response({"detail": "Selected sub account has no linked payment mode."}, status=status.HTTP_400_BAD_REQUEST)
-            paymode = sub_account.payment_mode
-        elif payment_mode_id:
-            try:
-                paymode = PaymentMode.objects.get(id=payment_mode_id)
-            except PaymentMode.DoesNotExist:
-                return Response({"detail": "Invalid payment mode."}, status=status.HTTP_400_BAD_REQUEST)
-        else:
-            return Response({"detail": "Either sub_account or payment_mode must be provided."}, status=status.HTTP_400_BAD_REQUEST)
+        # Resolve sub_account and its linked payment_mode
+        try:
+            sub_account = SubAccount.objects.select_related('payment_mode').get(id=sub_account_id)
+        except SubAccount.DoesNotExist:
+            return Response({"detail": "Invalid sub account."}, status=status.HTTP_400_BAD_REQUEST)
+        if not sub_account.payment_mode:
+            return Response({"detail": "Selected sub account has no linked payment mode."}, status=status.HTTP_400_BAD_REQUEST)
+        paymode = sub_account.payment_mode
 
         # Filter invoices based on whether it's patient or insurance payment
         if patient_id:
@@ -316,8 +307,7 @@ class AllocatePaymentView(APIView):
             receipt = PaymentReceipt.objects.create(
                 patient_id=patient_id,
                 insurance_id=insurance_id,
-                sub_account=sub_account if sub_account_id else None,
-                payment_mode=paymode if not sub_account_id else None,
+                sub_account=sub_account,
                 total_amount=amount,
                 reference_number=reference_number,
                 payment_date=payment_date,

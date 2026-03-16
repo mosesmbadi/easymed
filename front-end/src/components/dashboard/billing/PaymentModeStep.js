@@ -38,15 +38,10 @@ const PaymentModeStep = ({
     }
 
     const confirmData = {
+      sub_account: selectedPayMode.value,
       reference_number: formValue.reference_number,
       payment_date: formValue.payment_date,
     };
-
-    if (stepOneData?.paymentCategory === 'cash') {
-      confirmData.sub_account = selectedPayMode.value;
-    } else {
-      confirmData.payment_mode = selectedPayMode.value;
-    }
 
     onConfirm(confirmData);
   };
@@ -129,15 +124,10 @@ const PaymentModeStep = ({
                   isClearable
                   onChange={setSelectedPayMode}
                   options={
-                    stepOneData?.paymentCategory === 'cash'
-                      ? (subAccounts || []).filter((sa) => sa.active !== false).map((sa) => ({
-                          value: sa.id,
-                          label: `${sa.name}${sa.main_account_name ? ` (${sa.main_account_name})` : ''}`,
-                        }))
-                      : (paymodes || []).filter((pm) => pm.payment_category === 'insurance').map((pm) => ({
-                          value: pm.id,
-                          label: `${pm.payment_mode} (${pm.payment_category})`,
-                        }))
+                    (subAccounts || []).filter((sa) => sa.active !== false).map((sa) => ({
+                      value: sa.id,
+                      label: `${sa.name}${sa.main_account_name ? ` (${sa.main_account_name})` : ''}`,
+                    }))
                   }
                   placeholder="Select payment mode..."
                 />

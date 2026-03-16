@@ -212,8 +212,7 @@ class AllocatePaymentRequestSerializer(serializers.Serializer):
     patient_id = serializers.IntegerField(required=False, allow_null=True)
     insurance_id = serializers.IntegerField(required=False, allow_null=True)
     invoice_ids = serializers.ListField(child=serializers.IntegerField(), allow_empty=False)
-    payment_mode = serializers.IntegerField(required=False, allow_null=True)
-    sub_account = serializers.IntegerField(required=False, allow_null=True)
+    sub_account = serializers.IntegerField()
     amount = serializers.DecimalField(max_digits=12, decimal_places=2)
     reference_number = serializers.CharField(max_length=100)
     payment_date = serializers.DateField(required=False, allow_null=True)
@@ -231,12 +230,6 @@ class AllocatePaymentRequestSerializer(serializers.Serializer):
         if patient_id and insurance_id:
             raise serializers.ValidationError(
                 "Cannot provide both patient_id and insurance_id."
-            )
-
-        # Ensure either sub_account or payment_mode is provided
-        if not data.get('sub_account') and not data.get('payment_mode'):
-            raise serializers.ValidationError(
-                "Either sub_account or payment_mode must be provided."
             )
         
         return data

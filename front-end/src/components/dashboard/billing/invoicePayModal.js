@@ -40,17 +40,10 @@ const InvoicePayModal = () => {
     // Build payload without null values
     const payload = {
       invoice_ids: formData.invoiceIds,
+      sub_account: formData.sub_account,
       amount: formData.payAmount,
       reference_number: formData.reference_number,
     };
-
-    // Cash payments send sub_account; insurance payments send payment_mode
-    if (formData.sub_account) {
-      payload.sub_account = formData.sub_account;
-    }
-    if (formData.payment_mode) {
-      payload.payment_mode = formData.payment_mode;
-    }
 
     // Add payment_date only if provided
     if (formData.payment_date) {
