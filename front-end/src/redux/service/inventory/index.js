@@ -485,3 +485,16 @@ export const fetchGoods = async (auth, purchase_order_id) => {
         throw error;
     }
 };
+
+export const allocateSupplierPayment = (auth, payload) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+        axiosInstance.post(`/api/inventory/allocate-supplier-payment`, payload)
+            .then((res) => {
+                resolve(res.data)
+            })
+            .catch((err) => {
+                reject(err.response?.data || err.message)
+            })
+    })
+};
