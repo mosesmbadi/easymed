@@ -35,6 +35,7 @@ from .models import (
     Quotation,
     QuotationItem,
     SupplierInvoice,
+    SupplierPaymentReceipt,
     InventoryArchive,
     Unit
 )
@@ -673,3 +674,37 @@ class SupplierPaymentReceiptViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = SupplierPaymentReceiptSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['supplier', 'payment_mode', 'payment_date']
+
+
+def download_supplier_payment_receipt_pdf(request, receipt_id):
+    receipt = get_object_or_404(
+        SupplierPaymentReceipt.objects.select_related(
+            'supplier', 'sub_account', 'sub_account__main_account', 'payment_mode'
+        ),
+        pk=receipt_id,
+    )
+    company = Company.objects.first()
+    company_logo_url = (
+        request.build_absolute_uri(company.logo.url)
+        if company and getattr(company, 'logo', None) and company.logo
+        else None
+    )
+
+    allocations = receipt.allocations.select_related(
+        'supplier_invoice', 'supplier_invoice__supplier'
+    ).all()
+
+    total_invoiced = sum(a.supplier_invoice.amount for a in allocations)
+
+    html_template = get_template('supplier_payment_receipt.html').render({
+        'company': company,
+        'company_logo_url': company_logo_url,
+        'receipt': receipt,
+        'allocations': allocations,
+        'total_invoiced': total_invoiced,
+    })
+
+    pdf_file = HTML(string=html_template).write_pdf()
+    response = HttpResponse(pdf_file, content_type='application/pdf')
+    response['Content-Disposition'] = f'filename="supplier_payment_receipt_{receipt.id}.pdf"'
+    return response
