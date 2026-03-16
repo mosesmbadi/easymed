@@ -8,7 +8,6 @@ import AccountsReceivableNav from '@/components/dashboard/finance/AccountsReceiv
 import { useAuth } from '@/assets/hooks/use-auth';
 import { getAllItems } from '@/redux/features/inventory';
 import InvoicePayModal from '@/components/dashboard/billing/invoicePayModal';
-import PaymentReceiptsList from '@/components/dashboard/billing/PaymentReceiptsList';
 
 const AccountsReceivablePayments = () => {
   const dispatch = useDispatch();
@@ -24,7 +23,6 @@ const AccountsReceivablePayments = () => {
     <Container maxWidth='xl' className='my-8'>
       <AccountsReceivableNav active='payments' />
       <InvoicePayModal />
-      <PaymentReceiptsList />
     </Container>
   );
 };
