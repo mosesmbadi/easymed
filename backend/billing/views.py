@@ -504,17 +504,17 @@ class AccountingSummaryView(APIView):
         received_qs = PaymentAllocation.objects.select_related(
             'receipt__patient',
             'receipt__insurance',
-            'receipt__payment_mode__sub_account__main_account',
+            'receipt__payment_mode',
             'invoice_item__invoice',
-        )
+        ).prefetch_related('receipt__payment_mode__sub_accounts__main_account')
 
         # Payments made to suppliers allocations
         from inventory.models import SupplierPaymentAllocation
         supplier_paid_qs = SupplierPaymentAllocation.objects.select_related(
             'receipt__supplier',
-            'receipt__payment_mode__sub_account__main_account',
+            'receipt__payment_mode',
             'supplier_invoice',
-        )
+        ).prefetch_related('receipt__payment_mode__sub_accounts__main_account')
 
         if start_date:
             received_qs = received_qs.filter(
@@ -541,8 +541,9 @@ class AccountingSummaryView(APIView):
             # Prefer configured main account tag from payment mode, fallback to mode name.
             source_name = 'Main Account'
             pay_mode = getattr(alloc.receipt, 'payment_mode', None)
-            if pay_mode and hasattr(pay_mode, 'sub_account') and pay_mode.sub_account and pay_mode.sub_account.main_account:
-                source_name = pay_mode.sub_account.main_account.name
+            sub_acct = pay_mode.sub_accounts.first() if pay_mode else None
+            if sub_acct and sub_acct.main_account:
+                source_name = sub_acct.main_account.name
             elif pay_mode and pay_mode.payment_mode:
                 source_name = pay_mode.payment_mode
 
@@ -570,8 +571,9 @@ class AccountingSummaryView(APIView):
             # Prefer configured main account tag from payment mode, fallback to mode name.
             source_name = 'Main Account'
             pay_mode = getattr(alloc.receipt, 'payment_mode', None)
-            if pay_mode and hasattr(pay_mode, 'sub_account') and pay_mode.sub_account and pay_mode.sub_account.main_account:
-                source_name = pay_mode.sub_account.main_account.name
+            sub_acct = pay_mode.sub_accounts.first() if pay_mode else None
+            if sub_acct and sub_acct.main_account:
+                source_name = sub_acct.main_account.name
             elif pay_mode and pay_mode.payment_mode:
                 source_name = pay_mode.payment_mode
 

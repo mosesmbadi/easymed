@@ -330,7 +330,7 @@ class MainAccount(models.Model):
 
 class SubAccount(models.Model):
     main_account = models.ForeignKey(MainAccount, on_delete=models.CASCADE, related_name='subaccounts')
-    payment_mode = models.OneToOneField('PaymentMode', on_delete=models.SET_NULL, null=True, blank=True, related_name='sub_account')
+    payment_mode = models.ForeignKey('PaymentMode', on_delete=models.SET_NULL, null=True, blank=True, related_name='sub_accounts')
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
     opening_bal = models.DecimalField(max_digits=15, decimal_places=2, default=0)
