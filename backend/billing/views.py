@@ -675,3 +675,137 @@ class AccountingSummaryView(APIView):
             'sub_account_totals': list(sub_account_totals),
             'transactions': transactions
         })
+
+
+def download_accounting_summary_pdf(request):
+    """
+    Generate a PDF report for the Cash & Cash Equivalents dashboard.
+
+    Query params:
+    - start_date, end_date: date filters
+    - report: 'summary' | 'transactions' | 'both' (default: 'both')
+    - filter_main: main account name to filter transactions
+    - filter_sub: sub account name to filter transactions
+    """
+    from decimal import Decimal
+
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    report_type = request.GET.get('report', 'both')
+    filter_main = request.GET.get('filter_main')
+    filter_sub = request.GET.get('filter_sub')
+
+    # Re-use the AccountingSummaryView logic via an internal call
+    # Build a fake request with the same query params
+    from django.test import RequestFactory
+    factory = RequestFactory()
+    fake_request = factory.get('/billing/accounting-summary/', {
+        k: v for k, v in {
+            'start_date': start_date,
+            'end_date': end_date,
+        }.items() if v
+    })
+    fake_request.user = request.user
+
+    view = AccountingSummaryView()
+    view.request = fake_request
+    response = view.get(fake_request)
+    data = response.data
+
+    # Sub-account summary rows
+    sub_account_totals = data.get('sub_account_totals', [])
+    transactions = data.get('transactions', [])
+
+    # Merge sub-account totals with balance from SubAccount model
+    sub_accounts_qs = SubAccount.objects.select_related('main_account').all()
+    sa_lookup = {}
+    for sa in sub_accounts_qs:
+        key = f"{sa.main_account.name if sa.main_account else ''}::{sa.name}"
+        sa_lookup[key] = float(sa.balance or 0)
+
+    sub_account_rows = []
+    for row in sub_account_totals:
+        key = f"{row['main_account']}::{row['sub_account']}"
+        sub_account_rows.append({
+            'main_account': row['main_account'],
+            'sub_account': row['sub_account'],
+            'total_debit': Decimal(str(row.get('total_debited', 0))),
+            'total_credit': Decimal(str(row.get('total_credited', 0))),
+            'balance': Decimal(str(sa_lookup.get(key, row.get('net_balance', 0)))),
+        })
+
+    # Also include sub-accounts with zero transactions
+    seen_keys = {f"{r['main_account']}::{r['sub_account']}" for r in sub_account_rows}
+    for sa in sub_accounts_qs:
+        key = f"{sa.main_account.name if sa.main_account else ''}::{sa.name}"
+        if key not in seen_keys:
+            sub_account_rows.append({
+                'main_account': sa.main_account.name if sa.main_account else '',
+                'sub_account': sa.name,
+                'total_debit': Decimal('0'),
+                'total_credit': Decimal('0'),
+                'balance': Decimal(str(sa.balance or 0)),
+            })
+    sub_account_rows.sort(key=lambda r: (r['main_account'], r['sub_account']))
+
+    summary_totals = {
+        'total_debit': sum(r['total_debit'] for r in sub_account_rows),
+        'total_credit': sum(r['total_credit'] for r in sub_account_rows),
+        'balance': sum(r['balance'] for r in sub_account_rows),
+    }
+
+    # Apply transaction filter
+    filter_label = None
+    if filter_main and filter_sub:
+        filter_label = f"{filter_main} › {filter_sub}"
+        transactions = [t for t in transactions if t['tag'] == filter_main and t.get('sub_account') == filter_sub]
+    elif filter_main:
+        filter_label = filter_main
+        transactions = [t for t in transactions if t['tag'] == filter_main]
+
+    # Convert amounts to Decimal for the money template filter
+    for tx in transactions:
+        tx['amount'] = Decimal(str(tx.get('amount', 0)))
+
+    transactions_total = sum(tx['amount'] for tx in transactions)
+
+    # Date range label
+    if start_date and end_date:
+        date_range = f"Period: {start_date} to {end_date}"
+    elif start_date:
+        date_range = f"From: {start_date}"
+    elif end_date:
+        date_range = f"Up to: {end_date}"
+    else:
+        date_range = "All dates"
+
+    title_map = {
+        'summary': 'Cash & Cash Equivalents — Account Summary',
+        'transactions': 'Cash & Cash Equivalents — Transactions',
+        'both': 'Cash & Cash Equivalents Report',
+    }
+
+    company = Company.objects.first()
+    company_logo_url = (
+        request.build_absolute_uri(company.logo.url)
+        if company and getattr(company, 'logo', None) and company.logo
+        else None
+    )
+
+    html_template = get_template('accounting_summary.html').render({
+        'company': company,
+        'company_logo_url': company_logo_url,
+        'title': title_map.get(report_type, title_map['both']),
+        'date_range': date_range,
+        'report_type': report_type,
+        'sub_account_rows': sub_account_rows,
+        'totals': summary_totals,
+        'transactions': transactions,
+        'transactions_total': transactions_total,
+        'filter_label': filter_label,
+    })
+
+    pdf_file = HTML(string=html_template).write_pdf()
+    response = HttpResponse(pdf_file, content_type='application/pdf')
+    response['Content-Disposition'] = f'filename="accounting_summary.pdf"'
+    return response

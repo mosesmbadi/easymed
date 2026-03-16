@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { toast } from "react-toastify";
 import dynamic from "next/dynamic";
 import {
@@ -12,6 +12,8 @@ import {
 } from "devextreme-react/data-grid";
 import { getAccountingSummary, fetchSubAccounts } from "@/redux/service/billing";
 import { useAuth } from "@/assets/hooks/use-auth";
+import { Print as PrintIcon } from "@mui/icons-material";
+import { Button, CircularProgress } from "@mui/material";
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), { ssr: false });
 
@@ -133,6 +135,64 @@ const AccountingSummaryDashboard = () => {
     }
   };
 
+  const dateRangeLabel = () => {
+    if (startDate && endDate) return `${startDate} to ${endDate}`;
+    if (startDate) return `From ${startDate}`;
+    if (endDate) return `Up to ${endDate}`;
+    return "All dates";
+  };
+
+  const [printingSummary, setPrintingSummary] = useState(false);
+  const [printingTransactions, setPrintingTransactions] = useState(false);
+
+  const fetchPdf = useCallback(async (reportType, filterMain, filterSub) => {
+    const params = new URLSearchParams();
+    params.set('report', reportType);
+    if (startDate) params.set('start_date', startDate);
+    if (endDate) params.set('end_date', endDate);
+    if (filterMain) params.set('filter_main', filterMain);
+    if (filterSub) params.set('filter_sub', filterSub);
+
+    const resp = await fetch(`/api/billing/accounting-summary-pdf?${params.toString()}`, {
+      headers: { Authorization: `Bearer ${auth?.token}` },
+    });
+
+    if (!resp.ok) {
+      throw new Error('Failed to generate PDF');
+    }
+
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  }, [auth, startDate, endDate]);
+
+  const handlePrintSummary = useCallback(async () => {
+    setPrintingSummary(true);
+    try {
+      await fetchPdf('summary');
+    } catch (error) {
+      toast.error('Failed to generate summary PDF');
+      console.error(error);
+    } finally {
+      setPrintingSummary(false);
+    }
+  }, [fetchPdf]);
+
+  const handlePrintTransactions = useCallback(async () => {
+    setPrintingTransactions(true);
+    try {
+      const filterMain = activeFilter?.value || undefined;
+      const filterSub = activeFilter?.type === 'sub' ? activeFilter.subValue : undefined;
+      await fetchPdf('transactions', filterMain, filterSub);
+    } catch (error) {
+      toast.error('Failed to generate transactions PDF');
+      console.error(error);
+    } finally {
+      setPrintingTransactions(false);
+    }
+  }, [fetchPdf, activeFilter]);
+
   return (
     <div className="flex flex-col gap-8">
       {/* ── Date Filters ── */}
@@ -180,6 +240,19 @@ const AccountingSummaryDashboard = () => {
 
       {/* ── Sub-Account Table ── */}
       <div className="bg-white rounded shadow-md p-4">
+        <div className="flex justify-between items-center mb-3">
+          <h3 className="text-lg font-semibold text-primary">Account Summary</h3>
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={printingSummary ? <CircularProgress size={16} /> : <PrintIcon />}
+            onClick={handlePrintSummary}
+            disabled={printingSummary}
+            sx={{ textTransform: 'none' }}
+          >
+            {printingSummary ? 'Generating…' : 'Print Summary'}
+          </Button>
+        </div>
         <DataGrid
           dataSource={subAccountRows}
           allowColumnReordering
@@ -303,6 +376,18 @@ const AccountingSummaryDashboard = () => {
               Show all ({allTransactions.length})
             </button>
           )}
+          <div className="ml-auto">
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={printingTransactions ? <CircularProgress size={16} /> : <PrintIcon />}
+              onClick={handlePrintTransactions}
+              disabled={printingTransactions}
+              sx={{ textTransform: 'none' }}
+            >
+              {printingTransactions ? 'Generating…' : 'Print Transactions'}
+            </Button>
+          </div>
         </div>
         <DataGrid
           dataSource={filteredTransactions}
