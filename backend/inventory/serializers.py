@@ -549,13 +549,13 @@ class SupplierPaymentReceiptSerializer(serializers.ModelSerializer):
                   'reference_number', 'payment_date', 'created_at', 'allocations']
 
     def get_supplier_name(self, obj):
-        return obj.supplier.name if obj.supplier else None
+        return obj.supplier.official_name if obj.supplier else None
 
 
 class AllocateSupplierPaymentRequestSerializer(serializers.Serializer):
     supplier_id = serializers.IntegerField(required=True)
     invoice_ids = serializers.ListField(child=serializers.IntegerField(), required=True)
-    payment_mode = serializers.IntegerField(required=True)
+    sub_account = serializers.IntegerField(required=True)
     amount = serializers.DecimalField(max_digits=12, decimal_places=2, required=True)
     reference_number = serializers.CharField(max_length=100, required=True)
     payment_date = serializers.DateField(required=False, allow_null=True)
@@ -903,20 +903,22 @@ class SupplierPaymentAllocationSerializer(serializers.ModelSerializer):
 class SupplierPaymentReceiptSerializer(serializers.ModelSerializer):
     allocations = SupplierPaymentAllocationSerializer(many=True, read_only=True)
     supplier_name = serializers.SerializerMethodField()
+    sub_account_name = serializers.CharField(source='sub_account.name', read_only=True, default=None)
 
     class Meta:
         model = SupplierPaymentReceipt
-        fields = ['id', 'supplier', 'supplier_name', 'payment_mode', 'total_amount', 
+        fields = ['id', 'supplier', 'supplier_name', 'sub_account', 'sub_account_name',
+                  'payment_mode', 'total_amount',
                   'reference_number', 'payment_date', 'created_at', 'allocations']
 
     def get_supplier_name(self, obj):
-        return obj.supplier.name if obj.supplier else None
+        return obj.supplier.official_name if obj.supplier else None
 
 
 class AllocateSupplierPaymentRequestSerializer(serializers.Serializer):
     supplier_id = serializers.IntegerField(required=True)
     invoice_ids = serializers.ListField(child=serializers.IntegerField(), required=True)
-    payment_mode = serializers.IntegerField(required=True)
+    sub_account = serializers.IntegerField(required=True)
     amount = serializers.DecimalField(max_digits=12, decimal_places=2, required=True)
     reference_number = serializers.CharField(max_length=100, required=True)
     payment_date = serializers.DateField(required=False, allow_null=True)

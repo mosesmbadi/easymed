@@ -370,27 +370,35 @@ class AllocatePaymentView(APIView):
                     remaining -= apply_now
                     per_invoice_applied[it.invoice_id] = per_invoice_applied.get(it.invoice_id, 0.0) + apply_now
 
-            # Update invoices cash_paid
+            # Update invoices: cash_paid only for patient payments, status for all
             for inv in invoices:
                 applied = per_invoice_applied.get(inv.id, 0.0)
 
                 # Fallback only for patient cash receipts when no allocatable items exist.
                 # For insurance receipts, allocation must remain tied to insurance items.
                 if not is_insurance_payment and applied <= 0 and remaining > 0:
-                    outstanding_invoice = float(max(Decimal('0'), (inv.invoice_amount or Decimal('0')) - (inv.cash_paid or Decimal('0'))))
-                    if outstanding_invoice > 0:
-                        invoice_level_apply = min(remaining, outstanding_invoice)
+                    outstanding_cash = float(max(Decimal('0'), (inv.total_cash or Decimal('0')) - (inv.cash_paid or Decimal('0'))))
+                    if outstanding_cash > 0:
+                        invoice_level_apply = min(remaining, outstanding_cash)
                         if invoice_level_apply > 0:
                             applied = invoice_level_apply
                             remaining -= invoice_level_apply
 
                 if applied > 0:
-                    inv.cash_paid = (inv.cash_paid or Decimal('0')) + Decimal(str(applied))
+                    update_fields = ['status', 'invoice_updated_at']
 
-                    invoice_total = inv.invoice_amount or Decimal('0')
-                    inv.status = 'paid' if inv.cash_paid >= invoice_total else 'pending'
+                    # Only increment cash_paid for patient/cash payments
+                    if not is_insurance_payment:
+                        inv.cash_paid = (inv.cash_paid or Decimal('0')) + Decimal(str(applied))
+                        update_fields.append('cash_paid')
 
-                    inv.save(update_fields=['cash_paid', 'status', 'invoice_updated_at'])
+                    # Determine status from total allocations across all items
+                    total_allocated = inv.invoice_items.aggregate(
+                        total=Sum('allocations__amount_applied')
+                    )['total'] or Decimal('0')
+                    inv.status = 'paid' if total_allocated >= (inv.invoice_amount or Decimal('0')) else 'pending'
+
+                    inv.save(update_fields=update_fields)
 
             ser = PaymentReceiptSerializer(receipt)
             return Response(ser.data, status=status.HTTP_201_CREATED)
@@ -517,6 +525,7 @@ class AccountingSummaryView(APIView):
         supplier_paid_qs = SupplierPaymentAllocation.objects.select_related(
             'receipt__supplier',
             'receipt__payment_mode',
+            'receipt__sub_account__main_account',
             'supplier_invoice',
         )
 
@@ -572,11 +581,10 @@ class AccountingSummaryView(APIView):
             })
 
         for alloc in supplier_paid_qs:
-            # Prefer configured main account tag from payment mode, fallback to mode name.
+            # Use the sub_account directly from the receipt (this is the account the payment was made from)
             source_name = 'Main Account'
+            sub_acct = getattr(alloc.receipt, 'sub_account', None)
             pay_mode = getattr(alloc.receipt, 'payment_mode', None)
-            # Supplier receipts still use payment_mode directly; resolve via sub_accounts reverse
-            sub_acct = pay_mode.sub_accounts.first() if pay_mode else None
             if sub_acct and sub_acct.main_account:
                 source_name = sub_acct.main_account.name
             elif pay_mode and pay_mode.payment_mode:

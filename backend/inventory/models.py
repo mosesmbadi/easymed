@@ -446,7 +446,8 @@ class SupplierPaymentReceipt(AbstractBaseModel):
     Similar to PaymentReceipt but for outgoing payments.
     """
     supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE, related_name='payment_receipts')
-    payment_mode = models.ForeignKey('billing.PaymentMode', on_delete=models.PROTECT)
+    sub_account = models.ForeignKey('billing.SubAccount', on_delete=models.SET_NULL, null=True, blank=True, related_name='supplier_receipts')
+    payment_mode = models.ForeignKey('billing.PaymentMode', on_delete=models.PROTECT, null=True, blank=True)
     total_amount = models.DecimalField(max_digits=12, decimal_places=2)
     reference_number = models.CharField(max_length=100)
     payment_date = models.DateField(null=True, blank=True)
@@ -463,8 +464,8 @@ class SupplierPaymentReceipt(AbstractBaseModel):
     def __str__(self):
         currency_label = (getattr(settings, 'EASYMED_CURRENCY_SYMBOL', '') or getattr(settings, 'EASYMED_CURRENCY_CODE', '') or '').strip()
         if currency_label:
-            return f"Payment Receipt #{self.id} - {self.supplier.name} - {currency_label} {self.total_amount}"
-        return f"Payment Receipt #{self.id} - {self.supplier.name} - {self.total_amount}"
+            return f"Payment Receipt #{self.id} - {self.supplier.official_name} - {currency_label} {self.total_amount}"
+        return f"Payment Receipt #{self.id} - {self.supplier.official_name} - {self.total_amount}"
 
 
 class SupplierPaymentAllocation(models.Model):

@@ -351,4 +351,7 @@ class SubAccount(models.Model):
         received = self.receipts.aggregate(
             total=Sum('total_amount')
         )['total'] or 0
-        return self.opening_bal + received
+        paid_out = self.supplier_receipts.aggregate(
+            total=Sum('total_amount')
+        )['total'] or 0
+        return self.opening_bal + received - paid_out
