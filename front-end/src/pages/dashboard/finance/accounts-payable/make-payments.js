@@ -7,6 +7,7 @@ import ProtectedRoute from '@/assets/hoc/protected-route';
 import AccountsPayableNav from '@/components/dashboard/finance/AccountsPayableNav';
 import UnifiedSupplierPaymentForm from '@/components/dashboard/inventory/UnifiedSupplierPaymentForm';
 import { fetchSubAccounts } from '@/redux/service/billing';
+import { allocateSupplierPayment } from '@/redux/service/inventory';
 import { useAuth } from '@/assets/hooks/use-auth';
 
 const APMakePaymentsPage = () => {
@@ -27,37 +28,25 @@ const APMakePaymentsPage = () => {
   const handleSubmit = async (payload, resetForm) => {
     setLoading(true);
     try {
-      const res = await fetch('/api/inventory/allocate-supplier-payment', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${auth.token}`,
-        },
-        body: JSON.stringify(payload),
-      });
+      const data = await allocateSupplierPayment(auth, payload);
 
-      const data = await res.json();
+      toast.success('Payment processed successfully!');
 
-      if (res.ok) {
-        toast.success('Payment processed successfully!');
+      if (resetForm) {
+        resetForm();
+      }
 
-        if (resetForm) {
-          resetForm();
+      // Optional: Print receipt
+      if (data.id) {
+        const printConfirm = window.confirm('Payment recorded. Would you like to print the receipt?');
+        if (printConfirm) {
+          handlePrintReceipt(data.id);
         }
-
-        // Optional: Print receipt
-        if (data.id) {
-          const printConfirm = window.confirm('Payment recorded. Would you like to print the receipt?');
-          if (printConfirm) {
-            handlePrintReceipt(data.id);
-          }
-        }
-      } else {
-        toast.error(data.detail || 'Failed to process payment');
       }
     } catch (error) {
       console.error('Error processing payment:', error);
-      toast.error('An error occurred while processing the payment');
+      const message = typeof error === 'string' ? error : error?.detail || 'An error occurred while processing the payment';
+      toast.error(message);
     } finally {
       setLoading(false);
     }
