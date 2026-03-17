@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { toast } from "react-toastify";
 import dynamic from "next/dynamic";
 import {
@@ -7,12 +7,10 @@ import {
   Pager,
   SearchPanel,
   FilterRow,
-  Summary,
-  TotalItem,
 } from "devextreme-react/data-grid";
 import { getAccountingSummary, fetchSubAccounts } from "@/redux/service/billing";
 import { useAuth } from "@/assets/hooks/use-auth";
-import { Print as PrintIcon } from "@mui/icons-material";
+import { Print as PrintIcon, KeyboardArrowDown, KeyboardArrowRight } from "@mui/icons-material";
 import { Button, CircularProgress } from "@mui/material";
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), { ssr: false });
@@ -31,6 +29,8 @@ const AccountingSummaryDashboard = () => {
   const [filteredTransactions, setFilteredTransactions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [activeFilter, setActiveFilter] = useState(null); // { type: 'main'|'sub', value, subValue? }
+  const [expandedAccounts, setExpandedAccounts] = useState(new Set());
+  const [summarySearch, setSummarySearch] = useState("");
   const auth = useAuth();
 
   // Date filters
@@ -85,54 +85,68 @@ const AccountingSummaryDashboard = () => {
     }
   }, [auth, startDate, endDate]);
 
-  // Click on a cell → filter by main account or sub account
-  const handleCellClick = (e) => {
-    if (!e.data || e.rowType !== "data") return;
-    const { main_account, sub_account } = e.data;
-    const field = e.column?.dataField;
-
-    if (field === "main_account") {
-      // Filter transactions by main account only
-      setActiveFilter({ type: "main", value: main_account });
-      setFilteredTransactions(
-        allTransactions.filter((t) => t.tag === main_account)
-      );
-    } else if (field === "sub_account") {
-      // Filter transactions by specific sub account
-      setActiveFilter({ type: "sub", value: main_account, subValue: sub_account });
-      setFilteredTransactions(
-        allTransactions.filter(
-          (t) => t.tag === main_account && t.sub_account === sub_account
-        )
-      );
-    }
-  };
-
   const clearSubFilter = () => {
     setActiveFilter(null);
     setFilteredTransactions(allTransactions);
   };
 
-  // Highlight helper: returns true if row matches the active filter
-  const isRowActive = (rowData) => {
-    if (!activeFilter) return false;
-    if (activeFilter.type === "main") {
-      return rowData.main_account === activeFilter.value;
-    }
-    if (activeFilter.type === "sub") {
-      return (
-        rowData.main_account === activeFilter.value &&
-        rowData.sub_account === activeFilter.subValue
-      );
-    }
-    return false;
-  };
+  // Group sub-account rows by main_account for collapsible display
+  const groupedAccounts = useMemo(() => {
+    const groups = {};
+    const searchLower = summarySearch.toLowerCase();
 
-  const onRowPrepared = (e) => {
-    if (e.rowType === "data" && isRowActive(e.data)) {
-      e.rowElement.style.backgroundColor = "#dbeafe"; // blue-100
-      e.rowElement.style.fontWeight = "600";
+    for (const row of subAccountRows) {
+      // Apply search filter
+      if (
+        searchLower &&
+        !row.main_account.toLowerCase().includes(searchLower) &&
+        !row.sub_account.toLowerCase().includes(searchLower)
+      ) {
+        continue;
+      }
+
+      const key = row.main_account;
+      if (!groups[key]) {
+        groups[key] = {
+          main_account: key,
+          total_debit: 0,
+          total_credit: 0,
+          balance: 0,
+          subAccounts: [],
+        };
+      }
+      groups[key].total_debit += Number(row.total_debit || 0);
+      groups[key].total_credit += Number(row.total_credit || 0);
+      groups[key].balance += Number(row.balance || 0);
+      groups[key].subAccounts.push(row);
     }
+
+    return Object.values(groups).sort((a, b) =>
+      a.main_account.localeCompare(b.main_account)
+    );
+  }, [subAccountRows, summarySearch]);
+
+  const grandTotals = useMemo(() => {
+    return groupedAccounts.reduce(
+      (acc, g) => ({
+        total_debit: acc.total_debit + g.total_debit,
+        total_credit: acc.total_credit + g.total_credit,
+        balance: acc.balance + g.balance,
+      }),
+      { total_debit: 0, total_credit: 0, balance: 0 }
+    );
+  }, [groupedAccounts]);
+
+  const toggleExpand = (mainAccount) => {
+    setExpandedAccounts((prev) => {
+      const next = new Set(prev);
+      if (next.has(mainAccount)) {
+        next.delete(mainAccount);
+      } else {
+        next.add(mainAccount);
+      }
+      return next;
+    });
   };
 
   const dateRangeLabel = () => {
@@ -238,121 +252,167 @@ const AccountingSummaryDashboard = () => {
         </button>
       </div>
 
-      {/* ── Sub-Account Table ── */}
+      {/* ── Account Summary (Grouped) ── */}
       <div className="bg-white rounded shadow-md p-4">
         <div className="flex justify-between items-center mb-3">
           <h3 className="text-lg font-semibold text-primary">Account Summary</h3>
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={printingSummary ? <CircularProgress size={16} /> : <PrintIcon />}
-            onClick={handlePrintSummary}
-            disabled={printingSummary}
-            sx={{ textTransform: 'none' }}
-          >
-            {printingSummary ? 'Generating…' : 'Print Summary'}
-          </Button>
+          <div className="flex items-center gap-3">
+            <input
+              type="text"
+              placeholder="Search accounts…"
+              className="border rounded px-3 py-1.5 text-sm w-56"
+              value={summarySearch}
+              onChange={(e) => setSummarySearch(e.target.value)}
+            />
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={printingSummary ? <CircularProgress size={16} /> : <PrintIcon />}
+              onClick={handlePrintSummary}
+              disabled={printingSummary}
+              sx={{ textTransform: 'none' }}
+            >
+              {printingSummary ? 'Generating…' : 'Print Summary'}
+            </Button>
+          </div>
         </div>
-        <DataGrid
-          dataSource={subAccountRows}
-          allowColumnReordering
-          rowAlternationEnabled
-          showBorders
-          showColumnLines
-          showRowLines
-          wordWrapEnabled
-          className="shadow-sm cursor-pointer"
-          onCellClick={handleCellClick}
-          onRowPrepared={onRowPrepared}
-        >
-          <FilterRow visible />
-          <SearchPanel visible placeholder="Search sub-accounts…" />
-          <Column
-            dataField="main_account"
-            caption="Main Account"
-            sortIndex={0}
-            sortOrder="asc"
-            cellRender={(cell) => {
-              const isActive = activeFilter?.type === "main" && activeFilter.value === cell.value;
-              return (
-                <span className={`cursor-pointer hover:underline ${isActive ? "text-primary font-bold" : ""}`}>
-                  {cell.value}
-                </span>
-              );
-            }}
-          />
-          <Column
-            dataField="sub_account"
-            caption="Sub Account"
-            sortIndex={1}
-            sortOrder="asc"
-            cellRender={(cell) => {
-              const isActive =
-                activeFilter?.type === "sub" &&
-                activeFilter.value === cell.data.main_account &&
-                activeFilter.subValue === cell.value;
-              return (
-                <span className={`cursor-pointer hover:underline ${isActive ? "text-primary font-bold" : ""}`}>
-                  {cell.value}
-                </span>
-              );
-            }}
-          />
-          <Column
-            dataField="total_debit"
-            caption="Total Debit"
-            customizeText={(c) => fmt(c.value)}
-            cellRender={(cell) => (
-              <span className="text-green-700">{fmt(cell.value)}</span>
-            )}
-          />
-          <Column
-            dataField="total_credit"
-            caption="Total Credit"
-            customizeText={(c) => fmt(c.value)}
-            cellRender={(cell) => (
-              <span className="text-red-600">{fmt(cell.value)}</span>
-            )}
-          />
-          <Column
-            dataField="balance"
-            caption="Balance"
-            customizeText={(c) => fmt(c.value)}
-            cellRender={(cell) => {
-              const val = Number(cell.value || 0);
-              return (
-                <span className={val >= 0 ? "text-green-700 font-medium" : "text-red-600 font-medium"}>
-                  {fmt(val)}
-                </span>
-              );
-            }}
-          />
-          <Summary>
-            <TotalItem
-              column="sub_account"
-              summaryType="count"
-              customizeText={() => "TOTAL"}
-            />
-            <TotalItem
-              column="total_debit"
-              summaryType="sum"
-              valueFormat="fixedPoint"
-              customizeText={(e) => fmt(e.value)}
-            />
-            <TotalItem
-              column="total_credit"
-              summaryType="sum"
-              valueFormat="fixedPoint"
-              customizeText={(e) => fmt(e.value)}
-            />
-            <TotalItem
-              column="balance"
-              summaryType="sum"
-              valueFormat="fixedPoint"
-              customizeText={(e) => fmt(e.value)}
-            />
-          </Summary>
-        </DataGrid>
+
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="bg-[#1e293b] text-white">
+                <th className="text-left px-4 py-3 font-semibold w-8"></th>
+                <th className="text-left px-4 py-3 font-semibold">Account</th>
+                <th className="text-right px-4 py-3 font-semibold">Total Debit</th>
+                <th className="text-right px-4 py-3 font-semibold">Total Credit</th>
+                <th className="text-right px-4 py-3 font-semibold">Balance</th>
+              </tr>
+            </thead>
+            <tbody>
+              {groupedAccounts.map((group) => {
+                const isExpanded = expandedAccounts.has(group.main_account);
+                const isMainActive = activeFilter?.type === "main" && activeFilter.value === group.main_account;
+
+                return (
+                  <React.Fragment key={group.main_account}>
+                    {/* Main Account Row */}
+                    <tr
+                      className={`border-b border-gray-200 cursor-pointer transition-colors hover:bg-blue-50 ${
+                        isMainActive ? "bg-blue-100 font-bold" : "bg-gray-50"
+                      }`}
+                      onClick={() => toggleExpand(group.main_account)}
+                    >
+                      <td className="px-4 py-3">
+                        {isExpanded ? (
+                          <KeyboardArrowDown fontSize="small" className="text-gray-600" />
+                        ) : (
+                          <KeyboardArrowRight fontSize="small" className="text-gray-600" />
+                        )}
+                      </td>
+                      <td
+                        className="px-4 py-3 font-semibold text-gray-800 hover:underline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveFilter({ type: "main", value: group.main_account });
+                          setFilteredTransactions(
+                            allTransactions.filter((t) => t.tag === group.main_account)
+                          );
+                        }}
+                      >
+                        {group.main_account}
+                        <span className="ml-2 text-xs text-gray-400 font-normal">
+                          ({group.subAccounts.length} sub-account{group.subAccounts.length !== 1 ? "s" : ""})
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right text-green-700 font-semibold">
+                        {fmt(group.total_debit)}
+                      </td>
+                      <td className="px-4 py-3 text-right text-red-600 font-semibold">
+                        {fmt(group.total_credit)}
+                      </td>
+                      <td className={`px-4 py-3 text-right font-semibold ${
+                        group.balance >= 0 ? "text-green-700" : "text-red-600"
+                      }`}>
+                        {fmt(group.balance)}
+                      </td>
+                    </tr>
+
+                    {/* Sub Account Rows (collapsible) */}
+                    {isExpanded &&
+                      group.subAccounts
+                        .sort((a, b) => a.sub_account.localeCompare(b.sub_account))
+                        .map((sub) => {
+                          const isSubActive =
+                            activeFilter?.type === "sub" &&
+                            activeFilter.value === sub.main_account &&
+                            activeFilter.subValue === sub.sub_account;
+
+                          return (
+                            <tr
+                              key={`${sub.main_account}::${sub.sub_account}`}
+                              className={`border-b border-gray-100 cursor-pointer transition-colors hover:bg-blue-50 ${
+                                isSubActive ? "bg-blue-100 font-semibold" : ""
+                              }`}
+                              onClick={() => {
+                                setActiveFilter({
+                                  type: "sub",
+                                  value: sub.main_account,
+                                  subValue: sub.sub_account,
+                                });
+                                setFilteredTransactions(
+                                  allTransactions.filter(
+                                    (t) =>
+                                      t.tag === sub.main_account &&
+                                      t.sub_account === sub.sub_account
+                                  )
+                                );
+                              }}
+                            >
+                              <td className="px-4 py-2"></td>
+                              <td className="px-4 py-2 pl-12 text-gray-600 hover:underline">
+                                <span className="px-2 py-0.5 bg-blue-50 rounded text-xs">
+                                  {sub.sub_account}
+                                </span>
+                              </td>
+                              <td className="px-4 py-2 text-right text-green-700">
+                                {fmt(sub.total_debit)}
+                              </td>
+                              <td className="px-4 py-2 text-right text-red-600">
+                                {fmt(sub.total_credit)}
+                              </td>
+                              <td className={`px-4 py-2 text-right ${
+                                Number(sub.balance || 0) >= 0
+                                  ? "text-green-700 font-medium"
+                                  : "text-red-600 font-medium"
+                              }`}>
+                                {fmt(sub.balance)}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                  </React.Fragment>
+                );
+              })}
+
+              {/* Grand Total Row */}
+              <tr className="bg-gray-100 border-t-2 border-gray-300 font-bold">
+                <td className="px-4 py-3"></td>
+                <td className="px-4 py-3 text-gray-800">TOTAL</td>
+                <td className="px-4 py-3 text-right text-green-700">
+                  {fmt(grandTotals.total_debit)}
+                </td>
+                <td className="px-4 py-3 text-right text-red-600">
+                  {fmt(grandTotals.total_credit)}
+                </td>
+                <td className={`px-4 py-3 text-right ${
+                  grandTotals.balance >= 0 ? "text-green-700" : "text-red-600"
+                }`}>
+                  {fmt(grandTotals.balance)}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* ── Transactions Drill-down ── */}
