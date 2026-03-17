@@ -723,12 +723,19 @@ def download_accounting_summary_pdf(request):
         key = f"{sa.main_account.name if sa.main_account else ''}::{sa.name}"
         sa_lookup[key] = float(sa.balance or 0)
 
+    # Build opening balance lookup from SubAccount model
+    sa_opening_lookup = {}
+    for sa in sub_accounts_qs:
+        key = f"{sa.main_account.name if sa.main_account else ''}::{sa.name}"
+        sa_opening_lookup[key] = Decimal(str(sa.opening_bal or 0))
+
     sub_account_rows = []
     for row in sub_account_totals:
         key = f"{row['main_account']}::{row['sub_account']}"
         sub_account_rows.append({
             'main_account': row['main_account'],
             'sub_account': row['sub_account'],
+            'opening_balance': sa_opening_lookup.get(key, Decimal('0')),
             'total_debit': Decimal(str(row.get('total_debited', 0))),
             'total_credit': Decimal(str(row.get('total_credited', 0))),
             'balance': Decimal(str(sa_lookup.get(key, row.get('net_balance', 0)))),
@@ -742,6 +749,7 @@ def download_accounting_summary_pdf(request):
             sub_account_rows.append({
                 'main_account': sa.main_account.name if sa.main_account else '',
                 'sub_account': sa.name,
+                'opening_balance': Decimal(str(sa.opening_bal or 0)),
                 'total_debit': Decimal('0'),
                 'total_credit': Decimal('0'),
                 'balance': Decimal(str(sa.balance or 0)),
@@ -749,10 +757,32 @@ def download_accounting_summary_pdf(request):
     sub_account_rows.sort(key=lambda r: (r['main_account'], r['sub_account']))
 
     summary_totals = {
+        'opening_balance': sum(r['opening_balance'] for r in sub_account_rows),
         'total_debit': sum(r['total_debit'] for r in sub_account_rows),
         'total_credit': sum(r['total_credit'] for r in sub_account_rows),
         'balance': sum(r['balance'] for r in sub_account_rows),
     }
+
+    # Group sub-account rows by main_account for the summary table
+    from collections import OrderedDict
+    grouped_accounts = OrderedDict()
+    for row in sub_account_rows:
+        ma = row['main_account']
+        if ma not in grouped_accounts:
+            grouped_accounts[ma] = {
+                'main_account': ma,
+                'opening_balance': Decimal('0'),
+                'total_debit': Decimal('0'),
+                'total_credit': Decimal('0'),
+                'balance': Decimal('0'),
+                'sub_accounts': [],
+            }
+        grouped_accounts[ma]['opening_balance'] += row['opening_balance']
+        grouped_accounts[ma]['total_debit'] += row['total_debit']
+        grouped_accounts[ma]['total_credit'] += row['total_credit']
+        grouped_accounts[ma]['balance'] += row['balance']
+        grouped_accounts[ma]['sub_accounts'].append(row)
+    grouped_accounts_list = list(grouped_accounts.values())
 
     # Apply transaction filter
     filter_label = None
@@ -799,6 +829,7 @@ def download_accounting_summary_pdf(request):
         'date_range': date_range,
         'report_type': report_type,
         'sub_account_rows': sub_account_rows,
+        'grouped_accounts': grouped_accounts_list,
         'totals': summary_totals,
         'transactions': transactions,
         'transactions_total': transactions_total,
