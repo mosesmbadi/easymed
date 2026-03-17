@@ -109,12 +109,14 @@ const AccountingSummaryDashboard = () => {
       if (!groups[key]) {
         groups[key] = {
           main_account: key,
+          opening_balance: 0,
           total_debit: 0,
           total_credit: 0,
           balance: 0,
           subAccounts: [],
         };
       }
+      groups[key].opening_balance += Number(row.opening_balance || 0);
       groups[key].total_debit += Number(row.total_debit || 0);
       groups[key].total_credit += Number(row.total_credit || 0);
       groups[key].balance += Number(row.balance || 0);
@@ -129,11 +131,12 @@ const AccountingSummaryDashboard = () => {
   const grandTotals = useMemo(() => {
     return groupedAccounts.reduce(
       (acc, g) => ({
+        opening_balance: acc.opening_balance + g.opening_balance,
         total_debit: acc.total_debit + g.total_debit,
         total_credit: acc.total_credit + g.total_credit,
         balance: acc.balance + g.balance,
       }),
-      { total_debit: 0, total_credit: 0, balance: 0 }
+      { opening_balance: 0, total_debit: 0, total_credit: 0, balance: 0 }
     );
   }, [groupedAccounts]);
 
@@ -283,6 +286,7 @@ const AccountingSummaryDashboard = () => {
               <tr className="bg-[#1e293b] text-white">
                 <th className="text-left px-4 py-3 font-semibold w-8"></th>
                 <th className="text-left px-4 py-3 font-semibold">Account</th>
+                <th className="text-right px-4 py-3 font-semibold">Opening Balance</th>
                 <th className="text-right px-4 py-3 font-semibold">Total Debit</th>
                 <th className="text-right px-4 py-3 font-semibold">Total Credit</th>
                 <th className="text-right px-4 py-3 font-semibold">Balance</th>
@@ -323,6 +327,9 @@ const AccountingSummaryDashboard = () => {
                         <span className="ml-2 text-xs text-gray-400 font-normal">
                           ({group.subAccounts.length} sub-account{group.subAccounts.length !== 1 ? "s" : ""})
                         </span>
+                      </td>
+                      <td className="px-4 py-3 text-right text-gray-700 font-semibold">
+                        {fmt(group.opening_balance)}
                       </td>
                       <td className="px-4 py-3 text-right text-green-700 font-semibold">
                         {fmt(group.total_debit)}
@@ -374,6 +381,9 @@ const AccountingSummaryDashboard = () => {
                                   {sub.sub_account}
                                 </span>
                               </td>
+                              <td className="px-4 py-2 text-right text-gray-700">
+                                {fmt(sub.opening_balance)}
+                              </td>
                               <td className="px-4 py-2 text-right text-green-700">
                                 {fmt(sub.total_debit)}
                               </td>
@@ -398,6 +408,9 @@ const AccountingSummaryDashboard = () => {
               <tr className="bg-gray-100 border-t-2 border-gray-300 font-bold">
                 <td className="px-4 py-3"></td>
                 <td className="px-4 py-3 text-gray-800">TOTAL</td>
+                <td className="px-4 py-3 text-right text-gray-700">
+                  {fmt(grandTotals.opening_balance)}
+                </td>
                 <td className="px-4 py-3 text-right text-green-700">
                   {fmt(grandTotals.total_debit)}
                 </td>
