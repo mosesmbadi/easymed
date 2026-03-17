@@ -143,6 +143,30 @@
       font-size: 11px;
     }
 
+    tr.main-account-row {
+      background-color: #f1f5f9 !important;
+      font-weight: 700;
+    }
+
+    tr.main-account-row td {
+      font-size: 10px;
+      padding: 8px 10px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    tr.sub-account-row td {
+      padding-left: 30px;
+      font-size: 9px;
+      color: #555;
+    }
+
+    .sub-count {
+      font-weight: 400;
+      font-size: 8px;
+      color: #888;
+      margin-left: 6px;
+    }
+
     /* ── Footer ── */
     .footer {
       position: running(footer-content);
@@ -195,23 +219,38 @@
   <div class="report-subtitle">{{ date_range }}</div>
 
   {% if report_type == 'summary' or report_type == 'both' %}
-  <!-- ── Account Summary ── -->
+  <!-- ── Account Summary (Grouped) ── -->
   <div class="section-title">Account Summary</div>
   <table>
     <thead>
       <tr>
-        <th>Main Account</th>
-        <th>Sub Account</th>
+        <th>Account</th>
+        <th class="text-right">Opening Balance</th>
         <th class="text-right">Total Debit</th>
         <th class="text-right">Total Credit</th>
         <th class="text-right">Balance</th>
       </tr>
     </thead>
     <tbody>
-      {% for row in sub_account_rows %}
-      <tr>
-        <td>{{ row.main_account }}</td>
+      {% for group in grouped_accounts %}
+      <!-- Main Account Row -->
+      <tr class="main-account-row">
+        <td>
+          {{ group.main_account }}
+          <span class="sub-count">({{ group.sub_accounts|length }} sub-account{{ group.sub_accounts|length|pluralize }})</span>
+        </td>
+        <td class="text-right">{{ group.opening_balance|money }}</td>
+        <td class="text-right text-green">{{ group.total_debit|money }}</td>
+        <td class="text-right text-red">{{ group.total_credit|money }}</td>
+        <td class="text-right bold {% if group.balance >= 0 %}text-green{% else %}text-red{% endif %}">
+          {{ group.balance|money }}
+        </td>
+      </tr>
+      <!-- Sub Account Rows -->
+      {% for row in group.sub_accounts %}
+      <tr class="sub-account-row">
         <td>{{ row.sub_account }}</td>
+        <td class="text-right">{{ row.opening_balance|money }}</td>
         <td class="text-right text-green">{{ row.total_debit|money }}</td>
         <td class="text-right text-red">{{ row.total_credit|money }}</td>
         <td class="text-right bold {% if row.balance >= 0 %}text-green{% else %}text-red{% endif %}">
@@ -219,8 +258,10 @@
         </td>
       </tr>
       {% endfor %}
+      {% endfor %}
       <tr class="total-row">
-        <td colspan="2"><strong>TOTAL</strong></td>
+        <td><strong>TOTAL</strong></td>
+        <td class="text-right">{{ totals.opening_balance|money }}</td>
         <td class="text-right text-green">{{ totals.total_debit|money }}</td>
         <td class="text-right text-red">{{ totals.total_credit|money }}</td>
         <td class="text-right bold">{{ totals.balance|money }}</td>

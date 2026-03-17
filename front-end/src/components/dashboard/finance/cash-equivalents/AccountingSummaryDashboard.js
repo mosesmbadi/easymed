@@ -10,6 +10,8 @@ import {
 } from "devextreme-react/data-grid";
 import { getAccountingSummary, fetchSubAccounts } from "@/redux/service/billing";
 import { useAuth } from "@/assets/hooks/use-auth";
+import { useSelector } from "react-redux";
+import { toLocalMediaUrl } from "@/assets/utils/media-url";
 import { Print as PrintIcon, KeyboardArrowDown, KeyboardArrowRight } from "@mui/icons-material";
 import { Button, CircularProgress } from "@mui/material";
 
@@ -32,6 +34,7 @@ const AccountingSummaryDashboard = () => {
   const [expandedAccounts, setExpandedAccounts] = useState(new Set());
   const [summarySearch, setSummarySearch] = useState("");
   const auth = useAuth();
+  const companyDetails = useSelector((store) => store.company.companyDetails);
 
   // Date filters
   const [startDate, setStartDate] = useState("");
@@ -162,53 +165,230 @@ const AccountingSummaryDashboard = () => {
   const [printingSummary, setPrintingSummary] = useState(false);
   const [printingTransactions, setPrintingTransactions] = useState(false);
 
-  const fetchPdf = useCallback(async (reportType, filterMain, filterSub) => {
-    const params = new URLSearchParams();
-    params.set('report', reportType);
-    if (startDate) params.set('start_date', startDate);
-    if (endDate) params.set('end_date', endDate);
-    if (filterMain) params.set('filter_main', filterMain);
-    if (filterSub) params.set('filter_sub', filterSub);
+  // Build a common print page header with company info
+  const buildPrintHeader = (title) => {
+    const logoUrl = companyDetails?.logo ? toLocalMediaUrl(companyDetails.logo) : '';
+    return `
+      <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #555;padding-bottom:20px;margin-bottom:20px;">
+        <div>${logoUrl ? `<img src="${logoUrl}" alt="Logo" style="max-height:80px;max-width:160px;" />` : ''}</div>
+        <div style="text-align:right;font-size:11px;">
+          ${companyDetails?.name ? `<h2 style="margin:0 0 5px 0;color:#555;font-size:18px;text-transform:uppercase;">${companyDetails.name}</h2>` : ''}
+          ${companyDetails?.address1 ? `<p style="margin:2px 0;">${companyDetails.address1}</p>` : ''}
+          ${companyDetails?.address2 ? `<p style="margin:2px 0;">${companyDetails.address2}</p>` : ''}
+          ${companyDetails?.phone1 ? `<p style="margin:2px 0;">${companyDetails.phone1}${companyDetails?.phone2 ? ` | ${companyDetails.phone2}` : ''}</p>` : ''}
+          ${companyDetails?.email1 ? `<p style="margin:2px 0;">${companyDetails.email1}</p>` : ''}
+        </div>
+      </div>
+      <div style="text-align:center;margin-bottom:8px;">
+        <h1 style="font-size:22px;color:#333;margin:0;letter-spacing:2px;text-transform:uppercase;">${title}</h1>
+      </div>
+      <div style="text-align:center;font-size:11px;color:#666;margin-bottom:20px;">${dateRangeLabel()}</div>
+    `;
+  };
 
-    const resp = await fetch(`/api/billing/accounting-summary-pdf?${params.toString()}`, {
-      headers: { Authorization: `Bearer ${auth?.token}` },
-    });
+  const printStyles = `
+    @page { size: A4 landscape; margin: 1cm; }
+    body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; line-height: 1.4; color: #333; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+    th { background-color: #1e293b; color: white; padding: 8px 10px; text-align: left; font-weight: 600; font-size: 9px; text-transform: uppercase; }
+    td { padding: 6px 10px; border-bottom: 1px solid #eee; color: #444; font-size: 10px; }
+    tr:nth-child(even) { background-color: #f9fafb; }
+    .text-right { text-align: right; }
+    .text-green { color: #15803d; }
+    .text-red { color: #dc2626; }
+    .bold { font-weight: 700; }
+    .main-row { background-color: #f1f5f9 !important; font-weight: 700; }
+    .main-row td { font-size: 10px; padding: 8px 10px; border-bottom: 2px solid #e2e8f0; }
+    .sub-row td { padding-left: 30px; font-size: 9px; color: #555; }
+    .sub-count { font-weight: 400; font-size: 8px; color: #888; margin-left: 6px; }
+    .total-row { background-color: #f1f5f9 !important; font-weight: 700; }
+    .total-row td { border-top: 2px solid #555; padding-top: 8px; font-size: 11px; }
+    .section-title { font-size: 13px; font-weight: 700; color: #333; border-bottom: 2px solid #555; padding-bottom: 5px; margin-top: 30px; margin-bottom: 10px; text-transform: uppercase; }
+    .filter-info { font-size: 10px; color: #666; margin-bottom: 8px; }
+  `;
 
-    if (!resp.ok) {
-      throw new Error('Failed to generate PDF');
+  const openPrintWindow = (htmlContent) => {
+    const win = window.open('', '_blank');
+    if (!win) {
+      toast.error('Please allow pop-ups to print reports');
+      return;
     }
+    win.document.write(`
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8" />
+        <title>Print Report</title>
+        <style>${printStyles}</style>
+      </head>
+      <body>${htmlContent}</body>
+      </html>
+    `);
+    win.document.close();
+    // Wait for images to load before printing
+    setTimeout(() => {
+      win.print();
+    }, 500);
+  };
 
-    const blob = await resp.blob();
-    const url = URL.createObjectURL(blob);
-    window.open(url, '_blank');
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
-  }, [auth, startDate, endDate]);
+  // Use ALL subAccountRows (not search-filtered) for printing
+  const allGroupedAccounts = useMemo(() => {
+    const groups = {};
+    for (const row of subAccountRows) {
+      const key = row.main_account;
+      if (!groups[key]) {
+        groups[key] = {
+          main_account: key,
+          opening_balance: 0,
+          total_debit: 0,
+          total_credit: 0,
+          balance: 0,
+          subAccounts: [],
+        };
+      }
+      groups[key].opening_balance += Number(row.opening_balance || 0);
+      groups[key].total_debit += Number(row.total_debit || 0);
+      groups[key].total_credit += Number(row.total_credit || 0);
+      groups[key].balance += Number(row.balance || 0);
+      groups[key].subAccounts.push(row);
+    }
+    return Object.values(groups).sort((a, b) => a.main_account.localeCompare(b.main_account));
+  }, [subAccountRows]);
 
-  const handlePrintSummary = useCallback(async () => {
+  const allGrandTotals = useMemo(() => {
+    return allGroupedAccounts.reduce(
+      (acc, g) => ({
+        opening_balance: acc.opening_balance + g.opening_balance,
+        total_debit: acc.total_debit + g.total_debit,
+        total_credit: acc.total_credit + g.total_credit,
+        balance: acc.balance + g.balance,
+      }),
+      { opening_balance: 0, total_debit: 0, total_credit: 0, balance: 0 }
+    );
+  }, [allGroupedAccounts]);
+
+  const handlePrintSummary = useCallback(() => {
     setPrintingSummary(true);
     try {
-      await fetchPdf('summary');
+      const balColor = (v) => (Number(v) >= 0 ? 'text-green' : 'text-red');
+
+      let summaryRows = '';
+      for (const group of allGroupedAccounts) {
+        summaryRows += `
+          <tr class="main-row">
+            <td>${group.main_account} <span class="sub-count">(${group.subAccounts.length} sub-account${group.subAccounts.length !== 1 ? 's' : ''})</span></td>
+            <td class="text-right">${fmt(group.opening_balance)}</td>
+            <td class="text-right text-green">${fmt(group.total_debit)}</td>
+            <td class="text-right text-red">${fmt(group.total_credit)}</td>
+            <td class="text-right bold ${balColor(group.balance)}">${fmt(group.balance)}</td>
+          </tr>`;
+        for (const sub of group.subAccounts.sort((a, b) => a.sub_account.localeCompare(b.sub_account))) {
+          summaryRows += `
+          <tr class="sub-row">
+            <td>${sub.sub_account}</td>
+            <td class="text-right">${fmt(sub.opening_balance)}</td>
+            <td class="text-right text-green">${fmt(sub.total_debit)}</td>
+            <td class="text-right text-red">${fmt(sub.total_credit)}</td>
+            <td class="text-right bold ${balColor(sub.balance)}">${fmt(sub.balance)}</td>
+          </tr>`;
+        }
+      }
+
+      const html = `
+        ${buildPrintHeader('Cash & Cash Equivalents — Account Summary')}
+        <div class="section-title">Account Summary</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Account</th>
+              <th class="text-right">Opening Balance</th>
+              <th class="text-right">Total Debit</th>
+              <th class="text-right">Total Credit</th>
+              <th class="text-right">Balance</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${summaryRows}
+            <tr class="total-row">
+              <td><strong>TOTAL</strong></td>
+              <td class="text-right">${fmt(allGrandTotals.opening_balance)}</td>
+              <td class="text-right text-green">${fmt(allGrandTotals.total_debit)}</td>
+              <td class="text-right text-red">${fmt(allGrandTotals.total_credit)}</td>
+              <td class="text-right bold">${fmt(allGrandTotals.balance)}</td>
+            </tr>
+          </tbody>
+        </table>
+      `;
+      openPrintWindow(html);
     } catch (error) {
-      toast.error('Failed to generate summary PDF');
+      toast.error('Failed to generate summary report');
       console.error(error);
     } finally {
       setPrintingSummary(false);
     }
-  }, [fetchPdf]);
+  }, [allGroupedAccounts, allGrandTotals, companyDetails, startDate, endDate]);
 
-  const handlePrintTransactions = useCallback(async () => {
+  const handlePrintTransactions = useCallback(() => {
     setPrintingTransactions(true);
     try {
-      const filterMain = activeFilter?.value || undefined;
-      const filterSub = activeFilter?.type === 'sub' ? activeFilter.subValue : undefined;
-      await fetchPdf('transactions', filterMain, filterSub);
+      const txs = filteredTransactions;
+
+      let filterLabel = '';
+      if (activeFilter?.type === 'sub') {
+        filterLabel = `${activeFilter.value} › ${activeFilter.subValue}`;
+      } else if (activeFilter?.type === 'main') {
+        filterLabel = activeFilter.value;
+      }
+
+      let txTotal = 0;
+      let txRows = '';
+      for (const tx of txs) {
+        const amt = Number(tx.amount || 0);
+        txTotal += amt;
+        const isCredit = tx.action === 'Received';
+        txRows += `
+          <tr>
+            <td>${tx.date || ''}</td>
+            <td>${tx.invoice_number || ''}</td>
+            <td>${tx.customer || ''}</td>
+            <td>${tx.sub_account || ''}</td>
+            <td class="${isCredit ? 'text-green' : 'text-red'}">${isCredit ? 'Credit' : 'Debit'}</td>
+            <td class="text-right">${fmt(amt)}</td>
+          </tr>`;
+      }
+
+      const html = `
+        ${buildPrintHeader('Cash & Cash Equivalents — Transactions')}
+        <div class="section-title">Transactions</div>
+        ${filterLabel ? `<div class="filter-info">Filter: ${filterLabel} &nbsp;|&nbsp; ${txs.length} transaction(s)</div>` : `<div class="filter-info">${txs.length} transaction(s)</div>`}
+        <table>
+          <thead>
+            <tr>
+              <th style="width:10%">Date</th>
+              <th style="width:12%">Invoice #</th>
+              <th style="width:25%">Particulars</th>
+              <th style="width:18%">Sub Account</th>
+              <th style="width:10%">Type</th>
+              <th class="text-right" style="width:15%">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${txRows}
+            <tr class="total-row">
+              <td colspan="5"><strong>TOTAL</strong></td>
+              <td class="text-right bold">${fmt(txTotal)}</td>
+            </tr>
+          </tbody>
+        </table>
+      `;
+      openPrintWindow(html);
     } catch (error) {
-      toast.error('Failed to generate transactions PDF');
+      toast.error('Failed to generate transactions report');
       console.error(error);
     } finally {
       setPrintingTransactions(false);
     }
-  }, [fetchPdf, activeFilter]);
+  }, [filteredTransactions, activeFilter, companyDetails, startDate, endDate]);
 
   return (
     <div className="flex flex-col gap-8">
