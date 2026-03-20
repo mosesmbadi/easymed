@@ -10,22 +10,22 @@ import {
 } from "devextreme-react/data-grid";
 import { useRouter } from 'next/navigation'
 import AddPatientModal from "./add-patient-modal";
-import { Chip } from "@mui/material";
 import { getAllPatients } from "@/redux/features/patients";
 import { useSelector, useDispatch } from "react-redux";
-import CmtDropdownMenu from "@/assets/DropdownMenu";
 import { MdAddCircle } from "react-icons/md";
-import { MdOutlineContactSupport } from "react-icons/md";
 import { LuMoreHorizontal } from "react-icons/lu";
 import { BiEdit } from "react-icons/bi";
+import { MdOutlineCalendarToday } from "react-icons/md";
 import CreateAppointmentModal from "./create-appointment-modal";
 import EditPatientDetails from "../admin-interface/edit-patient-details-modal";
-import { GiMedicinePills } from "react-icons/gi";
 import LabModal from "../doctor-desk/lab-modal";
 import { useAuth } from "@/assets/hooks/use-auth";
 import ShowInsurancesPopover from "./ShowInsurancesPopover";
 import PAtientSearch from "./PatientSearch";
-
+import BookAppointmentModal from "./BookAppointmentModal";
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import IconButton from '@mui/material/IconButton';
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
   ssr: false,
@@ -33,66 +33,75 @@ const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
 
 const allowedPageSizes = [5, 10, 'all'];
 
-const getActions = () => {
-  let actions = [
-    {
-      action: "add",
-      label: "New Visit",
-      icon: <MdAddCircle className="text-success text-xl mx-2" />,
-    },
-    {
-      action: "update",
-      label: "Update Patient",
-      icon: <BiEdit className="text-success text-xl mx-2" />,
-    },
-  ];
-
-  return actions;
-};
-
 const PatientsDataGrid = () => {
-  const [searchQuery, setSearchQuery] = React.useState("");
   const { patients } = useSelector((store) => store.patient);
   const dispatch = useDispatch();
   const auth = useAuth()
-  const userActions = getActions();
-  const [open,setOpen] = useState(false)
-  const [editOpen,setEditOpen] = useState(false)
-  const [selectedRowData,setSelectedRowData] = useState({});
+  const [open, setOpen] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
+  const [selectedRowData, setSelectedRowData] = useState({});
   const [showPageSizeSelector, setShowPageSizeSelector] = useState(true);
   const [showNavButtons, setShowNavButtons] = useState(true);
   const [showInfo, setShowInfo] = useState(true);
   const [labOpen, setLabOpen] = useState(false);
+  const [bookAppointmentOpen, setBookAppointmentOpen] = useState(false);
+  const [selectedPatientForBooking, setSelectedPatientForBooking] = useState(null);
   const router = useRouter()
   const [processsFilter, setProcessFilter] = useState({ search: "" })
   const [selectedSearchFilter, setSelectedSearchFilter] = useState({label: "", value: ""})
-  
+
   const onMenuClick = async (menu, data) => {
     if (menu.action === "add") {
       setSelectedRowData(data);
       setOpen(true);
-    }else if(menu.action === "update"){
+    } else if (menu.action === "update") {
       setSelectedRowData(data);
-      setEditOpen(true);      
-    }else if (menu.action === "prescribe") {
+      setEditOpen(true);
+    } else if (menu.action === "prescribe") {
       router.push(`/dashboard/patients/prescribe/${data.id}`);
-    } else if(menu.action === "send to lab"){
+    } else if (menu.action === "send to lab") {
       setSelectedRowData(data);
       setLabOpen(true);
+    } else if (menu.action === "book") {
+      setSelectedPatientForBooking(data);
+      setBookAppointmentOpen(true);
     }
   };
 
-  const actionsFunc = ({ data }) => {
+  // Custom actions cell with Material-UI Menu
+  const ActionsCell = ({ data }) => {
+    const [anchorEl, setAnchorEl] = useState(null);
+    const open = Boolean(anchorEl);
+
+    const handleClick = (event) => {
+      setAnchorEl(event.currentTarget);
+    };
+
+    const handleClose = () => {
+      setAnchorEl(null);
+    };
+
+    const handleAction = (action) => {
+      handleClose();
+      onMenuClick(action, data);
+    };
+
     return (
       <>
-        <CmtDropdownMenu
-          sx={{ cursor: "pointer" }}
-          items={userActions}
-          onItemClick={(menu) => onMenuClick(menu, data)}
-          TriggerComponent={
-            <LuMoreHorizontal className="cursor-pointer text-xl" />
-          }
-        />
+        <IconButton onClick={handleClick}>
+          <LuMoreHorizontal className="text-xl" />
+        </IconButton>
+        <Menu anchorEl={anchorEl} open={open} onClose={handleClose}>
+          <MenuItem onClick={() => handleAction({ action: "add" })}>
+            <MdAddCircle className="text-success text-xl mx-2" /> New Visit
+          </MenuItem>
+          <MenuItem onClick={() => handleAction({ action: "book" })}>
+            <MdOutlineCalendarToday className="text-success text-xl mx-2" /> Book Appointment
+          </MenuItem>
+          <MenuItem onClick={() => handleAction({ action: "update" })}>
+            <BiEdit className="text-success text-xl mx-2" /> Update Patient
+          </MenuItem>
+        </Menu>
       </>
     );
   };
@@ -109,101 +118,66 @@ const PatientsDataGrid = () => {
     }
   };
 
-  // useEffect(() => {
-  //   dispatch(getAllPatients(auth));
-  // }, []);
-
   useEffect(() => {
-      // This effect handles the debouncing logic
-      const timerId = setTimeout(() => {
-          // Dispatch the action only after a 500ms delay
-          dispatch(getAllPatients(auth, processsFilter, selectedSearchFilter))
-      }, 500); // 500ms delay, adjust as needed
-
-      // Cleanup function: clears the timer if searchTerm changes before the delay is over
-      return () => {
-          clearTimeout(timerId);
-      };
-  }, [processsFilter.search]); // The effect re-runs only when the local `searchTerm` state changes
+    const timerId = setTimeout(() => {
+      dispatch(getAllPatients(auth, processsFilter, selectedSearchFilter))
+    }, 500);
+    return () => clearTimeout(timerId);
+  }, [processsFilter.search]);
 
   return (
     <>
-    <section className="mt-4">
-      <div className="flex items-center gap-4 mb-4">
-        <PAtientSearch
-          setProcessFilter={setProcessFilter} 
-          selectedFilter={processsFilter}
-          selectedSearchFilter={selectedSearchFilter} 
-          setSelectedSearchFilter={setSelectedSearchFilter}
+      <section className="mt-4">
+        <div className="flex items-center gap-4 mb-4">
+          <PAtientSearch
+            setProcessFilter={setProcessFilter} 
+            selectedFilter={processsFilter}
+            selectedSearchFilter={selectedSearchFilter} 
+            setSelectedSearchFilter={setSelectedSearchFilter}
+          />
+          <AddPatientModal />
+        </div>
+        <DataGrid
+          dataSource={patients}
+          allowColumnReordering={true}
+          rowAlternationEnabled={true}
+          showBorders={true}
+          remoteOperations={true}
+          showColumnLines={false}
+          showRowLines={true}
+          wordWrapEnabled={true}
+          allowPaging={false}
+          className="shadow-xl w-full"
+        >
+          <HeaderFilter visible={true} />
+          <Scrolling rowRenderingMode='virtual'></Scrolling>
+          <Paging defaultPageSize={10} />
+          <Pager
+            visible={true}
+            showInfo={showInfo}
+            allowedPageSizes={allowedPageSizes}
+            showPageSizeSelector={showPageSizeSelector}
+            showNavigationButtons={showNavButtons}
+          />
+          <Column dataField="unique_id" caption="Patient ID" width={120} />
+          <Column dataField="" caption="Patient Name" width={150} calculateCellValue={patientFullName} />
+          <Column dataField="phone" caption="Phone" width={100} />
+          <Column dataField="email" caption="Email" width={100} />
+          <Column dataField="age" caption="Age" width={50} />
+          <Column dataField="gender" caption="Gender" width={100} />
+          <Column dataField="" caption="Insurance" cellRender={renderInsurances} width={180} />
+          <Column dataField="" caption="" width={50} cellRender={(cellData) => <ActionsCell data={cellData.data} />} />
+        </DataGrid>
+      </section>
+      {open && <CreateAppointmentModal {...{setOpen,open,selectedRowData}} />}
+      <EditPatientDetails open={editOpen} setOpen={setEditOpen} selectedRowData={selectedRowData}  />
+      {bookAppointmentOpen && (
+        <BookAppointmentModal
+          open={bookAppointmentOpen}
+          setOpen={setBookAppointmentOpen}
+          patient={selectedPatientForBooking}
         />
-        <AddPatientModal />
-      </div>
-      <DataGrid
-        dataSource={patients}
-        allowColumnReordering={true}
-        rowAlternationEnabled={true}
-        showBorders={true}
-        remoteOperations={true}
-        showColumnLines={false}
-        showRowLines={true}
-        wordWrapEnabled={true}
-        allowPaging={false}
-        className="shadow-xl w-full"
-        // height={"60vh"}
-      >
-        <HeaderFilter visible={true} />
-        <Scrolling rowRenderingMode='virtual'></Scrolling>
-        <Paging defaultPageSize={10} />
-        <Pager
-          visible={true}
-          showInfo={showInfo}
-          allowedPageSizes={allowedPageSizes}
-          showPageSizeSelector={showPageSizeSelector}
-          showNavigationButtons={showNavButtons}
-        />
-        <Column 
-          dataField="unique_id" 
-          caption="Patient ID" 
-          width={120}
-        />
-        <Column 
-          dataField="" 
-          caption="Patient Name" 
-          width={150}
-          calculateCellValue={patientFullName}
-        />
-        <Column
-          dataField="phone"
-          caption="Phone"
-          width={100}
-        />
-        <Column
-          dataField="email"
-          caption="Email"
-          width={100}
-        />
-        <Column
-          dataField="age"
-          caption="Age"
-          width={50}
-        />
-        <Column dataField="gender" caption="Gender" width={100} />
-        <Column 
-          dataField="" 
-          caption="Insurance"
-          cellRender={renderInsurances}
-          width={180} 
-        />
-        <Column
-          dataField=""
-          caption=""
-          width={50}
-          cellRender={actionsFunc}
-        />
-      </DataGrid>
-    </section>
-    {open && <CreateAppointmentModal {...{setOpen,open,selectedRowData}} />}
-    <EditPatientDetails open={editOpen} setOpen={setEditOpen} selectedRowData={selectedRowData}  />
+      )}
     </>
   );
 };

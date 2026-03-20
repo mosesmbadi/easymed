@@ -1,4 +1,3 @@
-
 import random
 from datetime import datetime
 from django.utils import timezone
@@ -342,3 +341,42 @@ class TriageSettings(models.Model):
 
     def __str__(self):
         return "Triage Critical Values Settings"
+
+
+# ===================== NEW APPOINTMENT MODEL =====================
+class Appointment(models.Model):
+    """
+    Staff-created appointments (for patients). Different from PublicAppointment
+    which is for public booking.
+    """
+    STATUS_CHOICES = (
+        ('scheduled', 'Scheduled'),
+        ('completed', 'Completed'),
+        ('cancelled', 'Cancelled'),
+        ('no_show', 'No Show'),
+    )
+
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='appointments')
+    doctor = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        limit_choices_to={'role': 'doctor'},  # only users with role DOCTOR
+        related_name='doctor_appointments'
+    )
+    appointment_date = models.DateTimeField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='scheduled')
+    notes = models.TextField(blank=True)
+    created_by = models.ForeignKey(
+        CustomUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='created_appointments'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.patient} with {self.doctor} on {self.appointment_date}"
+
+    class Meta:
+        ordering = ['-appointment_date']
