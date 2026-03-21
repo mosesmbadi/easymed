@@ -1,6 +1,9 @@
 export default async function handler(req, res) {
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080';
-  const { receiptId, action } = req.query;
+  // [...params] catch-all gives us an array, e.g. ['6', 'print']
+  const params = req.query.params || [];
+  const receiptId = params[0] || null;
+  const action = params[1] || null;
 
   let url = `${backendUrl}/inventory/supplier-payment-receipts/`;
 
@@ -13,7 +16,7 @@ export default async function handler(req, res) {
     // Add query params for filtering
     const queryParams = new URLSearchParams();
     Object.keys(req.query).forEach(key => {
-      if (key !== 'receiptId' && key !== 'action') {
+      if (key !== 'params') {
         queryParams.append(key, req.query[key]);
       }
     });

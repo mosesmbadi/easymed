@@ -14,6 +14,7 @@ const AccountsPayableNav = () => {
     { href: `${base}/invoices`, label: 'Invoices' },
     { href: `${base}/aging-statements`, label: 'Aging Statements' },
     { href: `${base}/make-payments`, label: 'Make Payments' },
+    { href: `${base}/payment-history`, label: 'Payment History' },
     // { href: `${receivableBase}/payments`, label: 'Receive Payments' },
     { href: `${base}/creditors`, label: 'Creditors' },
   ];

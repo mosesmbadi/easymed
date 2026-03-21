@@ -427,6 +427,23 @@ export const fetchSupplierInvoice = (auth) => {
         });
     });
 };
+
+export const fetchSupplierInvoicesBySupplier = (auth, supplier_id) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+        axiosInstance.get(`${APP_API_URL.FETCH_SUPPLIER_INVOICE}`, {
+            params: {
+                supplier: supplier_id,
+            },
+        })
+        .then((res) => {
+            resolve(res.data);
+        })
+        .catch((err) => {
+            reject(err.message);
+        });
+    });
+};
 export const fetchInvoice = async (auth, supplier_id) => {
     if (!auth?.token) {
         console.error("Auth token is missing");
@@ -467,4 +484,17 @@ export const fetchGoods = async (auth, purchase_order_id) => {
         console.error("Error fetching receipt", error.response?.status, error.response?.data);
         throw error;
     }
+};
+
+export const allocateSupplierPayment = (auth, payload) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+        axiosInstance.post(`/api/inventory/allocate-supplier-payment`, payload)
+            .then((res) => {
+                resolve(res.data)
+            })
+            .catch((err) => {
+                reject(err.response?.data || err.message)
+            })
+    })
 };

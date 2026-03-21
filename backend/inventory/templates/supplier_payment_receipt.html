@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Payment Receipt</title>
+  <title>Supplier Payment Receipt</title>
   <style>
     @page {
       size: A4;
@@ -98,7 +98,7 @@
 
     .meta-label {
       font-weight: bold;
-      width: 110px;
+      width: 130px;
       color: #555;
     }
 
@@ -106,7 +106,7 @@
       flex: 1;
     }
 
-    /* ── Allocation tables ── */
+    /* ── Allocation table ── */
     .allocation-section {
       margin-top: 10px;
       margin-bottom: 30px;
@@ -119,16 +119,6 @@
       padding-bottom: 5px;
       margin-bottom: 10px;
       text-transform: uppercase;
-    }
-
-    .invoice-group-title {
-      background-color: #555;
-      color: white;
-      padding: 8px 10px;
-      margin-top: 15px;
-      margin-bottom: 0;
-      font-weight: 600;
-      font-size: 11px;
     }
 
     table.alloc-table {
@@ -169,7 +159,7 @@
     }
 
     .summary-table {
-      width: 40%;
+      width: 50%;
       float: right;
       border-collapse: collapse;
     }
@@ -226,7 +216,9 @@
   <!-- Header -->
   <div class="header-container">
     <div class="company-logo">
+      {% if company_logo_url %}
       <img src="{{ company_logo_url }}" alt="Logo" />
+      {% endif %}
     </div>
     <div class="company-info">
       <h2>{{ company.name }}</h2>
@@ -239,7 +231,7 @@
 
   <!-- Title -->
   <div class="receipt-title">
-    <h1>Payment Receipt</h1>
+    <h1>Supplier Payment Receipt</h1>
   </div>
 
   <!-- Meta -->
@@ -261,30 +253,24 @@
       </div>
       {% endif %}
       <div class="meta-row">
-        <span class="meta-label">Invoices Paid:</span>
-        <span class="meta-value">{% if invoice_numbers and invoice_numbers|length > 0 %}{{ invoice_numbers|join:", " }}{% else %}N/A{% endif %}</span>
+        <span class="meta-label">Reference #:</span>
+        <span class="meta-value">{{ receipt.reference_number|default:"—" }}</span>
       </div>
     </div>
 
     <div class="meta-box">
       <h3>Payment Info</h3>
       <div class="meta-row">
-        <span class="meta-label">Paid By:</span>
-        <span class="meta-value">
-          {% if receipt.patient %}{{ receipt.patient.first_name }} {{ receipt.patient.second_name }}{% elif receipt.insurance %}{{ receipt.insurance.name }}{% else %}N/A{% endif %}
-        </span>
+        <span class="meta-label">Paid To:</span>
+        <span class="meta-value">{{ receipt.supplier.official_name }}</span>
       </div>
       <div class="meta-row">
-        <span class="meta-label">Payment Type:</span>
-        <span class="meta-value">{% if receipt.insurance %}Credit (Insurance){% else %}Cash{% endif %}</span>
+        <span class="meta-label">Payment Account:</span>
+        <span class="meta-value">{% if receipt.sub_account %}{{ receipt.sub_account.name }}{% if receipt.sub_account.main_account %} ({{ receipt.sub_account.main_account.name }}){% endif %}{% elif receipt.payment_mode %}{{ receipt.payment_mode.payment_mode }}{% else %}—{% endif %}</span>
       </div>
       <div class="meta-row">
-        <span class="meta-label">Payment Mode:</span>
-        <span class="meta-value">{% if receipt.sub_account %}{{ receipt.sub_account.name }}{% elif receipt.payment_mode %}{{ receipt.payment_mode.payment_mode }}{% else %}—{% endif %}</span>
-      </div>
-      <div class="meta-row">
-        <span class="meta-label">Reference #:</span>
-        <span class="meta-value">{{ receipt.reference_number|default:"—" }}</span>
+        <span class="meta-label">Total Amount:</span>
+        <span class="meta-value">{{ receipt.total_amount|money }}</span>
       </div>
     </div>
   </div>
@@ -292,34 +278,36 @@
   <!-- Allocation Details -->
   <div class="allocation-section">
     <h3>Payment Allocation Details</h3>
-
-    {% for invoice, allocations in allocations_grouped.items %}
-    <div class="invoice-group-title">Invoice #{{ invoice.invoice_number }} &nbsp;|&nbsp; {{ invoice.invoice_date|date:"d/m/Y" }}</div>
     <table class="alloc-table">
       <thead>
         <tr>
-          <th style="width: 40%">Item Name</th>
-          <th style="width: 30%">Category</th>
-          <th style="width: 30%">Amount Applied</th>
+          <th style="width: 30%">Invoice #</th>
+          <th style="width: 25%">Supplier</th>
+          <th style="width: 20%">Invoice Amount</th>
+          <th style="width: 25%">Amount Applied</th>
         </tr>
       </thead>
       <tbody>
         {% for alloc in allocations %}
         <tr>
-          <td>{{ alloc.invoice_item.item.name }}</td>
-          <td>{{ alloc.invoice_item.item.category }}</td>
+          <td>{{ alloc.supplier_invoice.invoice_no }}</td>
+          <td>{{ alloc.supplier_invoice.supplier.official_name }}</td>
+          <td style="text-align: right">{{ alloc.supplier_invoice.amount|money }}</td>
           <td style="text-align: right">{{ alloc.amount_applied|money }}</td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
-    {% endfor %}
   </div>
 
   <!-- Summary -->
   <div class="summary-section">
     <table class="summary-table">
       <tbody>
+        <tr>
+          <td class="label">Total Invoiced:</td>
+          <td class="amount">{{ total_invoiced|money }}</td>
+        </tr>
         <tr class="total-row">
           <td class="label">Total Amount Paid:</td>
           <td class="amount">{{ receipt.total_amount|money }}</td>

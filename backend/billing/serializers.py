@@ -144,34 +144,75 @@ class InvoicePaymentSerializer(serializers.ModelSerializer):
 
 
 class PaymentAllocationSerializer(serializers.ModelSerializer):
+    invoice_id = serializers.IntegerField(source='invoice_item.invoice.id', read_only=True)
+    invoice_number = serializers.CharField(source='invoice_item.invoice.invoice_number', read_only=True)
+
     class Meta:
         model = PaymentAllocation
-        fields = ['invoice_item', 'amount_applied', 'applied_at']
+        fields = ['invoice_item', 'invoice_id', 'invoice_number', 'amount_applied', 'applied_at']
 
 
 class PaymentReceiptSerializer(serializers.ModelSerializer):
     allocations = PaymentAllocationSerializer(many=True, read_only=True)
     insurance_name = serializers.SerializerMethodField()
     patient_name = serializers.SerializerMethodField()
+    payment_mode_name = serializers.SerializerMethodField()
+    sub_account_name = serializers.SerializerMethodField()
+    invoice_numbers = serializers.SerializerMethodField()
+    invoice_ids = serializers.SerializerMethodField()
 
     class Meta:
         model = PaymentReceipt
         fields = ['id', 'patient', 'patient_name', 'insurance', 'insurance_name', 
-                  'payment_mode', 'total_amount', 'reference_number', 'payment_date', 
+                  'sub_account', 'sub_account_name', 'payment_mode', 'payment_mode_name',
+                  'invoice_numbers', 'invoice_ids',
+                  'total_amount', 'reference_number', 'payment_date', 
                   'created_at', 'allocations']
+
+    def get_payment_mode_name(self, obj):
+        if obj.sub_account and obj.sub_account.payment_mode:
+            return obj.sub_account.payment_mode.payment_mode
+        if obj.payment_mode:
+            return obj.payment_mode.payment_mode
+        return None
+
+    def get_sub_account_name(self, obj):
+        return obj.sub_account.name if obj.sub_account else None
 
     def get_insurance_name(self, obj):
         return obj.insurance.name if obj.insurance else None
     
     def get_patient_name(self, obj):
-        return f"{obj.patient.first_name} {obj.patient.last_name}" if obj.patient else None
+        if not obj.patient:
+            return None
+
+        first_name = getattr(obj.patient, 'first_name', '') or ''
+        # Patient model uses `second_name`; keep `last_name` fallback for compatibility.
+        second_name = getattr(obj.patient, 'second_name', None)
+        if second_name is None:
+            second_name = getattr(obj.patient, 'last_name', '') or ''
+
+        full_name = f"{first_name} {second_name}".strip()
+        return full_name or None
+
+    def get_invoice_numbers(self, obj):
+        invoice_numbers = obj.allocations.values_list(
+            'invoice_item__invoice__invoice_number', flat=True
+        ).distinct()
+        return [num for num in invoice_numbers if num]
+
+    def get_invoice_ids(self, obj):
+        invoice_ids = obj.allocations.values_list(
+            'invoice_item__invoice_id', flat=True
+        ).distinct()
+        return list(invoice_ids)
 
 
 class AllocatePaymentRequestSerializer(serializers.Serializer):
     patient_id = serializers.IntegerField(required=False, allow_null=True)
     insurance_id = serializers.IntegerField(required=False, allow_null=True)
     invoice_ids = serializers.ListField(child=serializers.IntegerField(), allow_empty=False)
-    payment_mode = serializers.IntegerField()
+    sub_account = serializers.IntegerField()
     amount = serializers.DecimalField(max_digits=12, decimal_places=2)
     reference_number = serializers.CharField(max_length=100)
     payment_date = serializers.DateField(required=False, allow_null=True)
@@ -196,6 +237,8 @@ class AllocatePaymentRequestSerializer(serializers.Serializer):
 
 class SubAccountSerializer(serializers.ModelSerializer):
     main_account_name = serializers.CharField(source='main_account.name', read_only=True)
+    payment_mode_name = serializers.CharField(source='payment_mode.payment_mode', read_only=True)
+    balance = serializers.DecimalField(max_digits=15, decimal_places=2, read_only=True)
 
     class Meta:
         model = SubAccount
@@ -205,7 +248,6 @@ class SubAccountSerializer(serializers.ModelSerializer):
 class MainAccountSerializer(serializers.ModelSerializer):
     subaccounts = SubAccountSerializer(many=True, read_only=True)
     total_balance = serializers.DecimalField(max_digits=15, decimal_places=2, read_only=True)
-    payment_mode_name = serializers.CharField(source='payment_mode.payment_mode', read_only=True)
 
     class Meta:
         model = MainAccount

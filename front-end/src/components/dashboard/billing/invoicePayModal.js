@@ -2,8 +2,8 @@ import React, { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { useSelector, useDispatch } from "react-redux";
 import { useAuth } from "@/assets/hooks/use-auth";
-import { allocatePayment } from "@/redux/service/billing";
-import { getPatientInvoices, getPaymentModes } from "@/redux/features/billing";
+import { allocatePayment, fetchSubAccounts } from "@/redux/service/billing";
+import { getInsuranceInvoices, getPatientInvoices, getPaymentModes } from "@/redux/features/billing";
 import { getAllPatients } from "@/redux/features/patients";
 import ViewInvoiceItems from "./ViewInvoiceItemsModal";
 import { getAllInsurance } from "@/redux/features/insurance";
@@ -13,6 +13,7 @@ const InvoicePayModal = () => {
   const [loading, setLoading] = useState(false);
   const [selectedRowData, setSelectedRowData] = useState({});
   const [open, setOpen] = useState(false);
+  const [subAccounts, setSubAccounts] = useState([]);
   
   const dispatch = useDispatch();
   const auth = useAuth();
@@ -26,6 +27,9 @@ const InvoicePayModal = () => {
       dispatch(getAllPatients(auth));
       dispatch(getPaymentModes(auth));
       dispatch(getAllInsurance(auth));
+      fetchSubAccounts(auth)
+        .then((res) => setSubAccounts(Array.isArray(res) ? res : res?.results || []))
+        .catch((err) => console.error("Failed to fetch sub accounts", err));
     }
   }, [auth, dispatch]);
 
@@ -36,7 +40,7 @@ const InvoicePayModal = () => {
     // Build payload without null values
     const payload = {
       invoice_ids: formData.invoiceIds,
-      payment_mode: formData.payment_mode,
+      sub_account: formData.sub_account,
       amount: formData.payAmount,
       reference_number: formData.reference_number,
     };
@@ -82,7 +86,9 @@ const InvoicePayModal = () => {
 
       // Refresh invoices
       if (formData.paymentCategory === 'cash') {
-        dispatch(getPatientInvoices(auth, formData.customer.value));
+        dispatch(getPatientInvoices(auth, formData.customer.value, 'pending'));
+      } else {
+        dispatch(getInsuranceInvoices(auth, formData.customer.value, 'pending'));
       }
 
       // Optionally reload the page or reset form state
@@ -113,6 +119,7 @@ const InvoicePayModal = () => {
         insurance={insurance}
         invoices={invoices}
         paymodes={paymodes}
+        subAccounts={subAccounts}
         onSubmit={handlePaymentSubmit}
         onViewInvoiceItems={handleViewInvoiceItems}
         loading={loading}

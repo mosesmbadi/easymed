@@ -542,20 +542,37 @@ class SupplierPaymentAllocationSerializer(serializers.ModelSerializer):
 class SupplierPaymentReceiptSerializer(serializers.ModelSerializer):
     allocations = SupplierPaymentAllocationSerializer(many=True, read_only=True)
     supplier_name = serializers.SerializerMethodField()
+    sub_account_name = serializers.SerializerMethodField()
+    invoice_numbers = serializers.SerializerMethodField()
 
     class Meta:
         model = SupplierPaymentReceipt
-        fields = ['id', 'supplier', 'supplier_name', 'payment_mode', 'total_amount', 
-                  'reference_number', 'payment_date', 'created_at', 'allocations']
+        fields = ['id', 'supplier', 'supplier_name', 'sub_account', 'sub_account_name',
+                  'payment_mode', 'total_amount',
+                  'reference_number', 'payment_date', 'created_at', 'allocations',
+                  'invoice_numbers']
 
     def get_supplier_name(self, obj):
-        return obj.supplier.name if obj.supplier else None
+        return obj.supplier.official_name if obj.supplier else None
+
+    def get_sub_account_name(self, obj):
+        if obj.sub_account:
+            name = obj.sub_account.name
+            if hasattr(obj.sub_account, 'main_account') and obj.sub_account.main_account:
+                name += f' ({obj.sub_account.main_account.name})'
+            return name
+        return None
+
+    def get_invoice_numbers(self, obj):
+        return list(
+            obj.allocations.values_list('supplier_invoice__invoice_no', flat=True).distinct()
+        )
 
 
 class AllocateSupplierPaymentRequestSerializer(serializers.Serializer):
     supplier_id = serializers.IntegerField(required=True)
     invoice_ids = serializers.ListField(child=serializers.IntegerField(), required=True)
-    payment_mode = serializers.IntegerField(required=True)
+    sub_account = serializers.IntegerField(required=True)
     amount = serializers.DecimalField(max_digits=12, decimal_places=2, required=True)
     reference_number = serializers.CharField(max_length=100, required=True)
     payment_date = serializers.DateField(required=False, allow_null=True)
@@ -895,28 +912,47 @@ class QuotationItemSerializer(serializers.ModelSerializer):
 
 
 class SupplierPaymentAllocationSerializer(serializers.ModelSerializer):
+    invoice_no = serializers.CharField(source='supplier_invoice.invoice_no', read_only=True)
+
     class Meta:
         model = SupplierPaymentAllocation
-        fields = ['supplier_invoice', 'amount_applied', 'applied_at']
+        fields = ['supplier_invoice', 'invoice_no', 'amount_applied', 'applied_at']
 
 
 class SupplierPaymentReceiptSerializer(serializers.ModelSerializer):
     allocations = SupplierPaymentAllocationSerializer(many=True, read_only=True)
     supplier_name = serializers.SerializerMethodField()
+    sub_account_name = serializers.SerializerMethodField()
+    invoice_numbers = serializers.SerializerMethodField()
 
     class Meta:
         model = SupplierPaymentReceipt
-        fields = ['id', 'supplier', 'supplier_name', 'payment_mode', 'total_amount', 
-                  'reference_number', 'payment_date', 'created_at', 'allocations']
+        fields = ['id', 'supplier', 'supplier_name', 'sub_account', 'sub_account_name',
+                  'payment_mode', 'total_amount',
+                  'reference_number', 'payment_date', 'created_at', 'allocations',
+                  'invoice_numbers']
 
     def get_supplier_name(self, obj):
-        return obj.supplier.name if obj.supplier else None
+        return obj.supplier.official_name if obj.supplier else None
+
+    def get_sub_account_name(self, obj):
+        if obj.sub_account:
+            name = obj.sub_account.name
+            if hasattr(obj.sub_account, 'main_account') and obj.sub_account.main_account:
+                name += f' ({obj.sub_account.main_account.name})'
+            return name
+        return None
+
+    def get_invoice_numbers(self, obj):
+        return list(
+            obj.allocations.values_list('supplier_invoice__invoice_no', flat=True).distinct()
+        )
 
 
 class AllocateSupplierPaymentRequestSerializer(serializers.Serializer):
     supplier_id = serializers.IntegerField(required=True)
     invoice_ids = serializers.ListField(child=serializers.IntegerField(), required=True)
-    payment_mode = serializers.IntegerField(required=True)
+    sub_account = serializers.IntegerField(required=True)
     amount = serializers.DecimalField(max_digits=12, decimal_places=2, required=True)
     reference_number = serializers.CharField(max_length=100, required=True)
     payment_date = serializers.DateField(required=False, allow_null=True)

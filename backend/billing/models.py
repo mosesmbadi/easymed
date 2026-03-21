@@ -271,7 +271,8 @@ class PaymentReceipt(models.Model):
     """
     patient = models.ForeignKey('patient.Patient', on_delete=models.SET_NULL, null=True, blank=True)
     insurance = models.ForeignKey('company.InsuranceCompany', on_delete=models.SET_NULL, null=True, blank=True)
-    payment_mode = models.ForeignKey(PaymentMode, on_delete=models.PROTECT)
+    sub_account = models.ForeignKey('SubAccount', on_delete=models.SET_NULL, null=True, blank=True, related_name='receipts')
+    payment_mode = models.ForeignKey(PaymentMode, on_delete=models.PROTECT, null=True, blank=True)
     total_amount = models.DecimalField(max_digits=12, decimal_places=2)
     reference_number = models.CharField(max_length=100)
     payment_date = models.DateField(null=True, blank=True)
@@ -312,12 +313,11 @@ class PaymentAllocation(models.Model):
 
 class MainAccount(models.Model):
     """
-    The 'Parent' accounts: e.g., Cash, KCB Bank, Co-op Bank.
+    The 'Parent' accounts: e.g., Cash, Petty Cash, Bank, Mobile Money.
     Summarizes the total liquidity across all departments.
     """
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True, null=True)
-    payment_mode = models.OneToOneField('PaymentMode', on_delete=models.SET_NULL, null=True, blank=True, related_name='main_account')
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -331,6 +331,7 @@ class MainAccount(models.Model):
 
 class SubAccount(models.Model):
     main_account = models.ForeignKey(MainAccount, on_delete=models.CASCADE, related_name='subaccounts')
+    payment_mode = models.ForeignKey('PaymentMode', on_delete=models.SET_NULL, null=True, blank=True, related_name='sub_accounts')
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
     opening_bal = models.DecimalField(max_digits=15, decimal_places=2, default=0)
@@ -346,5 +347,11 @@ class SubAccount(models.Model):
 
     @property
     def balance(self):
-        # Placeholder for actual balance calculation once transactions are modeled
-        return self.opening_bal
+        from django.db.models import Sum
+        received = self.receipts.aggregate(
+            total=Sum('total_amount')
+        )['total'] or 0
+        paid_out = self.supplier_receipts.aggregate(
+            total=Sum('total_amount')
+        )['total'] or 0
+        return self.opening_bal + received - paid_out

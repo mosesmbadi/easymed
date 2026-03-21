@@ -73,10 +73,10 @@ const CashEquivalentsSettings = () => {
                     </Tabs>
                 </Box>
                 <TabPanel value={currentTab} index={0}>
-                    <MainAccountDataGrid paymentModes={paymentModes} />
+                    <MainAccountDataGrid />
                 </TabPanel>
                 <TabPanel value={currentTab} index={1}>
-                    <SubAccountDataGrid mainAccounts={mainAccounts} />
+                    <SubAccountDataGrid mainAccounts={mainAccounts} paymentModes={paymentModes} />
                 </TabPanel>
             </section>
         </Container>

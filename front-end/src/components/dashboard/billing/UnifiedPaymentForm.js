@@ -9,7 +9,7 @@ import { LuMoreHorizontal } from 'react-icons/lu';
 import { CiMoneyCheck1 } from "react-icons/ci";
 import { useDispatch } from "react-redux";
 import { useAuth } from "@/assets/hooks/use-auth";
-import { getPatientInvoices } from "@/redux/features/billing";
+import { getInsuranceInvoices, getPatientInvoices } from "@/redux/features/billing";
 import { formatMoney } from "@/functions/money";
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
@@ -33,6 +33,7 @@ const UnifiedPaymentForm = ({
   insurance, 
   invoices,
   paymodes,
+  subAccounts,
   onSubmit,
   onViewInvoiceItems,
   loading
@@ -53,12 +54,9 @@ const UnifiedPaymentForm = ({
   useEffect(() => {
     if (selectedCustomer && paymentCategory) {
       if (paymentCategory.value === 'cash') {
-        dispatch(getPatientInvoices(auth, selectedCustomer.value));
+        dispatch(getPatientInvoices(auth, selectedCustomer.value, 'pending'));
       } else if (paymentCategory.value === 'credit') {
-        // For insurance: you may need to implement a different endpoint
-        // For now, this will fetch patient invoices
-        // You can add insurance-specific invoice fetching here
-        console.log('Fetch insurance invoices - implement if needed');
+        dispatch(getInsuranceInvoices(auth, selectedCustomer.value, 'pending'));
       }
     }
   }, [selectedCustomer, paymentCategory, auth, dispatch]);
@@ -79,23 +77,15 @@ const UnifiedPaymentForm = ({
 
   const calculateInvoiceCash = (data) => {
     if (paymentCategory?.value === 'credit') {
-      return parseFloat(data.invoice_amount || 0);
+      const insuranceBalance = parseFloat(
+        data.insurance_balance ?? ((data.insurance_total || 0) - (data.insurance_paid || 0))
+      );
+      return Math.max(0, insuranceBalance || 0);
     }
-    
-    let cashAmount = 0;
-    if (data.invoice_items && data.invoice_items.length > 0) {
-      data.invoice_items.forEach((invoiceItem) => {
-        if (invoiceItem?.payment_mode_name?.toLowerCase() === 'cash') {
-          cashAmount += parseFloat(invoiceItem.actual_total || 0);
-        } else {
-          let co_pay = parseFloat(invoiceItem.item_amount || 0) - parseFloat(invoiceItem.actual_total || 0);
-          cashAmount += co_pay;
-        }
-      });
-    } else {
-      cashAmount = parseFloat(data.invoice_amount || 0);
-    }
-    return cashAmount;
+
+    const total = parseFloat(data.total_cash || 0);
+    const alreadyPaid = parseFloat(data.cash_paid || 0);
+    return Math.max(0, total - alreadyPaid);
   };
 
   const calculateTotalOwed = () => {
@@ -149,16 +139,18 @@ const UnifiedPaymentForm = ({
     const invoiceIds = selectedItems.selectedRowsData.map(inv => inv.id);
     const totalOwed = calculateTotalOwed();
 
-    onSubmit({
+    const submitData = {
       paymentCategory: paymentCategory.value,
       customer: selectedCustomer,
       invoiceIds,
       payAmount: parseFloat(payAmount),
       totalOwed,
-      payment_mode: selectedPayMode.value,
+      sub_account: selectedPayMode.value,
       reference_number: referenceNumber,
       payment_date: paymentDate,
-    });
+    };
+
+    onSubmit(submitData);
   };
 
   const getCustomerOptions = () => {
@@ -172,16 +164,18 @@ const UnifiedPaymentForm = ({
     } else {
       return insurance.map(ins => ({
         value: ins.id,
-        label: ins.insurance_name,
+        label: ins.name || ins.insurance_name || 'Unknown',
       }));
     }
   };
 
   const getPaymodeOptions = () => {
-    return paymodes.map(pm => ({
-      value: pm.id,
-      label: pm.mode_name,
-    }));
+    return (subAccounts || [])
+      .filter((sa) => sa.active !== false)
+      .map((sa) => ({
+        value: sa.id,
+        label: `${sa.name}${sa.main_account_name ? ` (${sa.main_account_name})` : ''}`,
+      }));
   };
 
   const onMenuClick = (menu, data) => {
@@ -274,7 +268,7 @@ const UnifiedPaymentForm = ({
                 );
               }}
             />
-            <Column dataField="invoice_number" caption="Invoice #" width={120} />
+            <Column dataField="invoice_number" caption="Invoice #" width={130} />
             <Column dataField="invoice_date" caption="Date" width={110} dataType="date" />
             <Column 
               dataField="patient.first_name" 
@@ -283,12 +277,66 @@ const UnifiedPaymentForm = ({
               calculateCellValue={(data) => `${data.patient?.first_name || ''} ${data.patient?.second_name || ''}`}
             />
             <Column 
-              caption="Amount Due" 
+              caption={paymentCategory?.value === 'credit' ? 'Insurance Total' : 'Cash Total'} 
+              width={120}
+              alignment="right"
+              calculateCellValue={(data) => {
+                const total = paymentCategory?.value === 'credit'
+                  ? parseFloat((data.insurance_total ?? data.invoice_amount) || 0)
+                  : parseFloat(data.total_cash || 0);
+                return total.toFixed(2);
+              }}
+            />
+            <Column 
+              caption="Paid" 
+              width={100}
+              alignment="right"
+              calculateCellValue={(data) => {
+                const paid = paymentCategory?.value === 'credit'
+                  ? parseFloat((data.insurance_paid ?? data.cash_paid) || 0)
+                  : parseFloat(data.cash_paid || 0);
+                return paid.toFixed(2);
+              }}
+              cellRender={(cellData) => (
+                <span className={parseFloat(cellData.value) > 0 ? 'text-green-600 font-medium' : 'text-gray-400'}>
+                  {formatMoney(parseFloat(cellData.value))}
+                </span>
+              )}
+            />
+            <Column 
+              caption={paymentCategory?.value === 'credit' ? 'Insurance Balance' : 'Balance Due'} 
               width={120}
               alignment="right"
               calculateCellValue={(data) => calculateInvoiceCash(data).toFixed(2)}
+              cellRender={(cellData) => (
+                <span className={parseFloat(cellData.value) > 0 ? 'text-red-600 font-semibold' : 'text-green-600 font-semibold'}>
+                  {formatMoney(parseFloat(cellData.value))}
+                </span>
+              )}
             />
-            <Column dataField="status" caption="Status" width={100} />
+            <Column dataField="status" caption="Status" width={100}
+              cellRender={(cellData) => {
+                const paid = paymentCategory?.value === 'credit'
+                  ? parseFloat((cellData.data?.insurance_paid ?? cellData.data?.cash_paid) || 0)
+                  : parseFloat(cellData.data?.cash_paid || 0);
+                const total = paymentCategory?.value === 'credit'
+                  ? parseFloat((cellData.data?.insurance_total ?? cellData.data?.invoice_amount) || 0)
+                  : parseFloat(cellData.data?.total_cash || 0);
+                const isPartial = paid > 0 && paid < total;
+                const statusValue = paymentCategory?.value === 'credit'
+                  ? (cellData.data?.insurance_balance <= 0 ? 'paid' : 'pending')
+                  : cellData.value;
+                return (
+                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                    statusValue === 'paid' ? 'bg-green-100 text-green-800' :
+                    isPartial ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-red-100 text-red-800'
+                  }`}>
+                    {isPartial ? 'Partial' : statusValue}
+                  </span>
+                );
+              }}
+            />
           </DataGrid>
         </div>
       )}

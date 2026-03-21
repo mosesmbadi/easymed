@@ -35,6 +35,7 @@ from .models import (
     Quotation,
     QuotationItem,
     SupplierInvoice,
+    SupplierPaymentReceipt,
     InventoryArchive,
     Unit
 )
@@ -576,7 +577,7 @@ class AllocateSupplierPaymentView(APIView):
     def post(self, request, *args, **kwargs):
         from .serializers import AllocateSupplierPaymentRequestSerializer, SupplierPaymentReceiptSerializer
         from .models import SupplierPaymentReceipt, SupplierPaymentAllocation, SupplierInvoice
-        from billing.models import PaymentMode
+        from billing.models import SubAccount
         from django.db import transaction
 
         req_ser = AllocateSupplierPaymentRequestSerializer(data=request.data)
@@ -585,7 +586,7 @@ class AllocateSupplierPaymentView(APIView):
 
         supplier_id = data['supplier_id']
         invoice_ids = data['invoice_ids']
-        payment_mode_id = data['payment_mode']
+        sub_account_id = data['sub_account']
         amount = data['amount']
         reference_number = data['reference_number']
         payment_date = data.get('payment_date')
@@ -595,17 +596,31 @@ class AllocateSupplierPaymentView(APIView):
         if not invoices.exists():
             return Response({"detail": "No invoices found for the selected supplier."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Get payment mode
+        # Get sub account and its payment mode
         try:
-            paymode = PaymentMode.objects.get(id=payment_mode_id)
-        except PaymentMode.DoesNotExist:
-            return Response({"detail": "Invalid payment mode."}, status=status.HTTP_400_BAD_REQUEST)
+            sub_account = SubAccount.objects.select_related('payment_mode').get(id=sub_account_id)
+        except SubAccount.DoesNotExist:
+            return Response({"detail": "Invalid sub account."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Validate sub account has sufficient balance
+        account_balance = sub_account.balance
+        if account_balance <= 0:
+            return Response(
+                {"detail": f"Sub account '{sub_account.name}' has zero balance. Cannot make payment."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        if amount > account_balance:
+            return Response(
+                {"detail": f"Insufficient funds. Sub account '{sub_account.name}' has a balance of {account_balance:.2f} but the payment amount is {amount:.2f}."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         with transaction.atomic():
             # Create payment receipt
             receipt = SupplierPaymentReceipt.objects.create(
                 supplier_id=supplier_id,
-                payment_mode=paymode,
+                sub_account=sub_account,
+                payment_mode=sub_account.payment_mode,
                 total_amount=amount,
                 reference_number=reference_number,
                 payment_date=payment_date,
@@ -634,10 +649,13 @@ class AllocateSupplierPaymentView(APIView):
                     )
                     remaining -= apply_now
 
-                    # Update invoice status if fully paid
-                    if outstanding - apply_now <= 0.01:  # Account for floating point precision
+                    # Update invoice status
+                    new_outstanding = outstanding - apply_now
+                    if new_outstanding <= 0.01:  # Account for floating point precision
                         invoice.status = 'paid'
-                        invoice.save(update_fields=['status'])
+                    else:
+                        invoice.status = 'partial'
+                    invoice.save(update_fields=['status'])
 
             ser = SupplierPaymentReceiptSerializer(receipt)
             return Response(ser.data, status=status.HTTP_201_CREATED)
@@ -651,8 +669,42 @@ class SupplierPaymentReceiptViewSet(viewsets.ReadOnlyModelViewSet):
     from .models import SupplierPaymentReceipt
     
     queryset = SupplierPaymentReceipt.objects.all().select_related(
-        'supplier', 'payment_mode'
+        'supplier', 'payment_mode', 'sub_account', 'sub_account__main_account'
     ).order_by('-created_at')
     serializer_class = SupplierPaymentReceiptSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['supplier', 'payment_mode', 'payment_date']
+
+
+def download_supplier_payment_receipt_pdf(request, receipt_id):
+    receipt = get_object_or_404(
+        SupplierPaymentReceipt.objects.select_related(
+            'supplier', 'sub_account', 'sub_account__main_account', 'payment_mode'
+        ),
+        pk=receipt_id,
+    )
+    company = Company.objects.first()
+    company_logo_url = (
+        request.build_absolute_uri(company.logo.url)
+        if company and getattr(company, 'logo', None) and company.logo
+        else None
+    )
+
+    allocations = receipt.allocations.select_related(
+        'supplier_invoice', 'supplier_invoice__supplier'
+    ).all()
+
+    total_invoiced = sum(a.supplier_invoice.amount for a in allocations)
+
+    html_template = get_template('supplier_payment_receipt.html').render({
+        'company': company,
+        'company_logo_url': company_logo_url,
+        'receipt': receipt,
+        'allocations': allocations,
+        'total_invoiced': total_invoiced,
+    })
+
+    pdf_file = HTML(string=html_template).write_pdf()
+    response = HttpResponse(pdf_file, content_type='application/pdf')
+    response['Content-Disposition'] = f'filename="supplier_payment_receipt_{receipt.id}.pdf"'
+    return response
