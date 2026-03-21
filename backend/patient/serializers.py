@@ -13,6 +13,7 @@ from .models import (
     Triage,
     AttendanceProcess,
     TriageSettings,
+    Appointment,  # <-- ADDED: import the new Appointment model
 )
 from company.serializers import InsuranceCompanySerializer
 from inventory.models import (
@@ -241,4 +242,26 @@ class TriageSettingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = TriageSettings
         fields = '__all__'
-    
+
+
+# ===================== NEW APPOINTMENT SERIALIZER =====================
+class AppointmentSerializer(serializers.ModelSerializer):
+    patient_name = serializers.SerializerMethodField()
+    patient_unique_id = serializers.CharField(source='patient.unique_id', read_only=True)  # ✅ added
+    doctor_name = serializers.SerializerMethodField()
+    doctor_specialty = serializers.CharField(source='doctor.profession', read_only=True, default='')
+    created_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Appointment
+        fields = '__all__'
+        read_only_fields = ('created_by', 'created_at', 'updated_at')
+
+    def get_patient_name(self, obj):
+        return f"{obj.patient.first_name} {obj.patient.second_name}".strip()
+
+    def get_doctor_name(self, obj):
+        return obj.doctor.get_fullname() if obj.doctor else ''
+
+    def get_created_by_name(self, obj):
+        return obj.created_by.get_fullname() if obj.created_by else ''

@@ -29,7 +29,8 @@ from .models import (
     Referral,
     Triage,
     AttendanceProcess,
-    TriageSettings
+    TriageSettings,
+    Appointment,  # <-- ADDED: import Appointment model
 )
 from .serializers import (
     ContactDetailsSerializer,
@@ -43,6 +44,7 @@ from .serializers import (
     TriageSerializer,
     AttendanceProcessSerializer,
     TriageSettingsSerializer,
+    AppointmentSerializer,  # <-- ADDED: import AppointmentSerializer
 )
 from .filters import (
     AttendanceProcessFilter,
@@ -320,3 +322,17 @@ def generate_lab_tests_report(request):
         return response
     except Exception as e:
         return HttpResponseBadRequest(f"Error generating PDF: {str(e)}")
+
+
+# ===================== NEW APPOINTMENT VIEWSET =====================
+class AppointmentViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for viewing and editing Appointment instances.
+    """
+    queryset = Appointment.objects.all().order_by('-appointment_date')
+    serializer_class = AppointmentSerializer
+    permission_classes = [IsReceptionistUser]   # or use permissions.IsAuthenticated; adjust as needed
+
+    def perform_create(self, serializer):
+        """Automatically set the created_by field to the current user."""
+        serializer.save(created_by=self.request.user)

@@ -15,10 +15,10 @@ from .views import (
     PrescribedDrugByPatientIdAPIView,
     PrescribedDrugByPrescriptionViewSet,
     AttendanceProcessViewSet,
-
     download_prescription_pdf,
     generate_lab_tests_report,
     TriageSettingsView,
+    AppointmentViewSet,  # <-- ADDED: import the new AppointmentViewSet
 )
 
 router = DefaultRouter()
@@ -33,7 +33,7 @@ router.register(r'consultations', ConsultationViewSet)
 router.register(r'referrals', ReferralViewSet)
 router.register(r'triage', TriageViewSet)
 router.register(r'initiate-attendance-process', AttendanceProcessViewSet)
-
+router.register(r'appointments', AppointmentViewSet)  # <-- ADDED: register the appointment endpoint
 
 
 urlpatterns = [
