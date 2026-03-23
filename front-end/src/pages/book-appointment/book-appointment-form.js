@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import * as Yup from "yup";
 import { Formik, Field, Form, ErrorMessage } from "formik";
-import { bookAppointment } from "../../redux/service/appointment";
+import { createAppointment as bookAppointment } from "../../redux/service/appointment";
 import Grid from "@mui/material/Grid";
 import { useSelector, useDispatch } from "react-redux";
 import { getAllServices } from "@/redux/features/patients";
