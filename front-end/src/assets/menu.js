@@ -26,27 +26,23 @@ import { MdPersonAddAlt1 } from "react-icons/md";
 // Side NavBar
 
 export const menus = [
-  // New Visits (Check-In) – moved to top
-  {
-    label: "Check-In",
-    href: "/dashboard/reception/check-in",
-    icon: <MdPersonAddAlt1 className="text-xl" />,
-    requiredPermission: "CAN_ACCESS_RECEPTION_DASHBOARD",
-  },
-  // Appointments – added between Check-In and Patients
- {
-  label: "Appointments",
-  href: "/dashboard/appointment",
-  icon: <BsCalendarEvent className="text-xl" />,
-  requiredPermission: "CAN_ACCESS_GENERAL_DASHBOARD", // ← changed
-},
-  // Patients – moved after Appointments
   {
     label: "Patients",
     href: "/dashboard/patients",
     icon: <HiUsers className="text-xl" />,
     requiredPermission: "CAN_ACCESS_PATIENTS_DASHBOARD",
   },
+  {
+    label: "Check-In",
+    href: "/dashboard/reception/check-in",
+    icon: <MdPersonAddAlt1 className="text-xl" />,
+    requiredPermission: "CAN_ACCESS_RECEPTION_DASHBOARD",
+  },
+  // {
+  //   label: "Reception",
+  //   href: "/dashboard",
+  //   icon: <BiSolidDashboard className="text-xl" />,
+  // },
   {
     label: "Nursing Station",
     href: "/dashboard/nursing-station",
@@ -109,6 +105,7 @@ export const menus = [
       },
     ],
   },
+
   {
     label: "Inventory",
     href: "/dashboard/inventory",
@@ -346,3 +343,4 @@ export const InventoryDisplayStats = () => {
   ])
 
 }
+
