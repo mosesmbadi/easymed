@@ -45,3 +45,25 @@ export const dayTransaction = (payload, auth) =>{
         })
     })
 }
+
+
+/**
+ * What each item earned and what it cost, over a date range.
+ *
+ * Cost comes off the stock ledger, which records the unit cost of everything
+ * that left the shelf, so it is measured rather than estimated -- except the
+ * share of a sample collection apportioned across the tests ordered off it,
+ * which the response keeps in its own column.
+ */
+export const grossMargin = (params, auth) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+        axiosInstance.get(`${APP_API_URL.GROSS_MARGIN}`, { params })
+        .then((res) => {
+            resolve(res.data)
+        })
+        .catch((err) => {
+            reject(err.response?.data?.detail ?? err.message)
+        })
+    })
+}

@@ -152,6 +152,13 @@ const LabModal = ({ labOpen, setLabOpen, selectedRowData, isRetest = false, arch
             <p>{`Gender: ${patient?.gender}`}</p>
             <p>{`Age: ${patient?.age}`}</p>
           </div>
+          {isRetest && (
+            <p className="text-sm font-normal mt-2 bg-background border border-gray rounded p-2">
+              <strong>Re-test.</strong> The sample has already been drawn and comes
+              out of the archive, so no syringe, tube or gloves are charged again
+              &mdash; only the reagents each test burns.
+            </p>
+          )}
         </DialogTitle>
         <DialogContent>
           <Formik

@@ -53,12 +53,18 @@ const ReceiveIncomingItems = ({ open, setOpen, selectedRowData, setSelectedRowDa
         amount: Yup.string().required("This field is required!"),
     });
 
-    /** One received line, in the shape the goods-receipt endpoint expects. */
+    /**
+     * One received line, in the shape the goods-receipt endpoint expects.
+     *
+     * A receipt may re-open the item's cash price, but only for something that
+     * has one: a reagent or a consumable carries no sale price, and sending its
+     * zero would be asking the server to price a raw material.
+     */
     const receiptLine = (item) => ({
         "item": item.item,
         "quantity": item.quantity_received ? item.quantity_received : item.quantity_approved,
         "purchase_price": item.buying_price,
-        "sale_price": item.selling_price,
+        "sale_price": parseFloat(item.selling_price) > 0 ? item.selling_price : null,
         "item_unit": item.item_unit || null,
         "lot_no": item.lot_no ? item.lot_no : "",
         // null, not "": an empty string is not a date, and the whole line

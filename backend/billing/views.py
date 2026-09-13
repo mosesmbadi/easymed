@@ -259,10 +259,12 @@ class AllocatePaymentView(APIView):
     Rules:
     - Only applies to the patient's invoices provided.
     - Allocation order: by InvoiceItem.item_created_at ascending.
-    - For each InvoiceItem, the outstanding "cash component" is:
-      cash item -> actual_total
-      insurance item -> (item_amount - actual_total) [co-pay]
-      minus any previous allocations to that item.
+    - For each InvoiceItem the outstanding component is read off the line
+      itself: `actual_total` is what the billed party owes (the insurer on an
+      insurance line, the patient on any other) and `patient_amount` is the
+      patient's own share, co-pay included. Neither is reconstructed by
+      subtraction any more.
+    - Minus any previous allocations to that item.
     - Creates a PaymentReceipt and PaymentAllocation entries.
     - Updates Invoice.cash_paid totals accordingly.
     """
@@ -332,7 +334,8 @@ class AllocatePaymentView(APIView):
 
                 # Determine payable component for this item based on who is paying.
                 if is_insurance_payment:
-                    # Insurance pays the insurance-covered component (actual_total).
+                    # The insurer owes its share of the line, which is what
+                    # actual_total holds on an insurance line.
                     payable_component = float(it.actual_total or 0)
                     already_applied = float(
                         it.allocations.filter(receipt__insurance_id=insurance_id).aggregate(
@@ -340,13 +343,10 @@ class AllocatePaymentView(APIView):
                         )['total'] or 0
                     )
                 else:
-                    # Patient cash pays cash component:
-                    # - cash item -> actual_total
-                    # - insurance item -> co-pay = item_amount - actual_total
-                    if it.payment_mode and it.payment_mode.payment_category == 'insurance':
-                        payable_component = float((it.item_amount or 0) - (it.actual_total or 0))
-                    else:
-                        payable_component = float(it.actual_total or 0)
+                    # The patient owes their own share: the whole line when it
+                    # is cash, the co-pay when it is insured. The line records
+                    # that directly, so there is nothing to work out here.
+                    payable_component = float(it.patient_amount or 0)
 
                     already_applied = float(
                         it.allocations.filter(
@@ -458,15 +458,18 @@ def download_invoice_pdf(request, invoice_id):
             if insurance_price:
                 item.insurance_sale_price = insurance_price.sale_price
                 item.co_pay = insurance_price.co_pay
-                item.total_amount = insurance_price.sale_price + insurance_price.co_pay
             else:
                 item.insurance_sale_price = None
                 item.co_pay = None
-                item.total_amount = item.actual_total or item.item_amount or regular_sale_price
         else:
             item.insurance_sale_price = None
             item.co_pay = None
-            item.total_amount = item.actual_total or item.item_amount or regular_sale_price
+
+        # The line already knows what it is worth in total, quantity included.
+        # Adding the insurer price to the co-pay here re-derived that from the
+        # current price rows and silently dropped the quantity, so two boxes
+        # printed as one.
+        item.total_amount = item.item_amount or regular_sale_price
 
     subtotal = sum(item.total_amount for item in invoice_items)
     

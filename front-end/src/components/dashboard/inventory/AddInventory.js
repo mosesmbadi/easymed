@@ -85,6 +85,58 @@ const QuantityAndTotal = ({ items = [] }) => {
   );
 };
 
+/**
+ * Sale price, but only for something the hospital actually sells.
+ *
+ * A reagent and a syringe are raw materials: the lab sells the Test Panel
+ * assembled out of them, and that is where its price is set. Showing a price
+ * box against them invites a number that nothing would ever read.
+ */
+const SalePriceField = ({ items = [] }) => {
+  const { values, setFieldValue } = useFormikContext();
+
+  const selected = items.find((i) => i.id === values.item?.value);
+  // Unknown until an item is picked; assume sellable so the field is not
+  // mysteriously absent on an empty form.
+  const sellable = selected ? selected.is_sellable !== false : true;
+
+  useEffect(() => {
+    if (!sellable && values.sale_price !== "") {
+      setFieldValue("sale_price", "", false);
+    }
+  }, [sellable]);
+
+  if (!sellable) {
+    return (
+      <Grid className='my-2' item md={6} xs={12}>
+        <label>Sale Price</label>
+        <p className="text-xs text-gray-500 mt-2">
+          {selected?.name} is not sold as it stands. A lab reagent or consumable is
+          a raw material &mdash; price the <strong>Test Panel</strong> built from it,
+          under Lab Settings &gt; Test Panels.
+        </p>
+      </Grid>
+    );
+  }
+
+  return (
+    <Grid className='my-2' item md={6} xs={12}>
+      <label htmlFor="sale_price">Sale Price</label>
+      <Field
+        className="block border rounded-md text-sm border-gray py-2.5 px-4 focus:outline-card w-full"
+        maxWidth="sm"
+        placeholder="Sale Price"
+        name="sale_price"
+      />
+      <ErrorMessage
+        name="sale_price"
+        component="div"
+        className="text-warning text-xs"
+      />
+    </Grid>
+  );
+};
+
 const AddInventory = () => {
 
   const [loading, setLoading] = useState(false);
@@ -111,7 +163,9 @@ const AddInventory = () => {
     lot_number: Yup.string().required("This field is required!"),
     department: Yup.object().required("This field is required!"),
     purchase_price: Yup.string().required("This field is required!"),
-    sale_price: Yup.string().required("This field is required!"),
+    // Not required: plenty of items -- every reagent and consumable -- have no
+    // sale price at all, so the field is not even shown for them.
+    sale_price: Yup.string(),
     item: Yup.object().required("This field is required!"),
     category_one: Yup.string().required("This field is required"),
     expiry_date: Yup.string().required("This field is required!"),
@@ -119,10 +173,17 @@ const AddInventory = () => {
 
   const handleAddInventory = async (formValue, helpers) => {
     try {
+      const selected = item.find((i) => i.id === formValue.item?.value);
       const formData = {
         ...formValue,
-        item: parseInt(formValue.item.value), 
-        department: parseInt(formValue.department.value),       
+        item: parseInt(formValue.item.value),
+        department: parseInt(formValue.department.value),
+        // Omitted, not blanked: the server rejects a price on something it
+        // does not consider sellable, and "" is not a price either.
+        sale_price:
+          selected?.is_sellable === false || formValue.sale_price === ""
+            ? null
+            : formValue.sale_price,
       };
 
       setLoading(true);
@@ -215,20 +276,7 @@ const AddInventory = () => {
                 className="text-warning text-xs"
               />
             </Grid>
-            <Grid className='my-2' item md={6} xs={12}>
-            <label htmlFor="Sale-Price">Sale Price</label>
-              <Field
-                className="block border rounded-md text-sm border-gray py-2.5 px-4 focus:outline-card w-full"
-                maxWidth="sm"
-                placeholder="Sale Price"
-                name="sale_price"
-              />
-              <ErrorMessage
-                name="sale_price"
-                component="div"
-                className="text-warning text-xs"
-              />
-            </Grid>
+            <SalePriceField items={item} />
             <Grid className='my-2' item md={6} xs={12}>
             <label htmlFor="lot_number">Lot Number</label>
               <Field

@@ -38,59 +38,43 @@ CATEGORY_DEPARTMENTS = {
     "Specialized Appointment": [SHARED_DEPARTMENT_NAME],
 }
 
-MEDICAL_ITEM_NAMES = [
-    "Paracetamol Tablet", "Surgical Gloves", "Blood Pressure Monitor",
-    "Stethoscope", "Insulin Pen", "Antiseptic Solution", "Gauze Roll", "Thermometer",
-    "Amoxicillin Capsule", "Saline Drip", "Face Mask", "ECG Machine", "Defibrillator",
-    "Scalpel", "Surgical Mask", "Bandage", "Wheelchair", "Crutches",
-    "Aspirin", "Ibuprofen", "Morphine", "Syringe", "Catheter", "IV Stand",
-    "Nebulizer", "Pulse Oximeter", "Suction Machine", "Hospital Bed",
-    "Stretcher", "Mayo Stand", "Instrument Table", "Operating Light"
-]
-
-# Map medical items to appropriate categories
-ITEM_CATEGORY_MAP = {
-    "Paracetamol Tablet": "Drug",
-    "Surgical Gloves": "SurgicalEquipment",
-    "Blood Pressure Monitor": "SurgicalEquipment",
-    "Stethoscope": "SurgicalEquipment",
-    "Insulin Pen": "Drug",
-    "Antiseptic Solution": "Drug",
-    "Gauze Roll": "SurgicalEquipment",
-    "Thermometer": "SurgicalEquipment",
-    "Amoxicillin Capsule": "Drug",
-    "Saline Drip": "Drug",
-    "Face Mask": "SurgicalEquipment",
-    "ECG Machine": "SurgicalEquipment",
-    "Defibrillator": "SurgicalEquipment",
-    "Scalpel": "SurgicalEquipment",
-    "Surgical Mask": "SurgicalEquipment",
-    "Bandage": "SurgicalEquipment",
-    "Wheelchair": "Furniture",
-    "Crutches": "Furniture",
-}
-
-MEDICAL_DESCRIPTIONS = [
-    "Used for pain relief and fever reduction.",
-    "Sterile gloves for surgical procedures.",
-    "Disposable syringe for injections.",
-    "Used for intravenous access.",
-    "Device to measure blood pressure.",
-    "Instrument to listen to heart and lungs.",
-    "Device for insulin injection.",
-    "Solution for cleaning wounds.",
-    "Sterile gauze for wound dressing.",
-    "Device to measure body temperature.",
-    "Antibiotic for bacterial infections.",
-    "IV fluid for hydration.",
-    "Protective mask for infection control.",
-    "Device to record heart activity.",
-    "Device to restore normal heartbeat.",
-    "Sharp blade for surgical procedures.",
-    "Protective mask for surgery.",
-    "Elastic bandage for support.",
-    "Mobility aid for patients.",
-    "Aid for walking support."
+# The general catalogue: (name, category, base unit, bought in packs, description).
+# Every row is fixed rather than drawn at random. A random category once made
+# a stretcher a lab reagent, and a random unit made the same item twice over,
+# in kilograms and in millilitres.
+DEMO_CATALOGUE = [
+    ("Paracetamol Tablet", "Drug", "tablets", True, "Used for pain relief and fever reduction."),
+    ("Aspirin", "Drug", "tablets", True, "Antiplatelet and pain relief."),
+    ("Ibuprofen", "Drug", "tablets", True, "Anti-inflammatory pain relief."),
+    ("Amoxicillin Capsule", "Drug", "capsules", True, "Antibiotic for bacterial infections."),
+    ("Morphine", "Drug", "ampoules", True, "Opioid analgesic for severe pain."),
+    ("Insulin Pen", "Drug", "pens", True, "Device for insulin injection."),
+    ("Antiseptic Solution", "Drug", "ml", False, "Solution for cleaning wounds."),
+    ("Saline Drip", "Drug", "bags", True, "IV fluid for hydration."),
+    ("Surgical Gloves", "SurgicalEquipment", "pairs", True, "Sterile gloves for surgical procedures."),
+    ("Syringe", "SurgicalEquipment", "pieces", True, "Disposable syringe for injections."),
+    ("Catheter", "SurgicalEquipment", "pieces", True, "Urinary drainage catheter."),
+    ("Gauze Roll", "SurgicalEquipment", "rolls", True, "Sterile gauze for wound dressing."),
+    ("Bandage", "SurgicalEquipment", "rolls", True, "Elastic bandage for support."),
+    ("Face Mask", "SurgicalEquipment", "pieces", True, "Protective mask for infection control."),
+    ("Surgical Mask", "SurgicalEquipment", "pieces", True, "Protective mask for surgery."),
+    ("Scalpel", "SurgicalEquipment", "pieces", True, "Sharp blade for surgical procedures."),
+    ("Thermometer", "SurgicalEquipment", "pieces", False, "Device to measure body temperature."),
+    ("Stethoscope", "SurgicalEquipment", "pieces", False, "Instrument to listen to heart and lungs."),
+    ("Blood Pressure Monitor", "SurgicalEquipment", "pieces", False, "Device to measure blood pressure."),
+    ("Pulse Oximeter", "SurgicalEquipment", "pieces", False, "Measures blood oxygen saturation."),
+    ("Nebulizer", "SurgicalEquipment", "pieces", False, "Delivers inhaled medication."),
+    ("Suction Machine", "SurgicalEquipment", "pieces", False, "Clears airway secretions."),
+    ("ECG Machine", "SurgicalEquipment", "pieces", False, "Device to record heart activity."),
+    ("Defibrillator", "SurgicalEquipment", "pieces", False, "Device to restore normal heartbeat."),
+    ("Operating Light", "SurgicalEquipment", "pieces", False, "Theatre lighting."),
+    ("Wheelchair", "Furniture", "pieces", False, "Mobility aid for patients."),
+    ("Crutches", "Furniture", "pairs", False, "Aid for walking support."),
+    ("IV Stand", "Furniture", "pieces", False, "Holds infusion bags at the bedside."),
+    ("Hospital Bed", "Furniture", "pieces", False, "Adjustable ward bed."),
+    ("Stretcher", "Furniture", "pieces", False, "Patient transport."),
+    ("Mayo Stand", "Furniture", "pieces", False, "Instrument tray stand for theatre."),
+    ("Instrument Table", "Furniture", "pieces", False, "Theatre instrument table."),
 ]
 
 DASHBOARD_PERMISSIONS = [
@@ -338,43 +322,25 @@ def create_dummy_insurance_companies(count=3):
 
 
 
-def create_dummy_items(count=50):
+def create_dummy_items():
+    '''The general catalogue. Lab items and services are seeded elsewhere.'''
     items = []
-    # Exclude appointment categories from random assignment - these should be created separately
-    categories = [c[0] for c in Item.CATEGORY_CHOICES if c[0] not in ['General Appointment', 'Specialized Appointment']]
-    units = list(Unit.objects.values_list('symbol', flat=True)) or ['unit', 'g', 'mg', 'ml', 'L', 'kg']
-    
-    created_count = 0
-    attempts = 0
-    max_attempts = count * 2
-    
-    while created_count < count and attempts < max_attempts:
-        attempts += 1
-        name = random.choice(MEDICAL_ITEM_NAMES)
-        desc = random.choice(MEDICAL_DESCRIPTIONS)
-        # Use mapped category if available, otherwise pick random from valid categories
-        category = ITEM_CATEGORY_MAP.get(name, random.choice(categories))
-        units_of_measure = random.choice(units)
-        
+    for name, category, unit, packed, desc in DEMO_CATALOGUE:
         item, created = Item.objects.get_or_create(
-            name=name[:255],
+            name=name,
             category=category,
-            units_of_measure=units_of_measure,
+            units_of_measure=unit,
             defaults={
-                'item_code': fake.unique.bothify(text='???-#####')[:255],
-                'desc': desc[:255],
+                'item_code': fake.unique.bothify(text='???-#####'),
+                'desc': desc,
                 'vat_rate': 16.0,
                 'slow_moving_period': random.choice([30, 60, 90, 180]),
             }
         )
-        if item not in items:
-            tag_item_departments(item, departments_for_category(item.category))
-            if created and item.is_stock_tracked:
-                add_demo_pack_sizes(item)
-            items.append(item)
-            if created:
-                created_count += 1
-
+        tag_item_departments(item, departments_for_category(item.category))
+        if created and packed:
+            add_demo_pack_sizes(item)
+        items.append(item)
     return items
 
 
@@ -634,22 +600,13 @@ def create_demo_lab_profiles_and_panels():
     for name in specimen_names:
         specimens[name], _ = Specimen.objects.get_or_create(name=name)
 
-    # Example test profiles and their panels
+    # Only what the curated set in create_real_world_lab_data() does not cover.
+    # CBC, liver and kidney panels used to be declared here too. That left two
+    # "Urea" panels in two differently named renal profiles, and worse, the toy
+    # CBC panels shared the curated profile's name: the curated generator found
+    # Hemoglobin, White Blood Cell Count and Platelet Count already there,
+    # skipped them, and never linked the reagent the CBC showcase exists for.
     profiles_and_panels = {
-        "Complete Blood Count (CBC)": [
-            {"name": "Hemoglobin", "specimen": "Blood", "unit": "g", "is_qualitative": False, "is_quantitative": True},
-            {"name": "White Blood Cell Count", "specimen": "Blood", "unit": "10^9/L", "is_qualitative": False, "is_quantitative": True},
-            {"name": "Platelet Count", "specimen": "Blood", "unit": "10^9/L", "is_qualitative": False, "is_quantitative": True},
-        ],
-        "Liver Function Test (LFT)": [
-            {"name": "ALT (SGPT)", "specimen": "Blood", "unit": "IU/L", "is_qualitative": False, "is_quantitative": True},
-            {"name": "AST (SGOT)", "specimen": "Blood", "unit": "IU/L", "is_qualitative": False, "is_quantitative": True},
-            {"name": "Bilirubin", "specimen": "Blood", "unit": "mg/dL", "is_qualitative": False, "is_quantitative": True},
-        ],
-        "Renal Function Test (RFT)": [
-            {"name": "Creatinine", "specimen": "Blood", "unit": "mg/dL", "is_qualitative": False, "is_quantitative": True},
-            {"name": "Urea", "specimen": "Blood", "unit": "mg/dL", "is_qualitative": False, "is_quantitative": True},
-        ],
         "Urinalysis": [
             {"name": "Urine Protein", "specimen": "Urine", "unit": "mg/dL", "is_qualitative": False, "is_quantitative": True},
             {"name": "Urine Glucose", "specimen": "Urine", "unit": "mg/dL", "is_qualitative": False, "is_quantitative": True},
@@ -733,26 +690,6 @@ def create_reference_values():
             # Children
             ('M', 1, 17, 150.0, 450.0),
             ('F', 1, 17, 150.0, 450.0),
-        ],
-        
-        "ALT (SGPT)": [
-            # Adult Males
-            ('M', 18, 120, 7.0, 41.0),
-            # Adult Females
-            ('F', 18, 120, 7.0, 33.0),
-        ],
-        
-        "AST (SGOT)": [
-            # Adult Males
-            ('M', 18, 120, 8.0, 40.0),
-            # Adult Females
-            ('F', 18, 120, 8.0, 32.0),
-        ],
-        
-        "Bilirubin": [
-            # Adults (both sexes)
-            ('M', 18, 120, 0.1, 1.2),
-            ('F', 18, 120, 0.1, 1.2),
         ],
         
         "Creatinine": [
@@ -899,17 +836,17 @@ def create_reference_values():
             ('F', 18, 120, 4.5, 12.0),
         ],
         
-        "Fasting Blood Glucose": [
+        "Fasting Blood Sugar (FBS)": [
             ('M', 18, 120, 70.0, 100.0),
             ('F', 18, 120, 70.0, 100.0),
         ],
         
-        "Random Blood Glucose": [
+        "Random Blood Sugar (RBS)": [
             ('M', 18, 120, 70.0, 140.0),
             ('F', 18, 120, 70.0, 140.0),
         ],
         
-        "HbA1c": [
+        "Hemoglobin A1c (HbA1c)": [
             ('M', 18, 120, 4.0, 5.6),
             ('F', 18, 120, 4.0, 5.6),
         ],
@@ -969,7 +906,7 @@ def create_lab_test_interpretations():
             "If abnormal, consider imaging or further viral hepatitis screening.",
             False
         ),
-        "Renal Function Test (RFT)": (
+        "Kidney Function Test (RFT)": (
             "Assesses kidney function and hydration status.",
             "Adjust renally cleared medications if eGFR is reduced.",
             False
@@ -1094,7 +1031,7 @@ def create_real_world_lab_data():
     )
     from inventory.models import Item, Department, ItemUnit, StockMovement, StockPolicy
     from inventory.services import stock as stock_service
-    from decimal import Decimal
+    from decimal import ROUND_CEILING, Decimal
     from datetime import date, timedelta
 
     created_data = {
@@ -1109,6 +1046,11 @@ def create_real_world_lab_data():
     # Get or create Lab department
     lab_dept, _ = Department.objects.get_or_create(name='Lab')
 
+    # What one test's worth of each reagent is worth to the patient. Collected
+    # here and spent at the end, on the panels, because a reagent carries no
+    # price of its own -- the panel built from it is the thing that is sold.
+    reagent_price_per_test = {}
+
     def create_reagent_inventory(reagent_item, purchase_price, sale_price, quantity_kits,
                                  tests_per_kit=1):
         """
@@ -1117,6 +1059,9 @@ def create_real_world_lab_data():
 
         `tests_per_kit` is recorded as the reagent's Kit pack size, then used to
         convert the kits bought into the tests the ledger actually counts.
+
+        `sale_price` arrives per kit and is banked per test against the reagent,
+        to be charged on the panels that consume it.
         """
         if tests_per_kit > 1:
             ItemUnit.objects.update_or_create(
@@ -1137,19 +1082,14 @@ def create_real_world_lab_data():
             movement_type=StockMovement.Type.OPENING_BALANCE,
             idempotency_key=f'demo-reagent:{reagent_item.id}',
         )
-        # Both prices arrive per kit, but the ledger and the price list both
-        # work per base unit, so the sale price is divided down the same way
-        # unit_cost is above. Passing it through undivided priced a single test
-        # at the price of a whole kit.
-        stock_service.set_sale_price(
-            reagent_item, Decimal(str(sale_price)) / tests_per_kit)
+        # Both prices arrive per kit, but the ledger works per base unit, so
+        # the sale figure is divided down the same way unit_cost is above. It
+        # is banked rather than applied: a reagent is a raw material, nobody
+        # buys one, and `Item.is_sellable` is false for it. The panel it feeds
+        # is what carries the price.
+        reagent_price_per_test[reagent_item.id] = (
+            Decimal(str(sale_price)) / tests_per_kit)
         tag_item_departments(reagent_item, 'Lab')
-        # The paired Lab Test billing item belongs to the lab too. sync_lab_test_item
-        # links it with QuerySet.update(), which leaves the in-memory instance
-        # stale, so re-read before checking.
-        reagent_item.refresh_from_db(fields=['lab_test_item'])
-        if reagent_item.lab_test_item_id:
-            tag_item_departments(reagent_item.lab_test_item, 'Lab')
         created_data['inventory_records'].append(movement)
         return movement
 
@@ -1891,7 +1831,40 @@ def create_real_world_lab_data():
                         if created:
                             created_data['reference_values'].append(ref_val)
     
+    # Price the panels. This is the lab's only sale price: the panel is the
+    # finished product, assembled from reagents that are individually worth
+    # nothing to a patient. A panel with no reagents still needs a price, so it
+    # falls back to the same default `ensure_service_prices` would give it.
+    #
+    # The price has to carry the draw and the bench time as well as the
+    # reagent, so it is a multiple of the reagent's worth with a floor, rounded
+    # the way a price list is. Priced at the reagent alone, a haemoglobin sold
+    # for 36 and lost money on every draw.
+    DEFAULT_PANEL_PRICE = Decimal('500.00')
+    PANEL_MARKUP = 4
+    PANEL_FLOOR = Decimal('200')
+    PRICE_STEP = Decimal('50')
+    priced_panels = 0
+
+    for panel in LabTestPanel.objects.filter(
+            id__in=[p.id for p in created_data['panels']]
+    ).select_related('item').prefetch_related('reagent_links'):
+        if not panel.item_id or panel.item.current_sale_price:
+            continue
+        price = sum(
+            (reagent_price_per_test.get(link.reagent_item_id, Decimal('0'))
+             * link.units_consumed_per_run
+             for link in panel.reagent_links.all()),
+            Decimal('0'),
+        )
+        if price:
+            steps = (price * PANEL_MARKUP / PRICE_STEP).to_integral_value(rounding=ROUND_CEILING)
+            price = max(PANEL_FLOOR, steps * PRICE_STEP)
+        panel.set_sale_price((price or DEFAULT_PANEL_PRICE).quantize(Decimal('0.01')))
+        priced_panels += 1
+
     print(f"\n✅ Created Real-World Lab Data:")
+    print(f"   - {priced_panels} Panels Priced")
     print(f"   - {len(created_data['profiles'])} Profiles")
     print(f"   - {len(created_data['panels'])} Test Panels")
     print(f"   - {len(created_data['reference_values'])} Reference Values")
@@ -2013,7 +1986,7 @@ CONSUMABLE_RULES = [
         'consumables': [
             ('Syringes 5ml', 1, True),
             ('Alcohol Swabs', 1, True),
-            ('Cotton Wool 500g', 1, False),
+            ('Gauze Swabs 10x10cm', 1, False),
         ],
     },
     {
@@ -2041,7 +2014,9 @@ BLOOD_TEST_CONSUMABLES = [
     ('Syringes 5ml', 1, True),
     ('Alcohol Swabs', 1, True),
     ('Blood Collection Tubes EDTA', 1, True),
-    ('Cotton Wool 500g', 1, False),
+    # A swab to press on the puncture. Not a roll of cotton wool: that is
+    # 500 g, and one per draw made every blood test cost more than it sold for.
+    ('Gauze Swabs 10x10cm', 1, False),
 ]
 
 URINE_TEST_CONSUMABLES = [
@@ -2050,25 +2025,49 @@ URINE_TEST_CONSUMABLES = [
 ]
 
 
+def consumable_item_names():
+    """
+    Every item the rules above name as a consumable.
+
+    One definition, used twice: by the pharmacy seeding, so these are created
+    as Internal and unpriced in the first place, and by the linking step. They
+    used to be created as priced Resale stock and flipped to Internal
+    afterwards, which left a sale price on every syringe in the catalogue.
+    """
+    return (
+        {name for rule in CONSUMABLE_RULES for name, _, _ in rule['consumables']}
+        | {name for name, _, _ in BLOOD_TEST_CONSUMABLES}
+        | {name for name, _, _ in URINE_TEST_CONSUMABLES}
+    )
+
+
+# How many of each collection item the lab keeps on its own shelf. Sample
+# collection issues from Lab, never from Pharmacy.
+LAB_COLLECTION_STOCK = 200
+
+
 def create_item_consumables():
     """
-    Wire up the accompaniments: what each sellable item uses up alongside it.
+    Wire up what gets used up alongside something else, on both sides of the
+    hospital.
 
-    An injectable drug needs a syringe and a swab whether it is given in the
-    ward or at the patient's home; a urea test needs a syringe, a swab and a
-    tube. Tablets need nothing, and get no rows -- which is what lets billing
-    tell "no accompaniments required" apart from "accompaniments missing".
+    Pharmacy: an injectable drug needs a syringe and a swab whether it is given
+    in the ward or at the patient's home, so the link sits on the drug
+    (`ItemConsumable`) and leaves stock when the drug is billed. Tablets need
+    nothing and get no rows, which is what lets billing tell "needs nothing"
+    apart from "needs something we do not have".
+
+    Lab: the syringe belongs to the *draw*, not the test, so it sits on the
+    specimen (`SpecimenConsumable`) and leaves stock when the sample is
+    collected. Three panels off one tube of blood cost one syringe, and a
+    re-test off an archived sample costs none.
     """
     from inventory.models import Item, ItemConsumable
 
     print("\n\U0001f489 Linking items to their consumables (accompaniments)...")
 
     # Every consumable is an internal-use item, not something sold on its own.
-    consumable_names = {
-        name
-        for rule in CONSUMABLE_RULES for name, _, _ in rule['consumables']
-    } | {name for name, _, _ in BLOOD_TEST_CONSUMABLES} \
-      | {name for name, _, _ in URINE_TEST_CONSUMABLES}
+    consumable_names = consumable_item_names()
 
     consumables = {}
     for name in consumable_names:
@@ -2112,33 +2111,101 @@ def create_item_consumables():
             created += made
             linked_items += int(made > 0)
 
-    # Lab tests, by the specimen their panel draws.
-    from laboratory.models import LabTestPanel
+    # The lab side: on the specimen, because the draw is what spends them.
+    from laboratory.models import Specimen, SpecimenConsumable
 
-    for panel in LabTestPanel.objects.select_related('specimen', 'item'):
-        if panel.item_id is None or panel.specimen_id is None:
-            continue
-        specimen = (panel.specimen.name or '').strip().lower()
-        if specimen in ('blood', 'serum', 'plasma'):
+    specimen_created = 0
+    specimens_linked = 0
+
+    for specimen in Specimen.objects.all():
+        name = (specimen.name or '').strip().lower()
+        if name in ('blood', 'serum', 'plasma'):
             rows = BLOOD_TEST_CONSUMABLES
-        elif specimen == 'urine':
+        elif name == 'urine':
             rows = URINE_TEST_CONSUMABLES
         else:
             continue
-        made = link(panel.item, rows)
-        created += made
-        linked_items += int(made > 0)
+
+        made = 0
+        for consumable_name, quantity, required in rows:
+            item = consumables.get(consumable_name)
+            if item is None:
+                continue
+            _, was_created = SpecimenConsumable.objects.update_or_create(
+                specimen=specimen, item=item,
+                defaults={'quantity_per_collection': quantity, 'is_required': required},
+            )
+            made += int(was_created)
+        specimen_created += made
+        specimens_linked += int(made > 0)
+
+    # The lab draws from its own shelf. Everything the pharmacy seeding
+    # received went into Pharmacy, which is right for the syringe that goes
+    # with an injection and wrong for the one that goes into an arm in
+    # phlebotomy: collection issues from Lab, so with nothing there every demo
+    # draw would be recorded short. Move a working stock across the way a real
+    # lab gets it -- a transfer, which keeps each lot and its cost -- and leave
+    # the pharmacy at least half of what it had.
+    from inventory.models import Department
+    from inventory.services import stock as stock_service
+    from inventory.services.stock import StockError
+    from laboratory.utils import lab_department
+
+    lab = lab_department()
+    pharmacy = Department.objects.filter(name__iexact='Pharmacy').first()
+    lab_items_stocked = 0
+
+    collection_item_ids = SpecimenConsumable.objects.values_list('item_id', flat=True).distinct()
+    for item in Item.objects.filter(id__in=list(collection_item_ids)).order_by('name'):
+        if pharmacy is None or lab is None or pharmacy == lab:
+            print("   ! no separate Pharmacy and Lab locations; lab gets no collection stock")
+            break
+        wanted = LAB_COLLECTION_STOCK - stock_service.available_quantity(item, lab)
+        if wanted <= 0:
+            continue
+        quantity = min(wanted, stock_service.available_quantity(item, pharmacy) // 2)
+        if quantity <= 0:
+            print(f"   ! no pharmacy stock of {item.name} to send to the lab")
+            continue
+        try:
+            stock_service.transfer(
+                item=item, from_department=pharmacy, to_department=lab,
+                quantity=quantity,
+                reason='Demo data: lab working stock for sample collection',
+            )
+        except StockError as exc:
+            print(f"   ! could not move {item.name} to Lab: {exc}")
+            continue
+        lab_items_stocked += 1
+        print(f"   - moved {quantity} {item.units_of_measure} of {item.name} to Lab")
 
     total = ItemConsumable.objects.count()
+    specimen_total = SpecimenConsumable.objects.count()
     print(f"   - {created} new accompaniment links across {linked_items} items")
     print(f"   - {total} accompaniment links in total")
+    print(f"   - {specimen_created} new collection links across {specimens_linked} specimens")
+    print(f"   - {specimen_total} collection links in total")
 
     for item in Item.objects.filter(name__icontains='Tetracycline'):
         needs = list(item.consumable_links.select_related('consumable'))
         summary = ', '.join(f"{l.quantity_per_use} x {l.consumable.name}" for l in needs) or 'nothing'
         print(f"   - {item.name} needs {summary}")
 
-    return {'links_created': created, 'items_linked': linked_items, 'total_links': total}
+    for specimen in Specimen.objects.prefetch_related('consumables__item'):
+        needs = list(specimen.consumables.all())
+        summary = ', '.join(
+            f"{l.quantity_per_collection} x {l.item.name}" for l in needs) or 'nothing'
+        print(f"   - collecting {specimen.name} needs {summary}")
+
+    return {
+        'links_created': created,
+        'items_linked': linked_items,
+        'total_links': total,
+        'specimen_links_created': specimen_created,
+        'specimens_linked': specimens_linked,
+        'total_specimen_links': specimen_total,
+        'lab_items_stocked': lab_items_stocked,
+    }
 
 
 def create_pharmaceutical_inventory():
@@ -2252,8 +2319,8 @@ def create_pharmaceutical_inventory():
         
         # MEDICAL SUPPLIES & CONSUMABLES
         "Medical Supplies": [
-            {"name": "Sterile Gloves Medium", "unit": "pairs", "pack": "100", "subpack": "2", "purchase": 1500.00, "sale": 2200.00, "qty": 200},
-            {"name": "Sterile Gloves Large", "unit": "pairs", "pack": "100", "subpack": "2", "purchase": 1500.00, "sale": 2200.00, "qty": 200},
+            {"name": "Sterile Gloves Medium", "unit": "pairs", "pack": "100", "subpack": "50", "purchase": 1500.00, "sale": 2200.00, "qty": 200},
+            {"name": "Sterile Gloves Large", "unit": "pairs", "pack": "100", "subpack": "50", "purchase": 1500.00, "sale": 2200.00, "qty": 200},
             {"name": "Surgical Masks", "unit": "pieces", "pack": "500", "subpack": "50", "purchase": 500.00, "sale": 800.00, "qty": 1000},
             {"name": "N95 Respirators", "unit": "pieces", "pack": "200", "subpack": "20", "purchase": 2000.00, "sale": 3000.00, "qty": 400},
             {"name": "Syringes 5ml", "unit": "pieces", "pack": "500", "subpack": "100", "purchase": 800.00, "sale": 1200.00, "qty": 1000},
@@ -2261,7 +2328,7 @@ def create_pharmaceutical_inventory():
             {"name": "IV Cannula 18G", "unit": "pieces", "pack": "200", "subpack": "50", "purchase": 1500.00, "sale": 2300.00, "qty": 500},
             {"name": "IV Cannula 20G", "unit": "pieces", "pack": "200", "subpack": "50", "purchase": 1400.00, "sale": 2200.00, "qty": 500},
             {"name": "Gauze Swabs 10x10cm", "unit": "pieces", "pack": "1000", "subpack": "100", "purchase": 500.00, "sale": 800.00, "qty": 2000},
-            {"name": "Cotton Wool 500g", "unit": "rolls", "pack": "20", "subpack": "1", "purchase": 1000.00, "sale": 1500.00, "qty": 100},
+            {"name": "Cotton Wool 500g", "unit": "rolls", "pack": "20", "subpack": "1", "purchase": 450.00, "sale": 650.00, "qty": 100},
             {"name": "Bandages 10cm", "unit": "rolls", "pack": "100", "subpack": "10", "purchase": 800.00, "sale": 1200.00, "qty": 300},
             {"name": "Surgical Tape", "unit": "rolls", "pack": "100", "subpack": "10", "purchase": 600.00, "sale": 950.00, "qty": 300},
             {"name": "Alcohol Swabs", "unit": "pieces", "pack": "1000", "subpack": "100", "purchase": 400.00, "sale": 650.00, "qty": 2000},
@@ -2279,6 +2346,10 @@ def create_pharmaceutical_inventory():
         ],
     }
     
+    # Syringes, swabs and tubes are used up alongside something else and never
+    # sold on their own, so they are created Internal and left unpriced.
+    consumables = consumable_item_names()
+
     # Create items and inventory records
     for category, drugs in pharmaceuticals.items():
         for drug in drugs:
@@ -2290,12 +2361,16 @@ def create_pharmaceutical_inventory():
                 units_of_measure=drug["unit"],
                 defaults={
                     'desc': f'{drug["name"]} - {category}',
+                    'category_one': 'Internal' if drug["name"] in consumables else 'Resale',
                     'item_code': f'PHARM-{drug["name"][:8].upper().replace(" ", "")}-{random.randint(100, 999)}',
                     'vat_rate': 0.0,  # Most pharmaceuticals are VAT-exempt
                     'slow_moving_period': 90,
                 }
             )
 
+            # The list quotes prices per pack -- the smallest one a supplier
+            # sells: a strip of ten, a box of a hundred syringes -- but the
+            # ledger counts base units. Taken per unit, a syringe cost 800.
             units_per_pack = int(drug["subpack"])
             if units_per_pack > 1:
                 ItemUnit.objects.update_or_create(
@@ -2324,7 +2399,7 @@ def create_pharmaceutical_inventory():
                     item=item,
                     department=pharmacy_dept,
                     quantity=drug["qty"],
-                    unit_cost=Decimal(str(drug["purchase"])),
+                    unit_cost=Decimal(str(drug["purchase"])) / units_per_pack,
                     lot_number=f'LOT-{date.today().year}-{random.randint(1000, 9999)}',
                     expiry_date=date.today() + timedelta(days=expiry_months * 30),
                     reason='Demo data opening stock',
@@ -2332,7 +2407,11 @@ def create_pharmaceutical_inventory():
                     movement_type=StockMovement.Type.OPENING_BALANCE,
                     idempotency_key=f'demo-drug:{item.id}',
                 )
-                stock_service.set_sale_price(item, Decimal(str(drug["sale"])))
+                # The pharmacy list quotes a sale price for everything, but an
+                # internal consumable has none -- the API would refuse one.
+                if item.is_sellable:
+                    stock_service.set_sale_price(item, (
+                        Decimal(str(drug["sale"])) / units_per_pack).quantize(Decimal('0.01')))
                 created_data['inventory_records'].append(movement)
     
     print(f"\n✅ Created Pharmaceutical Inventory:")
@@ -2353,3 +2432,69 @@ def create_pharmaceutical_inventory():
     print(f"\n   Total Inventory Value: KES {total_value:,.2f}")
     
     return created_data
+
+
+
+def create_insurance_price_list(max_insurers=5):
+    """
+    Agree a price list with the insurers the demo patients actually carry.
+
+    Nothing seeds these otherwise -- `inventory.tasks.create_insurance_prices_for_item`
+    exists but nothing calls it -- so without this every insured line in the
+    demo falls back to the cash price and the insurer/co-pay split is never
+    seen.
+
+    An insurance price is a split, not a discount: `sale_price` is the
+    insurer's portion and `co_pay` the patient's, and the line is worth the two
+    together. Each insurer here agrees the cash price in total and differs only
+    in how much of it the patient carries -- nothing, a tenth or a fifth -- so
+    every shape of split turns up somewhere.
+    """
+    from decimal import Decimal
+
+    from django.db.models import Count
+
+    from inventory.models import InsuranceItemSalePrice
+
+    print("\n\U0001f3e5 Agreeing insurance prices with the patients' insurers...")
+
+    insurers = list(
+        InsuranceCompany.objects.annotate(members=Count('patient'))
+        .filter(members__gt=0)
+        .order_by('-members', 'id')[:max_insurers]
+    )
+    if not insurers:
+        print("   ! no insurer covers any patient; nothing to agree")
+        return {'insurers': 0, 'prices': 0}
+
+    # Only what is actually sold. A reagent or a syringe has no price to split.
+    sellable = (
+        Item.objects.exclude(category__in=Item.UNPRICED_CATEGORIES)
+        .exclude(category_one='Internal')
+    )
+    priced = []
+    for item in sellable:
+        price = item.current_sale_price
+        if price:
+            priced.append((item, Decimal(price)))
+
+    patient_shares = [Decimal('0'), Decimal('0.10'), Decimal('0.20')]
+    rows = []
+    for index, insurer in enumerate(insurers):
+        share = patient_shares[index % len(patient_shares)]
+        for item, price in priced:
+            co_pay = (price * share).quantize(Decimal('1'))
+            rows.append(InsuranceItemSalePrice(
+                item=item,
+                insurance_company=insurer,
+                sale_price=price - co_pay,
+                co_pay=co_pay,
+            ))
+        print(f"   - {insurer.name}: patient co-pays {int(share * 100)}%")
+
+    before = InsuranceItemSalePrice.objects.count()
+    InsuranceItemSalePrice.objects.bulk_create(rows, ignore_conflicts=True)
+    created = InsuranceItemSalePrice.objects.count() - before
+    print(f"   - {created} insurance prices across {len(priced)} sellable items")
+
+    return {'insurers': len(insurers), 'prices': created}

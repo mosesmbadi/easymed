@@ -134,6 +134,18 @@ class ItemUnitSerializer(serializers.ModelSerializer):
         return attrs
 
 
+LAB_ACCOMPANIMENT_MESSAGE = (
+    "{name} is a lab item, so it cannot carry accompaniments here. Reagents are "
+    "declared on the Test Panel and collection consumables on the Specimen."
+)
+
+UNPRICED_ITEM_MESSAGE = (
+    "{name} is not sold as it stands, so it holds no sale price. Lab reagents and "
+    "consumables are raw materials -- price the Test Panel built from them; internal "
+    "consumables are never sold at all."
+)
+
+
 class ItemConsumableSerializer(serializers.ModelSerializer):
     """One accompaniment line: this item needs N of that consumable."""
     consumable_name = serializers.CharField(source='consumable.name', read_only=True)
@@ -153,6 +165,8 @@ class ItemConsumableSerializer(serializers.ModelSerializer):
         if item and consumable and item.id == consumable.id:
             raise serializers.ValidationError(
                 {'consumable': "An item cannot be its own accompaniment."})
+        if item and not item.supports_accompaniments:
+            raise serializers.ValidationError({'item': LAB_ACCOMPANIMENT_MESSAGE.format(name=item.name)})
         if consumable and not consumable.is_stock_tracked:
             raise serializers.ValidationError(
                 {'consumable': f"{consumable.name} is a service and holds no stock, "
@@ -190,13 +204,17 @@ class ItemSerializer(serializers.ModelSerializer):
         help_text="Departments that use this item. Tag 'General' to share it with all")
     department_names = serializers.SerializerMethodField(read_only=True)
     # Accompaniments are declared with the item, so an injectable drug can
-    # never be catalogued without saying what it must be given with.
+    # never be catalogued without saying what it must be given with. Lab items
+    # are the exception -- theirs live on the Specimen and the Test Panel.
     consumables = ItemConsumableSerializer(
         source='consumable_links', many=True, read_only=True)
     consumable_items = serializers.ListField(
         child=serializers.DictField(), write_only=True, required=False,
         help_text="Accompaniments: [{consumable: <item id>, quantity_per_use: 1, "
-                  "is_required: true}]. Send [] to clear them.")
+                  "is_required: true}]. Send [] to clear them. Not accepted for "
+                  "lab items.")
+    is_sellable = serializers.BooleanField(read_only=True)
+    supports_accompaniments = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Item
@@ -221,7 +239,7 @@ class ItemSerializer(serializers.ModelSerializer):
         return value
 
     def _apply_price(self, item, sale_price):
-        if sale_price is not None:
+        if sale_price is not None and item.is_sellable:
             request = self.context.get('request')
             user = getattr(request, 'user', None) if request else None
             stock_service.set_sale_price(
@@ -325,6 +343,22 @@ class ItemSerializer(serializers.ModelSerializer):
         if wanted and self.instance and self.instance.id in wanted:
             raise serializers.ValidationError(
                 {'consumable_items': "An item cannot be its own accompaniment."})
+
+        # What the item is settles both of these, and the category can be
+        # changed by this very payload, so read it from what is being saved.
+        category = attrs.get('category', getattr(self.instance, 'category', None))
+        category_one = attrs.get('category_one', getattr(self.instance, 'category_one', 'Resale'))
+        name = attrs.get('name', getattr(self.instance, 'name', 'This item'))
+
+        if wanted and category in Item.LAB_CATEGORIES:
+            raise serializers.ValidationError(
+                {'consumable_items': LAB_ACCOMPANIMENT_MESSAGE.format(name=name)})
+
+        unpriced = category in Item.UNPRICED_CATEGORIES or category_one == 'Internal'
+        if attrs.get('sale_price') is not None and unpriced:
+            raise serializers.ValidationError(
+                {'sale_price': UNPRICED_ITEM_MESSAGE.format(name=name)})
+
         return attrs
 
     def _set_consumables(self, item, wanted):
@@ -352,7 +386,11 @@ class ItemSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        data['sale_price'] = instance.current_sale_price
+        # Null rather than 0: a reagent has no price, which is a different
+        # statement from one priced at nothing, and the grids render it blank.
+        data['sale_price'] = instance.current_sale_price if instance.is_sellable else None
+        if not instance.supports_accompaniments:
+            data['consumables'] = []
         return data
 
 
@@ -810,6 +848,10 @@ class IncomingItemSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {'item': f"{item.name} is a service and cannot be received into stock."})
 
+        if attrs.get('sale_price') is not None and item is not None and not item.is_sellable:
+            raise serializers.ValidationError(
+                {'sale_price': UNPRICED_ITEM_MESSAGE.format(name=item.name)})
+
         quantity = attrs.get('quantity', getattr(self.instance, 'quantity', None))
         if quantity is not None and quantity <= 0:
             raise serializers.ValidationError({'quantity': "Quantity received must be greater than zero."})
@@ -1038,6 +1080,10 @@ class StockBalanceSerializer(serializers.ModelSerializer):
         return ItemUnitSerializer(obj.item.unit_conversions.all(), many=True).data
 
     def get_sale_price(self, obj):
+        # Null, not zero: a reagent has no price, which is a different claim
+        # from one priced at nothing, and the stock grid renders it blank.
+        if not obj.item.is_sellable:
+            return None
         return obj.item.current_sale_price
 
     def get_re_order_level(self, obj):
@@ -1233,6 +1279,13 @@ class OpeningStockSerializer(serializers.Serializer):
             raise serializers.ValidationError(
                 f"{value.name} is a service item and cannot hold stock.")
         return value
+
+    def validate(self, attrs):
+        item = attrs.get('item')
+        if attrs.get('sale_price') is not None and item is not None and not item.is_sellable:
+            raise serializers.ValidationError(
+                {'sale_price': UNPRICED_ITEM_MESSAGE.format(name=item.name)})
+        return attrs
 
 
 # ---------------------------------------------------------------------------

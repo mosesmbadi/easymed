@@ -132,10 +132,10 @@ const InvoiceItems = ({
                                 <h2 className='font-bold text-primary'>{'Payment Mode'}</h2>
                             </Grid>
                             <Grid className='px-2 flex justify-end' item xs={2}>
-                                <h2 className='font-bold text-primary'>{'Actual Total'}</h2>
+                                <h2 className='font-bold text-primary'>{'Line Total'}</h2>
                             </Grid>
                             <Grid className='px-2 flex justify-end' item xs={2}>
-                                <h2 className='font-bold text-primary'>{'Item Amount'}</h2>
+                                <h2 className='font-bold text-primary'>{'Patient Pays'}</h2>
                             </Grid>
                             <Grid item xs={1}>
                             </Grid>

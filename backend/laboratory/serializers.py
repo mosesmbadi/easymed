@@ -1,6 +1,9 @@
 import pdb
 from random import randrange, choices
-from inventory.models import ItemConsumable
+
+from django.db import transaction
+
+from inventory.models import Item
 from rest_framework import serializers
 from rest_framework.exceptions import NotFound
 
@@ -17,6 +20,8 @@ from .models import (
     ProcessTestRequest,
     PatientSample,
     Specimen,
+    SpecimenConsumable,
+    PatientSampleConsumable,
     TestPanelReagent,
     LabTestInterpretation,
     ReferenceValue,
@@ -70,28 +75,6 @@ class LabTestProfileSerializer(serializers.ModelSerializer):
         model = LabTestProfile
         fields = '__all__'
 
-
-class LabTestPanelSerializer(serializers.ModelSerializer):
-    reference_values = serializers.SerializerMethodField()
-    available_runs = serializers.SerializerMethodField()
-    item_name = serializers.ReadOnlyField(source='item.name')
-    test_profile_name = serializers.ReadOnlyField(source='test_profile.name')
-    specimen_name = serializers.ReadOnlyField(source='specimen.name')
-    unit_symbol = serializers.ReadOnlyField(source='units.symbol')
-
-    class Meta:
-        model = LabTestPanel
-        fields = "__all__"
-
-    def get_reference_values(self, obj):
-        patient = self.context.get('patient')
-        if patient:
-            return obj.get_reference_values(patient)
-        return None
-
-    def get_available_runs(self, obj):
-        return obj.available_runs()
-    
 
 class PublicLabTestRequestSerializer(serializers.ModelSerializer):
     class Meta:
@@ -228,6 +211,7 @@ class PatientSampleSerializer(serializers.ModelSerializer):
     is_retested = serializers.SerializerMethodField()
     is_released = serializers.SerializerMethodField()
     consumables = serializers.SerializerMethodField()
+    consumables_used = serializers.SerializerMethodField()
 
     class Meta:
         model = PatientSample
@@ -245,6 +229,7 @@ class PatientSampleSerializer(serializers.ModelSerializer):
             'is_released',
             'collected_on',
             'consumables',
+            'consumables_used',
         ]
         read_only_fields = [
             'patient_sample_code',
@@ -264,12 +249,21 @@ class PatientSampleSerializer(serializers.ModelSerializer):
         What the phlebotomist needs in hand to take this sample, and whether
         the lab actually has it.
 
-        Read off the accompaniments of the tests on this sample -- the same
-        rows billing checks before it will let the test be sold -- so the
-        collection screen and the till can never disagree about what is
-        needed. Stock leaves once, when the test is billed, not here.
+        Read off the specimen, which is where the syringe and the tube are
+        declared, so the screen lists exactly what confirming the collection
+        will take out of stock.
         """
         return sample_consumable_rows(obj, self._availability_cache)
+
+    def get_consumables_used(self, obj):
+        """
+        What the collection actually spent.
+
+        Empty until the sample is collected, and empty forever on a retest,
+        which reuses a sample somebody already drew.
+        """
+        return PatientSampleConsumableSerializer(
+            obj.consumables_used.select_related('item'), many=True).data
 
     def get_is_archived(self, obj):
         return hasattr(obj, 'archive_record')
@@ -285,10 +279,122 @@ class PatientSampleSerializer(serializers.ModelSerializer):
     def get_is_released(self, obj):
         return hasattr(obj, 'release_record')
 
+
+class SpecimenConsumableSerializer(serializers.ModelSerializer):
+    """One line of what a draw for this specimen uses up."""
+    item_name = serializers.ReadOnlyField(source='item.name')
+    item_code = serializers.ReadOnlyField(source='item.item_code')
+    units_of_measure = serializers.ReadOnlyField(source='item.units_of_measure')
+    available_quantity = serializers.SerializerMethodField()
+
+    class Meta:
+        model = SpecimenConsumable
+        fields = [
+            'id',
+            'specimen',
+            'item',
+            'item_name',
+            'item_code',
+            'units_of_measure',
+            'quantity_per_collection',
+            'is_required',
+            'available_quantity',
+        ]
+
+    def get_available_quantity(self, obj):
+        return _available_quantity(obj.item)
+
+    def validate_item(self, value):
+        # limit_choices_to only constrains forms, so the API has to check too.
+        if value.category_one != 'Internal':
+            raise serializers.ValidationError(
+                f"'{value.name}' is a {value.category_one} item. Only internal "
+                f"consumables -- syringes, tubes, gloves -- are used up collecting a sample."
+            )
+        if not value.is_stock_tracked:
+            raise serializers.ValidationError(
+                f"'{value.name}' holds no stock, so it cannot be deducted on collection.")
+        return value
+
+    def validate_quantity_per_collection(self, value):
+        if value < 1:
+            raise serializers.ValidationError("A collection uses at least one of these.")
+        return value
+
+
 class SpecimenSerializer(serializers.ModelSerializer):
+    '''
+    A specimen and the raw materials taking one costs.
+
+    Declared here rather than on the test, because the syringe belongs to the
+    draw: three panels off one blood sample still only use one.
+    '''
+    consumables = SpecimenConsumableSerializer(many=True, read_only=True)
+    consumable_items = serializers.ListField(
+        child=serializers.DictField(), write_only=True, required=False,
+        help_text="Items required to collect this specimen: [{item: <id>, "
+                  "quantity_per_collection: 1, is_required: true}]. Send [] to clear them.")
+
     class Meta:
         model = Specimen
-        fields = '__all__'
+        fields = ['id', 'name', 'max_archive_duration', 'consumables', 'consumable_items']
+
+    def validate_consumable_items(self, rows):
+        '''
+        Normalise the posted rows to {item_id: defaults} and reject anything
+        unusable here, so a bad payload is a 400 rather than an exception
+        halfway through the save.
+        '''
+        wanted = {}
+        for row in rows:
+            item_id = row.get('item') or row.get('item_id') or row.get('id')
+            if item_id in (None, ''):
+                raise serializers.ValidationError("Each line needs an 'item' id.")
+            try:
+                item_id = int(item_id)
+                quantity = int(row.get('quantity_per_collection') or 1)
+            except (TypeError, ValueError):
+                raise serializers.ValidationError(
+                    "'item' and 'quantity_per_collection' must be whole numbers.")
+            if quantity < 1:
+                raise serializers.ValidationError("A collection uses at least one of these.")
+            wanted[item_id] = {
+                'quantity_per_collection': quantity,
+                'is_required': bool(row.get('is_required', True)),
+            }
+
+        known = Item.objects.in_bulk(list(wanted))
+        missing = set(wanted) - set(known)
+        if missing:
+            raise serializers.ValidationError(f"Unknown item id(s): {sorted(missing)}")
+        for item in known.values():
+            if item.category_one != 'Internal' or not item.is_stock_tracked:
+                raise serializers.ValidationError(
+                    f"{item.name} is not an internal consumable held in stock, so it "
+                    f"cannot be used up collecting a sample.")
+        return wanted
+
+    def create(self, validated_data):
+        wanted = validated_data.pop('consumable_items', None)
+        specimen = super().create(validated_data)
+        if wanted is not None:
+            self._set_consumables(specimen, wanted)
+        return specimen
+
+    def update(self, instance, validated_data):
+        wanted = validated_data.pop('consumable_items', None)
+        specimen = super().update(instance, validated_data)
+        if wanted is not None:
+            self._set_consumables(specimen, wanted)
+        return specimen
+
+    @staticmethod
+    def _set_consumables(specimen, wanted):
+        '''Replace the list with exactly what was posted, so a dropped row drops.'''
+        specimen.consumables.exclude(item_id__in=list(wanted)).delete()
+        for item_id, defaults in wanted.items():
+            SpecimenConsumable.objects.update_or_create(
+                specimen=specimen, item_id=item_id, defaults=defaults)
 
 
 def _available_quantity(item):
@@ -328,47 +434,217 @@ class TestPanelReagentSerializer(serializers.ModelSerializer):
         return value
 
 
+class LabTestPanelSerializer(serializers.ModelSerializer):
+    '''
+    The lab's finished product: what the test needs, and what it sells for.
+
+    A panel is assembled from raw materials that are individually worthless to
+    a patient -- a reagent, and the syringe its specimen is drawn with -- so
+    this is where the reagents are declared and the only place in the lab a
+    sale price is set.
+    '''
+    reference_values = serializers.SerializerMethodField()
+    available_runs = serializers.SerializerMethodField()
+    item_name = serializers.ReadOnlyField(source='item.name')
+    test_profile_name = serializers.ReadOnlyField(source='test_profile.name')
+    specimen_name = serializers.ReadOnlyField(source='specimen.name')
+    unit_symbol = serializers.ReadOnlyField(source='units.symbol')
+    sale_price = serializers.DecimalField(
+        max_digits=12, decimal_places=2, required=False, allow_null=True,
+        help_text="What the patient pays for this test. Opens a new effective-dated "
+                  "price on the panel's billing item.")
+    reagents = TestPanelReagentSerializer(
+        source='reagent_links', many=True, read_only=True)
+    reagent_items = serializers.ListField(
+        child=serializers.DictField(), write_only=True, required=False,
+        help_text="Reagents consumed per run: [{reagent_item: <item id>, "
+                  "units_consumed_per_run: 1}]. Send [] to clear them.")
+    collection_consumables = serializers.SerializerMethodField()
+
+    class Meta:
+        model = LabTestPanel
+        fields = "__all__"
+        # Left out, the panel gets a billing item made from its name.
+        extra_kwargs = {'item': {'required': False}}
+
+    def get_reference_values(self, obj):
+        patient = self.context.get('patient')
+        if patient:
+            return obj.get_reference_values(patient)
+        return None
+
+    def get_available_runs(self, obj):
+        return obj.available_runs()
+
+    def get_collection_consumables(self, obj):
+        '''
+        The syringe and tube this panel's specimen is drawn with, shown so the
+        person pricing the test can see the whole cost. Read-only: they belong
+        to the specimen, and a second panel off the same draw adds none.
+        '''
+        if not obj.specimen_id:
+            return []
+        return SpecimenConsumableSerializer(
+            obj.specimen.consumables.select_related('item'), many=True).data
+
+    def validate_reagent_items(self, rows):
+        '''Normalise to {item_id: defaults}, rejecting anything that is not a reagent.'''
+        wanted = {}
+        for row in rows:
+            item_id = row.get('reagent_item') or row.get('item') or row.get('id')
+            if item_id in (None, ''):
+                raise serializers.ValidationError("Each line needs a 'reagent_item' id.")
+            try:
+                item_id = int(item_id)
+                units = int(row.get('units_consumed_per_run') or 1)
+            except (TypeError, ValueError):
+                raise serializers.ValidationError(
+                    "'reagent_item' and 'units_consumed_per_run' must be whole numbers.")
+            if units < 1:
+                raise serializers.ValidationError("A run consumes at least one unit.")
+            wanted[item_id] = {'units_consumed_per_run': units}
+
+        known = Item.objects.in_bulk(list(wanted))
+        missing = set(wanted) - set(known)
+        if missing:
+            raise serializers.ValidationError(f"Unknown item id(s): {sorted(missing)}")
+        for item in known.values():
+            if item.category != 'LabReagent':
+                raise serializers.ValidationError(
+                    f"'{item.name}' is a {item.category} item, not a Lab Reagent. "
+                    f"Syringes and tubes belong on the specimen, not the panel.")
+        return wanted
+
+    def create(self, validated_data):
+        sale_price = validated_data.pop('sale_price', None)
+        reagent_items = validated_data.pop('reagent_items', None)
+        with transaction.atomic():
+            if not validated_data.get('item'):
+                validated_data['item'] = self._new_billing_item(validated_data['name'])
+            panel = super().create(validated_data)
+            if reagent_items is not None:
+                self._set_reagents(panel, reagent_items)
+            self._apply_price(panel, sale_price)
+        return panel
+
+    @staticmethod
+    def _new_billing_item(name):
+        '''
+        The catalogue entry a new panel's invoice lines point at, made from
+        its name. The panel is the product, so nothing has to be set up in
+        inventory before it can be sold.
+
+        An unclaimed Lab Test item of the same name is reused rather than
+        duplicated. One already billing for another panel is refused: two
+        panels on one item would share a price and bill twice.
+        '''
+        from inventory.models import Department, ItemDepartment
+        from inventory.utils import generate_unique_item_code
+
+        item, _ = Item.objects.get_or_create(
+            name=name, category='Lab Test', units_of_measure='test',
+            defaults={'desc': f'{name} test', 'item_code': generate_unique_item_code()})
+        if LabTestPanel.objects.filter(item=item).exists():
+            raise serializers.ValidationError({
+                'name': f"'{name}' already bills for another panel. Give this panel "
+                        f"a different name, or pick its billing item."})
+        lab = Department.objects.filter(name__iexact='Lab').first()
+        if lab:
+            ItemDepartment.objects.get_or_create(
+                item=item, department=lab, defaults={'is_primary': True})
+        return item
+
+    def update(self, instance, validated_data):
+        sale_price = validated_data.pop('sale_price', None)
+        reagent_items = validated_data.pop('reagent_items', None)
+        with transaction.atomic():
+            panel = super().update(instance, validated_data)
+            if reagent_items is not None:
+                self._set_reagents(panel, reagent_items)
+            self._apply_price(panel, sale_price)
+        return panel
+
+    def _apply_price(self, panel, sale_price):
+        if sale_price is None or not panel.item_id:
+            return
+        request = self.context.get('request')
+        user = getattr(request, 'user', None) if request else None
+        panel.set_sale_price(
+            sale_price,
+            created_by=user if user and user.is_authenticated else None,
+        )
+
+    @staticmethod
+    def _set_reagents(panel, wanted):
+        '''Replace the panel's reagents with exactly what was posted.'''
+        panel.reagent_links.exclude(reagent_item_id__in=list(wanted)).delete()
+        for item_id, defaults in wanted.items():
+            TestPanelReagent.objects.update_or_create(
+                test_panel=panel, reagent_item_id=item_id, defaults=defaults)
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['sale_price'] = instance.sale_price
+        return data
+
+
 def sample_consumable_rows(sample, availability_cache=None):
     """
-    The accompaniments a sample's tests need, one row per consumable.
+    What taking this sample calls for, one row per consumable.
 
-    A sample carries several panels and they often share a syringe, so the
-    requirement is summed per consumable rather than listed per test -- the
-    collector wants one line saying "3 swabs", not three saying "1 swab".
+    Read off the specimen, not off the panels ordered against it: the syringe
+    belongs to the draw, and three tests off one tube of blood are still one
+    tube. These are the rows the collection screen lists before the draw and
+    the rows the ledger is charged for when it is confirmed.
 
     Availability costs an aggregate pair per item, and a page of samples asks
     about the same handful of consumables over and over, so the caller can
     pass a cache to look each one up once.
     """
     cache = {} if availability_cache is None else availability_cache
-    totals = {}
+    rows = []
 
-    links = ItemConsumable.objects.filter(
-        item__labtestpanel__labtestrequestpanel__patient_sample=sample
-    ).select_related('consumable')
-
-    for link in links:
-        consumable = link.consumable
-        row = totals.setdefault(consumable.id, {
-            # 'id' and 'item' are the keys the existing collection screen
-            # reads; one row per consumable, so the consumable's own id serves.
-            'id': consumable.id,
-            'consumable': consumable.id,
-            'item': consumable.id,
-            'item_name': consumable.name,
-            'item_code': consumable.item_code,
-            'units_of_measure': consumable.units_of_measure,
-            'quantity_per_collection': 0,
-            'is_required': False,
+    for link in sample.specimen.consumables.select_related('item'):
+        item = link.item
+        if item.id not in cache:
+            cache[item.id] = _available_quantity(item)
+        rows.append({
+            # 'id' and 'item' are the keys the collection screen reads; one
+            # row per consumable, so the item's own id serves as both.
+            'id': item.id,
+            'consumable': item.id,
+            'item': item.id,
+            'item_name': item.name,
+            'item_code': item.item_code,
+            'units_of_measure': item.units_of_measure,
+            'quantity_per_collection': link.quantity_per_collection,
+            'is_required': link.is_required,
+            'available_quantity': cache[item.id],
         })
-        row['quantity_per_collection'] += link.quantity_per_use
-        row['is_required'] = row['is_required'] or link.is_required
 
-        if consumable.id not in cache:
-            cache[consumable.id] = _available_quantity(consumable)
-        row['available_quantity'] = cache[consumable.id]
+    return sorted(rows, key=lambda row: row['item_name'])
 
-    return sorted(totals.values(), key=lambda row: row['item_name'])
+
+class PatientSampleConsumableSerializer(serializers.ModelSerializer):
+    """What a collection actually spent, as recorded at the time."""
+    item_name = serializers.ReadOnlyField(source='item.name')
+    item_code = serializers.ReadOnlyField(source='item.item_code')
+    units_of_measure = serializers.ReadOnlyField(source='item.units_of_measure')
+    is_short = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model = PatientSampleConsumable
+        fields = [
+            'id',
+            'item',
+            'item_name',
+            'item_code',
+            'units_of_measure',
+            'quantity',
+            'quantity_required',
+            'is_short',
+            'recorded_on',
+        ]
 
 
 class LabTestInterpretationSerializer(serializers.ModelSerializer):

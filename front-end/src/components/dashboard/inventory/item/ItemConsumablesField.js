@@ -3,6 +3,15 @@ import Select from "react-select";
 import { Grid } from "@mui/material";
 import { AiFillDelete } from "react-icons/ai";
 
+// The lab declares what it consumes per finished product, not per catalogue
+// entry: reagents on the Test Panel, collection items on the Specimen. Listing
+// them here too would take the same syringe out of stock twice, so these
+// categories don't get the section at all.
+export const LAB_CATEGORIES = ["Lab Test", "LabReagent", "LabConsumable"];
+
+export const usesItemAccompaniments = (category) =>
+  !!category && !LAB_CATEGORIES.includes(category);
+
 /**
  * Stages the accompaniments an item uses up, so they can be saved in the same
  * action as the item itself.
@@ -13,6 +22,10 @@ import { AiFillDelete } from "react-icons/ai";
  * survive an unchecked box so a stray click doesn't throw the staging work
  * away; the parent sends [] for as long as it stays unchecked.
  *
+ * Only non-lab items get the section: a lab test's raw materials are declared
+ * on its Test Panel and its Specimen instead, so `category` decides whether
+ * this renders a form or an explanation of where to go.
+ *
  * Rows are held by the parent, each shaped
  * { id?, consumable, consumable_name, quantity_per_use, is_required,
  *   available_quantity? }.
@@ -22,6 +35,7 @@ import { AiFillDelete } from "react-icons/ai";
  */
 const ItemConsumablesField = ({
   itemName,
+  category,
   options,
   rows,
   setRows,
@@ -34,6 +48,27 @@ const ItemConsumablesField = ({
   const [error, setError] = useState("");
 
   const showStock = rows.some((row) => row.available_quantity != null);
+
+  if (!usesItemAccompaniments(category)) {
+    return (
+      <div>
+        <h3 className="font-bold">Consumables (accompaniments)</h3>
+        <p className="mt-1 text-sm text-gray">
+          {category ? (
+            <>
+              A lab item declares what it uses up per finished product, not here.
+              Reagents go on the <strong>Test Panel</strong> (Lab Settings &gt; Test
+              Panels) and the syringe, tube and gloves go on the{" "}
+              <strong>Specimen</strong> (Lab Settings &gt; Specimens), because a
+              syringe is spent once per draw however many tests are ordered off it.
+            </>
+          ) : (
+            <>Pick a category first.</>
+          )}
+        </p>
+      </div>
+    );
+  }
 
   // A consumable can only be linked to an item once (unique_together on the
   // backend), so drop the ones already staged.

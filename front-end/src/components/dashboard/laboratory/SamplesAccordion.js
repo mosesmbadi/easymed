@@ -6,6 +6,8 @@ import MuiAccordionSummary from '@mui/material/AccordionSummary';
 import MuiAccordionDetails from '@mui/material/AccordionDetails';
 import Typography from '@mui/material/Typography';
 
+import { toast } from 'react-toastify';
+
 import { useAuth } from '@/assets/hooks/use-auth';
 import TestPanelsItem from './TestPanelsItem';
 import { updatePhlebotomySamples } from '@/redux/service/laboratory';
@@ -57,14 +59,27 @@ const SamplesAccordion = ({ sample: initialSample }) => {
         is_sample_collected: true,
         id: sample_id,
       };
-      await updatePhlebotomySamples(payload, auth);
-      
-      // Update state
+      // The response carries what the draw actually took out of stock, which
+      // is written as part of the same save -- so take the server's version
+      // rather than patching a flag locally and guessing at the rest.
+      const updated = await updatePhlebotomySamples(payload, auth);
+
       setSample((prevSample) => ({
         ...prevSample,
+        ...(updated ?? {}),
         is_sample_collected: true,
       }));
+
+      const short = (updated?.consumables_used ?? []).filter((row) => row.is_short);
+      if (short.length > 0) {
+        toast.warn(
+          `Sample collected, but stock was short: ${short
+            .map((row) => `${row.item_name} (${row.quantity} of ${row.quantity_required})`)
+            .join(', ')}`
+        );
+      }
     } catch (error) {
+      toast.error("Could not mark the sample as collected");
       console.log("ERR APPROVING COLLECTION OF SAMPLE", error);
     }
   };
@@ -73,7 +88,10 @@ const SamplesAccordion = ({ sample: initialSample }) => {
     setExpanded(newExpanded ? sampleId : false);
   };
 
+  // Before the draw: what the specimen calls for, and whether the lab has it.
+  // After it: what was actually issued, which is the record that matters.
   const consumables = sample.consumables ?? [];
+  const consumablesUsed = sample.consumables_used ?? [];
 
 return (
   <div className="w-full">
@@ -92,7 +110,10 @@ return (
         <div className='px-2 pb-2 text-xs'>
           <span className='font-semibold'>Consumables required: </span>
           {consumables.length === 0 ? (
-            <span>None required for these tests</span>
+            <span>
+              None &mdash; nothing is listed against this specimen under Lab
+              Settings &gt; Specimens
+            </span>
           ) : (
             consumables.map((consumable, index) => {
               const short = consumable.available_quantity < consumable.quantity_per_collection;
@@ -120,10 +141,29 @@ return (
     >
       {sample.is_sample_collected && (
         <AccordionSummary aria-controls="panel1d-content" id="panel1d-header">
-          <Typography className='w-full'>
+          <Typography className='w-full' component='div'>
             <div className='flex w-full justify-between'>
               <p className='flex'>{`${sample.specimen_name}`}</p>
               <p className='flex'>{`${sample.patient_sample_code}`}</p>
+            </div>
+            <div className='text-xs mt-1'>
+              <span className='font-semibold'>Collected with: </span>
+              {consumablesUsed.length === 0 ? (
+                <span>
+                  Nothing &mdash; this specimen lists no consumables, or the sample
+                  was re-tested rather than re-drawn
+                </span>
+              ) : (
+                consumablesUsed.map((row, index) => (
+                  <span key={row.id}>
+                    {index > 0 && ', '}
+                    <span className={row.is_short ? 'text-warning font-semibold' : ''}>
+                      {`${row.quantity} x ${row.item_name}`}
+                      {row.is_short && ` — ${row.quantity_required} were needed`}
+                    </span>
+                  </span>
+                ))
+              )}
             </div>
           </Typography>
         </AccordionSummary>

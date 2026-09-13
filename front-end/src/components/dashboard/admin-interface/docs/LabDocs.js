@@ -70,15 +70,17 @@ const LabDocs = () => {
             ['Low-stock threshold', 'StockPolicy (per item, per location)', 'When to warn that a reagent is running out'],
             ['Reagent metadata', 'LabReagent model', 'Chemistry info: CAS number, molecular weight, purity (optional)'],
             ['Reagent-to-test link', 'TestPanelReagent', 'Which reagents a test panel needs and how many units per run'],
-            ['Billing item', 'Item (category="Lab Test")', 'Auto-created paired item used for billing patients'],
+            ['Collection items', 'SpecimenConsumable', 'Syringe, tube, gloves used per draw of a specimen'],
+            ['Billing item', 'Item (category="Lab Test")', "One per panel; carries the panel's sale price"],
           ]}
         />
         <div className='bg-blue-50 border-l-4 border-blue-400 p-3 rounded mt-2'>
-          <p className='font-semibold text-blue-800'>Auto-created billing items</p>
+          <p className='font-semibold text-blue-800'>The panel is what you sell</p>
           <p>
-            When you create a <Code>LabReagent</Code> inventory item, the system automatically creates a
-            paired <Code>Lab Test</Code> billing item. This billing item is what gets attached to the
-            test panel and appears on patient invoices. You don&apos;t need to create it manually.
+            Reagents and collection items are raw materials: they carry a cost but no sale price.
+            The <strong>test panel</strong> is the finished product. It sets the price, and it bills through
+            its own <Code>Lab Test</Code> item. Leave the billing item empty when creating a panel and one
+            is made from the panel name.
           </p>
         </div>
       </Section>
@@ -97,17 +99,21 @@ const LabDocs = () => {
             <span className='text-gray-500'>ALT, AST, Albumin, Bilirubin — each tracked individually. If a doctor orders only Albumin and Bilirubin, only those 2 panels are created.</span>
           </li>
           <li>
-            <strong>Sample is collected</strong>
-            <br />
-            <span className='text-gray-500'>A PatientSample record is created (or reused if same specimen type).</span>
-          </li>
-          <li>
             <strong>Test is billed</strong> — <Code>is_billed = true</Code>
             <br />
-            <span className='text-gray-500'>This triggers the reagent deduction process (via background task).</span>
+            <span className='text-gray-500'>Billing is refused if the panel&apos;s reagents are not in stock. Nothing is deducted yet.</span>
           </li>
           <li>
-            <strong>For each reagent linked to the panel:</strong>
+            <strong>Sample is collected</strong>
+            <br />
+            <span className='text-gray-500'>
+              A PatientSample record is created (or reused if same specimen type). The specimen&apos;s
+              collection items — syringe, tube, gloves — are deducted from Lab stock once per draw and
+              listed on the sample as consumables used.
+            </span>
+          </li>
+          <li>
+            <strong>The result is recorded.</strong> For each reagent linked to the panel:
             <ul className='list-disc pl-5 mt-1 space-y-1'>
               <li>Deduct <Code>units_consumed_per_run</Code> from <strong>Inventory</strong> using FEFO (First Expiry, First Out)</li>
               <li>The earliest-expiring lot is consumed first</li>
@@ -115,9 +121,14 @@ const LabDocs = () => {
             </ul>
           </li>
           <li>
-            <strong>Results are entered and approved</strong>
+            <strong>Results are approved</strong>
             <br />
-            <span className='text-gray-500'>Lab tech enters the result value, system auto-generates interpretation based on reference ranges.</span>
+            <span className='text-gray-500'>The system auto-generates the interpretation from reference ranges.</span>
+          </li>
+          <li>
+            <strong>Re-test</strong> (from an archived sample)
+            <br />
+            <span className='text-gray-500'>Runs the panel again on the sample already drawn: reagents are deducted again, collection items are not.</span>
           </li>
         </ol>
       </Section>
@@ -197,8 +208,7 @@ const LabDocs = () => {
           <li>
             <strong>Create the reagent item</strong> in Inventory with category <Code>LabReagent</Code>,
             stocked in tests. Then open <strong>Pack Sizes</strong> on that item and add a
-            <Code>Kit</Code> holding the number of tests per kit (e.g., 200).
-            A <Code>Lab Test</Code> billing item is auto-created.
+            <Code>Kit</Code> holding the number of tests per kit (e.g., 200). It gets no sale price.
           </li>
           <li>
             <strong>Receive stock</strong> against a purchase order. Set <strong>Received in</strong>
@@ -209,12 +219,14 @@ const LabDocs = () => {
             <strong>Create a Test Profile</strong> (e.g., &quot;Liver Function Tests&quot;) if one doesn&apos;t exist.
           </li>
           <li>
-            <strong>Create Test Panels</strong> under the profile (e.g., ALT, AST, Albumin).
-            Assign the auto-created <Code>Lab Test</Code> billing item.
+            <strong>Set the specimen&apos;s collection items</strong> (Lab Settings → Specimens) — what one
+            draw uses up. Shared by every panel taken off that specimen.
           </li>
           <li>
-            <strong>Link reagents to panels</strong> via TestPanelReagent.
-            Set <Code>units_consumed_per_run</Code> (usually 1 for standard reagent kits).
+            <strong>Create Test Panels</strong> under the profile (e.g., ALT, AST, Albumin) with a
+            <strong> sale price</strong> and the <strong>reagents</strong> each run consumes
+            (<Code>units_consumed_per_run</Code>, usually 1 for standard kits). Leave the billing item
+            empty to have one made from the panel name.
           </li>
           <li>
             <strong>Add reference values</strong> for each panel (by sex and age range).

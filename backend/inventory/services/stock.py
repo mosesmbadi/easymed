@@ -343,8 +343,9 @@ def receive_incoming_item(incoming_item, performed_by=None):
     incoming_item.posted_at = timezone.now()
     incoming_item.save(update_fields=['posted_at', 'department'])
 
-    # A receipt may also open a new cash price for the item.
-    if incoming_item.sale_price is not None:
+    # A receipt may also open a new cash price -- but only for something the
+    # hospital actually sells. Reagents and consumables are raw materials.
+    if incoming_item.sale_price is not None and item.is_sellable:
         set_sale_price(item, incoming_item.sale_price, created_by=performed_by)
 
     if incoming_item.supplier_invoice_id:

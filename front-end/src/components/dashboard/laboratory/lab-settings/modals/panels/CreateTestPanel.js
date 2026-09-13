@@ -13,6 +13,9 @@ import { IoMdAdd } from "react-icons/io";
 import { getAllLabTestProfiles, getSpecimens, updateTestPanelsStore } from "@/redux/features/laboratory";
 import { createLabTestPanels } from "@/redux/service/laboratory";
 import { fetchUnits } from "@/redux/service/inventory";
+import RequiredItemsField from "@/components/common/RequiredItemsField";
+import { reagentOptions } from "@/utils/lab-items";
+import PanelCollectionCost from "./PanelCollectionCost";
 
 const ItemSelectWithAutofill = ({ options }) => {
   const { values, setFieldValue } = useFormikContext();
@@ -24,11 +27,12 @@ const ItemSelectWithAutofill = ({ options }) => {
   return (
     <>
       <SeachableSelect
-        label="Select Item (Lab Test Panel)"
+        label="Billing Item (optional)"
         name="item"
         options={options}
         setSelectedItem={handleItemChange}
       />
+      <p className="text-xs text-gray-500 mt-1">Leave empty to create one from the panel name.</p>
       <ErrorMessage name="item" component="div" className="text-warning text-xs" />
     </>
   );
@@ -38,6 +42,7 @@ const CreateTestPanelModal = () => {
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [unitOptions, setUnitOptions] = useState([]);
+  const [reagentRows, setReagentRows] = useState([]);
   const dispatch = useDispatch();
   const auth = useAuth();
   const { item } = useSelector((store) => store.inventory)
@@ -89,11 +94,12 @@ const CreateTestPanelModal = () => {
 
 
   const initialValues = {
-    item: "",
+    item: null,
     specimen: "",
     test_profile: "",
     name: "",
     units: "",
+    sale_price: "",
     is_qualitative: false,
     is_quantitative: true,
     tat: ""
@@ -101,9 +107,13 @@ const CreateTestPanelModal = () => {
 
   const validationSchema = Yup.object().shape({
     name: Yup.string().required("Field is Required!"),
-    item: Yup.object().required("Field is Required!"),
+    item: Yup.object().nullable(),
     specimen: Yup.object().required("Field is Required!"),
     test_profile: Yup.object().required("Field is Required!"),
+    sale_price: Yup.number()
+      .typeError("Must be a number")
+      .min(0, "Cannot be negative")
+      .required("The panel is what the patient is charged for, so it needs a price"),
   });
 
   const handleCreateTestPanel = async (formValue, helpers) => {
@@ -112,7 +122,13 @@ const CreateTestPanelModal = () => {
       specimen: formValue.specimen.value,
       test_profile: formValue.test_profile.value,
       units: formValue.units?.value || null,
-      item: formValue.item.value,
+      // Omitted, the backend makes the panel its own billing item.
+      item: formValue.item?.value || undefined,
+      sale_price: formValue.sale_price,
+      reagent_items: reagentRows.map((row) => ({
+        reagent_item: row.reagent_item,
+        units_consumed_per_run: parseInt(row.units_consumed_per_run) || 1,
+      })),
       is_quantitative: formValue.is_qualitative ? false : formValue.is_quantitative,
       tat: formValue.tat ? (() => {
         const mins = parseInt(formValue.tat);
@@ -127,7 +143,9 @@ const CreateTestPanelModal = () => {
       const response = await createLabTestPanels(formData, auth)
       dispatch(updateTestPanelsStore(response))
       setLoading(false);
-      toast.success("Item Updated Successfully!");
+      setReagentRows([]);
+      helpers.resetForm();
+      toast.success("Test Panel created successfully!");
       handleClose();
 
     } catch (err) {
@@ -220,6 +238,23 @@ const CreateTestPanelModal = () => {
                                 className="text-warning text-xs"
                             />
                         </Grid>
+                        <Grid className='my-2' item md={6} xs={12}>
+                          <label htmlFor="sale_price">Sale Price</label>
+                          <Field
+                            className="block border rounded-md text-sm border-gray py-2.5 px-4 focus:outline-card w-full"
+                            placeholder="e.g. 200"
+                            name="sale_price"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            What the patient pays for this test. The panel is the lab&apos;s
+                            finished product &mdash; the reagent, syringe and tube it is
+                            assembled from are never priced on their own.
+                          </p>
+                          <ErrorMessage name="sale_price" component="div" className="text-warning text-xs" />
+                        </Grid>
                         <Grid className="my-2" item md={6} xs={12}>
                           <div className="flex items-center gap-2">
                             <Field type="checkbox" name="is_qualitative" />
@@ -228,6 +263,27 @@ const CreateTestPanelModal = () => {
                             </label>
                           </div>
                           <ErrorMessage name="is_qualitative" component="div" className="text-warning text-xs" />
+                        </Grid>
+                        <Grid className='my-2' item md={12} xs={12}>
+                          <RequiredItemsField
+                            title="Reagents consumed per run"
+                            description="What running this test burns, deducted when the panel is billed. Reagents only -- the syringe and tube belong to the specimen the sample is drawn into, and are deducted once at collection however many panels are ordered."
+                            options={reagentOptions(item)}
+                            rows={reagentRows}
+                            setRows={setReagentRows}
+                            valueKey="reagent_item"
+                            quantityKey="units_consumed_per_run"
+                            quantityLabel="Units per run"
+                            itemLabel="Reagent"
+                            placeholder="Diluent, lyse, cleaner..."
+                            addLabel="Add Reagent"
+                            emptyLabel="No reagents linked. This panel will not deduct any reagent stock when billed."
+                            showRequired={false}
+                            idPrefix="panel-reagent"
+                          />
+                        </Grid>
+                        <Grid className='my-2' item md={12} xs={12}>
+                          <PanelCollectionCost specimens={specimens} />
                         </Grid>
                         <Grid className='my-2' item md={12} xs={12}>
                             <div className="flex items-center justify-end">

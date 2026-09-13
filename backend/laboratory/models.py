@@ -21,7 +21,8 @@ from customuser.models import CustomUser
 class ReagentConsumptionLog(models.Model):
     """
     Tracks every reagent consumption event for audit trail and reporting.
-    Created automatically when lab tests are billed.
+    Written automatically when a lab test result is recorded, which is the
+    moment the reagent was actually spent.
     """
     reagent_item = models.ForeignKey('inventory.Item', on_delete=models.CASCADE, 
                                       related_name='consumption_logs')
@@ -105,14 +106,63 @@ class Specimen(models.Model):
     name = models.CharField(max_length=255)
     max_archive_duration = models.PositiveIntegerField(default=1, null=True, blank=True, help_text="Maximum duration a specimen can be archived (in days)")
 
+    def collection_requirements(self):
+        """What a phlebotomist uses up taking one sample of this specimen."""
+        return list(self.consumables.select_related('item').all())
+
     def __str__(self):
         return self.name
+
+
+class SpecimenConsumable(models.Model):
+    """
+    What it takes to collect one sample of a specimen: a syringe, a vacutainer,
+    a pair of gloves, a slide.
+
+    These belong to the draw, not to the test. Three panels ordered off one
+    blood sample share one syringe, and a retest off an archived sample uses
+    none at all -- which is why they are deducted when the sample is collected
+    rather than when a panel is billed.
+    """
+    specimen = models.ForeignKey(Specimen, on_delete=models.CASCADE, related_name='consumables')
+    item = models.ForeignKey(
+        'inventory.Item', on_delete=models.PROTECT,
+        limit_choices_to={'category_one': 'Internal'},
+        related_name='specimen_consumable_links',
+        help_text="An internal consumable held in stock: syringe, tube, gloves")
+    quantity_per_collection = models.PositiveIntegerField(
+        default=1,
+        help_text="Base units deducted each time a sample of this specimen is collected")
+    is_required = models.BooleanField(
+        default=True,
+        help_text="Required items warn loudly when short; optional ones only note it")
+
+    class Meta:
+        unique_together = ('specimen', 'item')
+        ordering = ['specimen', 'item']
+        verbose_name = "Specimen Consumable"
+        verbose_name_plural = "Specimen Consumables"
+
+    def clean(self):
+        if self.item_id and not self.item.is_stock_tracked:
+            raise ValidationError(
+                {'item': f"{self.item.name} holds no stock, so it cannot be "
+                         f"deducted when a sample is collected."})
+        if self.quantity_per_collection is not None and self.quantity_per_collection < 1:
+            raise ValidationError(
+                {'quantity_per_collection': "A collection uses at least one of these."})
+
+    def __str__(self):
+        return f"{self.specimen.name} needs {self.quantity_per_collection} x {self.item.name}"
 
 
 class TestPanelReagent(models.Model):
     """
     Links test panels to the reagents they consume.
     Example: Albumin test uses Reagent A and Reagent C
+
+    Reagents only. Syringes and tubes are tied to the specimen the sample is
+    drawn into, not to the panel run off it -- see SpecimenConsumable.
     """
     test_panel = models.ForeignKey('LabTestPanel', on_delete=models.CASCADE, related_name='reagent_links')
     reagent_item = models.ForeignKey('inventory.Item', on_delete=models.CASCADE, limit_choices_to={'category': 'LabReagent'})
@@ -132,8 +182,12 @@ class LabTestPanel(models.Model):
     specimen = models.ForeignKey(Specimen, on_delete=models.CASCADE, null=True, blank=True)
     test_profile = models.ForeignKey(LabTestProfile, on_delete=models.CASCADE)
     units = models.ForeignKey('inventory.Unit', on_delete=models.SET_NULL, null=True, blank=True, related_name='lab_test_panels')
-    # TODO: To get back to. Change to Inventory from 'inventory.Item'
-    item = models.ForeignKey('inventory.Item', on_delete=models.CASCADE)
+    # The catalogue entry an invoice line points at. One panel, one item: the
+    # panel's sale price is stored against it, so two panels sharing one would
+    # mean pricing a Urea silently repriced a Creatinine -- and billing raises
+    # a line per panel, so they would also charge the patient twice for it.
+    item = models.OneToOneField(
+        'inventory.Item', on_delete=models.CASCADE, related_name='lab_test_panel')
     is_qualitative = models.BooleanField(default=False)
     is_quantitative = models.BooleanField(default=True)
     # turn around time
@@ -145,25 +199,62 @@ class LabTestPanel(models.Model):
                 {"item": "Panel billing item must have category 'Lab Test'."}
             )
 
-    def can_run(self):
+    @property
+    def sale_price(self):
         """
-        Pre-billing check: verify all required reagents have sufficient stock.
-        Returns (ok: bool, message: str).
+        What the patient pays for this test.
 
-        Availability comes from the ledger and excludes expired lots and stock
-        already reserved for other work.
+        The panel is the lab's finished product -- the thing assembled out of a
+        reagent, a syringe and a tube -- so this is the only place in the lab a
+        price is set. It is stored against the panel's billing item, because
+        that is what an invoice line points at and what keeps historic
+        invoices at the price they were raised at.
+        """
+        return self.item.current_sale_price if self.item_id else None
+
+    def set_sale_price(self, price, created_by=None):
+        """Open a new cash price for this panel, effective today."""
+        from inventory.services import stock as stock_service
+
+        if not self.item_id:
+            raise ValidationError(
+                {"item": "A panel needs a billing item before it can be priced."})
+        return stock_service.set_sale_price(self.item, price, created_by=created_by)
+
+    def collection_requirements(self):
+        """
+        The consumables a draw for this panel uses, via its specimen.
+
+        Read-only here: the panel does not own them, and two panels off one
+        blood sample do not mean two syringes.
+        """
+        return self.specimen.collection_requirements() if self.specimen_id else []
+
+    def can_run(self, runs=1):
+        """
+        Can this panel actually be run `runs` times right now?
+
+        Returns (ok, message). Availability comes from the ledger and excludes
+        expired lots and stock already reserved for other work, so this answers
+        "can we do this today", not "does the catalogue list it".
+
+        A panel with no reagents configured can always run: plenty of tests are
+        read off a machine or a slide and consume nothing trackable. Absence of
+        reagents is a real answer, not an unfinished setup.
         """
         from inventory.services import stock as stock_service
 
         from .utils import lab_department
 
+        runs = max(runs or 1, 1)
         department = lab_department()
         for link in self.reagent_links.select_related('reagent_item'):
+            needed = link.units_consumed_per_run * runs
             available = stock_service.available_quantity(link.reagent_item, department)
-            if available < link.units_consumed_per_run:
+            if available < needed:
                 return False, (
                     f"Insufficient stock for {link.reagent_item.name} "
-                    f"(need {link.units_consumed_per_run}, have {available})"
+                    f"(need {needed}, have {available})"
                 )
         return True, "OK"
 
@@ -355,6 +446,44 @@ class PatientSample(models.Model):
 
     def __str__(self):
         return str(f"{self.patient_sample_code} - {self.specimen.name} - {self.process}")
+
+
+class PatientSampleConsumable(models.Model):
+    """
+    What was actually used up taking one sample.
+
+    Written when the sample is marked collected, from the specimen's
+    requirements at that moment, so a later edit to the specimen never
+    rewrites what the phlebotomist already spent. This is the row the
+    collection screen shows back, and a retest produces none of them because a
+    retest collects nothing.
+    """
+    patient_sample = models.ForeignKey(
+        PatientSample, on_delete=models.CASCADE, related_name='consumables_used')
+    item = models.ForeignKey(
+        'inventory.Item', on_delete=models.PROTECT, related_name='sample_collection_uses')
+    quantity = models.PositiveIntegerField(help_text="Base units actually issued")
+    quantity_required = models.PositiveIntegerField(
+        default=0,
+        help_text="What the specimen called for, which a short shelf may not have covered")
+    stock_movement_reference = models.UUIDField(
+        null=True, blank=True,
+        help_text="Groups the StockMovement rows this collection produced")
+    recorded_on = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('patient_sample', 'item')
+        ordering = ['item']
+        verbose_name = "Patient Sample Consumable"
+        verbose_name_plural = "Patient Sample Consumables"
+
+    @property
+    def is_short(self):
+        return self.quantity < self.quantity_required
+
+    def __str__(self):
+        return (f"{self.patient_sample.patient_sample_code}: "
+                f"{self.quantity} x {self.item.name}")
 
 
 class LabTestRequestPanel(models.Model):

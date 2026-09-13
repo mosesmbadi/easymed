@@ -1,14 +1,21 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from 'next/navigation'
-import { Formik, Field, Form, ErrorMessage } from "formik";
+import { Formik, Field, Form, ErrorMessage, useFormikContext } from "formik";
 import { Grid } from "@mui/material";
 import * as Yup from "yup";
 import { createItem, fetchItems, fetchUnits } from "@/redux/service/inventory";
-import ItemConsumablesField from "./ItemConsumablesField";
+import ItemConsumablesField, { usesItemAccompaniments } from "./ItemConsumablesField";
 import { fetchDepartments } from "@/redux/service/auth";
 import { toast } from "react-toastify";
 import SeachableSelect from "@/components/select/Searchable";
 import { useAuth } from "@/assets/hooks/use-auth";
+
+// The section only applies to some categories, and the category is a field of
+// this same form, so it has to read from Formik rather than be passed in.
+const ItemConsumablesSection = (props) => {
+    const { values } = useFormikContext();
+    return <ItemConsumablesField category={values.category?.value} {...props} />;
+};
 
 const NewItem = () => {
 
@@ -47,10 +54,10 @@ const NewItem = () => {
         }).catch(() => {});
     }, [auth?.token]);
 
-    // The two lab categories are deliberately distinct:
-    //   Lab Reagent    — consumed by running a test (linked via TestPanelReagent)
-    //   Lab Consumable — an accompaniment of a test or a drug (linked via
-    //                    ItemConsumable, configured in the section below)
+    // The two lab categories are deliberately distinct, and neither is linked
+    // from this form:
+    //   Lab Reagent    — burned running a test, linked on the Test Panel
+    //   Lab Consumable — spent taking a sample, linked on the Specimen
     const categories = [
         {value: 'SurgicalEquipment', label: 'Surgical Equipment'},
         {value: 'LabReagent', label: 'Lab Reagent (used to run tests)'},
@@ -84,8 +91,10 @@ const NewItem = () => {
 
     const AddItem = async (formValue, helpers) => {
       try {
+        const takesAccompaniments = usesItemAccompaniments(formValue.category.value);
+
         // Checked but empty says nothing either way. Make the user pick one.
-        if (hasConsumables && consumableRows.length === 0) {
+        if (takesAccompaniments && hasConsumables && consumableRows.length === 0) {
           toast.error("Add at least one consumable, or uncheck Has Consumables.");
           return;
         }
@@ -100,8 +109,10 @@ const NewItem = () => {
           units_of_measure: formValue.units_of_measure.trim(),
           departments: (formValue.departments || []).map((d) => d.value),
           // An unchecked box is an answer, not a skipped field: the empty list
-          // is what tells the server this item holds no accompaniments.
-          consumable_items: hasConsumables
+          // is what tells the server this item holds no accompaniments. A lab
+          // item always sends the empty list -- its raw materials live on the
+          // Test Panel and the Specimen.
+          consumable_items: takesAccompaniments && hasConsumables
             ? consumableRows.map((row) => ({
                 consumable: row.consumable,
                 quantity_per_use: parseInt(row.quantity_per_use) || 1,
@@ -237,7 +248,7 @@ const NewItem = () => {
                 />
             </Grid>
             <Grid className='my-2' item md={12} xs={12}>
-                <ItemConsumablesField
+                <ItemConsumablesSection
                     options={consumableOptions}
                     rows={consumableRows}
                     setRows={setConsumableRows}

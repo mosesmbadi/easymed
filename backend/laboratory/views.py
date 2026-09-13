@@ -37,6 +37,7 @@ from .models import (
     ProcessTestRequest,
     PatientSample,
     Specimen,
+    SpecimenConsumable,
     TestPanelReagent,
     ReagentConsumptionLog,
     ReferenceValue,
@@ -64,6 +65,7 @@ from .serializers import (
     ProcessTestRequestSerializer,
     PatientSampleSerializer,
     SpecimenSerializer,
+    SpecimenConsumableSerializer,
     TestPanelReagentSerializer,
     ReagentStockSerializer,
     ReagentConsumptionLogSerializer,
@@ -128,9 +130,24 @@ class LabEquipmentViewSet(viewsets.ModelViewSet):
     permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser,)
 
 class SpecimenViewSet(viewsets.ModelViewSet):
-    queryset = Specimen.objects.all()
+    queryset = Specimen.objects.prefetch_related('consumables__item').all()
     serializer_class = SpecimenSerializer
     # permission_classes = (IsLabTechUser,)
+
+
+class SpecimenConsumableViewSet(viewsets.ModelViewSet):
+    """
+    What collecting one sample of a specimen uses up.
+
+    Deducted when the sample is marked collected, not when a test is billed, so
+    several panels off one draw share one syringe and a retest off an archived
+    sample spends nothing.
+    """
+    queryset = SpecimenConsumable.objects.select_related('specimen', 'item')
+    serializer_class = SpecimenConsumableSerializer
+    permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser | IsReceptionistUser,)
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['specimen', 'item']
 
 
 class TestPanelReagentViewSet(viewsets.ModelViewSet):
@@ -171,7 +188,9 @@ class LabTestPanelViewSet(viewsets.ModelViewSet):
     This need s whole lot of testing to see if the ref value are actually
     gotten dynamically using the patients age and sex
     '''
-    queryset = LabTestPanel.objects.all()
+    queryset = LabTestPanel.objects.select_related(
+        'item', 'specimen', 'test_profile', 'units').prefetch_related(
+        'reagent_links__reagent_item', 'specimen__consumables__item')
     serializer_class = LabTestPanelSerializer
     permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser | IsReceptionistUser,)
 
@@ -285,7 +304,7 @@ class ProcessTestRequestViewSet(viewsets.ModelViewSet):
 
 class PatientSampleViewSet(viewsets.ModelViewSet):
     queryset = PatientSample.objects.select_related('specimen').prefetch_related(
-        'specimen__consumables__item').order_by('-id')
+        'specimen__consumables__item', 'consumables_used__item').order_by('-id')
     serializer_class = PatientSampleSerializer
 
 '''

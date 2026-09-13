@@ -7,7 +7,6 @@ from django.db.models import Sum
 
 from .services import check_stock_available, post_stock_for_invoice_item
 from .utils import update_service_billed_status
-from inventory.models import InsuranceItemSalePrice
 from inventory.services.stock import InsufficientStock, StockError
 from .models import InvoiceItem, InvoicePayment
 
@@ -128,28 +127,13 @@ def post_stock_after_billing(sender, instance, created, **kwargs):
         raise ValidationError(str(exc))
 
 
-def calculate_actual_total(invoice_item):
-    try:
-        # Retrieve the insurance company from the payment mode
-        insurance_company = invoice_item.payment_mode.insurance if invoice_item.payment_mode else None
-        
-        if insurance_company:
-            insurance_sale_price = InsuranceItemSalePrice.objects.get(
-                item=invoice_item.item,
-                insurance_company=insurance_company
-            )
-            co_pay = insurance_sale_price.co_pay
-        else:
-            co_pay = 0
-    except InsuranceItemSalePrice.DoesNotExist:
-        co_pay = 0
-
-    invoice_item.actual_total = invoice_item.item_amount - co_pay
-
-
-@receiver(pre_save, sender=InvoiceItem)
-def update_invoice_item_actual_total(sender, instance, **kwargs):
-    calculate_actual_total(instance)
+# `calculate_actual_total` used to live here, as a pre_save that recomputed
+# `actual_total` as item_amount - co_pay. It ran AFTER InvoiceItem.save() had
+# already set the field, using the opposite convention, against an item_amount
+# that held only the insurer portion -- so every insurance line was billed at
+# the insurer price less the co-pay and the hospital under-charged insurers by
+# exactly what the patient had already contributed. Pricing now has a single
+# writer, `InvoiceItem.get_pricing_for_item`, and nothing here touches money.
 
 
 # update Invoice.cash_paid when InvoicePayment is saved

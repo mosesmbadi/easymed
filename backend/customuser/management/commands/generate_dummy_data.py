@@ -20,6 +20,14 @@ from customuser.management.utils.data_generators import (
     create_item_consumables,
     create_pharmaceutical_inventory,
     create_item_department_links,
+    create_insurance_price_list,
+)
+from customuser.management.utils.demo_activity import (
+    DEMO_DAYS,
+    DemoClock,
+    demo_start,
+    seed_demo_world,
+    seed_staff,
 )
 from customuser.models import CustomUser
 from company.models import Company, CompanyBranch, InsuranceCompany
@@ -36,6 +44,15 @@ class Command(BaseCommand):
     help = "Generate all dummy data (users, companies, etc.)"
 
     def handle(self, *args, **options):
+        # Everything is generated on the demo clock, which starts the morning
+        # before the demo's history does. The catalogue, the opening stock and
+        # the prices are dated then; the simulated visits move the clock
+        # forward day by day until it reaches the real present. See
+        # customuser/management/utils/demo_activity.py.
+        with DemoClock(demo_start()) as clock:
+            self._generate(clock)
+
+    def _generate(self, clock):
         DEFAULT_COUNT = 50
 
         # Always ensure all units of measurement exist first
@@ -79,7 +96,7 @@ class Command(BaseCommand):
         if Item.objects.count() >= DEFAULT_COUNT:
                 self.stdout.write(self.style.WARNING("Skipping items: already have 50 or more records."))
         else:
-            items = create_dummy_items(count=DEFAULT_COUNT)
+            items = create_dummy_items()
             self.stdout.write(self.style.SUCCESS(f"Created {len(items)} dummy inventory items."))
         
         # Create appointment items separately
@@ -110,6 +127,14 @@ class Command(BaseCommand):
         else:
             create_permissions_and_groups()
             self.stdout.write(self.style.SUCCESS("Created default groups and permissions."))
+
+        # Staff straight after the groups they belong to: dashboards are gated
+        # on group permissions, and everything after this -- requisitions,
+        # visits, receipts -- needs somebody real to have done it. This is also
+        # where the administrator comes from; nothing else creates one.
+        staff = seed_staff()
+        self.stdout.write(self.style.SUCCESS(
+            f"Ensured {sum(len(v) for k, v in staff.items() if k != 'nurse_all')} staff accounts."))
 
         if Patient.objects.count() >= DEFAULT_COUNT:
             self.stdout.write(self.style.WARNING("Skipping patients: already have enough records."))
@@ -235,12 +260,13 @@ class Command(BaseCommand):
         consumable_stats = create_item_consumables()
         self.stdout.write(self.style.SUCCESS(
             f"Linked {consumable_stats['items_linked']} items to consumables "
-            f"({consumable_stats['total_links']} accompaniment links in total)"
+            f"({consumable_stats['total_links']} accompaniment links in total), "
+            f"{consumable_stats['specimen_links_created']} specimen collection links, "
+            f"lab stocked with {consumable_stats['lab_items_stocked']} collection items"
         ))
 
         # Tag every item to the departments that use it. Runs last so it also
-        # catches items created indirectly, such as the Lab Test billing items
-        # auto-created for each lab reagent.
+        # catches items created along the way, such as each panel's billing item.
         self.stdout.write(self.style.NOTICE("\nLinking items to departments..."))
         link_stats = create_item_department_links()
         self.stdout.write(self.style.SUCCESS(
@@ -248,3 +274,36 @@ class Command(BaseCommand):
             f"({link_stats['already_tagged']} already tagged, "
             f"{link_stats['links']} item-department links in total)"
         ))
+
+        # Agreed prices with the insurers the patients carry. Without them
+        # every insured line falls back to cash and the insurer/co-pay split
+        # never appears. Needs every item priced first, so it runs late.
+        from inventory.models import InsuranceItemSalePrice
+        if InsuranceItemSalePrice.objects.exists():
+            self.stdout.write(self.style.WARNING("Skipping insurance prices: already agreed."))
+        else:
+            insurance_stats = create_insurance_price_list()
+            self.stdout.write(self.style.SUCCESS(
+                f"Agreed {insurance_stats['prices']} insurance prices with "
+                f"{insurance_stats['insurers']} insurers."
+            ))
+
+        # The history itself, last, once there is stock, prices, specimens,
+        # staff and accounts for it to use.
+        from patient.models import AttendanceProcess
+        if AttendanceProcess.objects.exists():
+            self.stdout.write(self.style.WARNING("Skipping demo history: patients already seen."))
+        else:
+            result = seed_demo_world(clock, staff, days=DEMO_DAYS)
+            counts = result['counts']
+            self.stdout.write(self.style.SUCCESS(
+                f"Simulated {DEMO_DAYS} days: {counts.get('visits', 0)} visits, "
+                f"{counts.get('invoice lines billed', 0)} invoice lines, "
+                f"{counts.get('patient receipts', 0)} patient receipts, "
+                f"{counts.get('admissions', 0)} admissions."
+            ))
+            if result['refused']:
+                self.stdout.write(self.style.ERROR(
+                    f"{len(result['refused'])} steps were refused by the billing or stock "
+                    f"rules and rolled back -- see above."
+                ))
