@@ -33,6 +33,10 @@ jobs:
         run: |
           docker build -f backend/Dockerfile -t backend-test:ci ./backend
 
+      # pytest gets --ds because the DJANGO_SETTINGS_MODULE below overrides
+      # pytest.ini. `check` should see the real settings; the tests need
+      # testing.py, which runs Celery tasks inline -- under base.py they are
+      # queued on the memory:// broker and never run.
       - name: Run backend system checks & unit tests
         run: |
           docker run --rm \
@@ -61,7 +65,7 @@ jobs:
             -e GEMINI_API_KEY='test-gemini-api-key-for-ci' \
             -e NEXT_PUBLIC_BACKEND_URL='http://localhost:8080/' \
             -e NEXT_PUBLIC_HMIS_VERSION='v0.0.1-test' \
-            backend-test:ci sh -c "python manage.py check && pytest -v"
+            backend-test:ci sh -c "python manage.py check && pytest -v --ds=easymed.settings.testing"
 
 
   build-backend:
