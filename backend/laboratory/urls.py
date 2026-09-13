@@ -17,6 +17,7 @@ from .views import (
     PatientSampleViewSet,
     LabTestRequestPanelBySampleView,
     SpecimenViewSet,
+    SpecimenConsumableViewSet,
     TestPanelReagentViewSet,
     ReferenceValueViewSet,
     TestKitCounterViewSet,
@@ -48,6 +49,7 @@ router.register(r'public-lab-test-request', PublicLabTestRequestViewSet)
 router.register(r'process-test-request', ProcessTestRequestViewSet)
 router.register(r'patient-samples', PatientSampleViewSet)
 router.register(r'specimens', SpecimenViewSet)
+router.register(r'specimen-consumables', SpecimenConsumableViewSet)
 router.register(r'test-panel-reagents', TestPanelReagentViewSet)
 router.register(r'reference-values', ReferenceValueViewSet)
 router.register(r'lab-test-interpretations', LabTestInterpretationViewSet)

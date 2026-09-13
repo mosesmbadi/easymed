@@ -11,10 +11,14 @@ import { useAuth } from '@/assets/hooks/use-auth';
 import { updateLabTestPanel } from "@/redux/service/laboratory";
 import { updateTestPanelStoreOnPatch } from "@/redux/features/laboratory";
 import { fetchUnits } from "@/redux/service/inventory";
+import RequiredItemsField from "@/components/common/RequiredItemsField";
+import { reagentOptions } from "@/utils/lab-items";
+import PanelCollectionCost from "./PanelCollectionCost";
 
 const EditTestPanelModal = ({ open, setOpen, selectedRowData }) => {
   const [loading, setLoading] = useState(false);
   const [unitOptions, setUnitOptions] = useState([]);
+  const [reagentRows, setReagentRows] = useState([]);
   const dispatch = useDispatch();
   const auth = useAuth();
   const { item } = useSelector((store) => store.inventory)
@@ -27,6 +31,19 @@ const EditTestPanelModal = ({ open, setOpen, selectedRowData }) => {
       setUnitOptions(results.map((u) => ({ value: u.id, label: `${u.symbol} — ${u.name}` })));
     }).catch(() => {});
   }, [auth?.token]);
+
+  // Re-seed whenever a different panel is opened, so the modal never shows the
+  // last one's reagents.
+  useEffect(() => {
+    setReagentRows(
+      (selectedRowData?.reagents ?? []).map((row) => ({
+        reagent_item: row.reagent_item,
+        name: row.reagent_name,
+        units_consumed_per_run: row.units_consumed_per_run,
+        available_quantity: row.available_quantity,
+      }))
+    );
+  }, [selectedRowData?.id]);
 
   const getSelectedUnit = () => {
     if (!selectedRowData?.units) return null;
@@ -58,6 +75,7 @@ const EditTestPanelModal = ({ open, setOpen, selectedRowData }) => {
     test_profile: getTestProfile() || "",
     name: selectedRowData?.name || "",
     units: getSelectedUnit() || "",
+    sale_price: selectedRowData?.sale_price ?? "",
     is_qualitative: selectedRowData?.is_qualitative || false,
     is_quantitative: selectedRowData?.is_quantitative || true,
     tat: selectedRowData?.tat ? (() => {
@@ -74,6 +92,10 @@ const EditTestPanelModal = ({ open, setOpen, selectedRowData }) => {
     item: Yup.object().required("Field is Required!"),
     specimen: Yup.object().required("Field is Required!"),
     test_profile: Yup.object().required("Field is Required!"),
+    sale_price: Yup.number()
+      .typeError("Must be a number")
+      .min(0, "Cannot be negative")
+      .required("The panel is what the patient is charged for, so it needs a price"),
   });
 
   const handleEditTestPanel = async (formValue, helpers) => {
@@ -83,6 +105,13 @@ const EditTestPanelModal = ({ open, setOpen, selectedRowData }) => {
       test_profile: formValue.test_profile.value,
       units: formValue.units?.value || null,
       item: formValue.item.value,
+      sale_price: formValue.sale_price,
+      // Sent whole: the server replaces the set, so a reagent removed here is
+      // actually unlinked there.
+      reagent_items: reagentRows.map((row) => ({
+        reagent_item: row.reagent_item,
+        units_consumed_per_run: parseInt(row.units_consumed_per_run) || 1,
+      })),
       is_quantitative: formValue.is_quantitative ? true : false,
       tat: formValue.tat ? (() => {
         const mins = parseInt(formValue.tat);
@@ -187,6 +216,22 @@ const EditTestPanelModal = ({ open, setOpen, selectedRowData }) => {
                         className="text-warning text-xs"
                       />
                     </Grid>
+                    <Grid className='my-2' item md={6} xs={12}>
+                      <label htmlFor="sale_price">Sale Price</label>
+                      <Field
+                        className="block border rounded-md text-sm border-gray py-2.5 px-4 focus:outline-card w-full"
+                        placeholder="e.g. 200"
+                        name="sale_price"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        What the patient pays for this test. Changing it opens a new
+                        effective-dated price &mdash; invoices already raised keep theirs.
+                      </p>
+                      <ErrorMessage name="sale_price" component="div" className="text-warning text-xs" />
+                    </Grid>
                     <Grid className="my-2" item md={6} xs={12}>
                       <div className="flex items-center gap-2">
                         <Field type="checkbox" name="is_qualitative" />
@@ -195,6 +240,27 @@ const EditTestPanelModal = ({ open, setOpen, selectedRowData }) => {
                         </label>
                       </div>
                       <ErrorMessage name="is_qualitative" component="div" className="text-warning text-xs" />
+                    </Grid>
+                    <Grid className='my-2' item md={12} xs={12}>
+                      <RequiredItemsField
+                        title="Reagents consumed per run"
+                        description="What running this test burns, deducted when the panel is billed. Reagents only -- the syringe and tube belong to the specimen the sample is drawn into, and are deducted once at collection however many panels are ordered."
+                        options={reagentOptions(item)}
+                        rows={reagentRows}
+                        setRows={setReagentRows}
+                        valueKey="reagent_item"
+                        quantityKey="units_consumed_per_run"
+                        quantityLabel="Units per run"
+                        itemLabel="Reagent"
+                        placeholder="Diluent, lyse, cleaner..."
+                        addLabel="Add Reagent"
+                        emptyLabel="No reagents linked. This panel will not deduct any reagent stock when billed."
+                        showRequired={false}
+                        idPrefix="edit-panel-reagent"
+                      />
+                    </Grid>
+                    <Grid className='my-2' item md={12} xs={12}>
+                      <PanelCollectionCost specimens={specimens} />
                     </Grid>
                     <Grid className='my-2' item md={6} xs={12}>
                       <label htmlFor="tat">TAT Goal (Minutes)</label>

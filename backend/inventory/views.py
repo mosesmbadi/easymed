@@ -231,7 +231,9 @@ class ItemViewSet(viewsets.ModelViewSet):
                 pack.name if pack else '',
                 pack.factor_to_base if pack else '',
                 item.slow_moving_period,
-                str(item.current_sale_price),
+                # A reagent or a syringe is priced nowhere: the lab prices the
+                # panel built from it, and nobody sells a syringe.
+                str(item.current_sale_price) if item.is_sellable else '',
                 item.is_stock_tracked,
             ])
 
@@ -292,7 +294,7 @@ class ItemViewSet(viewsets.ModelViewSet):
                         },
                     )
 
-                if sale_price is not None:
+                if sale_price is not None and item.is_sellable:
                     stock_service.set_sale_price(item, sale_price, created_by=_current_user(request))
 
                 created_count += int(created)

@@ -41,6 +41,22 @@ def dispensing_department(invoice_item):
     return stock_service.default_department()
 
 
+def lab_panel_for(item):
+    """
+    The test panel an item bills for, if it is one.
+
+    A Lab Test item is only a billing handle; what it can actually deliver is
+    defined by the panel pointing at it. Returns None for everything else,
+    including a Lab Test item no panel has claimed yet.
+    """
+    from laboratory.models import LabTestPanel
+
+    if item.category != 'Lab Test':
+        return None
+    return LabTestPanel.objects.filter(item=item).prefetch_related(
+        'reagent_links__reagent_item').first()
+
+
 def check_stock_available(invoice_item):
     """
     Pure check, no side effects. Returns (ok, message).
@@ -49,10 +65,17 @@ def check_stock_available(invoice_item):
     answering this question, which is why an oversell could leave the ledger
     and the invoice disagreeing.
 
-    Covers the item AND its accompaniments: an injection with no syringe on
-    the shelf is not billable, and neither is a urea test with no container.
-    A service item holds no stock of its own but can still carry
-    accompaniments, so the consumable check runs either way.
+    Three things can stop a line:
+
+    - the item itself is out of stock (a drug),
+    - one of its required accompaniments is (an injection with no syringe),
+    - or, for a lab test, the reagents the panel burns are not there.
+
+    That last one is why a service item is checked at all. A lab test holds no
+    stock of its own and used to sail through every check -- so the till would
+    happily sell a Urea the bench had no reagent to run. What blocks it is the
+    reagent, not the syringe: by the time a syringe matters the sample has
+    already been drawn, and that is accounted for when the sample is collected.
     """
     item = invoice_item.item
     quantity = invoice_item.quantity or 1
@@ -64,6 +87,15 @@ def check_stock_available(invoice_item):
             return False, (
                 f"Insufficient stock for {item.name} at {department.name}: "
                 f"need {quantity}, {available} available."
+            )
+
+    panel = lab_panel_for(item)
+    if panel is not None:
+        ok, message = panel.can_run(runs=quantity)
+        if not ok:
+            return False, (
+                f"{item.name} cannot be billed: the lab cannot run it. {message}. "
+                f"Receive the reagent into Lab stock first."
             )
 
     return consumables_service.check_available(item, quantity, department)
@@ -146,6 +178,7 @@ __all__ = [
     'check_consumables_available',
     'check_stock_available',
     'dispensing_department',
+    'lab_panel_for',
     'post_stock_for_invoice_item',
     'reverse_stock_for_invoice_item',
 ]

@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import models, transaction
 from django.db.models import Sum
 from django.apps import apps
@@ -88,18 +89,46 @@ class Invoice(models.Model):
     cash_paid = models.DecimalField(max_digits=10, decimal_places=2, default=0, null=True, blank=True)
 
     def calculate_invoice_totals(self):
+        """
+        Roll the lines up.
+
+        `invoice_amount` sums `actual_total`, which is what is receivable from
+        whichever party each line is billed to -- the insurer on an insurance
+        line, the patient on a cash one. A patient co-pay on an insurance line
+        is therefore NOT in here; `patient_due` is where that lives.
+        """
         if self.pk:
-            # Calculate total invoice amount
             self.invoice_amount = self.invoice_items.aggregate(
                 total_amount=Sum('actual_total')
             )['total_amount'] or 0
-            
-            # Calculate total cash amount
+
+            # Cash lines only, which for those is the whole line.
             self.total_cash = self.invoice_items.filter(
                 payment_mode__payment_category='cash'
             ).aggregate(
                 total_cash=Sum('actual_total')
             )['total_cash'] or 0
+
+    @property
+    def patient_due(self):
+        """
+        Everything the patient owes across this invoice: cash lines in full,
+        plus the co-pay on every insurance line.
+        """
+        if not self.pk:
+            return 0
+        return self.invoice_items.aggregate(
+            total=Sum('patient_amount')
+        )['total'] or 0
+
+    @property
+    def gross_total(self):
+        """What the invoice is worth in total, whoever ends up paying."""
+        if not self.pk:
+            return 0
+        return self.invoice_items.aggregate(
+            total=Sum('item_amount')
+        )['total'] or 0
 
     def generate_invoice_number(self):
         """Generates a unique invoice number.
@@ -178,8 +207,23 @@ class InvoiceItem(models.Model):
     payment_mode = models.ForeignKey(PaymentMode, on_delete=models.PROTECT, null=True)
     # quantity is in the item's base units — e.g. 20 tablets, not 1 box of 20
     quantity = models.PositiveIntegerField(default=1)
+    # What one base unit was charged at, captured when the line was billed.
+    # Without this the line re-prices itself from today's price list on every
+    # save, which is exactly what effective-dated pricing exists to prevent.
+    unit_price = models.DecimalField(
+        max_digits=12, decimal_places=2, null=True, blank=True,
+        help_text="Price of ONE base unit, frozen at the moment the line was billed")
+    # The whole line, whoever ends up paying for it: unit_price x quantity.
     item_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    # amount after co-pay is deducted
+    # Split of item_amount between the two possible payers. A cash line is all
+    # patient; an insurance line is the co-pay to the patient and the rest to
+    # the insurer. They always add back up to item_amount.
+    patient_amount = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0,
+        help_text="The patient's own share of this line: the co-pay, or the whole thing on a cash line")
+    # What is receivable from the party this line is billed TO -- the insurer on
+    # an insurance line, the patient on any other. This is the figure the
+    # payment allocator and the insurance receivables screen both work in.
     actual_total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     status = models.CharField(
         max_length=10, choices=STATUS_CHOICES, default='pending')
@@ -190,15 +234,27 @@ class InvoiceItem(models.Model):
 
     @property
     def sale_price(self):
-        """Return the per-unit cash price from the price list.
-
-        Price comes from the effective-dated ItemPrice list, not from whichever
-        stock row happened to sort first -- that made the price a lottery
-        between lots.
-
-        Use item_amount for the billed total (unit_price x quantity).
         """
+        What one base unit of this line was charged at.
+
+        Answered from the line's own frozen `unit_price` once it has one. A
+        billed line must never quote today's price: re-reading the price list
+        means an invoice raised last month silently restates itself the next
+        time anything touches the row.
+        """
+        if self.unit_price is not None:
+            return self.unit_price
         return self.item.current_sale_price or 0
+
+    @property
+    def insurer_amount(self):
+        """The payer's share -- zero on a cash line."""
+        return (self.item_amount or 0) - (self.patient_amount or 0)
+
+    @property
+    def is_priced(self):
+        """Whether this line has been pinned to a price."""
+        return self.unit_price is not None
     
     @property
     def price_source(self):
@@ -217,69 +273,118 @@ class InvoiceItem(models.Model):
     
     def get_pricing_for_item(self):
         """
-        Centralized pricing logic with explicit fallback chain.
+        Work out what this line costs and who owes which part of it.
 
-        All returned amounts are already multiplied by self.quantity so callers
-        can store them directly without further calculation.
+        One writer, one set of rules. The amounts used to be computed here,
+        overwritten by `InvoiceItem.save()`, then overwritten again by a
+        pre_save signal using the opposite convention -- so an insurance line
+        ended up billed at the insurer price MINUS the co-pay, and the hospital
+        under-charged every insurer by exactly the patient contribution.
 
-        Returns a dict with:
-        - item_amount: Total price to bill (unit_price × quantity)
-        - actual_total: Amount patient pays after insurance/co-pay (× quantity)
-        - price_source: Where the unit price came from ('insurance', 'cash', 'cash_fallback')
+        Conventions every consumer can now rely on:
+
+          unit_price      what one base unit is charged at, all payers together
+          item_amount     unit_price x quantity -- the whole line
+          patient_amount  the patient own share: the co-pay, or all of it
+          actual_total    receivable from whoever the line is billed TO -- the
+                          insurer on an insurance line, the patient on any
+                          other. patient_amount + insurer_amount == item_amount
+
+        An insurance price is a split, not a discount: `sale_price` is the
+        insurer portion and `co_pay` the patient portion, so the line is worth
+        the two added together.
         """
         InsuranceItemSalePrice = apps.get_model('inventory', 'InsuranceItemSalePrice')
 
         qty = self.quantity or 1
+        cash_price = self.item.current_sale_price or 0
 
-        # Base cash price from the effective-dated price list.
-        base_price = self.item.current_sale_price or 0
+        insured = (
+            self.payment_mode
+            and self.payment_mode.payment_category == 'insurance'
+            and self.payment_mode.insurance_id
+        )
 
-        # If insurance payment mode
-        if self.payment_mode and self.payment_mode.payment_category == 'insurance':
-            if self.payment_mode.insurance_id:
-                ins_price = InsuranceItemSalePrice.objects.filter(
-                    item=self.item,
-                    insurance_company_id=self.payment_mode.insurance_id
-                ).first()
+        if insured:
+            ins_price = InsuranceItemSalePrice.objects.filter(
+                item=self.item,
+                insurance_company_id=self.payment_mode.insurance_id,
+            ).first()
 
-                if ins_price:
-                    return {
-                        'item_amount': (ins_price.sale_price or 0) * qty,
-                        'actual_total': (ins_price.co_pay or 0) * qty,
-                        'price_source': 'insurance'
-                    }
-
-                # Insurance selected but no price configured — fallback to cash
+            if ins_price:
+                insurer_unit = ins_price.sale_price or 0
+                patient_unit = ins_price.co_pay or 0
+                unit_price = insurer_unit + patient_unit
                 return {
-                    'item_amount': base_price * qty,
-                    'actual_total': base_price * qty,
-                    'price_source': 'cash_fallback'
+                    'unit_price': unit_price,
+                    'item_amount': unit_price * qty,
+                    'patient_amount': patient_unit * qty,
+                    'actual_total': insurer_unit * qty,
+                    'price_source': 'insurance',
                 }
 
-        # Default: Cash / MPesa / Cheque / Direct-to-bank etc.
-        return {
-            'item_amount': base_price * qty,
-            'actual_total': base_price * qty,
-            'price_source': 'cash'
-        }
-    
-    def save(self, *args, **kwargs):
-        """Persist InvoiceItem with amounts derived from centralized pricing logic.
+            # Insurance selected but nothing configured for this item. Bill the
+            # cash price to the patient rather than quietly sending an insurer
+            # a figure nobody agreed to.
+            return {
+                'unit_price': cash_price,
+                'item_amount': cash_price * qty,
+                'patient_amount': cash_price * qty,
+                'actual_total': cash_price * qty,
+                'price_source': 'cash_fallback',
+            }
 
-        Uses get_pricing_for_item() to determine prices with explicit fallback chain:
-        1. If PaymentMode is insurance and InsuranceItemSalePrice exists: use insurance price
-        2. If PaymentMode is insurance but no InsuranceItemSalePrice: fallback to cash price
-        3. Otherwise: use the item's current cash price from ItemPrice
+        return {
+            'unit_price': cash_price,
+            'item_amount': cash_price * qty,
+            'patient_amount': cash_price * qty,
+            'actual_total': cash_price * qty,
+            'price_source': 'cash',
+        }
+
+    def save(self, *args, **kwargs):
+        """
+        Persist the line, pricing it at the moment of sale and not again.
+
+        A line is raised when a doctor orders something and billed later at the
+        till, so it follows the price list right up to and including the save
+        that bills it -- that save is the sale, and the price then is the price
+        charged. Every save after that leaves the money alone.
+
+        This is what the effective-dated price list was always for, and what a
+        `save()` that re-read today's price on every write quietly defeated: a
+        status change, a stock posting or any signal firing was enough to
+        restate an invoice raised weeks earlier.
         """
         # No payment mode chosen means no insurance was selected, so the line is
         # billed as cash against the default Cash payment mode.
         if self.payment_mode_id is None:
             self.payment_mode = PaymentMode.get_default()
 
-        pricing = self.get_pricing_for_item()
-        self.item_amount = pricing['item_amount']
-        self.actual_total = pricing['actual_total']
-        
+        banked = None
+        if self.pk:
+            banked = type(self).objects.filter(pk=self.pk).values(
+                'status', 'quantity').first()
+        already_sold = bool(banked and banked['status'] == 'billed')
+
+        if not already_sold:
+            pricing = self.get_pricing_for_item()
+            self.unit_price = pricing['unit_price']
+            self.item_amount = pricing['item_amount']
+            self.patient_amount = pricing['patient_amount']
+            self.actual_total = pricing['actual_total']
+        elif banked['quantity'] != self.quantity:
+            # A billed line is a sold thing. Changing how many were sold would
+            # leave the stored totals describing a different sale from the one
+            # the stock ledger posted and the patient was quoted. Reverse it and
+            # raise a new line instead -- that leaves a trail; editing in place
+            # does not.
+            raise DjangoValidationError(
+                f"{self.item.name} has already been billed at a quantity of "
+                f"{banked['quantity']}. Reverse the line and raise a new one "
+                f"rather than changing the quantity on a sold line."
+            )
+
         super().save(*args, **kwargs)
 
     class Meta:

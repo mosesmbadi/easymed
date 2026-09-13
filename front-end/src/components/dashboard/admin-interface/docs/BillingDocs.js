@@ -57,18 +57,39 @@ const BillingDocs = () => {
         <Table
           headers={['Field', 'Meaning']}
           rows={[
-            ['sale_price', 'Per-unit price of the item (from Inventory or InsuranceItemSalePrice)'],
+            ['unit_price', 'What one base unit was charged at, frozen when the line was billed'],
             ['quantity', 'Number of units being billed'],
-            ['item_amount', 'Total = sale_price x quantity'],
-            ['actual_total', 'What the patient actually pays (co-pay for insured, or full amount for cash)'],
+            ['item_amount', 'The whole line, whoever pays: unit_price x quantity'],
+            ['patient_amount', 'The patient own share: the co-pay, or all of it on a cash line'],
+            ['actual_total', 'Receivable from the party the line is billed TO - the insurer on an insurance line, the patient on any other'],
           ]}
         />
         <div className='bg-blue-50 border-l-4 border-blue-400 p-3 rounded mt-2'>
           <p className='font-semibold text-blue-800'>Example</p>
           <p>
-            Paracetamol: sale_price = 50, quantity = 3<br />
-            item_amount = 150 (50 x 3)<br />
-            If patient has insurance with co-pay of 20 per unit: actual_total = 60 (20 x 3)
+            Paracetamol, cash, 50 each, quantity 3<br />
+            item_amount = 150, patient_amount = 150, actual_total = 150<br />
+            <br />
+            Same drug on insurance paying 40 with a 10 co-pay, quantity 3<br />
+            unit_price = 50 (40 + 10), item_amount = 150<br />
+            patient_amount = 30 (the co-pay), actual_total = 120 (billed to the insurer)
+          </p>
+        </div>
+        <div className='bg-blue-50 border-l-4 border-blue-400 p-3 rounded mt-2'>
+          <p className='font-semibold text-blue-800'>An insurance price is a split, not a discount</p>
+          <p>
+            <Code>sale_price</Code> on an insurance rate is the insurer portion and{' '}
+            <Code>co_pay</Code> is the patient portion. The line is worth the two
+            <strong> added together</strong>. Subtracting the co-pay from the insurer
+            price under-bills the insurer by exactly what the patient already paid.
+          </p>
+        </div>
+        <div className='bg-blue-50 border-l-4 border-blue-400 p-3 rounded mt-2'>
+          <p className='font-semibold text-blue-800'>A billed line keeps its price</p>
+          <p>
+            Prices are effective-dated, so a line prices itself while it is pending and
+            then stops. Changing an item price tomorrow does not restate an invoice
+            raised today. To correct a billed line, reverse it and raise a new one.
           </p>
         </div>
       </Section>
@@ -84,8 +105,14 @@ const BillingDocs = () => {
             <Code>sale_price</Code> and <Code>co_pay</Code>.
           </li>
           <li>
-            <strong>Inventory price</strong> — Falls back to the <Code>sale_price</Code> from the item&apos;s
-            active inventory record. The patient pays the full amount.
+            <strong>Cash price</strong> — Falls back to the item&apos;s current price from the
+            effective-dated price list. The patient pays the full amount.
+          </li>
+          <li>
+            <strong>Insurance with no agreed rate</strong> — Billed at the cash price and
+            charged to the <strong>patient</strong>. Nothing is claimed from an insurer who
+            never agreed a rate; <Code>price_source</Code> reads <Code>cash_fallback</Code> so
+            it is visible rather than silent.
           </li>
         </ol>
       </Section>
@@ -109,9 +136,10 @@ const BillingDocs = () => {
         <p>When a lab test is billed:</p>
         <ol className='list-decimal pl-5 space-y-1'>
           <li>An invoice item is created using the test panel&apos;s <Code>Lab Test</Code> billing item</li>
-          <li>The <Code>sale_price</Code> comes from the billing item&apos;s inventory record or insurance price</li>
-          <li>Setting <Code>is_billed = true</Code> on the LabTestRequestPanel triggers reagent deduction in the background</li>
-          <li>Reagent stock is deducted from inventory (see Lab Tests & Reagents section for details)</li>
+          <li>The price is set on the <strong>Test Panel</strong> (Lab Settings &gt; Test Panels), not in Inventory — a reagent has no sale price of its own</li>
+          <li>The line is <strong>refused</strong> if the panel&apos;s reagents are not in Lab stock. A lab test holds no stock itself, so this is the only thing standing between the till and selling a test the bench cannot run</li>
+          <li>Reagents are deducted when a <strong>result is recorded</strong>, not when the line is billed — paying for a test is not running it</li>
+          <li>The syringe and tube are deducted separately, when the <strong>sample is collected</strong>, once per draw however many tests are ordered off it</li>
         </ol>
       </Section>
 
@@ -135,10 +163,10 @@ const BillingDocs = () => {
             ['Code', 'item_code — the item\'s product code'],
             ['Item', 'item_name — the product or service name'],
             ['Qty', 'quantity — number of units billed'],
-            ['Unit Price', 'sale_price — per-unit price'],
+            ['Unit Price', 'sale_price — the frozen per-unit price the line was sold at'],
             ['Payment Mode', 'payment_mode_name — cash, insurance, etc.'],
-            ['Total Amount', 'item_amount — sale_price x quantity'],
-            ['Co Pay', 'item_amount - actual_total (what insurance covers)'],
+            ['Line Total', 'item_amount — unit_price x quantity, whoever pays'],
+            ['Patient Pays', 'patient_amount — the co-pay, or the whole line on cash'],
             ['Status', 'status — pending, paid, etc.'],
           ]}
         />
@@ -151,8 +179,19 @@ const BillingDocs = () => {
             Total amounts are computed as <Code>sale_price x quantity</Code>.
           </li>
           <li>
-            Default insurance prices are auto-created when a new inventory record is created,
-            so billing items always have a price even if insurance rates haven&apos;t been explicitly configured.
+            <strong>The server owns the money.</strong> All four amount fields are read-only
+            on the API — the till posts a payment mode and a status and reads the amounts
+            back. A screen that could post its own totals could bill any figure it liked.
+          </li>
+          <li>
+            <Code>patient_amount</Code> and the insurer share always add back up to{' '}
+            <Code>item_amount</Code>. Neither is reconstructed by subtracting one from
+            the other.
+          </li>
+          <li>
+            Insurance prices are <strong>not</strong> created automatically. Agree them under
+            Billing Settings &gt; Insurance Prices. An insured line with no agreed price bills
+            at the cash price, to the patient.
           </li>
           <li>
             Invoices are linked to patient visits. One visit can have multiple invoices.

@@ -182,6 +182,7 @@ export const API_URL = {
   /***************** REPORTS **********************/
   SALE_BY_DATE_RANGE_GENERATE_REPORTS: "/reports/sale_by_date/",
   SALE_BY_DATE_RANGE_AND_ITEM_ID_GENERATE_REPORTS: "/reports/sale_by_item_and_date/",
+  GROSS_MARGIN: "/reports/gross-margin/",
 
 
   /***************** PATIENTS USERS ENDPOINTS **********************/
@@ -389,6 +390,7 @@ export const APP_API_URL = {
   /***************** REPORTS **********************/
   SALE_BY_DATE_RANGE_GENERATE_REPORTS: "/api/reports/sale-by-date-range/",
   SALE_BY_DATE_RANGE_AND_ITEM_ID_GENERATE_REPORTS: "/api/reports/sale-by-date-range-and-item",
+  GROSS_MARGIN: "/api/reports/gross-margin",
 
   /***************** PATIENTS USERS ENDPOINTS **********************/
   /***************** LABORATORY **********************/

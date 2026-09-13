@@ -42,8 +42,9 @@ def update_service_billed_status(instance):
             if lab_test_panel:
                 lab_test_panel.is_billed = True
                 lab_test_panel.save()
-        except LabTestRequest.DoesNotExist:
-            # The InvoiceItem is not associated with a LabTestRequest
+        except AttendanceProcess.DoesNotExist:
+            # The invoice was raised on its own rather than for a visit, so
+            # there is no lab request behind it to mark billed.
             pass
 
 

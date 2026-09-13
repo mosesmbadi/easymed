@@ -8,7 +8,9 @@ from .models import (
     ProcessTestRequest,
     LabEquipment,
     Specimen,
+    SpecimenConsumable,
     PatientSample,
+    PatientSampleConsumable,
     ReferenceValue,
     LabTestInterpretation,
     TestPanelReagent,
@@ -43,8 +45,42 @@ admin.site.register(ProcessTestRequest)
 admin.site.register(LabTestRequest)
 admin.site.register(LabTestRequestPanel)
 admin.site.register(LabEquipment)
-admin.site.register(Specimen)
-admin.site.register(PatientSample)
+@admin.register(Specimen)
+class SpecimenAdmin(admin.ModelAdmin):
+    list_display = ['name', 'max_archive_duration']
+    search_fields = ['name']
+
+    class SpecimenConsumableInline(admin.TabularInline):
+        model = SpecimenConsumable
+        extra = 1
+
+    inlines = [SpecimenConsumableInline]
+
+
+@admin.register(SpecimenConsumable)
+class SpecimenConsumableAdmin(admin.ModelAdmin):
+    list_display = ['specimen', 'item', 'quantity_per_collection', 'is_required']
+    list_filter = ['specimen', 'is_required']
+    search_fields = ['specimen__name', 'item__name']
+
+
+@admin.register(PatientSample)
+class PatientSampleAdmin(admin.ModelAdmin):
+    list_display = ['patient_sample_code', 'specimen', 'is_sample_collected', 'collected_on']
+    list_filter = ['is_sample_collected', 'specimen']
+    search_fields = ['patient_sample_code']
+
+    class PatientSampleConsumableInline(admin.TabularInline):
+        model = PatientSampleConsumable
+        extra = 0
+        readonly_fields = ['item', 'quantity', 'quantity_required',
+                           'stock_movement_reference', 'recorded_on']
+
+        def has_add_permission(self, request, obj=None):
+            # Written by the collection, not typed in after the fact.
+            return False
+
+    inlines = [PatientSampleConsumableInline]
 admin.site.register(ReferenceValue)
 @admin.register(TestPanelReagent)
 class TestPanelReagentAdmin(admin.ModelAdmin):

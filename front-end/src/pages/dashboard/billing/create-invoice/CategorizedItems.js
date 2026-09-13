@@ -165,8 +165,9 @@ const CategorizedItems = ({
       if (invoiceItem.payment_mode_name.toLowerCase() === "cash") {
         setAppointmentCashSum((prevSum) => prevSum + parseInt(invoiceItem.item_amount))
       } else {
-        const co_pay = parseInt(invoiceItem.item_amount) - parseInt(invoiceItem.actual_total)
-        setAppointmentCashSum((prevSum) => prevSum + parseInt(co_pay))
+        // The line records each share outright now, so neither is reconstructed
+        // by subtracting one from the other.
+        setAppointmentCashSum((prevSum) => prevSum + parseInt(invoiceItem.patient_amount ?? 0))
         setAppointmentInsuranceSum((prevSum) => prevSum + parseInt(invoiceItem.actual_total))
       }
     } else if (invoiceItem.category === "Lab Test") {
@@ -174,8 +175,7 @@ const CategorizedItems = ({
       if (invoiceItem.payment_mode_name.toLowerCase() === "cash") {
         setLabReqCashSum((prevSum) => prevSum + parseInt(invoiceItem.item_amount))
       } else {
-        const co_pay = parseInt(invoiceItem.item_amount) - parseInt(invoiceItem.actual_total)
-        setLabReqCashSum((prevSum) => prevSum + parseInt(co_pay))
+        setLabReqCashSum((prevSum) => prevSum + parseInt(invoiceItem.patient_amount ?? 0))
         setLabReqInsuranceSum((prevSum) => prevSum + parseInt(invoiceItem.actual_total))
       }
     } else if (invoiceItem.category === "Drug") {
@@ -183,8 +183,7 @@ const CategorizedItems = ({
       if (invoiceItem.payment_mode_name.toLowerCase() === "cash") {
         setPrescribedDrugsCashSum((prevSum) => prevSum + parseInt(invoiceItem.item_amount))
       } else {
-        const co_pay = parseInt(invoiceItem.item_amount) - parseInt(invoiceItem.actual_total)
-        setPrescribedDrugsCashSum((prevSum) => prevSum + parseInt(co_pay))
+        setPrescribedDrugsCashSum((prevSum) => prevSum + parseInt(invoiceItem.patient_amount ?? 0))
         setPrescribedDrugsInsuranceSum((prevSum) => prevSum + parseInt(invoiceItem.actual_total))
       }
     }
@@ -198,12 +197,11 @@ const CategorizedItems = ({
 
     setLoading(true);
     try {
-      // Calculate actual_total (what insurance pays = price - co_pay)
-      const actualTotal = selectedPrice - selectedCoPay;
-
+      // Only the payment mode goes up. The amounts are the server's to work
+      // out from the item, the quantity and the mode -- it was already
+      // recomputing whatever was posted here, and sending figures that are
+      // then silently discarded is how the two ended up disagreeing.
       const payload = {
-        item_amount: selectedPrice,
-        actual_total: actualTotal,
         payment_mode: selectedPayMethod.id,
         status: "billed"
       };
@@ -220,8 +218,12 @@ const CategorizedItems = ({
     }
   };
 
-  // Calculate actual total (what insurance pays)
-  const actualTotal = (selectedPrice || 0) - (selectedCoPay || 0);
+  // An insurance price is a split, not a discount: the insurer's sale_price
+  // and the patient's co-pay are two parts of one charge, so the line is worth
+  // the two added together and the patient owes the co-pay.
+  const isInsured = (selectedPayMethod?.payment_category || '').toLowerCase() === 'insurance';
+  const lineTotal = (selectedPrice || 0) + (isInsured ? (selectedCoPay || 0) : 0);
+  const patientPays = isInsured ? (selectedCoPay || 0) : (selectedPrice || 0);
 
   useImperativeHandle(ref, () => ({
     billItem: async () => {
@@ -305,14 +307,19 @@ const CategorizedItems = ({
           <Grid className='px-2 flex justify-center' item xs={2}>
             {selectedPayMethod && selectedPrice !== null && (
               <div className="mt-2">
-                <p>{priceLoading ? '...' : selectedPrice}</p>
+                <p>{priceLoading ? '...' : lineTotal}</p>
               </div>
             )}
           </Grid>
           <Grid className='px-2 flex justify-center' item xs={2}>
             {selectedPayMethod && selectedPrice !== null && (
               <div className="mt-2">
-                <p>{priceLoading ? '...' : actualTotal}</p>
+                <p>{priceLoading ? '...' : patientPays}</p>
+                {isInsured && !priceLoading && (
+                  <p className="text-xs text-gray-500">
+                    {selectedPrice} from {selectedPayMethod.payment_mode}
+                  </p>
+                )}
               </div>
             )}
           </Grid>

@@ -175,6 +175,11 @@ const InventoryDataGrid = ({ department }) => {
   };
 
   const renderPackaging = ({ data }) => {
+    // Raw materials carry no sale price at all -- the lab prices the Test
+    // Panel built from them -- so say that rather than printing Ksh 0.
+    if (data.sale_price == null) {
+      return <span className="text-gray text-xs">Not sold as stock</span>;
+    }
     const rows = formatPackPricing(data, data.sale_price);
     return (
       <div className="flex flex-col gap-0.5">

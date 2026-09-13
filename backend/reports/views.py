@@ -22,6 +22,7 @@ from billing.models import InvoiceItem, PaymentMode, Invoice
 from inventory.models import IncomingItem
 from company.models import Company
 from billing.serializers import InvoiceItemSerializer
+from .margins import margin_by_item, margin_totals, stock_consumption_summary
 
 
 
@@ -180,3 +181,49 @@ class PaymentReportView(APIView):
     # Return response with total amount and potentially additional data (optional)
     return Response({'total_amount': total_amount, 'data': serializer.data}, status=status.HTTP_200_OK)
 
+
+class GrossMarginView(APIView):
+    """
+    What each item earned and what it cost, over a date range.
+
+    The ledger has always carried `unit_cost` on every outflow, so this was
+    always answerable; nothing had ever asked. Query params: `start_date` and
+    `end_date` (YYYY-MM-DD, both default to today), optional `category`.
+    """
+
+    def get(self, request, format=None):
+        today = timezone.localdate()
+
+        def parse(name):
+            raw = request.GET.get(name)
+            if not raw:
+                return today
+            try:
+                return datetime.strptime(raw, '%Y-%m-%d').date()
+            except ValueError:
+                return None
+
+        start = parse('start_date')
+        end = parse('end_date')
+        if start is None or end is None:
+            return Response(
+                {'detail': 'Dates must be YYYY-MM-DD.'},
+                status=status.HTTP_400_BAD_REQUEST)
+        if start > end:
+            return Response(
+                {'detail': 'start_date cannot be after end_date.'},
+                status=status.HTTP_400_BAD_REQUEST)
+
+        rows = margin_by_item(start, end)
+
+        category = request.GET.get('category')
+        if category:
+            rows = [row for row in rows if row['category'] == category]
+
+        return Response({
+            'start_date': start,
+            'end_date': end,
+            'totals': margin_totals(rows),
+            'rows': rows,
+            'consumption': stock_consumption_summary(start, end),
+        }, status=status.HTTP_200_OK)

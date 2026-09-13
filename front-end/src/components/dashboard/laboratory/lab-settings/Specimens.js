@@ -14,6 +14,9 @@ import { BiEdit } from 'react-icons/bi';
 import { addSpecimenToStore, getSpecimens } from '@/redux/features/laboratory';
 import EditSpecimenModal from './modals/Specimens/EditSpecimens';
 import { createSpecimen } from '@/redux/service/laboratory';
+import { fetchItems } from '@/redux/service/inventory';
+import RequiredItemsField from '@/components/common/RequiredItemsField';
+import { collectionItemOptions } from '@/utils/lab-items';
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
   ssr: false,
@@ -45,6 +48,8 @@ const Specimens = () => {
   const [showNavButtons, setShowNavButtons] = useState(true);
   const { specimens } = useSelector((store) => store.laboratory);
   const [selectedRowData, setSelectedRowData] = useState({})
+  const [itemOptions, setItemOptions] = useState([]);
+  const [consumableRows, setConsumableRows] = useState([]);
 
   const initialValues = {
     name: "",
@@ -61,13 +66,21 @@ const Specimens = () => {
     try {
       const payload = {
         ...values,
-        max_archive_duration: values.max_archive_duration ? parseInt(values.max_archive_duration) : null
+        max_archive_duration: values.max_archive_duration ? parseInt(values.max_archive_duration) : null,
+        // Sent whole: the server replaces the set, so an empty list is the
+        // way to say this specimen costs nothing to collect.
+        consumable_items: consumableRows.map((row) => ({
+          item: row.item,
+          quantity_per_collection: parseInt(row.quantity_per_collection) || 1,
+          is_required: !!row.is_required,
+        })),
       }
       const response = await createSpecimen(payload, auth)
       dispatch(addSpecimenToStore(response))
 
       setLoading(false)
       helpers.resetForm();
+      setConsumableRows([]);
       toast.success('Specimen created succesfully')
     } catch (error) {
       setLoading(false)
@@ -79,6 +92,14 @@ const Specimens = () => {
   useEffect(() => {
     dispatch(getSpecimens(auth))
   }, [])
+
+  useEffect(() => {
+    if (!auth?.token) return;
+    fetchItems(auth).then((data) => {
+      const results = Array.isArray(data) ? data : (data?.results ?? []);
+      setItemOptions(collectionItemOptions(results));
+    }).catch(() => { });
+  }, [auth?.token])
 
   const onMenuClick = async (menu, data) => {
     if (menu.action === "update") {
@@ -138,6 +159,23 @@ const Specimens = () => {
                 name="max_archive_duration"
                 component="div"
                 className="text-warning text-xs"
+              />
+            </Grid>
+            <Grid item md={12} xs={12}>
+              <RequiredItemsField
+                title="Items required to collect this specimen"
+                description="The syringe, vacutainer, gloves or slide a draw uses up. These leave stock the moment the sample is marked collected -- once per sample, however many tests are ordered off it, and not at all for a retest off an archived sample. Reagents are not listed here: they belong to the Test Panel."
+                options={itemOptions}
+                rows={consumableRows}
+                setRows={setConsumableRows}
+                valueKey="item"
+                quantityKey="quantity_per_collection"
+                quantityLabel="Qty per draw"
+                itemLabel="Consumable"
+                placeholder="Syringe, vacutainer, gloves..."
+                addLabel="Add Consumable"
+                emptyLabel="Nothing added yet. A specimen with no items listed costs nothing to collect."
+                idPrefix="specimen-consumable"
               />
             </Grid>
             <Grid item md={3} xs={12} sx={{ marginLeft: 'auto' }}>
@@ -207,6 +245,23 @@ const Specimens = () => {
                 return `${data.value} Days`;
               }
               return "-";
+            }}
+          />
+          <Column
+            caption="Collection Items"
+            cellRender={({ data }) => {
+              const rows = data?.consumables ?? [];
+              if (rows.length === 0) return <span className="text-gray">None</span>;
+              return (
+                <div className="flex flex-col gap-0.5">
+                  {rows.map((row) => (
+                    <span key={row.id} className="text-xs">
+                      {row.quantity_per_collection} x {row.item_name}
+                      {row.is_required === false && ' (optional)'}
+                    </span>
+                  ))}
+                </div>
+              );
             }}
           />
           <Column

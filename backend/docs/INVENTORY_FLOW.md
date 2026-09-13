@@ -74,7 +74,7 @@ does not exist, and you cannot order an item that was never created.
 | Category (Resale / Internal) | Whether it is sold to the patient or used up on their behalf | `Internal (Consumable)` |
 | Base Unit | The smallest unit you issue | `pairs` |
 | Departments | Who uses it. Tag `General` to share with everyone | `Lab`, `Radiology` |
-| Consumables (accompaniments) | What gets used up alongside this item every time it is sold | *(empty for gloves)* |
+| Consumables (accompaniments) | What gets used up alongside this item every time it is sold. Not shown for lab items — see below | *(empty for gloves)* |
 | Description | Free text | `Powder-free nitrile` |
 
 Then, on the item's row menu, **Pack Sizes** — add the containers you buy in:
@@ -122,8 +122,8 @@ one: the API rejects a code already worn by another item, naming which.
 ### Consumables (accompaniments)
 
 Some items cannot be handed over on their own. Tetracycline **injection** needs
-a syringe and a swab; a urea test needs a syringe, a swab and a sample
-container. Tetracycline **capsules** and Panadol tablets need nothing.
+a syringe and a swab. Tetracycline **capsules** and Panadol tablets need
+nothing.
 
 Declare that on the item, in **Consumables (accompaniments)**:
 
@@ -142,14 +142,56 @@ behalf.
 - **Billing refuses the line** when a required accompaniment is out of stock at
   the department the item is dispensed from. The message names what is missing.
   The item stays unbillable until the consumable is received inwards.
-- **Sample collection** and **pharmacy dispensing** list what will be needed,
-  with current stock, before anyone commits.
-- **Stock leaves once**, when the item is billed — not again at collection.
+- **Pharmacy dispensing** lists what will be needed, with current stock, before
+  anyone commits.
+- **Stock leaves once**, when the item is billed.
 - An accompaniment can be marked **optional**, in which case a shortfall warns
   rather than blocks.
 
 An empty list is a real answer: it is how the system tells "needs nothing" apart
 from "needs something we do not have".
+
+#### Lab items are not declared here
+
+The section does not appear for `Lab Test`, `Lab Reagent` or `Lab Consumable`.
+The lab does not sell inventory — it *makes* a test out of a reagent, a syringe
+and a tube — so it declares its raw materials per finished product instead:
+
+| What | Where | Deducted |
+| --- | --- | --- |
+| Reagents a test burns | **Lab Settings → Test Panels** | When a result is recorded — and the till refuses the test if they are not in stock |
+| Items a draw uses | **Lab Settings → Specimens** | When the sample is collected |
+
+The syringe belongs to the draw, not the test: three panels off one tube of
+blood still cost one syringe, and a re-test off an archived sample costs none.
+Declaring it on the item as well would take it twice. See
+`LAB_REAGENTS_SETUP.md`.
+
+### Sale price
+
+Only an item the hospital actually sells carries one. `Item.is_sellable` is
+false for lab reagents, lab consumables and anything tagged
+`Internal (Consumable)`. The API rejects a price for them wherever one can be
+posted — the item API, opening stock and goods receipt — and the Excel item
+import skips the price column for them rather than failing the row. Their
+`sale_price` reads back blank, not zero: no price is a different statement from
+a price of nothing.
+
+| Item | Priced where |
+| --- | --- |
+| Panadol 500mg Tablets | **Inventory → Add Inventory** (the Sale Price field), or the Excel item import |
+| Examination Gloves (`Internal`) | Nowhere — never sold |
+| Sysmex CBC Reagent Kit | Nowhere — price the panel it runs |
+| Urea (lab test) | **Lab Settings → Test Panels → Sale Price** |
+
+The Add/Edit Item form has no price field. Prices live on an effective-dated
+list (`ItemPrice`), so a new price opens a new row rather than overwriting the
+old one; `/inventory/item-prices/` exposes that list directly, though no screen
+uses it yet. Receiving goods does not change a price: the receiving screen
+re-sends the item's current one.
+
+What a patient is finally charged is frozen on the invoice line at the moment
+it is billed — see `BILLING_AMOUNTS.md`.
 
 ---
 
@@ -305,6 +347,40 @@ distort the value of everything on the shelf.
 Every movement stores the cost that applied at the time, so history stays true
 even after prices change.
 
+### Cost of sales and gross margin
+
+**Inventory → Reports → Gross Margin**
+(`GET /reports/gross-margin/?start_date=&end_date=&category=`) sets what was
+billed against what the ledger says it cost to deliver. Every outflow is traced
+back to what caused it:
+
+| Movement source | Traced to | Report column |
+| --- | --- | --- |
+| `INVOICE_ITEM` | The invoice line that dispensed it — a drug, and its syringe | Goods issued |
+| `LAB_TEST` | One run of one test panel | Reagents |
+| `SAMPLE_COLLECTION` | The sample it was drawn for, **split evenly** across the panels ordered off that sample | Collection (apportioned) |
+
+Revenue is `item_amount` on billed lines — the whole line, both payers — shown
+split into the patient's and the insurer's shares. Reversal movements are left
+out of the cost.
+
+Read it with these limits in mind; they are how the code works today:
+
+- **Each side of the window is chosen by a different date.** Revenue is billed
+  lines *raised* in the window (`item_created_at` — a line carries no billed-at
+  date); cost is movements that *occurred* in it. A line raised on the 30th and
+  dispensed on the 1st falls across two reports.
+- **Lab cost only lands on an item that also earned in the window.** A test run
+  this month but billed last month, or never billed, gets no row. Its reagent
+  still appears under *Where stock went*, which accounts for every outflow.
+- **A zero cost usually means nothing is linked.** An item billed with no
+  recorded consumption shows a full margin. The report counts those items and
+  the revenue behind them rather than letting the total stand unqualified.
+  Consultations (`General` and `Specialized Appointment`) are exempt: they
+  consume nothing, so a zero cost there is the right answer.
+- **The collection split is a convention.** Three panels off one tube each
+  carry a third of the syringe. Everything else is measured.
+
 ### Stock leaves the same way it arrives
 
 Every reduction is a ledger entry too, with a reason:
@@ -312,7 +388,7 @@ Every reduction is a ledger entry too, with a reason:
 | Reason | When |
 | --- | --- |
 | Sale / dispense to patient | Pharmacy dispensing, billing |
-| Internal consumption | A syringe used taking a blood sample; a reagent used running a test |
+| Internal consumption | A syringe spent when a sample is collected; a reagent spent when a result is recorded |
 | Transfer out / in | Moving stock between departments |
 | Wastage / breakage | Damaged goods |
 | Expiry write-off | Time-expired stock |
@@ -359,6 +435,11 @@ stock or accounts.
 | --- | --- |
 | Receiving stock without inventory rights | Stock coming inwards mints inventory as far as the ledger is concerned — see below |
 | Billing an item whose required consumables are out of stock | An injection with no syringe cannot be handed over |
+| Billing a lab test whose reagents are not in Lab stock | Otherwise the till sells a test the bench cannot run |
+| Giving a reagent, lab consumable or internal item a sale price | Raw materials are not sold — the Test Panel built from them is |
+| Declaring accompaniments on a lab item | Its syringe belongs to the Specimen; declaring it twice would take it twice |
+| Changing the quantity on a billed invoice line | The line's price was frozen at the sale — see `BILLING_AMOUNTS.md` |
+| Setting an invoice line's amounts from a client | The fields are read-only; the server prices every line itself |
 | Giving two items the same item code | The code is what groups an item's stock across months |
 | Receiving a service item into stock | A Lab Test is billed, not held |
 | Requisitioning a service item | Caught here rather than after the paperwork exists |
@@ -399,7 +480,12 @@ into Pharmacy and nowhere else.
 | --- | --- |
 | See stock on hand, value, short expiries | **Inventory** |
 | Create or edit an item | **Inventory → Items** |
-| Set an item's consumables | **Inventory → Items →** add/edit **→ Consumables (accompaniments)** |
+| Set a drug's consumables | **Inventory → Items →** add/edit **→ Consumables (accompaniments)** |
+| Set a lab test's reagents and price | **Laboratory → Lab Settings → Test Panels** |
+| Set what a sample draw uses | **Laboratory → Lab Settings → Specimens** |
+| Collect a sample, and see what it used | **Laboratory → Phlebotomy →** open the request |
+| Re-test or refer an archived sample | **Laboratory → Sample Archive →** row menu |
+| Gross margin, and where stock went | **Inventory → Reports** |
 | Add pack sizes | **Inventory → Items →** row menu **→ Pack Sizes** |
 | Raise a requisition | **Inventory → Create Requisition** |
 | Department approval | **Inventory → Requisitions** |
@@ -414,5 +500,7 @@ into Pharmacy and nowhere else.
 
 - `INVENTORY_UNITS_OF_MEASURE.md` — the technical detail behind units, packs
   and conversions, including which field is stored in which unit.
-- `LAB_REAGENTS_SETUP.md` — **out of date.** Predates the stock-ledger rewrite
-  and still refers to models that no longer exist.
+- `LAB_REAGENTS_SETUP.md` — what the lab consumes, when each part leaves stock,
+  and how a test panel is priced.
+- `BILLING_AMOUNTS.md` — what each amount on an invoice line means, and when it
+  stops changing.

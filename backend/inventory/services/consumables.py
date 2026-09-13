@@ -3,8 +3,14 @@ Accompaniments -- the consumables an item drags along with it.
 
 An injectable drug is not dispensable on its own: it needs a syringe and a
 swab, and those come out of stock whether the injection happens in the ward or
-at the patient's home. A urea test needs a syringe, a swab and a container. A
-box of Panadol tablets needs nothing.
+at the patient's home. A box of Panadol tablets needs nothing.
+
+The lab is not served from here. A test's syringe is declared on the specimen
+it is drawn into (`laboratory.SpecimenConsumable`, deducted at collection) and
+its reagents on the panel that runs it (`laboratory.TestPanelReagent`, deducted
+when the panel is billed), because a retest reuses the sample it already has
+and must not pay for a second draw. `Item.supports_accompaniments` is what
+keeps the two apart.
 
 This module answers three questions and nothing else:
   what does this item need   -> requirements()
@@ -33,7 +39,7 @@ def requirements(item, quantity=1):
     Returns a list of dicts. An item with no accompaniments returns [], which
     is the common case and must stay cheap.
     """
-    if item is None:
+    if item is None or not item.supports_accompaniments:
         return []
     return [
         {

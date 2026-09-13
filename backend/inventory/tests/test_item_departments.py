@@ -140,7 +140,7 @@ def test_lab_reagents_and_consumables_are_separate_categories():
     assert reagent.is_stock_tracked
     assert consumable.is_stock_tracked
     assert reagent.category != consumable.category
-    # A reagent gets a paired Lab Test billing item; a consumable does not.
-    reagent.refresh_from_db()
-    assert reagent.lab_test_item is not None
-    assert consumable.lab_test_item is None
+    # Neither is something to sell. The panel a reagent feeds is the product
+    # and carries its own billing item; a reagent spawning one as well left a
+    # billable test at the till with no panel behind it.
+    assert not Item.objects.filter(category='Lab Test').exists()

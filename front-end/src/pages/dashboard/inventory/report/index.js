@@ -4,14 +4,16 @@ import InventoryNav from '@/components/dashboard/inventory/nav';
 import AuthGuard from "@/assets/hoc/auth-guard";
 import DashboardLayout from "@/components/layout/dashboard-layout";
 import Reports from '@/components/dashboard/billing/reports/Reports';
+import GrossMarginReport from '@/components/dashboard/inventory/GrossMarginReport';
 
 const ReportsPage = () => {
   return (
     <Container maxWidth="xl">
       <InventoryNav />
+      <GrossMarginReport />
       <Reports/>
     </Container>
-    
+
   )
 }
 

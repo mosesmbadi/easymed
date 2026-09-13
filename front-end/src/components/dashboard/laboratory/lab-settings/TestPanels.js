@@ -140,6 +140,31 @@ const TestPanels = () => {
         <Column dataField="name" caption="Name" />
         <Column dataField="specimen_name" caption="Specimen" />
         <Column
+          dataField="sale_price"
+          caption="Sale Price"
+          cellRender={({ data }) =>
+            data.sale_price == null || data.sale_price === ''
+              ? <span className="text-warning">Not priced</span>
+              : `Ksh ${Number(data.sale_price).toLocaleString()}`
+          }
+        />
+        <Column
+          caption="Reagents"
+          cellRender={({ data }) => {
+            const rows = data?.reagents ?? [];
+            if (rows.length === 0) return <span className="text-gray">None</span>;
+            return (
+              <div className="flex flex-col gap-0.5">
+                {rows.map((row) => (
+                  <span key={row.id} className="text-xs">
+                    {row.units_consumed_per_run} x {row.reagent_name}
+                  </span>
+                ))}
+              </div>
+            );
+          }}
+        />
+        <Column
           dataField="unit"
           caption="Unit"
           allowFiltering={true}

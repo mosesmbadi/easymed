@@ -16,11 +16,18 @@ class InvoiceItemSerializer(serializers.ModelSerializer):
     insurance_company_id = serializers.SerializerMethodField()
     sale_price = serializers.SerializerMethodField()
     price_source = serializers.SerializerMethodField()
+    insurer_amount = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
     source_tag_name = serializers.CharField(source='source_tag.name', read_only=True)
 
     class Meta:
         model = InvoiceItem
         fields = '__all__'
+        # Money is worked out by the server from the item, the quantity and the
+        # payment mode. A client that could post its own totals is a client that
+        # can bill any amount it likes, and the till was already sending figures
+        # the model then quietly recomputed -- so say plainly that they are the
+        # server's to set.
+        read_only_fields = ['unit_price', 'item_amount', 'patient_amount', 'actual_total']
 
     def get_category(self, obj):
         item = obj.item
@@ -47,28 +54,17 @@ class InvoiceItemSerializer(serializers.ModelSerializer):
         return obj.price_source
 
     def get_sale_price(self, obj):
-        """Compute effective per-unit sale price for display purposes.
+        """
+        Per-unit price for display: what the line was charged at.
 
-        Rule:
-        - If PaymentMode is insurance and there is a matching InsuranceItemSalePrice,
-          return its sale_price (per unit).
-        - Otherwise, return the item's current cash price from the price list.
-        - If nothing found, return 0.
+        Read off the line's own frozen `unit_price`, so a billed invoice keeps
+        showing what it was sold at rather than re-quoting today's price list.
+        Only an unpriced line falls back to the live price.
 
-        Note: item_amount = sale_price x quantity (stored on the model).
+        Note: item_amount = sale_price x quantity.
         """
         try:
-            from inventory.models import InsuranceItemSalePrice
-
-            pm = getattr(obj, 'payment_mode', None)
-            if pm and pm.payment_category == 'insurance' and pm.insurance_id:
-                price_row = InsuranceItemSalePrice.objects.filter(
-                    item=obj.item, insurance_company_id=pm.insurance_id
-                ).first()
-                if price_row:
-                    return price_row.sale_price
-
-            return obj.item.current_sale_price or 0
+            return obj.sale_price or 0
         except Exception:
             return 0
     

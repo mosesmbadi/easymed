@@ -11,7 +11,15 @@ import { toast } from 'react-toastify'
 import { getAllPatients } from "@/redux/features/patients";
 import SeachableSelect from "@/components/select/Searchable";
 import { updateItem, fetchItems, fetchUnits } from "@/redux/service/inventory";
-import ItemConsumablesField from "./ItemConsumablesField";
+import ItemConsumablesField, { usesItemAccompaniments } from "./ItemConsumablesField";
+import { useFormikContext } from "formik";
+
+// The section only applies to some categories, and the category is a field of
+// this same form, so it has to read from Formik rather than be passed in.
+const ItemConsumablesSection = (props) => {
+  const { values } = useFormikContext();
+  return <ItemConsumablesField category={values.category?.value} {...props} />;
+};
 import { useAuth } from '@/assets/hooks/use-auth';
 import { updateAnItem } from "@/redux/features/inventory";
 const EditItemModal = ({ open, setOpen, selectedRowData }) => {
@@ -26,6 +34,7 @@ const EditItemModal = ({ open, setOpen, selectedRowData }) => {
     const categories = [
         {value: 'SurgicalEquipment', label: 'Surgical Equipment'},
         {value: 'LabReagent', label: 'Lab Reagent'},
+        {value: 'LabConsumable', label: 'Lab Consumable'},
         {value: 'Drug', label: 'Drug'},
         {value: 'Furniture', label: 'Furniture'},
         {value: 'Lab Test', label: 'Lab Test'},
@@ -104,8 +113,10 @@ const EditItemModal = ({ open, setOpen, selectedRowData }) => {
   });
 
   const handleEditItem = async (formValue, helpers) => {
+    const takesAccompaniments = usesItemAccompaniments(formValue.category.value);
+
     // Checked but empty says nothing either way. Make the user pick one.
-    if (hasConsumables && consumableRows.length === 0) {
+    if (takesAccompaniments && hasConsumables && consumableRows.length === 0) {
       toast.error("Add at least one consumable, or uncheck Has Consumables.");
       return;
     }
@@ -117,8 +128,8 @@ const EditItemModal = ({ open, setOpen, selectedRowData }) => {
         units_of_measure: formValue.units_of_measure.trim(),
         // Sent whole every time: the server replaces the set, so a row the
         // user deleted here -- or an unchecked box, which clears the lot --
-        // is actually deleted there.
-        consumable_items: hasConsumables
+        // is actually deleted there. A lab item always sends the empty list.
+        consumable_items: takesAccompaniments && hasConsumables
             ? consumableRows.map((row) => ({
                 consumable: row.consumable,
                 quantity_per_use: parseInt(row.quantity_per_use) || 1,
@@ -259,7 +270,7 @@ const EditItemModal = ({ open, setOpen, selectedRowData }) => {
                 />
             </Grid>
             <Grid className='my-2' item md={12} xs={12}>
-                <ItemConsumablesField
+                <ItemConsumablesSection
                     itemName={selectedRowData?.name}
                     options={consumableOptions}
                     rows={consumableRows}

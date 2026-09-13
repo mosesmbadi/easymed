@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
 import * as Yup from "yup";
@@ -9,11 +9,38 @@ import { toast } from 'react-toastify'
 import { useAuth } from '@/assets/hooks/use-auth';
 import { updateSpecimen } from "@/redux/service/laboratory";
 import { updateSpecimenToStore } from "@/redux/features/laboratory";
+import { fetchItems } from "@/redux/service/inventory";
+import RequiredItemsField from "@/components/common/RequiredItemsField";
+import { collectionItemOptions } from "@/utils/lab-items";
 
 const EditSpecimenModal = ({ open, setOpen, selectedRowData }) => {
   const [loading, setLoading] = useState(false);
+  const [itemOptions, setItemOptions] = useState([]);
+  const [consumableRows, setConsumableRows] = useState([]);
   const dispatch = useDispatch();
   const auth = useAuth();
+
+  useEffect(() => {
+    if (!open || !auth?.token) return;
+    fetchItems(auth).then((data) => {
+      const results = Array.isArray(data) ? data : (data?.results ?? []);
+      setItemOptions(collectionItemOptions(results));
+    }).catch(() => { });
+  }, [open, auth?.token]);
+
+  // Re-seed whenever a different specimen is opened, so the modal never shows
+  // the last one's collection items.
+  useEffect(() => {
+    setConsumableRows(
+      (selectedRowData?.consumables ?? []).map((row) => ({
+        item: row.item,
+        name: row.item_name,
+        quantity_per_collection: row.quantity_per_collection,
+        is_required: row.is_required,
+        available_quantity: row.available_quantity,
+      }))
+    );
+  }, [selectedRowData?.id]);
 
   const handleClose = () => {
     setOpen(false);
@@ -32,7 +59,14 @@ const EditSpecimenModal = ({ open, setOpen, selectedRowData }) => {
   const updateASpecimen = async (formValue, helpers) => {
     const formData = {
       ...formValue,
-      max_archive_duration: formValue.max_archive_duration ? parseInt(formValue.max_archive_duration) : null
+      max_archive_duration: formValue.max_archive_duration ? parseInt(formValue.max_archive_duration) : null,
+      // Sent whole every time: the server replaces the set, so a row deleted
+      // here is actually deleted there.
+      consumable_items: consumableRows.map((row) => ({
+        item: row.item,
+        quantity_per_collection: parseInt(row.quantity_per_collection) || 1,
+        is_required: !!row.is_required,
+      })),
     };
 
     try {
@@ -98,12 +132,21 @@ const EditSpecimenModal = ({ open, setOpen, selectedRowData }) => {
                   />
                 </Grid>
                 <Grid item xs={12}>
-                  <p className="text-sm text-gray">
-                    Consumables are configured on the item itself &mdash;
-                    Inventory &gt; Items &gt; edit &gt; Consumables
-                    (accompaniments) &mdash; so a lab test and an injectable
-                    drug declare what they need in one place.
-                  </p>
+                  <RequiredItemsField
+                    title="Items required to collect this specimen"
+                    description="The syringe, vacutainer, gloves or slide a draw uses up. These leave stock the moment the sample is marked collected -- once per sample, however many tests are ordered off it, and not at all for a retest off an archived sample. Reagents are not listed here: they belong to the Test Panel."
+                    options={itemOptions}
+                    rows={consumableRows}
+                    setRows={setConsumableRows}
+                    valueKey="item"
+                    quantityKey="quantity_per_collection"
+                    quantityLabel="Qty per draw"
+                    itemLabel="Consumable"
+                    placeholder="Syringe, vacutainer, gloves..."
+                    addLabel="Add Consumable"
+                    emptyLabel="Nothing listed. Saving now means this specimen costs nothing to collect."
+                    idPrefix="edit-specimen-consumable"
+                  />
                 </Grid>
                 <Grid item md={3} xs={12} sx={{ marginLeft: 'auto' }}>
                   <div className="flex justify-end gap-2 h-full">

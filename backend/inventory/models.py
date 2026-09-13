@@ -142,6 +142,24 @@ class Item(AbstractBaseModel):
         'Specialized Appointment',
     })
 
+    # Raw materials, not products. A reagent or a tube is consumed making
+    # something sellable -- the lab sells the panel built out of them, and the
+    # panel is where that price is set -- so a price here prices nothing
+    # anybody ever buys.
+    UNPRICED_CATEGORIES = frozenset({
+        'LabReagent',
+        'LabConsumable',
+    })
+
+    # The lab declares what it uses up per finished product: reagents on the
+    # Test Panel, collection consumables on the Specimen. An item-level
+    # accompaniment on a lab item would take the same syringe twice.
+    LAB_CATEGORIES = frozenset({
+        'Lab Test',
+        'LabReagent',
+        'LabConsumable',
+    })
+
     # 'Internal' is the consumable side of the catalogue: syringes, swabs,
     # sample containers -- things the hospital uses up rather than sells.
     CATEGORY_ONE_CHOICES = [
@@ -163,13 +181,6 @@ class Item(AbstractBaseModel):
         max_length=255,
         help_text="Base unit stock is counted in: tablets, rolls, tests, ml")
     units = models.ForeignKey(Unit, on_delete=models.SET_NULL, null=True, blank=True, related_name='items')
-    lab_test_item = models.OneToOneField(
-        'self',
-        on_delete=models.SET_NULL,
-        null=True, blank=True,
-        related_name='reagent_item',
-        help_text="Auto-created Lab Test billing item paired to this Lab Reagent"
-    )
     vat_rate = models.DecimalField(max_digits=5, decimal_places=2, default=16.0)
     slow_moving_period = models.IntegerField(default=90)
     is_stock_tracked = models.BooleanField(
@@ -271,6 +282,28 @@ class Item(AbstractBaseModel):
         '''An item held for internal use rather than resale.'''
         return self.category_one == 'Internal'
 
+    @property
+    def is_sellable(self):
+        '''
+        Whether this item can carry a cash sale price of its own.
+
+        Internal consumables and lab raw materials cannot: they are what a
+        sale is made of, not the thing sold. A Lab Test item is sellable, but
+        its price is set on the Test Panel that defines it, not here.
+        '''
+        return self.category not in self.UNPRICED_CATEGORIES and not self.is_consumable
+
+    @property
+    def supports_accompaniments(self):
+        '''
+        Whether accompaniments may be declared against this item.
+
+        Only outside the lab. A test's syringe belongs to the specimen it is
+        drawn into and its reagents belong to its panel, so declaring either
+        here would double the deduction.
+        '''
+        return self.category not in self.LAB_CATEGORIES
+
     def consumable_requirements(self, quantity=1):
         '''
         What gets used up alongside `quantity` base units of this item.
@@ -278,6 +311,8 @@ class Item(AbstractBaseModel):
         Returns the links, not just the items, because the caller needs both
         how many are needed and whether a shortfall should block.
         '''
+        if not self.supports_accompaniments:
+            return []
         return [
             (link, link.quantity_per_use * quantity)
             for link in self.consumable_links.select_related('consumable')
@@ -329,6 +364,10 @@ class ItemConsumable(AbstractBaseModel):
     def clean(self):
         if self.item_id and self.consumable_id and self.item_id == self.consumable_id:
             raise ValidationError({'consumable': "An item cannot be its own accompaniment."})
+        if self.item_id and not self.item.supports_accompaniments:
+            raise ValidationError(
+                {'item': f"{self.item.name} is a lab item. Lab reagents belong on the "
+                         f"Test Panel and collection consumables on the Specimen."})
         if self.consumable_id and not self.consumable.is_stock_tracked:
             raise ValidationError(
                 {'consumable': f"{self.consumable.name} is a service and holds no stock, "

@@ -7,7 +7,8 @@ requisition all the way down to the stock ledger.
 
 **Every quantity the stock ledger stores is in the item's base unit.** There are
 no exceptions and no second opinion. `StockMovement`, `StockBalance`,
-`StockLot`, reservations, re-order levels, reagent consumption — all base units.
+`StockLot`, reservations, re-order levels, reagent and sample-collection
+consumption — all base units.
 
 Everything else in this document exists so that people can work in boxes and
 cartons without the ledger ever having to know that boxes exist.
@@ -128,9 +129,16 @@ out by the conversion factor, silently.
   box. The ledger divides it down: `unit_cost = purchase_price / factor`.
 - **`Item.current_cost`** (a.k.a. `buying_price`) — weighted-average cost **per
   base unit**, computed from the ledger. Price per syringe.
-- **`ItemPrice.sale_price`** — cash sale price **per base unit**.
+- **`ItemPrice.sale_price`** — cash sale price **per base unit**. Only items
+  that are actually sold have one (`Item.is_sellable`); reagents, lab
+  consumables and internal items have none. A lab test's price is set on its
+  Test Panel and stored here against the panel's billing item, so it is the
+  price of **one run** of the test, never of a kit.
+- **`InvoiceItem.unit_price`** — what one base unit was actually charged at,
+  frozen when the line is billed. `item_amount = unit_price x quantity`.
 
-Because those last two are per base unit, anything quoting a requisition or
+Because `current_cost` and `sale_price` are per base unit, anything quoting a
+requisition or
 purchase order line has to scale up. That is what
 `RequisitionItem.effective_unit_cost` is for, and it is the **only** place the
 rule lives:
@@ -203,6 +211,6 @@ Both columns were replaced by `ItemUnit` in migration
 the requisition, so ordering and receiving finally agree, and made
 `units_of_measure` required.
 
-> **Note:** `LAB_REAGENTS_SETUP.md` in this folder predates the stock-ledger
-> rewrite and still refers to the removed `Inventory` and `TestKitCounter`
-> models. Treat this document as the current word on units.
+**See also:** `INVENTORY_FLOW.md` for the end-to-end purchasing flow,
+`LAB_REAGENTS_SETUP.md` for how the lab counts reagents in tests and collection
+items per draw, and `BILLING_AMOUNTS.md` for how a sold quantity is priced.
