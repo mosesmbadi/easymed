@@ -44,6 +44,28 @@ from inpatient.models import (
 
 User = get_user_model()
 
+
+@pytest.fixture(autouse=True, scope='session')
+def celery_runs_tasks_inline():
+    """
+    Refuse to run the suite unless Celery tasks run inline.
+
+    pytest.ini names easymed.settings.testing, which arranges that, but a
+    DJANGO_SETTINGS_MODULE in the environment overrides pytest.ini -- and both
+    CI and the backend container set easymed.settings.base. Then `.delay()`
+    succeeds, and the task either sits on a memory:// broker forever (CI: the
+    reagent tests failed on a deduction that never ran) or goes to the live
+    worker and runs against the development database.
+    """
+    from easymed.celery import app
+
+    if not app.conf.task_always_eager:
+        pytest.exit(
+            "Celery is not running tasks inline, so tasks the code under test "
+            "queues would never run here. Use the settings pytest.ini names: "
+            "pytest --ds=easymed.settings.testing", returncode=4)
+
+
 @pytest.fixture
 def user():
     return User.objects.create_user(
