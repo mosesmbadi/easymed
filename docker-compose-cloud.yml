@@ -1,6 +1,10 @@
 services:
+    # nginx, backend, worker and frontend are built on the server from the
+    # checked-out code (see .github/workflows/ci-cd.yml); nothing is pulled
+    # from Docker Hub for them.
     nginx:
-        image: mosesmbadi/easymednginx:latest
+        build: ./nginx
+        image: easymed-nginx
         container_name: "nginx"
         volumes:
             - /var/log/nginx:/var/log/nginx
@@ -49,7 +53,8 @@ services:
         restart: unless-stopped
 
     backend:
-        image: mosesmbadi/easymedbackend
+        build: ./backend
+        image: easymed-backend
         container_name: api
         command: uvicorn --host 0.0.0.0 --port 8080 easymed.asgi:application
         ports:
@@ -66,7 +71,8 @@ services:
             - "service: backend"
 
     worker:
-        image: mosesmbadi/easymedbackend
+        build: ./backend
+        image: easymed-backend
         container_name: worker
         command: celery -A easymed worker --loglevel=INFO
         entrypoint: [] # Skip entrypoint to avoid running migrations
@@ -83,7 +89,14 @@ services:
             - "service: worker"
 
     frontend:
-        image: mosesmbadi/easymedfrontend
+        build:
+            context: ./front-end
+            # NEXT_PUBLIC_* are baked into the bundle at build time, so they
+            # come from the server's .env here, not from env_file at runtime.
+            args:
+                NEXT_PUBLIC_BACKEND_URL: ${NEXT_PUBLIC_BACKEND_URL:-http://api:8080/}
+                NEXT_PUBLIC_HMIS_VERSION: ${NEXT_PUBLIC_HMIS_VERSION:-v0.0.1}
+        image: easymed-frontend
         container_name: front-end
         restart: unless-stopped
         ports:

@@ -7,8 +7,8 @@ import {
   Button,
   CircularProgress,
 } from '@mui/material';
-import { DataGrid } from 'devextreme-react';
 import {
+  DataGrid,
   Column,
   Paging,
   Pager,

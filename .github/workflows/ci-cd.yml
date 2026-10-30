@@ -1,0 +1,118 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+
+env:
+  # Where the stack lives on the server and which compose file runs it.
+  # Images are built there from the checked-out code; NEXT_PUBLIC_* build
+  # args come from the server's .env.
+  SERVER_APP_DIR: easymed
+  COMPOSE_FILE: docker-compose-cloud.yml
+
+
+jobs:
+  test-backend:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backend test image
+        run: |
+          docker build -f backend/Dockerfile -t backend-test:ci ./backend
+
+      # pytest gets --ds because the DJANGO_SETTINGS_MODULE below overrides
+      # pytest.ini. `check` should see the real settings; the tests need
+      # testing.py, which runs Celery tasks inline -- under base.py they are
+      # queued on the memory:// broker and never run.
+      - name: Run backend system checks & unit tests
+        run: |
+          docker run --rm \
+            -e SECRET_KEY='django-insecure-test-key-for-ci-only' \
+            -e DJANGO_SETTINGS_MODULE=easymed.settings.base \
+            -e DEBUG=True \
+            -e EMAIL_BACKEND='django.core.mail.backends.console.EmailBackend' \
+            -e EMAIL_USE_TLS=True \
+            -e EMAIL_HOST='localhost' \
+            -e EMAIL_PORT=587 \
+            -e EMAIL_HOST_USER='test@example.com' \
+            -e EMAIL_HOST_PASSWORD='testpassword' \
+            -e DEFAULT_FROM_EMAIL='test@example.com' \
+            -e CELERY_BROKER_URL='memory://' \
+            -e CELERY_RESULT_BACKEND='cache+memory://' \
+            -e DB_ENGINE='django.db.backends.sqlite3' \
+            -e POSTGRES_HOST='localhost' \
+            -e POSTGRES_DB='test_db' \
+            -e POSTGRES_USER='test_user' \
+            -e POSTGRES_PASSWORD='test_password' \
+            -e POSTGRES_PORT=5432 \
+            -e S3_BUCKET_NAME='test-bucket' \
+            -e AWS_ACCESS_KEY_ID='test-key-id' \
+            -e AWS_SECRET_ACCESS_KEY='test-secret-key' \
+            -e AWS_DEFAULT_REGION='us-east-1' \
+            -e GEMINI_API_KEY='test-gemini-api-key-for-ci' \
+            -e NEXT_PUBLIC_BACKEND_URL='http://localhost:8080/' \
+            -e NEXT_PUBLIC_HMIS_VERSION='v0.0.1-test' \
+            backend-test:ci sh -c "python manage.py check && pytest -v --ds=easymed.settings.testing"
+
+
+  # =========================== DEPLOY TO DIGITAL OCEANS ======================== #
+  # ============================================================================= #
+  deploy:
+    runs-on: ubuntu-latest
+    needs:
+      - test-backend
+
+    env:
+      STAGING_DO_SERVER_PRIVATE_KEY: ${{ secrets.STAGING_DO_SERVER_PRIVATE_KEY }}
+      STAGING_DO_SERVER_IP: ${{ secrets.STAGING_DO_SERVER_IP }}
+      STAGING_DO_SERVER_USERNAME: ${{ secrets.STAGING_DO_SERVER_USERNAME }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${STAGING_DO_SERVER_PRIVATE_KEY}" | tr -d '\r' > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -T 10 -H $STAGING_DO_SERVER_IP >> ~/.ssh/known_hosts
+
+      # The heredoc is unquoted so SERVER_APP_DIR and COMPOSE_FILE expand here,
+      # on the runner; anything meant for the server's shell is escaped (\$).
+      - name: Deploy
+        run: |
+          ssh -o StrictHostKeyChecking=no $STAGING_DO_SERVER_USERNAME@$STAGING_DO_SERVER_IP << EOF
+            set -e
+
+            echo "📦 Updating repository..."
+            cd \$HOME/${SERVER_APP_DIR}
+
+            echo "🔄 Pulling latest changes..."
+            git fetch origin
+            git reset --hard origin/main
+
+            # Build before touching the running stack: if the build fails, the
+            # current containers stay up and set -e stops the deploy here.
+            echo "🏗️  Building images..."
+            docker compose -f ${COMPOSE_FILE} build --pull
+
+            echo "🚀 Starting containers..."
+            docker compose -f ${COMPOSE_FILE} up -d --remove-orphans
+
+            # Dangling images and build cache only. Not -a, which would drop the
+            # cached base layers and make every build start from scratch; and
+            # no --volumes, which would put postgres_data and letsencrypt at risk.
+            echo "🧹 Cleaning up unused Docker resources..."
+            docker image prune -f || true
+            docker builder prune -f --filter until=168h || true
+
+            echo "✅ Deployment completed!"
+          EOF

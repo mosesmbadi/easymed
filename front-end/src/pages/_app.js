@@ -19,10 +19,10 @@ export default function App({ Component, pageProps }) {
   const getLayout = Component.getLayout ?? ((page) => page);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Hide the splash as soon as the app has mounted; a fixed delay here held
+  // every full page load back by two seconds.
   useEffect(() => {
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 2000);
+    setIsLoading(false);
   }, []);
 
   return (
