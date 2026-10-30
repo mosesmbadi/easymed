@@ -266,7 +266,11 @@ class InvoiceItem(models.Model):
                     item=self.item, 
                     insurance_company_id=self.payment_mode.insurance_id
                 ).exists()
-                return 'insurance' if ins_price else 'cash_fallback'
+                if ins_price:
+                    return 'insurance'
+                if self.payment_mode.insurance.bills_list_price_when_unagreed:
+                    return 'account_list_price'
+                return 'cash_fallback'
         elif self.payment_mode:
             return 'cash'
         return 'unknown'
@@ -323,9 +327,19 @@ class InvoiceItem(models.Model):
                     'price_source': 'insurance',
                 }
 
-            # Insurance selected but nothing configured for this item. Bill the
-            # cash price to the patient rather than quietly sending an insurer
-            # a figure nobody agreed to.
+            # Nothing agreed for this item. An employer or a referring facility
+            # pays the price list; see InsuranceCompany.bills_list_price_when_unagreed.
+            if self.payment_mode.insurance.bills_list_price_when_unagreed:
+                return {
+                    'unit_price': cash_price,
+                    'item_amount': cash_price * qty,
+                    'patient_amount': 0,
+                    'actual_total': cash_price * qty,
+                    'price_source': 'account_list_price',
+                }
+
+            # An insurer: bill the cash price to the patient rather than
+            # quietly sending it a figure nobody agreed to.
             return {
                 'unit_price': cash_price,
                 'item_amount': cash_price * qty,

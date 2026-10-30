@@ -256,7 +256,7 @@ const AddPatientModal = () => {
                     />
                   </Grid>
                   <Grid item md={3} xs={12}>
-                    <label htmlFor="insurances">Insurance</label>
+                    <label htmlFor="insurances">Insurance / Employer</label>
                     <Field
                         as="select"
                         className="block pr-9 border border-gray rounded-xl text-sm py-2 px-4 focus:outline-none w-full"
@@ -264,11 +264,12 @@ const AddPatientModal = () => {
                         multiple={true} 
                     >
                         <option value="" disabled>
-                            Select Insurance
+                            Select Insurer or Employer
                         </option>
-                        {insurance.map((item) => (
+                        {/* A referring facility pays for the samples it sends, not for a patient. */}
+                        {insurance.filter((item) => item.account_type !== "facility").map((item) => (
                             <option key={item.id} value={item.id}>
-                                {item.name}
+                                {item.name}{item.account_type_display ? ` (${item.account_type_display})` : ""}
                             </option>
                         ))}
                     </Field>

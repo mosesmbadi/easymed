@@ -20,11 +20,12 @@ import { LuMoreHorizontal } from "react-icons/lu";
 import { BiEdit } from "react-icons/bi";
 import CreateAppointmentModal from "./create-appointment-modal";
 import EditPatientDetails from "../admin-interface/edit-patient-details-modal";
-import { GiMedicinePills } from "react-icons/gi";
+import { GiMedicinePills, GiMicroscope } from "react-icons/gi";
 import LabModal from "../doctor-desk/lab-modal";
 import { useAuth } from "@/assets/hooks/use-auth";
 import ShowInsurancesPopover from "./ShowInsurancesPopover";
 import PAtientSearch from "./PatientSearch";
+import { useFacility } from "@/assets/hooks/use-facility";
 
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
@@ -33,12 +34,19 @@ const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
 
 const allowedPageSizes = [5, 10, 'all'];
 
-const getActions = () => {
+// A New Visit goes to check-in, which a standalone lab doesn't have; there the
+// patient's tests are ordered on the lab's walk-in screen instead.
+const getActions = ({ canCheckIn, canOrderLab }) => {
   let actions = [
-    {
+    canCheckIn && {
       action: "add",
       label: "New Visit",
       icon: <MdAddCircle className="text-success text-xl mx-2" />,
+    },
+    canOrderLab && {
+      action: "lab request",
+      label: "Request Lab Tests",
+      icon: <GiMicroscope className="text-success text-xl mx-2" />,
     },
     {
       action: "update",
@@ -47,7 +55,7 @@ const getActions = () => {
     },
   ];
 
-  return actions;
+  return actions.filter(Boolean);
 };
 
 const PatientsDataGrid = () => {
@@ -55,7 +63,13 @@ const PatientsDataGrid = () => {
   const { patients } = useSelector((store) => store.patient);
   const dispatch = useDispatch();
   const auth = useAuth()
-  const userActions = getActions();
+  const { isModuleEnabled } = useFacility();
+  const { userPermissions } = useSelector((store) => store.auth);
+  const userActions = getActions({
+    canCheckIn: isModuleEnabled("reception"),
+    // The walk-in screen is gated on the lab dashboard.
+    canOrderLab: Array.isArray(userPermissions) && userPermissions.includes("CAN_ACCESS_LABORATORY_DASHBOARD"),
+  });
   const [open,setOpen] = useState(false)
   const [editOpen,setEditOpen] = useState(false)
   const [selectedRowData,setSelectedRowData] = useState({});
@@ -76,6 +90,8 @@ const PatientsDataGrid = () => {
       setEditOpen(true);      
     }else if (menu.action === "prescribe") {
       router.push(`/dashboard/patients/prescribe/${data.id}`);
+    } else if (menu.action === "lab request") {
+      router.push(`/dashboard/laboratory/walk-in?patient=${data.id}`);
     } else if(menu.action === "send to lab"){
       setSelectedRowData(data);
       setLabOpen(true);

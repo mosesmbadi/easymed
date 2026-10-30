@@ -1108,10 +1108,12 @@ export const createWalkInLabRequest = (payload, auth) => {
     })
 }
 
+// `search` is a string, or {id} for one known patient.
 export const searchWalkInPatients = (search, auth) => {
     const axiosInstance = UseAxios(auth);
+    const params = typeof search === 'object' ? search : { search };
     return new Promise((resolve, reject) => {
-        axiosInstance.get(`${APP_API_URL.WALK_IN_PATIENT_SEARCH}`, { params: { search } })
+        axiosInstance.get(`${APP_API_URL.WALK_IN_PATIENT_SEARCH}`, { params })
             .then((res) => {
                 resolve(res.data)
             })

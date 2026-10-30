@@ -19,7 +19,8 @@ from .views import (
     InvoicePaymentViewset,
     MainAccountViewSet,
     SubAccountViewSet,
-    AccountingSummaryView
+    AccountingSummaryView,
+    AccountStatementView,
 )
 
 router = DefaultRouter()
@@ -39,6 +40,7 @@ urlpatterns = [
     path('allocate-payment/', AllocatePaymentView.as_view(), name='allocate-payment'),
     path('invoices/patient/<int:patient_id>/', InvoicesByPatientId.as_view()),
     path('invoices/insurance/<int:insurance_id>/', InvoicesByInsuranceId.as_view()),
+    path('accounts/<int:account_id>/statement/', AccountStatementView.as_view(), name='account-statement'),
     path('invoices/items/<int:invoice_id>/', InvoiceItemsByInvoiceId.as_view()),
     path('invoice-items-by-insurance-company/', InvoiceItemsByInsuranceCompany.as_view(), name='invoice-items-by-insurance-company'),
     path('payment-modes-breakdown/', PaymentBreakdownView.as_view(), name='payment-breakdown'),

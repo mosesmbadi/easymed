@@ -1,4 +1,5 @@
 import random
+from decimal import Decimal
 from faker import Faker
 
 from inventory.models import Item, Department, ItemUnit, Supplier, Unit
@@ -2459,7 +2460,8 @@ def create_insurance_price_list(max_insurers=5):
     print("\n\U0001f3e5 Agreeing insurance prices with the patients' insurers...")
 
     insurers = list(
-        InsuranceCompany.objects.annotate(members=Count('patient'))
+        InsuranceCompany.objects.filter(account_type=InsuranceCompany.AccountType.INSURER)
+        .annotate(members=Count('patient'))
         .filter(members__gt=0)
         .order_by('-members', 'id')[:max_insurers]
     )
@@ -2498,3 +2500,74 @@ def create_insurance_price_list(max_insurers=5):
     print(f"   - {created} insurance prices across {len(priced)} sellable items")
 
     return {'insurers': len(insurers), 'prices': created}
+
+
+# Employers that pay for their staff's care, and what they agreed: one a
+# discount off the price list on everything, the others the list as it is.
+DEMO_CORPORATES = [
+    {'name': 'Safaricom PLC', 'contact_person': 'Staff Wellness Office',
+     'email': 'wellness@safaricom.demo', 'phone': '0722000000',
+     'address': 'Safaricom House, Waiyaki Way, Nairobi', 'discount': Decimal('0.10')},
+    {'name': 'Kenya Power & Lighting Co.', 'contact_person': 'HR Medical Scheme',
+     'email': 'medical@kplc.demo', 'phone': '0703070707',
+     'address': 'Stima Plaza, Kolobot Road, Nairobi'},
+    {'name': 'Bidco Africa Ltd', 'contact_person': 'Human Resources',
+     'email': 'hr@bidco.demo', 'phone': '0711000111',
+     'address': 'Thika Industrial Area'},
+]
+
+# Clinics that send their samples here; they are billed for them (see
+# laboratory walk-ins and, later, referred-in samples).
+DEMO_REFERRING_FACILITIES = [
+    ('Mama Lucy Medical Clinic', 'Dr. Njoroge'),
+    ('Upper Hill Family Clinic', 'Dr. Achieng'),
+    ('Kasarani Health Centre', 'Dr. Mutua'),
+]
+
+
+def create_credit_accounts(rng=None):
+    """
+    The corporate clients and referring facilities the demo bills on account,
+    beside the insurers. A share of the patients are staff of a corporate
+    client, which pays for their care.
+    """
+    from inventory.models import InsuranceItemSalePrice
+
+    rng = rng or random.Random(20261031)
+    Type = InsuranceCompany.AccountType
+    print("\n\U0001f3e2 Opening accounts for corporate clients and referring facilities...")
+
+    corporates = []
+    for spec in DEMO_CORPORATES:
+        account = InsuranceCompany.objects.create(
+            account_type=Type.CORPORATE,
+            **{k: v for k, v in spec.items() if k != 'discount'})
+        corporates.append(account)
+        discount = spec.get('discount')
+        if discount:
+            sellable = (Item.objects.exclude(category__in=Item.UNPRICED_CATEGORIES)
+                        .exclude(category_one='Internal'))
+            rows = [
+                InsuranceItemSalePrice(
+                    item=item, insurance_company=account, co_pay=0,
+                    sale_price=(Decimal(item.current_sale_price) * (1 - discount)).quantize(Decimal('1')))
+                for item in sellable if item.current_sale_price
+            ]
+            InsuranceItemSalePrice.objects.bulk_create(rows, ignore_conflicts=True)
+            print(f"   - {account.name}: {int(discount * 100)}% off {len(rows)} items")
+        else:
+            print(f"   - {account.name}: the price list")
+
+    for name, doctor in DEMO_REFERRING_FACILITIES:
+        InsuranceCompany.objects.create(
+            name=name, account_type=Type.FACILITY, contact_person=doctor)
+    print(f"   - {len(DEMO_REFERRING_FACILITIES)} referring facilities")
+
+    # About one adult in six works for one of them.
+    staff = 0
+    for patient in Patient.objects.order_by('id'):
+        if patient.date_of_birth and rng.random() < 0.16:
+            patient.insurances.add(rng.choice(corporates))
+            staff += 1
+    print(f"   - {staff} patients on a corporate scheme")
+    return {'corporates': len(corporates), 'facilities': len(DEMO_REFERRING_FACILITIES), 'staff': staff}

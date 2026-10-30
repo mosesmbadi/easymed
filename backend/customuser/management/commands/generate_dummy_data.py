@@ -21,6 +21,7 @@ from customuser.management.utils.data_generators import (
     create_pharmaceutical_inventory,
     create_item_department_links,
     create_insurance_price_list,
+    create_credit_accounts,
 )
 from customuser.management.utils.demo_activity import (
     DEMO_DAYS,
@@ -286,6 +287,18 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS(
                 f"Agreed {insurance_stats['prices']} insurance prices with "
                 f"{insurance_stats['insurers']} insurers."
+            ))
+
+        # Corporate clients and referring facilities, after the insurers'
+        # prices so they don't take an insurer's place in that list.
+        if InsuranceCompany.objects.exclude(
+                account_type=InsuranceCompany.AccountType.INSURER).exists():
+            self.stdout.write(self.style.WARNING("Skipping credit accounts: already open."))
+        else:
+            account_stats = create_credit_accounts()
+            self.stdout.write(self.style.SUCCESS(
+                f"Opened {account_stats['corporates']} corporate and "
+                f"{account_stats['facilities']} referring facility accounts."
             ))
 
         # The history itself, last, once there is stock, prices, specimens,

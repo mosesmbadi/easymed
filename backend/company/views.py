@@ -33,5 +33,13 @@ class CompanyBranchViewSets(viewsets.ModelViewSet):
     serializer_class = CompanyBranchSerializer
 
 class InsuranceCompanyViewSet(viewsets.ModelViewSet):
-    queryset = InsuranceCompany.objects.all()
+    """Credit accounts. ?account_type=insurer|corporate|facility narrows the list."""
+    queryset = InsuranceCompany.objects.all().order_by('name')
     serializer_class = InsuranceCompanySerializer
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        account_type = self.request.query_params.get('account_type')
+        if account_type:
+            queryset = queryset.filter(account_type=account_type)
+        return queryset

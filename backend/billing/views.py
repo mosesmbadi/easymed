@@ -1,3 +1,4 @@
+import datetime as _dt
 from django.shortcuts import render, Http404
 from rest_framework import viewsets, status
 from django.template.loader import get_template
@@ -843,3 +844,47 @@ def download_accounting_summary_pdf(request):
     response = HttpResponse(pdf_file, content_type='application/pdf')
     response['Content-Disposition'] = f'filename="accounting_summary.pdf"'
     return response
+
+
+class AccountStatementView(APIView):
+    """
+    A credit account's statement: ?start=YYYY-MM-DD&end=YYYY-MM-DD, the current
+    month by default. ?download=pdf answers the PDF to send them.
+    """
+    permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser | IsReceptionistUser,)
+
+    def get(self, request, account_id):
+        from company.models import InsuranceCompany
+        from .statements import account_statement
+
+        account = get_object_or_404(InsuranceCompany, pk=account_id)
+        try:
+            start = request.query_params.get('start')
+            end = request.query_params.get('end')
+            start = _dt.date.fromisoformat(start) if start else None
+            end = _dt.date.fromisoformat(end) if end else None
+        except ValueError:
+            return Response({"detail": "start and end must be dates, YYYY-MM-DD."},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if (start is None) != (end is None):
+            return Response({"detail": "Give both start and end, or neither."},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if start and end < start:
+            return Response({"detail": "end is before start."}, status=status.HTTP_400_BAD_REQUEST)
+
+        statement = account_statement(account, start, end)
+        if request.query_params.get('download') != 'pdf':
+            return Response(statement)
+
+        company = Company.objects.first()
+        company_logo_url = request.build_absolute_uri(company.logo.url) if company and company.logo else None
+        html_template = get_template('account_statement.html').render({
+            'company_logo_url': company_logo_url,
+            'company': company,
+            'statement': statement,
+        })
+        pdf_file = HTML(string=html_template).write_pdf()
+        response = HttpResponse(pdf_file, content_type='application/pdf')
+        response['Content-Disposition'] = (
+            f'filename="statement_{account.id}_{statement["start"]:%Y%m%d}_{statement["end"]:%Y%m%d}.pdf"')
+        return response

@@ -824,15 +824,21 @@ class WalkInPatientSearchView(APIView):
     permission_classes = [WALK_IN_ACCESS]
 
     def get(self, request):
-        term = (request.query_params.get('search') or '').strip()
-        if len(term) < 2:
-            return Response([])
-        words = term.split()
-        query = Q()
-        for word in words:
-            query &= (Q(first_name__icontains=word) | Q(second_name__icontains=word)
-                      | Q(unique_id__icontains=word) | Q(phone__icontains=word))
-        patients = Patient.objects.filter(query).order_by('first_name', 'second_name')[:20]
+        # ?id= picks out one patient, for opening the walk-in screen from
+        # their row on the Patients list.
+        patient_id = request.query_params.get('id')
+        if patient_id:
+            patients = Patient.objects.filter(pk=patient_id if patient_id.isdigit() else None)
+        else:
+            term = (request.query_params.get('search') or '').strip()
+            if len(term) < 2:
+                return Response([])
+            query = Q()
+            for word in term.split():
+                query &= (Q(first_name__icontains=word) | Q(second_name__icontains=word)
+                          | Q(unique_id__icontains=word) | Q(phone__icontains=word))
+            patients = Patient.objects.filter(query).order_by('first_name', 'second_name')[:20]
+        patients = patients.prefetch_related('insurances')
         return Response([
             {
                 'id': patient.id,
@@ -841,6 +847,8 @@ class WalkInPatientSearchView(APIView):
                 'gender': patient.get_gender_display(),
                 'age': patient.age,
                 'phone': patient.phone,
+                # Insurers and employers on file, to bill the walk-in to.
+                'accounts': [account.id for account in patient.insurances.all()],
             }
             for patient in patients
         ])

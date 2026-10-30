@@ -2,7 +2,7 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main" , "standalone-lab"]
 
 env:
   # Where the stack lives on the server and which compose file runs it.
@@ -97,7 +97,7 @@ jobs:
 
             echo "🔄 Pulling latest changes..."
             git fetch origin
-            git reset --hard origin/main
+            git reset --hard origin/standalone-lab
 
             # Build before touching the running stack: if the build fails, the
             # current containers stay up and set -e stops the deploy here.

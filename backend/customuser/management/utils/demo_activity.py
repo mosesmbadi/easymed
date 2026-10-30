@@ -797,7 +797,15 @@ class DemoWorld:
             'insurance_company_id', flat=True).distinct())
         self.insurer_modes = {
             mode.insurance_id: mode
-            for mode in PaymentMode.objects.filter(insurance_id__in=priced)
+            for mode in PaymentMode.objects.filter(
+                insurance_id__in=priced, insurance__account_type='insurer')
+        }
+        # Corporate clients and referring facilities, billed on account
+        # whether or not they agreed prices; see InsuranceCompany.
+        self.account_modes = {
+            mode.insurance_id: mode
+            for mode in PaymentMode.objects.filter(
+                insurance__account_type__in=['corporate', 'facility']).select_related('insurance')
         }
 
         self.drugs = {i.name: i for i in Item.objects.filter(
@@ -848,8 +856,22 @@ class DemoWorld:
         return self.consultations.get(name or 'General Appointment') \
             or self.consultations.get('General Appointment')
 
+    def employer_mode_for(self, patient):
+        """The corporate client paying for this patient, if they work for one."""
+        for account in patient.insurances.all():
+            mode = self.account_modes.get(account.id)
+            if mode and mode.insurance.account_type == 'corporate':
+                return mode
+        return None
+
     def payment_mode_for(self, patient):
-        """Most insured patients use their cover; the rest pay cash."""
+        """
+        Staff of a corporate client are billed to it. Most insured patients
+        use their cover; the rest pay cash.
+        """
+        employer = self.employer_mode_for(patient)
+        if employer and self.rng.random() < 0.95:
+            return employer
         covered = [c for c in patient.insurances.all() if c.id in self.insurer_modes]
         if covered and self.rng.random() < 0.7:
             return self.insurer_modes[covered[0].id]
@@ -1599,6 +1621,40 @@ def insurer_settlement_script(world, first, last):
             world.counts['insurer settlements'] += 1
 
 
+def account_settlement_script(world, first, last):
+    """
+    On the 10th, each corporate client and referring facility settles last
+    month's statement -- most in full, some short, by bank transfer.
+    """
+    from billing.models import InvoiceItem
+    from billing.statements import account_statement, month_bounds
+    from billing.views import AllocatePaymentView
+
+    for day in _days(first + _dt.timedelta(days=1), last):
+        if day.day != 10:
+            continue
+        yield _at(day, 11, 0)
+        start, end = month_bounds(day.replace(day=1) - _dt.timedelta(days=1))
+        for account_id, mode in world.account_modes.items():
+            statement = account_statement(mode.insurance, start, end)
+            owed = statement['closing_balance']
+            if owed <= 0:
+                continue
+            amount = owed if world.rng.random() > 0.25 else (owed * Decimal('0.9')).quantize(Decimal('0.01'))
+            invoice_ids = list(InvoiceItem.objects.filter(
+                status='billed', payment_mode=mode, item_created_at__date__lte=end,
+            ).values_list('invoice_id', flat=True).distinct())
+            world.post_view(AllocatePaymentView, '/billing/allocate-payment/', {
+                'insurance_id': account_id,
+                'invoice_ids': invoice_ids,
+                'sub_account': world.accounts['collections'].id,
+                'amount': str(amount),
+                'reference_number': f"EFT-{world.today():%y%m}-{account_id:03d}",
+                'payment_date': world.today().isoformat(),
+            })
+            world.counts['account settlements'] += 1
+
+
 def stock_take_script(world, days_ago, post=True):
     """A cycle count in the pharmacy: most lines agree, a couple come up short."""
     from inventory.models import StockBalance, StockTake, StockTakeLine
@@ -1848,6 +1904,16 @@ def walk_in_script(world, patient, arrival):
         payload['referring_doctor'] = rng.choice(REFERRING_DOCTORS)
         payload['referring_facility'] = rng.choice(REFERRING_CLINICS)
 
+    # Staff of a corporate client are billed to it; a clinic with an account
+    # here often pays for what it sends, the rest of the time the patient does.
+    employer = world.employer_mode_for(patient) if patient else None
+    facility = next((mode for mode in world.account_modes.values()
+                     if mode.insurance.name == payload.get('referring_facility')), None)
+    if employer:
+        payload['payment_mode'] = employer.id
+    elif facility and rng.random() < 0.6:
+        payload['payment_mode'] = facility.id
+
     data = world.post_view(WalkInLabRequestView, '/lab/walk-in-requests/', payload)
     visit = AttendanceProcess.objects.get(pk=data['id'])
     world.counts['walk-in lab visits'] += 1
@@ -1960,6 +2026,7 @@ def seed_demo_world(clock, staff, days=DEMO_DAYS):
         (lab_topup_script(world, first, last), 'lab top-ups'),
         (supplier_payment_script(world, first, last), 'supplier payments'),
         (insurer_settlement_script(world, first, last), 'insurer settlements'),
+        (account_settlement_script(world, first, last), 'account settlements'),
         (archive_housekeeping_script(world, first, last), 'archive housekeeping'),
         (wastage_script(world, first, last), 'wastage'),
         (stock_take_script(world, 45), 'stock take 45 days ago'),

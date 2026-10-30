@@ -50,7 +50,7 @@ class InvoiceItemSerializer(serializers.ModelSerializer):
         return payment_mode.insurance_id if payment_mode  else None
     
     def get_price_source(self, obj):
-        """Return the source of pricing: 'insurance', 'cash', or 'cash_fallback'."""
+        """'insurance', 'cash', 'cash_fallback' or 'account_list_price'; see InvoiceItem."""
         return obj.price_source
 
     def get_sale_price(self, obj):
@@ -117,6 +117,8 @@ class InvoiceSerializer(serializers.ModelSerializer):
 
 class PaymentModeSerializer(serializers.ModelSerializer):
     insurance_company_name = serializers.SerializerMethodField()
+    # Which kind of credit account the mode bills, for a mode that bills one.
+    account_type = serializers.SerializerMethodField()
     
     class Meta:
         model = PaymentMode 
@@ -124,6 +126,9 @@ class PaymentModeSerializer(serializers.ModelSerializer):
         
     def get_insurance_company_name(self, obj):
         return obj.insurance.name if obj.insurance else None
+
+    def get_account_type(self, obj):
+        return obj.insurance.account_type if obj.insurance else None
 
 
 class InvoicePaymentSerializer(serializers.ModelSerializer):

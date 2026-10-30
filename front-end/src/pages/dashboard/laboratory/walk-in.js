@@ -1,5 +1,6 @@
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import { Container } from "@mui/material";
 import AsyncSelect from "react-select/async";
 import { toast } from "react-toastify";
@@ -10,6 +11,7 @@ import LabNav from "@/components/dashboard/laboratory/LabNav";
 import MultiTestProfileSelector from "@/components/common/MultiTestProfileSelector";
 import { useAuth } from "@/assets/hooks/use-auth";
 import { createWalkInLabRequest, searchWalkInPatients } from "@/redux/service/laboratory";
+import { fetchPaymentModes } from "@/redux/service/billing";
 
 const inputClass =
   "block border border-gray rounded-xl py-2 px-4 focus:outline-none w-full text-sm";
@@ -50,14 +52,24 @@ const errorLines = (error) => {
  * records a doctor's order makes. The patient then pays at the cashier, after
  * which the tests show up under Phlebotomy for collection.
  */
+const patientOption = (p) => ({
+  value: p.id,
+  label: `${p.name} · ${p.unique_id}${p.age != null ? ` · ${p.age} yrs` : ""}${p.gender ? ` · ${p.gender}` : ""}`,
+  patient: p,
+});
+
 const WalkInLabRequest = () => {
   const auth = useAuth();
+  const router = useRouter();
   const [mode, setMode] = useState("existing");
   const [existingPatient, setExistingPatient] = useState(null);
   const [newPatient, setNewPatient] = useState(emptyPatient);
   const [referringDoctor, setReferringDoctor] = useState("");
   const [referringFacility, setReferringFacility] = useState("");
   const [note, setNote] = useState("");
+  // Who pays: "" for the patient at the till, or a credit account's payment mode.
+  const [billTo, setBillTo] = useState("");
+  const [accountModes, setAccountModes] = useState([]);
   const [sections, setSections] = useState([]);
   // Bumped to remount the test picker, which keeps its own state, after a save.
   const [formKey, setFormKey] = useState(0);
@@ -84,14 +96,37 @@ const WalkInLabRequest = () => {
     input && input.trim().length >= 2
       ? searchWalkInPatients(input, auth)
           .then((rows) =>
-            rows.map((p) => ({
-              value: p.id,
-              label: `${p.name} · ${p.unique_id}${p.age != null ? ` · ${p.age} yrs` : ""}${p.gender ? ` · ${p.gender}` : ""}`,
-              patient: p,
-            }))
+            rows.map(patientOption)
           )
           .catch(() => [])
       : Promise.resolve([]);
+
+  useEffect(() => {
+    if (!auth) return;
+    fetchPaymentModes(auth)
+      .then((modes) => setAccountModes((modes || []).filter((mode) => mode.insurance)))
+      .catch(() => {});
+  }, [auth]);
+
+  // The patient's own insurers and employer first.
+  const onFile = new Set(mode === "existing" ? existingPatient?.patient?.accounts ?? [] : []);
+  const billToOptions = [...accountModes].sort(
+    (a, b) => onFile.has(b.insurance) - onFile.has(a.insurance)
+  );
+
+  // Opened from a patient's row on the Patients list: start with them picked.
+  const preselected = router.query.patient;
+  useEffect(() => {
+    if (!preselected || !auth) return;
+    searchWalkInPatients({ id: preselected }, auth)
+      .then((rows) => {
+        if (rows.length) {
+          setMode("existing");
+          setExistingPatient(patientOption(rows[0]));
+        }
+      })
+      .catch(() => {});
+  }, [preselected, auth]);
 
   const setPatientField = (field) => (e) =>
     setNewPatient((prev) => ({ ...prev, [field]: e.target.value }));
@@ -102,6 +137,7 @@ const WalkInLabRequest = () => {
     setReferringDoctor("");
     setReferringFacility("");
     setNote("");
+    setBillTo("");
     setSections([]);
     setErrors([]);
     setFormKey((k) => k + 1);
@@ -129,6 +165,7 @@ const WalkInLabRequest = () => {
       referring_doctor: referringDoctor,
       referring_facility: referringFacility,
       note,
+      ...(billTo ? { payment_mode: Number(billTo) } : {}),
       ...(mode === "existing"
         ? { patient: existingPatient.value }
         : { new_patient: newPatient }),
@@ -253,6 +290,23 @@ const WalkInLabRequest = () => {
             <input className={inputClass} placeholder="Referring facility" value={referringFacility} onChange={(e) => setReferringFacility(e.target.value)} />
           </div>
           <p className="text-xs">Printed as &ldquo;Requested by&rdquo; on the lab report.</p>
+        </section>
+
+        <section className="bg-white rounded shadow p-4 space-y-3">
+          <h2 className="font-semibold">Bill to</h2>
+          <select className={inputClass} value={billTo} onChange={(e) => setBillTo(e.target.value)}>
+            <option value="">Patient pays at the till</option>
+            {billToOptions.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.insurance_company_name || option.payment_mode}
+                {onFile.has(option.insurance) ? " (on file)" : ""}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs">
+            A corporate client or referring facility is billed on account and settles against its
+            monthly statement.
+          </p>
         </section>
 
         <section className="bg-white rounded shadow p-4 space-y-3">

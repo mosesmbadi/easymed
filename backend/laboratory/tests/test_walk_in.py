@@ -274,3 +274,15 @@ def test_the_lab_can_find_a_returning_patient(lab_client):
 
     assert response.status_code == 200
     assert [p['name'] for p in response.data] == ['Juma Ali']
+
+
+@pytest.mark.django_db
+def test_the_walk_in_screen_can_open_on_a_known_patient(lab_client):
+    juma = Patient.objects.create(
+        first_name='Juma', second_name='Ali', gender='M', date_of_birth=date(1980, 1, 1))
+
+    response = lab_client.get('/lab/walk-in-requests/patients/', {'id': juma.id})
+
+    assert response.status_code == 200
+    assert [p['id'] for p in response.data] == [juma.id]
+    assert lab_client.get('/lab/walk-in-requests/patients/', {'id': 'x'}).data == []

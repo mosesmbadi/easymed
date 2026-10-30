@@ -25,6 +25,9 @@ class CompanyBranchSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class InsuranceCompanySerializer(serializers.ModelSerializer):
+    account_type_display = serializers.CharField(
+        source='get_account_type_display', read_only=True)
+
     class Meta:
         model = InsuranceCompany
         fields = '__all__'

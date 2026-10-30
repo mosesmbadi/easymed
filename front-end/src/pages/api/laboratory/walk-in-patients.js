@@ -12,7 +12,7 @@ export default async function handler(req, res) {
         headers: {
             'Authorization': req.headers.authorization,
         },
-        params: { search: req.query.search ?? '' },
+        params: { search: req.query.search ?? '', id: req.query.id },
     };
     try {
         const response = await backendAxiosInstance.get(`${API_URL.WALK_IN_PATIENT_SEARCH}`, config);

@@ -52,6 +52,8 @@ roughly 250 visits.
 | **Wards** | Admissions for the sickest cases, observation rounds twice a day, drugs charted on schedule, repeat labs, discharges — and a few patients still on the ward today |
 | **Billing** | Invoices in every state: paid at the till or by M-Pesa, part-paid, a few left owing; insured lines split between insurer and co-pay |
 | **Insurance** | Five insurers with agreed prices. Claims settled weekly, some short-paid, the last fortnight still outstanding |
+| **Corporate clients** | Safaricom (10% off the price list), Kenya Power and Bidco (the list as it is). About one patient in six is on a staff scheme, and their visits and walk-ins are billed to the employer. Each account settles its statement on the 10th, a few short. Finance > Accounts Receivable > Settings > Credit Accounts > Statement prints it |
+| **Referring facilities** | Three clinics with accounts here. Walk-ins they referred are often billed to them, and settle with the corporates |
 | **Finance** | A chart of accounts — till, M-Pesa, collections and supplier-payments accounts — with every receipt posted to one |
 | **Procurement** | Weekly reorders from pharmacy and lab: requisition, two approvals, purchase orders per supplier, deliveries (some in two parts), supplier invoices, payments three weeks later |
 | **Stock** | A full ledger: receipts, sales, lab consumption, collection draws, transfers to the lab, breakages, two posted stock takes with small shortages and one in progress |
