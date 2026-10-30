@@ -22,7 +22,9 @@ ENV NEXT_TELEMETRY_DISABLED=1 \
     NEXT_PUBLIC_BACKEND_URL=$NEXT_PUBLIC_BACKEND_URL \
     NEXT_PUBLIC_HMIS_VERSION=$NEXT_PUBLIC_HMIS_VERSION
 
-RUN npm run build
+# Fail here, with the build output visible, rather than at the runner's COPY
+# with a bare "not found" if next build didn't produce the standalone bundle.
+RUN npm run build && test -f .next/standalone/server.js && test -d .next/static
 
 # 3. Production image, copy all the files and run next
 FROM base AS runner

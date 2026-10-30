@@ -77,7 +77,8 @@ const WalkInLabRequest = () => {
   }, [sections]);
 
   const total = selectedPanels.reduce((sum, panel) => sum + Number(panel.sale_price || 0), 0);
-  const unpriced = selectedPanels.filter((panel) => panel.sale_price == null);
+  // The panel list reports an unpriced test as 0.
+  const unpriced = selectedPanels.filter((panel) => !Number(panel.sale_price));
 
   const loadPatients = (input) =>
     input && input.trim().length >= 2
