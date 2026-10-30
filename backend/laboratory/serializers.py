@@ -3,7 +3,7 @@ from random import randrange, choices
 
 from django.db import transaction
 
-from inventory.models import Item
+from inventory.models import Item, ItemPrice
 from rest_framework import serializers
 from rest_framework.exceptions import NotFound
 
@@ -868,7 +868,10 @@ class WalkInLabRequestSerializer(serializers.Serializer):
             raise serializers.ValidationError("Pick at least one test.")
         # The same test twice would bill the patient twice for one sample.
         unique = list({panel.id: panel for panel in panels}.values())
-        unpriced = [panel.name for panel in unique if panel.sale_price is None]
+        # sale_price reads 0 when there is no price at all, so ask the price
+        # list directly; a deliberate price of 0 is still allowed.
+        unpriced = [panel.name for panel in unique
+                    if not panel.item_id or ItemPrice.current_for(panel.item) is None]
         if unpriced:
             raise serializers.ValidationError(
                 f"No price is set for {', '.join(unpriced)}. Price it under "
