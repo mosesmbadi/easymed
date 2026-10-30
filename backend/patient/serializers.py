@@ -1,0 +1,269 @@
+from django.db import IntegrityError, transaction
+from django.utils import timezone
+from rest_framework import serializers
+from .models import (
+    ContactDetails,
+    Patient,
+    NextOfKin,
+    Prescription,
+    PrescribedDrug,
+    PublicAppointment,
+    Consultation,
+    Referral,
+    Triage,
+    AttendanceProcess,
+    TriageSettings,
+)
+from company.serializers import InsuranceCompanySerializer
+from inventory.models import (
+    Item,
+)
+from billing.models import InvoiceItem
+from billing.serializers import InvoiceItemSerializer
+
+class ContactDetailsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ContactDetails
+        fields = '__all__'
+
+
+class PatientSerializer(serializers.ModelSerializer):
+    age = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Patient
+        fields = "__all__"
+        ordering = "id"
+
+    def get_age(self, obj: Patient):
+        if obj.age:
+            return obj.age
+        return None
+    
+    def get_patient_insurances(self, obj: Patient):
+        return [{"id": insurance.id, "name": insurance.name} for insurance in obj.insurances.all()]
+    
+
+    def to_representation(self, instance: Patient):
+        data = super().to_representation(instance)
+        data["gender"] = instance.get_gender_display()
+        data["insurances"] = self.get_patient_insurances(instance)
+        return data
+
+
+class NextOfKinSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = NextOfKin
+        fields = '__all__'
+
+
+class ConsultationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Consultation
+        fields = '__all__'
+
+
+    
+class PublicAppointmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PublicAppointment
+        fields = [
+            "id",
+            'item',
+            'first_name',
+            'second_name',
+            'date_of_birth',
+            'gender',
+            'appointment_date_time',
+            'status',
+            'reason',
+            'date_created',
+        ]
+        read_only_fields = ("id", "date_created",)
+
+    def to_representation(self, instance: PublicAppointment):
+        data = super().to_representation(instance)
+        data["gender"] = instance.get_gender_display()
+        data["status"] = instance.get_status_display()
+        if instance.item:
+            data["item"] = instance.item.name
+        return data
+
+    def get_item_name(self, obj: PublicAppointment):
+        return obj.item.name
+
+
+class PrescriptionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Prescription
+        fields = '__all__'
+
+
+class PrescribedDrugSerializer(serializers.ModelSerializer):
+    item_name = serializers.ReadOnlyField(source='item.name')
+    sale_price = serializers.SerializerMethodField()
+    consumables = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PrescribedDrug
+        fields = '__all__'
+
+    def get_consumables(self, obj):
+        """
+        The accompaniments this drug needs, checked against pharmacy stock.
+
+        An injectable cannot be handed over without its syringe, so the
+        dispensing screen has to show that before the pharmacist commits --
+        billing will refuse the line otherwise. Tablets return [].
+        """
+        from inventory.models import Department
+        from inventory.services import consumables as consumables_service
+
+        pharmacy = Department.objects.filter(
+            name__iexact='Pharmacy', is_stock_location=True).first()
+
+        rows = consumables_service.availability(obj.item, obj.quantity or 1, pharmacy)
+        return [
+            {
+                'consumable': row['consumable'].id,
+                'name': row['consumable'].name,
+                'units_of_measure': row['consumable'].units_of_measure,
+                'required_quantity': row['required_quantity'],
+                'available_quantity': row['available_quantity'],
+                'shortfall': row['shortfall'],
+                'is_required': row['is_required'],
+            }
+            for row in rows
+        ]
+
+    def validate(self, attrs):
+        """Enforce unique (prescription, item) at the API layer.
+
+        The DB has a unique constraint; without this, duplicate submissions can
+        surface as a 500 IntegrityError instead of a clean 4xx response.
+        """
+
+        prescription = attrs.get("prescription") or getattr(self.instance, "prescription", None)
+        item = attrs.get("item") or getattr(self.instance, "item", None)
+
+        if prescription and item:
+            qs = PrescribedDrug.objects.filter(prescription=prescription, item=item)
+            if self.instance is not None:
+                qs = qs.exclude(pk=self.instance.pk)
+
+            if qs.exists():
+                raise serializers.ValidationError(
+                    {"non_field_errors": ["This drug is already added to this prescription."]}
+                )
+
+        return attrs
+
+    def create(self, validated_data):
+        """Create a prescribed drug, returning a friendly 4xx on duplicates."""
+
+        try:
+            with transaction.atomic():
+                return super().create(validated_data)
+        except IntegrityError:
+            prescription = validated_data.get("prescription")
+            item = validated_data.get("item")
+
+            existing = None
+            if prescription and item:
+                existing = PrescribedDrug.objects.filter(
+                    prescription=prescription,
+                    item=item,
+                ).only("id").first()
+
+            if existing is not None:
+                raise serializers.ValidationError(
+                    {
+                        "non_field_errors": ["This drug is already added to this prescription."],
+                        "existing_id": existing.id,
+                    }
+                )
+
+            raise
+
+    def get_sale_price(self, obj):
+        return obj.item.current_sale_price or 0
+        
+
+class ReferralSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Referral
+        fields = ['id', 'patient', 'note', 'service', 'provider_email_contact', 'preferred_provider', 'referred_by', 'reffered_doctor', 'type', 'attendance_process']
+        read_only_fields = ['id']
+
+
+class TriageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Triage
+        fields = '__all__'
+
+
+class AttendanceProcessSerializer(serializers.ModelSerializer):
+    insurances = serializers.SerializerMethodField()
+    invoice_items = serializers.SerializerMethodField()
+    assigned_doctor = serializers.CharField(source='doctor.get_fullname', read_only=True)
+    patient_name = serializers.SerializerMethodField()
+    has_critical_triage = serializers.SerializerMethodField()
+    has_approved_lab_results = serializers.SerializerMethodField()
+    referral = ReferralSerializer(read_only=True)
+    clinical_note = ConsultationSerializer(read_only=True)
+    class Meta:
+        model = AttendanceProcess
+        fields = '__all__'
+
+    def get_insurances(self, obj):
+        insurances = obj.patient.insurances.all()
+        return InsuranceCompanySerializer(insurances, many=True).data
+    
+    def get_patient_name(self, obj):
+        return obj.patient.first_name + " " + obj.patient.second_name
+    
+    def get_invoice_items(self, obj):
+        invoice = obj.invoice.pk
+        invoice_items = InvoiceItem.objects.filter(invoice=invoice)
+        serialized_items = InvoiceItemSerializer(invoice_items, many=True)
+        return serialized_items.data
+
+    def get_has_critical_triage(self, obj):
+        from .models import TriageSettings
+        triage = obj.triage
+        if not triage:
+            return False
+
+        settings = TriageSettings.objects.first()
+        if not settings or not settings.is_active:
+            return False
+
+        # Threshold checking
+        if triage.spo2 is not None and triage.spo2 < settings.spo2_min:
+            return True
+        if triage.systolic is not None and (triage.systolic < settings.systolic_min or triage.systolic > settings.systolic_max):
+            return True
+        if triage.diastolic is not None and (triage.diastolic < settings.diastolic_min or triage.diastolic > settings.diastolic_max):
+            return True
+        if triage.temperature is not None and (triage.temperature < settings.temperature_min or triage.temperature > settings.temperature_max):
+            return True
+        if triage.pulse is not None and (triage.pulse < settings.pulse_min or triage.pulse > settings.pulse_max):
+            return True
+
+        return False
+
+    def get_has_approved_lab_results(self, obj):
+        from laboratory.models import LabTestRequestPanel
+        if not obj.process_test_req:
+            return False
+            
+        return LabTestRequestPanel.objects.filter(
+            lab_test_request__process=obj.process_test_req,
+            result_approved=True
+        ).exists()
+
+class TriageSettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TriageSettings
+        fields = '__all__'
+    

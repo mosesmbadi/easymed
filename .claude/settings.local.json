@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -E \"\\\\.\\(tsx|ts|jsx|js\\)$\")",
+      "Bash(python manage.py check)",
+      "Bash(python3 manage.py check)",
+      "Bash(ls backend/requirements*.txt)",
+      "Bash(python manage.py makemigrations laboratory inventory --name lab_consumable_and_specimen_consumable)",
+      "Bash(python3 manage.py makemigrations laboratory inventory --name lab_consumable_and_specimen_consumable)"
+    ]
+  }
+}

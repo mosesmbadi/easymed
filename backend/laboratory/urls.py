@@ -1,0 +1,89 @@
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import (
+    LabReagentViewSet,
+    LabTestRequestViewSet,
+    LabTestProfileViewSet,
+    LabEquipmentViewSet,
+    PublicLabTestRequestViewSet,
+    LabTestRequestByPatientIdAPIView,
+    LabTestPanelViewSet,
+    LabTestRequestPanelViewSet,
+    LabTestRequestPanelByLabTestRequestId,
+    download_labtestresult_pdf,
+    ProcessTestRequestViewSet,
+    LabTestRequestByProcessId,
+    PatientSampleByProcessId,
+    PatientSampleViewSet,
+    LabTestRequestPanelBySampleView,
+    SpecimenViewSet,
+    SpecimenConsumableViewSet,
+    TestPanelReagentViewSet,
+    ReferenceValueViewSet,
+    TestKitCounterViewSet,
+    ReagentConsumptionLogViewSet,
+    LowStockReagentViewSet,
+    LabTestInterpretationViewSet,
+    LabDashboardMetricsView,
+    print_lab_report,
+    LabSettingsViewSet,
+    ArchiveViewSet,
+    ArchiveComponentViewSet,
+    ArchiveSectionViewSet,
+    ArchiveRackViewSet,
+    ArchivePositionViewSet,
+    PatientSampleArchiveViewSet,
+    DisposedSampleViewSet,
+    RetestSampleViewSet,
+    ReleasedSampleViewSet
+)
+
+router = DefaultRouter()
+router.register(r'lab-reagents', LabReagentViewSet)
+router.register(r'lab-test-profile', LabTestProfileViewSet)
+router.register(r'lab-test-panel', LabTestPanelViewSet)
+router.register(r'lab-test-requests', LabTestRequestViewSet)
+router.register(r'lab-test-requests-panel', LabTestRequestPanelViewSet)
+router.register(r'lab-equipment', LabEquipmentViewSet)
+router.register(r'public-lab-test-request', PublicLabTestRequestViewSet)
+router.register(r'process-test-request', ProcessTestRequestViewSet)
+router.register(r'patient-samples', PatientSampleViewSet)
+router.register(r'specimens', SpecimenViewSet)
+router.register(r'specimen-consumables', SpecimenConsumableViewSet)
+router.register(r'test-panel-reagents', TestPanelReagentViewSet)
+router.register(r'reference-values', ReferenceValueViewSet)
+router.register(r'lab-test-interpretations', LabTestInterpretationViewSet)
+router.register(r'testkitcounters', TestKitCounterViewSet, basename='testkitcounters')
+router.register(r'reagent-consumption', ReagentConsumptionLogViewSet, basename='reagent-consumption')
+router.register(r'low-stock-reagents', LowStockReagentViewSet, basename='low-stock-reagents')
+router.register(r'lab-settings', LabSettingsViewSet, basename='lab-settings')
+router.register(r'archive', ArchiveViewSet, basename='archive')
+router.register(r'archive-component', ArchiveComponentViewSet, basename='archive-component')
+router.register(r'archive-section', ArchiveSectionViewSet, basename='archive-section')
+router.register(r'archive-rack', ArchiveRackViewSet, basename='archive-rack')
+router.register(r'archive-position', ArchivePositionViewSet, basename='archive-position')
+router.register(r'patient-sample-archive', PatientSampleArchiveViewSet, basename='patient-sample-archive')
+router.register(r'disposed-samples', DisposedSampleViewSet, basename='disposed-samples')
+router.register(r'retest-samples', RetestSampleViewSet, basename='retest-samples')
+router.register(r'released-samples', ReleasedSampleViewSet, basename='released-samples')
+
+
+
+urlpatterns = [
+    path('', include(router.urls)),
+    path('lab-test-request-by-patient-id/<int:patient_id>/', LabTestRequestByPatientIdAPIView.as_view()),
+    path('lab-test-request-panels-by-lab-test-request-id/<int:lab_test_request_id>/', LabTestRequestPanelByLabTestRequestId.as_view(), name='lab-test-request-panels'),
+    path('lab-test-request-by-process-id/<int:process_id>/', LabTestRequestByProcessId.as_view(), name='lab-process-request'),
+    
+    path('labtestpanels-byprofile-id/<int:profile_id>/', LabTestPanelViewSet.as_view({'get': 'by_test_profile'}), name='labtestpanels-byprofile-id'),
+    path('labtestrequestpanels/sample/<str:patient_sample_code>/', LabTestRequestPanelBySampleView.as_view(), name='labtestrequestpanel-by-sample'),
+
+    path('patient-samples-by-process-id/<int:process_id>/', PatientSampleByProcessId.as_view(), name='patient-samples'),
+    path('download_labtestresult_pdf/<int:processtestrequest_id>/', download_labtestresult_pdf, name='download_labtestresult_pdf'),
+
+
+
+    path('lab-dashboard-metrics/', LabDashboardMetricsView.as_view(), name='lab-dashboard-metrics'),
+    path('print-lab-report/', print_lab_report, name='print-lab-report'),
+]
+

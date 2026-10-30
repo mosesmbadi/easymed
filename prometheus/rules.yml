@@ -1,0 +1,60 @@
+groups:
+- name: BackendDown
+  rules:
+  - alert: BackendDown
+    expr: up{job="backend"} == 0
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Backend instance down (instance {{ $labels.instance }})"
+      description: "A backend instance has been down for more than 5 minutes."
+
+- name: HighCPUUsage
+  rules:
+  - alert: HighCPUUsage
+    expr: process_cpu_seconds_total{job="backend"} > 0.8
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High CPU usage on backend (instance {{ $labels.instance }})"
+      description: "CPU usage on a backend instance is above 80% for more than 5 minutes."
+
+- name: APIMetrics 
+  rules:
+  - alert: HighLatency
+    expr: histogram_quantile(0.99, rate(http_response_time_seconds_bucket{job="backend"}[5m])) > 500
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High latency on backend API (instance {{ $labels.instance }})"
+      description: "99th percentile latency on backend API is above 500ms for more than 5 minutes."
+
+  - alert: HighTraffic
+    expr: rate(http_requests_total{job="backend"}[5m]) > 100
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High traffic on backend API (instance {{ $labels.instance }})"
+      description: "Request rate on backend API is above 100 requests per second for more than 5 minutes."
+
+  - alert: HighErrorRate
+    expr: rate(http_errors_total{job="backend"}[5m]) / rate(http_requests_total{job="backend"}[5m]) > 0.1
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High error rate on backend API (instance {{ $labels.instance }})"
+      description: "Error rate on backend API is above 10% for more than 5 minutes."
+
+  - alert: HighSaturation
+    expr: cpu_usage{job="backend"} > 0.9
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High CPU saturation on backend (instance {{ $labels.instance }})"
+      description: "CPU saturation on backend instance is above 90% for more than 5 minutes."

@@ -1,0 +1,52 @@
+{
+  "name": "front-end",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.11.1",
+    "@emotion/styled": "^11.11.0",
+    "@mui/material": "^5.14.11",
+    "@mui/x-date-pickers": "^6.19.4",
+    "@mui/x-date-pickers-pro": "^6.15.0",
+    "@reduxjs/toolkit": "^1.9.6",
+    "axios": "^1.5.1",
+    "cheerio": "^1.0.0-rc.12",
+    "date-fns": "^2.30.0",
+    "date-fns-tz": "^2.0.0",
+    "devextreme": "^23.1.5",
+    "devextreme-react": "^23.1.5",
+    "formik": "^2.4.5",
+    "html2canvas": "^1.4.1",
+    "json-socket": "^0.3.0",
+    "jspdf": "^2.5.1",
+    "jwt-decode": "^3.1.2",
+    "lodash": "^4.17.21",
+    "next": "14.2.5",
+    "node-fetch": "^3.3.2",
+    "react": "latest",
+    "react-dom": "latest",
+    "react-icons": "^4.11.0",
+    "react-material-ui-carousel": "^3.4.2",
+    "react-redux": "^8.1.2",
+    "react-router-dom": "^6.21.1",
+    "react-select": "^5.8.0",
+    "react-toastify": "^9.1.3",
+    "rss-parser": "^3.13.0",
+    "simple-crypto-js": "^3.0.1",
+    "styled-components": "^6.1.1",
+    "yup": "^1.3.0"
+  },
+  "devDependencies": {
+    "autoprefixer": "latest",
+    "eslint": "latest",
+    "eslint-config-next": "latest",
+    "postcss": "latest",
+    "tailwindcss": "latest"
+  }
+}

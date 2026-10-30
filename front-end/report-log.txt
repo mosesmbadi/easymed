@@ -1,0 +1,1 @@
+{"pdf_file_path": "/home/mbadi/easymed/backend/easymed/static/reports/invoice_items.pdf"}

@@ -1,0 +1,23 @@
+global:
+  scrape_interval:     15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'backend'
+    static_configs:
+      - targets: ['backend:8080']
+
+  - job_name: 'celery'
+    static_configs:
+      - targets: ['celery:8080']
+
+  - job_name: 'fron-tend'
+    static_configs:
+      - targets: ['front-end:3000']
+
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+rule_files:
+  - ./rules.yml

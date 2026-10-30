@@ -1,0 +1,40 @@
+import React from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/router';
+
+// Navigation specific to Accounts Payable module
+const AccountsPayableNav = () => {
+  const { pathname } = useRouter();
+  const base = '/dashboard/finance/accounts-payable';
+  // const receivableBase = '/dashboard/finance/accounts-receivable'
+  const links = [
+    { href: `${base}/requisitions`, label: 'Requisitions' },
+    { href: `${base}/purchase-orders`, label: 'Purchase Orders' },
+    { href: `${base}/receive-items`, label: 'Receive Items' },
+    { href: `${base}/invoices`, label: 'Invoices' },
+    { href: `${base}/aging-statements`, label: 'Aging Statements' },
+    { href: `${base}/make-payments`, label: 'Make Payments' },
+    { href: `${base}/payment-history`, label: 'Payment History' },
+    // { href: `${receivableBase}/payments`, label: 'Receive Payments' },
+    { href: `${base}/creditors`, label: 'Creditors' },
+  ];
+
+  return (
+    <div className="flex items-center gap-6 my-6 flex-wrap">
+      {links.map(link => {
+        const active = pathname === link.href || pathname.startsWith(link.href);
+        return (
+          <Link
+            key={link.href}
+            href={link.href}
+            className={`${active ? 'bg-primary text-white' : 'bg-white shadow'} text-sm rounded px-3 py-2`}
+          >
+            {link.label}
+          </Link>
+        );
+      })}
+    </div>
+  );
+};
+
+export default AccountsPayableNav;
