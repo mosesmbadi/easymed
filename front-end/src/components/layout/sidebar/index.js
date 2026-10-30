@@ -10,12 +10,14 @@ import VersionModal from "./VersionModal";
 import { useAuth } from "@/assets/hooks/use-auth";
 import { getCompanyDetails } from "@/redux/features/company";
 import { useUserPermissions } from "@/assets/hooks/use-permission";
+import { useFacility } from "@/assets/hooks/use-facility";
 
 const Sidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
   const dispatch = useDispatch();
   const auth = useAuth();
   const userPermissions = useUserPermissions();
+  const { isModuleEnabled } = useFacility();
 
   useEffect(() => {
     if (auth.token) {
@@ -26,6 +28,12 @@ const Sidebar = () => {
   // Filter menus based on user permissions
   const filterMenusByPermission = (menuItems) => {
     return menuItems.filter(menu => {
+      // Modules this facility type does not have (e.g. Doctor Desk in a
+      // standalone lab) are hidden whatever the user's permissions.
+      if (!isModuleEnabled(menu.module)) {
+        return false;
+      }
+
       // If no permission required, show the menu
       if (!menu.requiredPermission) {
         return true;

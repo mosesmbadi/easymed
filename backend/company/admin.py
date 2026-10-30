@@ -1,7 +1,9 @@
 from django.contrib import admin
 from .models import Company, CompanyBranch, InsuranceCompany
 
-admin.site.register(Company)
+@admin.register(Company)
+class CompanyAdmin(admin.ModelAdmin):
+    list_display = ['name', 'facility_type']
 admin.site.register(CompanyBranch)
 
 

@@ -15,6 +15,7 @@ from .models import (
     TriageSettings,
 )
 from company.serializers import InsuranceCompanySerializer
+from company.facility import TRACK_MODULES, module_enabled, module_disabled_message
 from inventory.models import (
     Item,
 )
@@ -214,6 +215,14 @@ class AttendanceProcessSerializer(serializers.ModelSerializer):
     class Meta:
         model = AttendanceProcess
         fields = '__all__'
+
+    def validate_track(self, value):
+        # A standalone lab has no triage or doctor to hand a visit to; moving
+        # one there would strand it in a queue nobody can see.
+        module = TRACK_MODULES.get(value)
+        if module and not module_enabled(module):
+            raise serializers.ValidationError(module_disabled_message(module))
+        return value
 
     def get_insurances(self, obj):
         insurances = obj.patient.insurances.all()

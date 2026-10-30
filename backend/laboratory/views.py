@@ -7,6 +7,7 @@ from rest_framework import generics, viewsets, status
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema
 from django.http import HttpResponse
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.conf import settings
 from datetime import timedelta
@@ -81,7 +82,8 @@ from .serializers import (
     PatientSampleArchiveSerializer,
     DisposedSampleSerializer,
     RetestSampleSerializer,
-    ReleasedSampleSerializer
+    ReleasedSampleSerializer,
+    WalkInLabRequestSerializer,
 )
 
 from authperms.permissions import (
@@ -91,8 +93,11 @@ from authperms.permissions import (
     IsNurseUser,
     IsSystemsAdminUser,
     IsPatientUser,
-    IsReceptionistUser
+    IsReceptionistUser,
+    HasAnyNamedPermission,
 )
+from patient.serializers import AttendanceProcessSerializer
+from .walk_in import create_walk_in_visit
 
 # filters
 from .filters import (
@@ -802,3 +807,66 @@ class ReleasedSampleViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(released_by=self.request.user)
+
+
+WALK_IN_ACCESS = HasAnyNamedPermission(
+    'CAN_ACCESS_LABORATORY_DASHBOARD', 'CAN_ACCESS_RECEPTION_DASHBOARD')
+
+
+class WalkInPatientSearchView(APIView):
+    """
+    Find a returning patient at the lab counter.
+
+    The patients API is reception-only, so the lab could not look anyone up
+    and would register them again on every visit. This answers just enough to
+    pick the right person, to anyone who can take a walk-in.
+    """
+    permission_classes = [WALK_IN_ACCESS]
+
+    def get(self, request):
+        term = (request.query_params.get('search') or '').strip()
+        if len(term) < 2:
+            return Response([])
+        words = term.split()
+        query = Q()
+        for word in words:
+            query &= (Q(first_name__icontains=word) | Q(second_name__icontains=word)
+                      | Q(unique_id__icontains=word) | Q(phone__icontains=word))
+        patients = Patient.objects.filter(query).order_by('first_name', 'second_name')[:20]
+        return Response([
+            {
+                'id': patient.id,
+                'unique_id': patient.unique_id,
+                'name': f"{patient.first_name} {patient.second_name}",
+                'gender': patient.get_gender_display(),
+                'age': patient.age,
+                'phone': patient.phone,
+            }
+            for patient in patients
+        ])
+
+
+class WalkInLabRequestView(APIView):
+    """
+    Take a walk-in at the lab: register or pick the patient, record who
+    referred them, and order their tests -- in one call, straight onto the
+    lab queue. See laboratory.walk_in.
+    """
+    permission_classes = [WALK_IN_ACCESS]
+
+    @extend_schema(request=WalkInLabRequestSerializer, responses=AttendanceProcessSerializer)
+    def post(self, request):
+        serializer = WalkInLabRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        visit = create_walk_in_visit(
+            panels=data['panels'],
+            requested_by=request.user,
+            patient=data.get('patient'),
+            new_patient=data.get('new_patient'),
+            referring_doctor=data.get('referring_doctor', ''),
+            referring_facility=data.get('referring_facility', ''),
+            note=data.get('note', ''),
+            payment_mode=data.get('payment_mode'),
+        )
+        return Response(AttendanceProcessSerializer(visit).data, status=status.HTTP_201_CREATED)

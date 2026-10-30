@@ -63,6 +63,8 @@ export const API_URL = {
   FETCH_ONE_LAB_REQUESTS: "/lab/lab-test-requests/",
   FETCH_LAB_REQUESTS_BY_PATIENT_ID: "/lab/lab-test-request-by-patient-id",
   SEND_LAB_REQUESTS: "/lab/lab-test-requests/",
+  WALK_IN_LAB_REQUESTS: "/lab/walk-in-requests/",
+  WALK_IN_PATIENT_SEARCH: "/lab/walk-in-requests/patients/",
   FETCH_LAB_EQUIPMENT: "/lab/lab-equipment/",
   SEND_TO_EQUIPMENT: "/lab/equipment-test-request/",
   PUBLIC_LAB_REQUEST: "/lab/public-lab-test-request/",
@@ -172,6 +174,7 @@ export const API_URL = {
 
   /***************** Company **********************/
   FETCH_COMPANY_INFO: "/company/company/",
+  FETCH_FACILITY: "/company/facility/",
 
   /***************** PDFs **********************/
   DOWNLOAD_PDF: "/download",
@@ -271,6 +274,8 @@ export const APP_API_URL = {
   FETCH_ONE_LAB_REQUESTS: "/api/laboratory/getOneTestRequest",
   FETCH_LAB_REQUESTS_BY_PATIENT_ID: "/api/laboratory/labRequestsByPatientId",
   SEND_LAB_REQUESTS: "/api/laboratory/get-lab-requests",
+  WALK_IN_LAB_REQUESTS: "/api/laboratory/walk-in-requests",
+  WALK_IN_PATIENT_SEARCH: "/api/laboratory/walk-in-patients",
   FETCH_LAB_EQUIPMENT: "/api/laboratory/get-lab-equipment",
   LAB_EQUIPMENT_PARSER: "/api/laboratory/get-lab-parser",
   SEND_TO_EQUIPMENT: "/api/laboratory/send-to-equipment",
@@ -379,6 +384,7 @@ export const APP_API_URL = {
 
   /***************** Company **********************/
   FETCH_COMPANY_INFO: "/api/company/company/",
+  FETCH_FACILITY: "/api/company/facility",
 
   /***************** PDFs **********************/
   DOWNLOAD_PDF: "/api/pdf/download_pdf",

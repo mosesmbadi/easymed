@@ -1092,3 +1092,31 @@ export const deleteTestPanelReagent = (id, auth) => {
     })
 }
 
+
+// Rejects with the backend's validation body (field -> messages) rather than
+// axios' generic message, so the walk-in form can say what was wrong.
+export const createWalkInLabRequest = (payload, auth) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+        axiosInstance.post(`${APP_API_URL.WALK_IN_LAB_REQUESTS}`, payload)
+            .then((res) => {
+                resolve(res.data)
+            })
+            .catch((err) => {
+                reject(err.response?.data ?? err.message)
+            })
+    })
+}
+
+export const searchWalkInPatients = (search, auth) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+        axiosInstance.get(`${APP_API_URL.WALK_IN_PATIENT_SEARCH}`, { params: { search } })
+            .then((res) => {
+                resolve(res.data)
+            })
+            .catch((err) => {
+                reject(err.message)
+            })
+    })
+}
