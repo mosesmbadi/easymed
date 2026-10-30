@@ -30,3 +30,16 @@ export const updateCompanyInformation = (payload, auth) =>{
     })
 }
 
+
+export const fetchFacility = (auth) => {
+    const axiosInstance = UseAxios(auth);
+    return new Promise((resolve, reject) => {
+        axiosInstance.get(`${APP_API_URL.FETCH_FACILITY}`)
+            .then((res) => {
+                resolve(res.data)
+            })
+            .catch((err) => {
+                reject(err.message)
+            })
+    });
+}

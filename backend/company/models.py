@@ -3,7 +3,27 @@ from billing.models import PaymentMode
 from django.core.validators import FileExtensionValidator
 
 class Company(models.Model):
+    class FacilityType(models.TextChoices):
+        HOSPITAL = 'hospital', 'Hospital'
+        STANDALONE_LAB = 'standalone_lab', 'Standalone Lab'
+
+    # Modules that only make sense where patients are seen clinically. Each
+    # facility type switches a set of them off; everything not listed here
+    # (patients, lab, pharmacy, billing, finance, inventory, reports) is on
+    # everywhere.
+    CLINICAL_MODULES = ('reception', 'triage', 'doctor', 'inpatient', 'radiology')
+    DISABLED_MODULES = {
+        FacilityType.HOSPITAL: (),
+        FacilityType.STANDALONE_LAB: CLINICAL_MODULES,
+    }
+
     name = models.CharField(max_length=250)
+    # Set by the platform when the tenant is onboarded, not by the tenant: it
+    # decides which modules they have. Read-only through the API.
+    facility_type = models.CharField(
+        max_length=30, choices=FacilityType.choices, default=FacilityType.HOSPITAL,
+        help_text="Hospital runs the full patient journey; Standalone Lab hides "
+                  "reception check-in, triage, doctor, inpatient and radiology.")
     address1 = models.CharField(max_length=250, null=True, blank=True)
     address2 = models.CharField(max_length=250, null=True, blank=True)
     phone1 = models.CharField(max_length=250, null=True, blank=True)
@@ -27,8 +47,20 @@ class Company(models.Model):
     class Meta:
         verbose_name_plural = "company"
 
+    @property
+    def disabled_modules(self):
+        return self.DISABLED_MODULES.get(self.facility_type, ())
+
+    def module_enabled(self, module):
+        return module not in self.disabled_modules
+
+    @classmethod
+    def current(cls):
+        """The tenant this deployment serves. There is one Company row per install."""
+        return cls.objects.first()
+
     def __str__(self):
-        return self.name    
+        return self.name
 
 
 class CompanyBranch(models.Model):

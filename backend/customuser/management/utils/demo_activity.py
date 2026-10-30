@@ -29,6 +29,7 @@ step those rules refuse is rolled back and reported, never forced in.
 """
 
 import contextlib
+import os
 import datetime as _dt
 import heapq
 import itertools
@@ -48,6 +49,9 @@ from django.db.models import Sum
 
 DEMO_DAYS = 60
 DEMO_SEED = 20260913
+# 'hospital' (the default) or 'standalone_lab'. A lab gets walk-ins only: no
+# triage, doctor or ward, as company.Company.DISABLED_MODULES has it.
+DEMO_FACILITY_TYPE = os.environ.get('DEMO_FACILITY_TYPE', 'hospital')
 ADMIN_EMAIL = 'admin@mail.com'
 ADMIN_PASSWORD = 'admin'
 STAFF_PASSWORD = 'demo1234'
@@ -1790,17 +1794,119 @@ def quotations_script(world, first, last):
         world.counts['quotations'] += 1
 
 
+# What people walk in asking the lab for, with a referral or without one.
+WALK_IN_ORDERS = [
+    {'tests': ['Complete Blood Count (CBC)'], 'weight': 5},
+    {'tests': ['Malaria Test'], 'positive': 0.3, 'weight': 4},
+    {'tests': ['Blood Glucose Profile'], 'abnormal': {'Glucose': 1.4}, 'weight': 3},
+    {'tests': ['Lipid Profile', 'Blood Glucose Profile'], 'weight': 2},
+    {'tests': ['Kidney Function Test (RFT)', 'Electrolytes Panel'], 'weight': 2},
+    {'tests': ['Liver Function Test (LFT)'], 'weight': 2},
+    {'tests': ['Thyroid Function Test (TFT)'], 'weight': 1},
+    {'tests': ['Urinalysis'], 'weight': 2},
+]
+REFERRING_CLINICS = ['Mama Lucy Medical Clinic', 'Upper Hill Family Clinic',
+                     'Kasarani Health Centre', "St. Mary's Dispensary", 'Avenue Healthcare']
+REFERRING_DOCTORS = ['Dr. Njoroge', 'Dr. Achieng', 'Dr. Mutua', 'Dr. Barasa', 'Dr. Kerubo']
+WALK_IN_SURNAMES = ['Mwangi', 'Otieno', 'Wafula', 'Kilonzo', 'Chebet', 'Nyambura', 'Omondi']
+
+
+def walk_in_script(world, patient, arrival):
+    """
+    One walk-in at the lab counter: ordered through the walk-in screen's own
+    endpoint, paid at the till, drawn, run, resulted and approved. `patient`
+    is None for someone registering for the first time.
+    """
+    from billing.models import InvoiceItem
+    from laboratory.models import LabTestRequest, LabTestRequestPanel
+    from laboratory.views import WalkInLabRequestView
+    from patient.models import AttendanceProcess
+
+    rng = world.rng
+    yield arrival
+
+    order = rng.choices(WALK_IN_ORDERS, weights=[o['weight'] for o in WALK_IN_ORDERS])[0]
+    panels = []
+    for name in order['tests']:
+        _, profile_panels = world.profile(name)
+        panels += [panel for panel in profile_panels if panel.can_run()[0]]
+    if not panels:
+        world.counts['walk-ins turned away: no reagent'] += 1
+        return
+
+    payload = {'panels': [panel.id for panel in panels]}
+    if patient is None:
+        payload['new_patient'] = {
+            'first_name': rng.choice(KIN_NAMES), 'second_name': rng.choice(WALK_IN_SURNAMES),
+            'gender': rng.choice(['M', 'F']),
+            'date_of_birth': _real_date(rng.randint(1950, 2015), rng.randint(1, 12), rng.randint(1, 28)).isoformat(),
+            'phone': f"07{rng.randint(10000000, 99999999)}",
+        }
+    else:
+        payload['patient'] = patient.id
+    if rng.random() < 0.7:
+        payload['referring_doctor'] = rng.choice(REFERRING_DOCTORS)
+        payload['referring_facility'] = rng.choice(REFERRING_CLINICS)
+
+    data = world.post_view(WalkInLabRequestView, '/lab/walk-in-requests/', payload)
+    visit = AttendanceProcess.objects.get(pk=data['id'])
+    world.counts['walk-in lab visits'] += 1
+    if patient is None:
+        world.counts['walk-in patients registered'] += 1
+
+    # The till: bill what the counter ordered, then take the money.
+    yield world.later(2, 10)
+    for line in InvoiceItem.objects.filter(invoice_id=visit.invoice_id, status='pending'):
+        line.source_tag = world.lab
+        line.status = 'billed'
+        line.save()
+        world.counts['invoice lines billed'] += 1
+    world.settle_patient(visit, visit.patient)
+
+    yield world.later(5, 20)
+    runs = list(LabTestRequestPanel.objects.filter(
+        lab_test_request__process=visit.process_test_req).select_related('test_panel', 'patient_sample'))
+    _collect(runs)
+
+    yield world.later(30, 120)
+    _enter_results(world, runs, order)
+    _set_track(visit, 'added result')
+
+    yield world.later(10, 45)
+    _approve(list(LabTestRequest.objects.filter(process=visit.process_test_req)), runs)
+    _set_track(visit, 'complete')
+
+
 # ---------------------------------------------------------------------------
 # Putting it together
 # ---------------------------------------------------------------------------
 
-def _arrivals(world, patients, children, first, last):
+def _walk_ins(world, patients, day, count):
+    rng = world.rng
+    scripts = []
+    for _ in range(count):
+        arrival = _at(day, 7, 30) + _dt.timedelta(minutes=rng.randint(0, 600))
+        # Most are new to us: a lab's walk-ins are mostly sent by someone else.
+        patient = rng.choice(patients) if patients and rng.random() < 0.4 else None
+        who = f"{patient.first_name} {patient.second_name}" if patient else "new patient"
+        scripts.append((walk_in_script(world, patient, arrival), f"walk-in visit, {who}, {day}"))
+    return scripts
+
+
+def _arrivals(world, patients, children, first, last, standalone_lab=False):
     """Who comes in and when: busier on weekdays, quieter at the weekend."""
     rng = world.rng
     weights = [s['weight'] for s in SCENARIOS]
     child_scenarios = [s for s in SCENARIOS if s.get('child_ok')]
     scripts = []
     for day in _days(first, last):
+        if standalone_lab:
+            count = rng.randint(6, 10) if day.weekday() < 5 else rng.randint(2, 4)
+            scripts += _walk_ins(world, patients, day, count)
+            continue
+        # A hospital lab takes the odd walk-in too.
+        if day.weekday() < 6 and rng.random() < 0.6:
+            scripts += _walk_ins(world, patients, day, 1)
         count = rng.randint(4, 7) if day.weekday() < 5 else (rng.randint(2, 3) if day.weekday() == 5 else rng.randint(1, 2))
         for _ in range(count):
             arrival = _at(day, 8, 0) + _dt.timedelta(minutes=rng.randint(0, 510))
@@ -1831,6 +1937,14 @@ def seed_demo_world(clock, staff, days=DEMO_DAYS):
 
     world = DemoWorld(clock, rng, staff, accounts)
 
+    from company.models import Company
+    company = Company.current()
+    standalone_lab = DEMO_FACILITY_TYPE == Company.FacilityType.STANDALONE_LAB
+    if company is not None:
+        company.facility_type = DEMO_FACILITY_TYPE
+        company.save(update_fields=['facility_type'])
+    print(f"   Facility: {company.get_facility_type_display() if company else DEMO_FACILITY_TYPE}")
+
     local_today = clock.wall.astimezone(world.local).date()
     first = local_today - _dt.timedelta(days=days)
     last = local_today
@@ -1839,7 +1953,7 @@ def seed_demo_world(clock, staff, days=DEMO_DAYS):
     children = [p for p in patients if _age(p) < 14]
     adults = [p for p in patients if _age(p) >= 14] or patients
 
-    scripts = _arrivals(world, adults, children, first, last)
+    scripts = _arrivals(world, adults, children, first, last, standalone_lab=standalone_lab)
     scripts += [
         (procurement_script(world, world.pharmacy, staff['pharmacist'][0], first, last), 'pharmacy reorders'),
         (procurement_script(world, world.lab, staff['labtech'][0], first, last), 'lab reorders'),

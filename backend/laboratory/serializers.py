@@ -7,7 +7,9 @@ from inventory.models import Item
 from rest_framework import serializers
 from rest_framework.exceptions import NotFound
 
+from billing.models import PaymentMode
 from customuser.models import CustomUser
+from patient.models import Patient
 from inventory.services import stock as stock_service
 from .models import (
     LabReagent,
@@ -834,3 +836,49 @@ class ReleasedSampleSerializer(serializers.ModelSerializer):
     class Meta:
         model = ReleasedSample
         fields = '__all__'
+
+
+class WalkInPatientSerializer(serializers.Serializer):
+    """Just enough to register someone at the lab counter."""
+    first_name = serializers.CharField(max_length=40)
+    second_name = serializers.CharField(max_length=40)
+    gender = serializers.ChoiceField(choices=['M', 'F', 'O'])
+    date_of_birth = serializers.DateField()
+    phone = serializers.CharField(max_length=30, required=False, allow_blank=True)
+
+
+class WalkInLabRequestSerializer(serializers.Serializer):
+    """
+    Input for laboratory.walk_in.create_walk_in_visit: who the patient is, who
+    sent them, and which tests they want.
+    """
+    patient = serializers.PrimaryKeyRelatedField(
+        queryset=Patient.objects.all(), required=False, allow_null=True)
+    new_patient = WalkInPatientSerializer(required=False, allow_null=True)
+    panels = serializers.PrimaryKeyRelatedField(
+        queryset=LabTestPanel.objects.select_related('item'), many=True)
+    referring_doctor = serializers.CharField(max_length=150, required=False, allow_blank=True)
+    referring_facility = serializers.CharField(max_length=150, required=False, allow_blank=True)
+    note = serializers.CharField(required=False, allow_blank=True)
+    payment_mode = serializers.PrimaryKeyRelatedField(
+        queryset=PaymentMode.objects.all(), required=False, allow_null=True)
+
+    def validate_panels(self, panels):
+        if not panels:
+            raise serializers.ValidationError("Pick at least one test.")
+        # The same test twice would bill the patient twice for one sample.
+        unique = list({panel.id: panel for panel in panels}.values())
+        unpriced = [panel.name for panel in unique if panel.sale_price is None]
+        if unpriced:
+            raise serializers.ValidationError(
+                f"No price is set for {', '.join(unpriced)}. Price it under "
+                f"Lab Settings > Test Panels before taking a walk-in for it.")
+        return unique
+
+    def validate(self, attrs):
+        has_patient = attrs.get('patient') is not None
+        has_new = bool(attrs.get('new_patient'))
+        if has_patient == has_new:
+            raise serializers.ValidationError(
+                "Choose an existing patient or register a new one, not both.")
+        return attrs

@@ -369,6 +369,10 @@ class LabTestRequest(models.Model):
     test_profile = models.ForeignKey(LabTestProfile, on_delete=models.CASCADE, null=True, blank=True)
     note = models.TextField(null=True, blank=True)
     requested_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
+    # Who ordered the test when it was not one of our own doctors: a walk-in
+    # carrying a referral from a clinician elsewhere. Printed on the report.
+    referring_doctor = models.CharField(max_length=150, null=True, blank=True)
+    referring_facility = models.CharField(max_length=150, null=True, blank=True)
     requested_on = models.TimeField(auto_now_add=True, null=True, blank=True)
     has_result = models.BooleanField(default=False)
     created_on= models.DateField(auto_now_add=True)

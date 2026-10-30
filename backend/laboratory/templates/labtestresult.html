@@ -414,7 +414,9 @@
       <div class="signature-row">
         <span class="sig-label">Name:</span>
         <div class="sig-line-text">
-          {% if attendance_process.doctor %}
+          {% if first_labtestrequest.referring_doctor or first_labtestrequest.referring_facility %}
+          {{ first_labtestrequest.referring_doctor|default:"" }}{% if first_labtestrequest.referring_doctor and first_labtestrequest.referring_facility %}, {% endif %}{{ first_labtestrequest.referring_facility|default:"" }}
+          {% elif attendance_process.doctor %}
           {{ attendance_process.doctor.first_name }}
           {% else %}
           N/A

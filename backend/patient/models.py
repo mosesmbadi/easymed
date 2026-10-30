@@ -24,7 +24,9 @@ class Patient(models.Model):
         ('F', 'Female'),
         ('O', 'Other'),
     )
-    unique_id = models.CharField(max_length=8, unique=True, editable=True) # id number
+    # Company prefix + a running number, e.g. ESMED-1042. Eight characters ran
+    # out at the hundredth patient.
+    unique_id = models.CharField(max_length=30, unique=True, editable=True) # id number
     first_name = models.CharField(max_length=40)
     email = models.EmailField(unique=True, null=True, blank=True)
     phone = models.CharField(max_length=30, null=True, blank=True)
@@ -263,7 +265,7 @@ class AttendanceProcess(models.Model):
     )
     track_number = models.CharField(max_length=50, null=True, unique=True)
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
-    patient_number = models.CharField(max_length=8, editable=False, default=999)
+    patient_number = models.CharField(max_length=30, editable=False, default=999)
     doctor = models.ForeignKey(
         CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='doctor_attendance_processes')
     lab_tech = models.ForeignKey(

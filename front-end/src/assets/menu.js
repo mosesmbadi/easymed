@@ -23,7 +23,8 @@ import { GiMicroscope } from "react-icons/gi";
 import { FaImage } from "react-icons/fa";
 import { MdPersonAddAlt1 } from "react-icons/md";
 
-// Side NavBar
+// Side NavBar. `module` marks items a facility type can switch off
+// (see assets/hooks/use-facility).
 
 export const menus = [
   {
@@ -37,6 +38,7 @@ export const menus = [
     href: "/dashboard/reception/check-in",
     icon: <MdPersonAddAlt1 className="text-xl" />,
     requiredPermission: "CAN_ACCESS_RECEPTION_DASHBOARD",
+    module: "reception",
   },
   // {
   //   label: "Reception",
@@ -48,12 +50,14 @@ export const menus = [
     href: "/dashboard/nursing-station",
     icon: <LiaUserNurseSolid className="text-xl" />,
     requiredPermission: "CAN_ACCESS_NURSING_DASHBOARD",
+    module: "triage",
   },
   {
     label: "Doctor Desk",
     href: "/dashboard/doctor-desk",
     icon: <FaUserDoctor className="text-xl" />,
     requiredPermission: "CAN_ACCESS_DOCTOR_DASHBOARD",
+    module: "doctor",
   },
   {
     label: "Laboratory",
@@ -72,12 +76,14 @@ export const menus = [
     href: "/dashboard/radiology",
     icon: <FaImage className="text-xl" />,
     requiredPermission: "CAN_ACCESS_GENERAL_DASHBOARD", // Adjust as needed
+    module: "radiology",
   },
   {
     label: "In-patient",
     href: "/dashboard/admit/patients",
     icon: <FaBed className="text-xl" />,
     requiredPermission: "CAN_ACCESS_NURSING_DASHBOARD", // Adjust as needed
+    module: "inpatient",
   },
   {
     label: "Finance",

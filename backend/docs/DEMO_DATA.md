@@ -46,7 +46,7 @@ roughly 250 visits.
 | **Reception** | Every visit registered, with its consultation billed at the desk |
 | **Triage** | Vitals for every visit, fitting the complaint — febrile for malaria, raised blood pressure for hypertension, low SpO2 for pneumonia. A few AI-triage results |
 | **Doctor's desk** | A consultation note, signs, diagnosis and plan per visit; referrals out where the case calls for one |
-| **Laboratory** | Requests across CBC, Kidney, Liver, Lipid, Thyroid, Electrolytes, Glucose, Urinalysis, Malaria and COVID — collected, resulted with values that fit the diagnosis, approved, and turnaround times you can report on |
+| **Laboratory** | Requests across CBC, Kidney, Liver, Lipid, Thyroid, Electrolytes, Glucose, Urinalysis, Malaria and COVID — collected, resulted with values that fit the diagnosis, approved, and turnaround times you can report on. A few walk-ins a week ordered from Laboratory > New Walk-in, most carrying a referral from an outside clinic |
 | **Sample archive** | Samples archived, some disposed of once past their keeping time, some left expired, some re-tested off the stored sample, some released to a reference lab |
 | **Pharmacy** | Prescriptions with dose, frequency and duration, dispensed and billed — injections carrying their syringe and swab |
 | **Wards** | Admissions for the sickest cases, observation rounds twice a day, drugs charted on schedule, repeat labs, discharges — and a few patients still on the ward today |
@@ -57,6 +57,16 @@ roughly 250 visits.
 | **Stock** | A full ledger: receipts, sales, lab consumption, collection draws, transfers to the lab, breakages, two posted stock takes with small shortages and one in progress |
 | **Reports** | Gross margin, stock movement, sales and turnaround reports all have history to show |
 | **Other** | Announcements with comments, bookings and lab requests from the public site, prescription requests, drug feedback, corporate quotations |
+
+### As a standalone lab
+
+Set `DEMO_FACILITY_TYPE=standalone_lab` before generating and the demo company
+becomes a standalone lab: Check-In, Nursing Station, Doctor Desk, In-patient
+and Radiology disappear, and the history is walk-ins only — six to ten a
+weekday, registered at the lab counter, paid at the till, drawn, resulted and
+approved. Pharmacy, billing, finance, inventory and procurement are as above.
+The facility type can also be changed later on the Company record in Django
+admin; tenants cannot change it themselves.
 
 A price rise part-way through the period (amoxicillin, paracetamol,
 omeprazole) shows the frozen invoice prices at work: lines billed before it

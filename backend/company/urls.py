@@ -4,7 +4,8 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     CompanyViewSets,
     CompanyBranchViewSets,
-    InsuranceCompanyViewSet
+    InsuranceCompanyViewSet,
+    FacilityView,
 )
 
 router = DefaultRouter()
@@ -15,5 +16,6 @@ router.register(r'insurance-companies', InsuranceCompanyViewSet)
 
 
 urlpatterns = [
+    path('facility/', FacilityView.as_view(), name='facility'),
     path('', include(router.urls)),
 ]
