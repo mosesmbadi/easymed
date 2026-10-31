@@ -51,14 +51,13 @@ def account_statement(account, start=None, end=None):
 
     lines = (_charges(account)
              .filter(item_created_at__date__gte=start, item_created_at__date__lte=end)
-             .select_related('item', 'invoice__patient')
+             .select_related('item', 'invoice__patient__referred_from')
              .order_by('item_created_at', 'id'))
     charges = [{
         'date': timezone.localdate(line.item_created_at),
         'invoice_number': line.invoice.invoice_number,
         'patient_number': getattr(line.invoice.patient, 'unique_id', '') or '',
-        'patient_name': (f"{line.invoice.patient.first_name} {line.invoice.patient.second_name}"
-                         if line.invoice.patient_id else ''),
+        'patient_name': (line.invoice.patient.display_name if line.invoice.patient_id else ''),
         'item': line.item.name,
         'quantity': line.quantity,
         'amount': line.actual_total or Decimal('0'),

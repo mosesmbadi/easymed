@@ -1996,6 +1996,12 @@ def referred_samples_script(world, mode, arrival):
             'collected_by': f"Nurse {rng.choice(WALK_IN_SURNAMES)}",
             'panels': panels,
         }
+        if rng.random() < 0.2:
+            # Sent by number alone, as viral loads go by CCC number: the
+            # form has sex and age but no name.
+            entry['new_patient'].update(first_name='', second_name='')
+            entry['external_reference'] = f"CCC {rng.randint(10000, 19999)}-{rng.randint(1, 9999):05d}"
+            world.counts['referred samples coded'] += 1
         if rng.random() < 0.07:
             entry['condition'], entry['rejection_reason'] = rng.choice(REJECTIONS)
         entries.append(entry)

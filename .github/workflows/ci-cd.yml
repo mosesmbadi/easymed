@@ -1,19 +1,17 @@
-name: CI/CD Pipeline
+name: CI
+
+# Tests EasyMed and publishes its images. Deploying is not done here: each
+# hospital has its own deployment repo (e.g. afurqan-deployment) that pulls
+# these images at a tag it chooses.
 
 on:
   push:
     branches: [ "main" , "standalone-lab"]
 
 env:
-  # Where the stack lives on the server and which compose file runs it.
-  SERVER_APP_DIR: easymed
-  COMPOSE_FILE: docker-compose-cloud.yml
-  # Docker Hub namespace the images are pushed to and pulled from. Set the
-  # DOCKERHUB_NAMESPACE repository variable to override.
+  # Docker Hub namespace the images are pushed to. Set the DOCKERHUB_NAMESPACE
+  # repository variable to override.
   IMAGE_NAMESPACE: ${{ vars.DOCKERHUB_NAMESPACE || 'mosesmbadi' }}
-  # Every image is tagged with the commit it was built from; the server runs
-  # exactly that tag, so what was tested is what is deployed.
-  IMAGE_TAG: ${{ github.sha }}
 
 
 jobs:
@@ -67,8 +65,13 @@ jobs:
 
 
   # ============================ BUILD & PUSH IMAGES ============================ #
-  # Images are built here, not on the server: a Next.js production build needs
-  # more memory than the server has spare while the stack is running.
+  # Images are built here, never on a hospital's server: a Next.js production
+  # build needs more memory than a server has spare while the stack is running.
+  #
+  # Tags:
+  #   <full commit sha>  immutable; what a deployment should pin
+  #   <branch>           moves with the branch, e.g. standalone-lab
+  #   latest             main only, so a feature branch never moves it
   # ============================================================================= #
   build-and-push:
     runs-on: ubuntu-latest
@@ -101,81 +104,29 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # NEXT_PUBLIC_* are baked into the frontend bundle at build time, so they
-      # come from repository variables now that the build is not on the server.
-      # The other images ignore these build args.
+      - name: Image tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAMESPACE }}/easymed-${{ matrix.name }}
+          tags: |
+            type=raw,value=${{ github.sha }}
+            type=ref,event=branch
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      # NEXT_PUBLIC_* are baked into the frontend bundle at build time and the
+      # image is shared by every deployment, so they must hold values that are
+      # true everywhere: the backend is reached as `api` on each deployment's
+      # compose network. The other images ignore these build args.
       - name: Build and push ${{ matrix.name }}
         uses: docker/build-push-action@v6
         with:
           context: ${{ matrix.context }}
           push: true
-          tags: |
-            ${{ env.IMAGE_NAMESPACE }}/easymed-${{ matrix.name }}:${{ env.IMAGE_TAG }}
-            ${{ env.IMAGE_NAMESPACE }}/easymed-${{ matrix.name }}:latest
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             NEXT_PUBLIC_BACKEND_URL=${{ vars.NEXT_PUBLIC_BACKEND_URL || 'http://api:8080/' }}
             NEXT_PUBLIC_HMIS_VERSION=${{ vars.NEXT_PUBLIC_HMIS_VERSION || 'v0.0.1' }}
           cache-from: type=gha,scope=${{ matrix.name }}
           cache-to: type=gha,mode=max,scope=${{ matrix.name }}
-
-
-  # =========================== DEPLOY TO DIGITAL OCEANS ======================== #
-  # ============================================================================= #
-  deploy:
-    runs-on: ubuntu-latest
-    needs:
-      - build-and-push
-
-    # One deploy at a time; a newer push waits rather than racing an older one.
-    concurrency:
-      group: deploy-staging
-      cancel-in-progress: false
-
-    env:
-      STAGING_DO_SERVER_PRIVATE_KEY: ${{ secrets.STAGING_DO_SERVER_PRIVATE_KEY }}
-      STAGING_DO_SERVER_IP: ${{ secrets.STAGING_DO_SERVER_IP }}
-      STAGING_DO_SERVER_USERNAME: ${{ secrets.STAGING_DO_SERVER_USERNAME }}
-
-    steps:
-      - name: Set up SSH key
-        run: |
-          mkdir -p ~/.ssh
-          echo "${STAGING_DO_SERVER_PRIVATE_KEY}" | tr -d '\r' > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -T 10 -H $STAGING_DO_SERVER_IP >> ~/.ssh/known_hosts
-
-      # The heredoc is unquoted so the env values above expand here, on the
-      # runner; anything meant for the server's shell is escaped (\$).
-      #
-      # The server still checks out the repo -- at the exact commit the images
-      # were built from -- because the compose file and the nginx/prometheus
-      # config it mounts live there. It builds nothing.
-      - name: Deploy
-        run: |
-          ssh -o StrictHostKeyChecking=no $STAGING_DO_SERVER_USERNAME@$STAGING_DO_SERVER_IP << EOF
-            set -e
-
-            echo "📦 Updating repository..."
-            cd \$HOME/${SERVER_APP_DIR}
-            git fetch origin
-            git reset --hard ${IMAGE_TAG}
-
-            export IMAGE_NAMESPACE=${IMAGE_NAMESPACE}
-            export IMAGE_TAG=${IMAGE_TAG}
-
-            # Pull before touching the running stack: if a pull fails, the
-            # current containers stay up and set -e stops the deploy here.
-            echo "⬇️  Pulling images (${IMAGE_TAG})..."
-            docker compose -f ${COMPOSE_FILE} pull
-
-            echo "🚀 Starting containers..."
-            docker compose -f ${COMPOSE_FILE} up -d --remove-orphans
-
-            # Images no container uses, older than a week. The week keeps recent
-            # tags on disk for a quick rollback; no --volumes, which would put
-            # postgres_data and letsencrypt at risk.
-            echo "🧹 Cleaning up old images..."
-            docker image prune -af --filter "until=168h" || true
-
-            echo "✅ Deployment completed!"
-          EOF

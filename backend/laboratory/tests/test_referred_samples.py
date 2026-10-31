@@ -284,3 +284,96 @@ def test_a_configured_sms_is_sent_through_africas_talking(
     url, form, headers = sent[0]
     assert 'sandbox' in url and form['to'] == '+254700000000'
     assert headers['apiKey'] == 'k'
+
+
+# ---------------------------------------------------------------------------
+# Coded samples: sent by number, no name
+# ---------------------------------------------------------------------------
+
+def coded_entry(panels, reference='CCC 13939-01234', **extra):
+    return {'new_patient': {'gender': 'F', 'age_years': 29},
+            'external_reference': reference, 'panels': [p.id for p in panels], **extra}
+
+
+@pytest.mark.django_db
+def test_a_sample_sent_by_number_alone_is_booked_in_under_that_number(
+        lab_client, cash_mode, clinic, urea):
+    response = receive(lab_client, clinic, coded_entry([urea]))
+
+    assert response.status_code == 201, response.data
+    patient = Patient.objects.get()
+    assert patient.is_coded
+    assert (patient.first_name, patient.second_name) == ('', '')
+    assert patient.display_name == 'Mama Lucy Clinic CCC 13939-01234'
+    assert response.data['patients'][0]['patient_name'] == 'Mama Lucy Clinic CCC 13939-01234'
+    assert InvoiceItem.objects.get().status == 'billed'
+
+
+@pytest.mark.django_db
+def test_the_next_sample_under_the_same_number_finds_the_same_patient(
+        lab_client, cash_mode, clinic, urea):
+    receive(lab_client, clinic, coded_entry([urea]))
+    receive(lab_client, clinic, coded_entry([urea]))
+    other = InsuranceCompany.objects.create(
+        name='Kibera CHC', account_type=InsuranceCompany.AccountType.FACILITY)
+    receive(lab_client, other, coded_entry([urea]))
+
+    # The same number from another facility is someone else.
+    assert Patient.objects.count() == 2
+
+
+@pytest.mark.django_db
+def test_no_name_and_no_number_is_refused(lab_client, cash_mode, clinic, urea):
+    response = receive(lab_client, clinic, coded_entry([urea], reference=''))
+
+    assert response.status_code == 400
+    assert 'external_reference' in str(response.data)
+    assert not Patient.objects.exists()
+
+
+@pytest.mark.django_db
+def test_a_form_without_age_or_sex_is_still_taken(lab_client, cash_mode, clinic, urea):
+    response = receive(lab_client, clinic, {
+        'new_patient': {'first_name': 'Achieng', 'second_name': 'Otieno'},
+        'external_reference': 'ML-0043', 'panels': [urea.id]})
+
+    assert response.status_code == 201, response.data
+    patient = Patient.objects.get()
+    assert patient.gender is None and patient.date_of_birth is None
+
+
+@pytest.mark.django_db
+def test_coded_patients_do_not_come_up_at_the_walk_in_counter(lab_client, cash_mode, clinic, urea):
+    receive(lab_client, clinic, coded_entry([urea]))
+    coded = Patient.objects.get()
+
+    response = lab_client.get('/lab/walk-in-requests/patients/', {'search': coded.unique_id})
+
+    assert response.status_code == 200
+    assert response.data == []
+
+
+@pytest.mark.django_db
+def test_a_coded_patients_report_and_invoice_carry_their_number(lab_client, cash_mode, clinic, urea):
+    from billing.serializers import InvoiceSerializer
+
+    receive(lab_client, clinic, coded_entry([urea]))
+    visit = AttendanceProcess.objects.get()
+
+    assert InvoiceSerializer(visit.invoice).data['patient_full_name'] == 'Mama Lucy Clinic CCC 13939-01234'
+    assert str(visit.patient) == 'Mama Lucy Clinic CCC 13939-01234'
+
+
+@pytest.mark.django_db
+def test_the_report_prints_the_number_and_says_what_was_not_given(lab_client, cash_mode, clinic, urea):
+    from django.template.loader import get_template
+
+    receive(lab_client, clinic, {'new_patient': {}, 'external_reference': 'STUDY-0042',
+                                 'panels': [urea.id]})
+    visit = AttendanceProcess.objects.get()
+
+    html = get_template('labtestresult.html').render({'patient': visit.patient,
+                                                      'attendance_process': visit})
+
+    assert 'Mama Lucy Clinic STUDY-0042' in html
+    assert 'Not given / Not given' in html

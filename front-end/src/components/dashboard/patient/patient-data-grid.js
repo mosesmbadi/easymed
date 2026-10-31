@@ -114,8 +114,17 @@ const PatientsDataGrid = () => {
   };
 
   const patientFullName = (rowData) => {
-    return rowData.first_name + " " + rowData.second_name;
+    return rowData.display_name || `${rowData.first_name} ${rowData.second_name}`;
   }
+
+  // Patients we only know through samples another facility sent are that
+  // facility's patients, not ours: kept off the list unless asked for, or
+  // searched for by name or by the facility's number.
+  const [showReferred, setShowReferred] = useState(false);
+  const referredCount = patients.filter((patient) => patient.referred_from).length;
+  const listedPatients = showReferred || processsFilter.search
+    ? patients
+    : patients.filter((patient) => !patient.referred_from);
 
   const renderInsurances = ({ data }) => {
     if (data.insurances.length > 0) {
@@ -153,9 +162,19 @@ const PatientsDataGrid = () => {
           setSelectedSearchFilter={setSelectedSearchFilter}
         />
         <AddPatientModal />
+        {referredCount > 0 && (
+          <label className="flex items-center gap-2 text-sm whitespace-nowrap">
+            <input
+              type="checkbox"
+              checked={showReferred}
+              onChange={(e) => setShowReferred(e.target.checked)}
+            />
+            Show patients from referred samples ({referredCount})
+          </label>
+        )}
       </div>
       <DataGrid
-        dataSource={patients}
+        dataSource={listedPatients}
         allowColumnReordering={true}
         rowAlternationEnabled={true}
         showBorders={true}

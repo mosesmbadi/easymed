@@ -279,7 +279,7 @@
           {% if insurance_name %}
           {{ insurance_name }}
           {% else %}
-          {{ invoice.patient.first_name }} {{ invoice.patient.second_name }}
+          {{ invoice.patient.display_name }}
           {% endif %}
         </span>
       </div>
@@ -289,7 +289,7 @@
       <h3>Patient Info</h3>
       <div class="meta-row">
         <span class="meta-label">Name:</span>
-        <span class="meta-value">{{ invoice.patient.first_name }} {{ invoice.patient.second_name }}</span>
+        <span class="meta-value">{{ invoice.patient.display_name }}</span>
       </div>
       <div class="meta-row">
         <span class="meta-label">PID:</span>

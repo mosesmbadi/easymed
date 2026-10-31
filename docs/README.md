@@ -21,7 +21,7 @@ check-in, triage, doctor, inpatient, radiology) switched off. See
 | PDFs | WeasyPrint, from Django templates |
 | Frontend | Next.js 14 (pages router), Redux Toolkit, MUI, DevExtreme, Tailwind |
 | Lab machines | `hl7-astm-parser` (LIS server) container |
-| Ops | Docker Compose, Nginx + Certbot, Prometheus, pg_dump backup container, GitHub Actions, Terraform (AWS Lightsail) |
+| Ops | Docker Compose (local), Nginx image, Prometheus metrics, pg_dump backup container, GitHub Actions (build & push to Docker Hub) |
 
 ## How the pieces fit
 
@@ -75,7 +75,7 @@ Payments are allocated against invoice lines.
 | Doc | Covers |
 | --- | --- |
 | [frontend.md](frontend.md) | Next.js app: routing, auth, permissions, facility gating, Redux, API proxy |
-| [infrastructure.md](infrastructure.md) | Docker Compose files, env vars, Nginx, Prometheus, backups, CI/CD, Terraform, LIS |
+| [infrastructure.md](infrastructure.md) | Local compose, env vars, Nginx image, metrics, backups, CI image builds, deployment repos, LIS |
 
 ### Existing deep-dive references
 

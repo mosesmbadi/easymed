@@ -20,7 +20,7 @@ Trigger a backup immediately:
 docker compose -f docker-compose-local.yml exec backup /backup.sh
 
 # Production
-docker compose -f docker-compose-cloud.yml exec backup /backup.sh
+docker compose exec backup /backup.sh   # from the hospital's deployment repo directory
 ```
 
 ## List Available Backups

@@ -117,7 +117,7 @@ class LabTestRequestPanelSerializer(serializers.ModelSerializer):
     def get_patient_name(self, instance):
         if instance.patient_sample and instance.patient_sample.process:
             patient = instance.patient_sample.process.attendanceprocess.patient
-            return f"{patient.first_name} {patient.second_name}" if patient else None
+            return patient.display_name if patient else None
         return None
 
     def get_patient_age(self, instance):
@@ -907,11 +907,32 @@ class WalkInLabRequestSerializer(serializers.Serializer):
         return attrs
 
 
+class ReferredPatientSerializer(WalkInPatientSerializer):
+    """
+    A patient as another facility's request form gives them. Often that is a
+    name, age and sex -- but a viral load comes by CCC number and a trial
+    sample by study ID, with no name at all. Everything here is optional; the
+    entry then has to carry the facility's own reference for them.
+    """
+    first_name = serializers.CharField(max_length=40, required=False, allow_blank=True, default='')
+    second_name = serializers.CharField(max_length=40, required=False, allow_blank=True, default='')
+    gender = serializers.ChoiceField(choices=['M', 'F', 'O'], required=False, allow_null=True,
+                                     allow_blank=True, default=None)
+
+    def validate(self, attrs):
+        if attrs.get('gender') == '':
+            attrs['gender'] = None
+        if attrs.get('date_of_birth') or attrs.get('age_years') is not None:
+            return super().validate(attrs)
+        attrs.pop('age_years', None)
+        return attrs
+
+
 class ReferredSampleEntrySerializer(serializers.Serializer):
     """One patient on another facility's request form."""
     patient = serializers.PrimaryKeyRelatedField(
         queryset=Patient.objects.all(), required=False, allow_null=True)
-    new_patient = WalkInPatientSerializer(required=False, allow_null=True)
+    new_patient = ReferredPatientSerializer(required=False, allow_null=True)
     external_reference = serializers.CharField(max_length=60, required=False, allow_blank=True)
     referring_doctor = serializers.CharField(max_length=150, required=False, allow_blank=True)
     panels = serializers.PrimaryKeyRelatedField(
@@ -930,6 +951,14 @@ class ReferredSampleEntrySerializer(serializers.Serializer):
         if has_patient == has_new:
             raise serializers.ValidationError(
                 "Pick the patient, or give their details from the form -- not both.")
+        new = attrs.get('new_patient') or {}
+        if has_new and not (new.get('first_name') or new.get('second_name')) \
+                and not (attrs.get('external_reference') or '').strip():
+            # Without a name or the facility's number there is nothing to put
+            # on the tube, the report or the next sample for them.
+            raise serializers.ValidationError({'external_reference':
+                "A sample sent without a name needs the facility's reference for it "
+                "(their patient, CCC or study number)."})
         if attrs.get('collected_at') and attrs['collected_at'] > timezone.now():
             raise serializers.ValidationError({'collected_at': "That is in the future."})
         return attrs
@@ -972,7 +1001,7 @@ class SampleConsignmentSerializer(serializers.ModelSerializer):
             row = rows.setdefault(visit.id, {
                 'visit_id': visit.id,
                 'track_number': visit.track_number,
-                'patient_name': f"{visit.patient.first_name} {visit.patient.second_name}",
+                'patient_name': visit.patient.display_name,
                 'patient_number': visit.patient.unique_id,
                 'external_reference': request.external_reference,
                 'tests': [],

@@ -68,14 +68,15 @@ class ContactDetailsViewSet(viewsets.ModelViewSet):
 
 
 class PatientViewSet(viewsets.ModelViewSet):
-    queryset = Patient.objects.all().order_by('-id')
+    queryset = (Patient.objects.select_related('referred_from')
+                .prefetch_related('insurances').order_by('-id'))
     serializer_class = PatientSerializer
     filterset_class = PatientFilter
     permission_classes = (IsReceptionistUser,)
     filter_backends = [PatientFilterSearch, DjangoFilterBackend]
     search_fields = [
         'unique_id', 'first_name', 'email', 'phone',
-        'second_name', 'insurances__name', 'next_of_kin__first_name', 'next_of_kin__second_name',
+        'second_name', 'external_id', 'insurances__name', 'next_of_kin__first_name', 'next_of_kin__second_name',
         'next_of_kin__contacts__tel_no', 'next_of_kin__contacts__email_address',
     ]
 
