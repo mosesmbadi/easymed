@@ -108,7 +108,7 @@ const Insurance = () => {
         Insurers, corporate clients that pay for their staff, and facilities that send
         samples in. Patients are billed to an account through its payment mode, at the
         prices agreed with it. Where nothing is agreed, a corporate client or a facility
-        pays the price list; an insurer doesn't, and the patient pays.
+        pays the price list; an insurer doesn&apos;t, and the patient pays.
       </p>
       <Formik
         initialValues={initialValues}

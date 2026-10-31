@@ -7,6 +7,7 @@ from rest_framework import generics, viewsets, status
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema
 from django.http import HttpResponse
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.conf import settings
@@ -52,7 +53,8 @@ from .models import (
     PatientSampleArchive,
     DisposedSample,
     RetestSample,
-    ReleasedSample
+    ReleasedSample,
+    SampleConsignment,
 )
 
 from .serializers import (
@@ -84,6 +86,8 @@ from .serializers import (
     RetestSampleSerializer,
     ReleasedSampleSerializer,
     WalkInLabRequestSerializer,
+    ReceiveConsignmentSerializer,
+    SampleConsignmentSerializer,
 )
 
 from authperms.permissions import (
@@ -98,6 +102,7 @@ from authperms.permissions import (
 )
 from patient.serializers import AttendanceProcessSerializer
 from .walk_in import create_walk_in_visit
+from .referrals import receive_consignment
 
 # filters
 from .filters import (
@@ -270,6 +275,12 @@ class LabTestRequestPanelViewSet(viewsets.ModelViewSet):
             context['patient'] = get_object_or_404(Patient, id=patient_id)
         return context
 
+    def perform_update(self, serializer):
+        # Whoever approves the result signs the report for it.
+        approving = (serializer.validated_data.get('result_approved')
+                     and not serializer.instance.result_approved)
+        serializer.save(**({'approved_by': self.request.user} if approving else {}))
+
 
 class LabTestRequestPanelByLabTestRequestId(generics.ListAPIView):
     serializer_class = LabTestRequestPanelSerializer
@@ -357,6 +368,14 @@ def download_labtestresult_pdf(request, processtestrequest_id):
     pdf accessed here http://127.0.0.1:8080/download_labtestresult_pdf/26/
     Only displays lab test panels that have results
     '''
+    pdf_file = render_labtestresult_pdf(request, processtestrequest_id)
+    response = HttpResponse(pdf_file, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="labtest_report_{processtestrequest_id}.pdf"'
+    return response
+
+
+def render_labtestresult_pdf(request, processtestrequest_id):
+    """The lab report as PDF bytes; also what is emailed to a referring facility."""
     processtestrequest = get_object_or_404(ProcessTestRequest, pk=processtestrequest_id)
     labtestrequests = LabTestRequest.objects.filter(process=processtestrequest)
     
@@ -365,17 +384,19 @@ def download_labtestresult_pdf(request, processtestrequest_id):
         lab_test_request__in=labtestrequests
     ).exclude(result__isnull=True).exclude(result='')
     
-    company = Company.objects.first()
+    company = Company.current()
 
     # Retrieve the patient from the AttendanceProcess linked via ProcessTestRequest
     attendance_process = get_object_or_404(AttendanceProcess, process_test_req=processtestrequest)
     patient = attendance_process.patient
 
     # Construct full logo URL for template
-    company_logo_url = request.build_absolute_uri(company.logo.url) if company.logo else None
+    company_logo_url = request.build_absolute_uri(company.logo.url) if company and company.logo else None
 
     first_request = labtestrequests.first() if labtestrequests.exists() else None
     first_panel = panels.first() if panels.exists() else None
+    approved = (panels.filter(result_approved=True, approved_by__isnull=False)
+                .select_related('approved_by').order_by('-approved_on', '-id').first())
     
     # Get signature URLs
     doctor_sig_url = request.build_absolute_uri(attendance_process.doctor.signature.url) if attendance_process.doctor and attendance_process.doctor.signature else None
@@ -393,7 +414,9 @@ def download_labtestresult_pdf(request, processtestrequest_id):
         'doctor_sig_url': doctor_sig_url,
         'lab_tech_sig_url': lab_tech_sig_url,
         'attendance_process': attendance_process,
-        'approved_on': first_panel.approved_on if first_panel else None,
+        'approved_on': approved.approved_on if approved else None,
+        # The last to approve a result on the report signs it.
+        'approved_by': approved.approved_by if approved else None,
         'first_labtestrequest': first_request,
         'requested_date': first_request.created_on if first_request else None,
         'requested_time': first_request.requested_on if first_request else None,
@@ -467,12 +490,7 @@ def download_labtestresult_pdf(request, processtestrequest_id):
     html_template = get_template('labtestresult.html').render(context)
 
 
-    pdf_file = HTML(string=html_template).write_pdf()
-
-    response = HttpResponse(pdf_file, content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="labtest_report_{processtestrequest_id}.pdf"'
-
-    return response
+    return HTML(string=html_template).write_pdf()
 
 
 class ReagentConsumptionLogViewSet(viewsets.ReadOnlyModelViewSet):
@@ -660,7 +678,7 @@ class LabDashboardMetricsView(APIView):
 
 def print_lab_report(request):
     report_type = request.GET.get('type')
-    company = Company.objects.first()
+    company = Company.current()
     today = timezone.now()
     company_logo_url = request.build_absolute_uri(company.logo.url) if (company and getattr(company, 'logo', None)) else None
     
@@ -867,14 +885,65 @@ class WalkInLabRequestView(APIView):
         serializer = WalkInLabRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
-        visit = create_walk_in_visit(
-            panels=data['panels'],
-            requested_by=request.user,
-            patient=data.get('patient'),
-            new_patient=data.get('new_patient'),
-            referring_doctor=data.get('referring_doctor', ''),
-            referring_facility=data.get('referring_facility', ''),
-            note=data.get('note', ''),
-            payment_mode=data.get('payment_mode'),
-        )
+        try:
+            visit = create_walk_in_visit(
+                panels=data['panels'],
+                requested_by=request.user,
+                patient=data.get('patient'),
+                new_patient=data.get('new_patient'),
+                referring_doctor=data.get('referring_doctor', ''),
+                referring_facility=data.get('referring_facility', ''),
+                note=data.get('note', ''),
+                payment_mode=data.get('payment_mode'),
+            )
+        except DjangoValidationError as exc:
+            # Billed on account and a reagent isn't there: nothing was kept.
+            return Response({'detail': ' '.join(exc.messages)}, status=status.HTTP_400_BAD_REQUEST)
         return Response(AttendanceProcessSerializer(visit).data, status=status.HTTP_201_CREATED)
+
+
+class SampleConsignmentView(APIView):
+    """
+    Samples sent in by another facility. GET lists consignments, newest first
+    (?facility=<account id> narrows them); POST books one in. A POST with the
+    scanned request form is multipart, carrying `entries` as a JSON string.
+    See laboratory.referrals.
+    """
+    permission_classes = [WALK_IN_ACCESS]
+
+    def get(self, request):
+        consignments = SampleConsignment.objects.select_related('facility', 'received_by')
+        facility = request.query_params.get('facility')
+        if facility:
+            consignments = consignments.filter(facility_id=facility)
+        return Response(SampleConsignmentSerializer(
+            consignments[:100], many=True, context={'request': request}).data)
+
+    @extend_schema(request=ReceiveConsignmentSerializer, responses=SampleConsignmentSerializer)
+    def post(self, request):
+        import json
+
+        data = request.data
+        if isinstance(data.get('entries'), str):
+            data = {key: data.get(key) for key in data.keys()}
+            try:
+                data['entries'] = json.loads(data['entries'])
+            except ValueError:
+                return Response({'entries': ["Not valid JSON."]}, status=status.HTTP_400_BAD_REQUEST)
+        serializer = ReceiveConsignmentSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        validated = serializer.validated_data
+        try:
+            consignment = receive_consignment(
+                facility=validated['facility'],
+                received_by=request.user,
+                entries=validated['entries'],
+                received_at=validated.get('received_at'),
+                courier=validated.get('courier', ''),
+                note=validated.get('note', ''),
+                request_form=validated.get('request_form'),
+            )
+        except DjangoValidationError as exc:
+            return Response({'detail': ' '.join(exc.messages)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(SampleConsignmentSerializer(consignment, context={'request': request}).data,
+                        status=status.HTTP_201_CREATED)

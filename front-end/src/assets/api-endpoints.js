@@ -65,6 +65,7 @@ export const API_URL = {
   SEND_LAB_REQUESTS: "/lab/lab-test-requests/",
   WALK_IN_LAB_REQUESTS: "/lab/walk-in-requests/",
   WALK_IN_PATIENT_SEARCH: "/lab/walk-in-requests/patients/",
+  REFERRED_SAMPLES: "/lab/referred-samples/",
   FETCH_LAB_EQUIPMENT: "/lab/lab-equipment/",
   SEND_TO_EQUIPMENT: "/lab/equipment-test-request/",
   PUBLIC_LAB_REQUEST: "/lab/public-lab-test-request/",
@@ -173,7 +174,8 @@ export const API_URL = {
   FETCH_ANNOUNCEMENTS: "/announcement/announcements/",
 
   /***************** Company **********************/
-  FETCH_COMPANY_INFO: "/company/company/",
+  // The facility running this deployment: one record, so no id.
+  FETCH_COMPANY_INFO: "/company/profile/",
   FETCH_FACILITY: "/company/facility/",
 
   /***************** PDFs **********************/

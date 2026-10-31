@@ -8,7 +8,7 @@ How EasyMed is run locally, deployed, monitored and backed up.
 | --- | --- | --- |
 | `docker-compose-local.yml` | Local development | Builds backend from `backend/Dockerfile.local`. Frontend service is commented out — run it with `npm run dev` |
 | `docker-compose.yml` | Prod using published images | `mosesmbadi/easymedbackend`, `mosesmbadi/easymedfrontend` |
-| `docker-compose-cloud.yml` | The deployed server (used by CI) | Builds images on the server; adds Nginx, Certbot, Prometheus |
+| `docker-compose-cloud.yml` | The deployed server (used by CI) | Pulls CI-built images `${IMAGE_NAMESPACE}/easymed-{backend,frontend,nginx,backup}:${IMAGE_TAG}`; adds Nginx, Certbot, Prometheus |
 | `docker-compose-demo.yml` | Demo instance | Published images |
 
 ### Local services (`docker-compose-local.yml`)
@@ -97,17 +97,41 @@ Full instructions: [backup/README.md](../backup/README.md).
 
 ## CI/CD (`.github/workflows/ci-cd.yml`)
 
-On push to `main`:
+On push to `main` or `standalone-lab`:
 
 1. **test-backend** — build `backend/Dockerfile`, run `manage.py check` and
    `pytest --ds=easymed.settings.testing` with dummy env vars (SQLite, in-memory
    Celery).
-2. **deploy** (after tests pass) — SSH to the staging server
-   (`STAGING_DO_SERVER_*` secrets), `git reset --hard origin/main` in
-   `~/easymed`, `docker compose -f docker-compose-cloud.yml build --pull`,
-   `up -d --remove-orphans`, prune images.
+2. **build-and-push** — one matrix job per image (`backend`, `frontend`, `nginx`,
+   `backup`). Builds on the GitHub runner with layer caching and pushes
+   `<namespace>/easymed-<name>:<commit sha>` and `:latest` to Docker Hub. The
+   frontend build includes `next lint` and the production build, so a lint
+   error or compile failure stops the pipeline here, before anything is deployed.
+3. **deploy** — SSH to the staging server (`STAGING_DO_SERVER_*` secrets),
+   `git reset --hard <commit sha>` in `~/easymed` (for the compose file and
+   mounted configs), then with `IMAGE_TAG=<commit sha>`:
+   `docker compose -f docker-compose-cloud.yml pull`, `up -d --remove-orphans`,
+   and remove unused images older than a week. Only one deploy runs at a time.
 
-The frontend is not linted, tested or built in CI before deploy.
+Required GitHub settings:
+
+| Kind | Name | Purpose |
+| --- | --- | --- |
+| Secret | `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` | Push to Docker Hub (use an access token with Read & Write) |
+| Secret | `STAGING_DO_SERVER_PRIVATE_KEY`, `STAGING_DO_SERVER_IP`, `STAGING_DO_SERVER_USERNAME` | SSH deploy |
+| Variable (optional) | `DOCKERHUB_NAMESPACE` | Docker Hub user/org for the images; default `mosesmbadi` |
+| Variable (optional) | `NEXT_PUBLIC_BACKEND_URL`, `NEXT_PUBLIC_HMIS_VERSION` | Baked into the frontend image; defaults `http://api:8080/`, `v0.0.1` |
+
+**Rolling back** on the server:
+
+```
+cd ~/easymed
+IMAGE_TAG=<older commit sha> docker compose -f docker-compose-cloud.yml pull
+IMAGE_TAG=<older commit sha> docker compose -f docker-compose-cloud.yml up -d
+```
+
+Images from the last week are kept on the server, so a recent rollback doesn't
+need to download anything.
 
 ## Terraform (`demo-deploy/`)
 

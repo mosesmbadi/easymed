@@ -1,3 +1,4 @@
+import os
 import random
 from decimal import Decimal
 from faker import Faker
@@ -282,35 +283,30 @@ def create_dummy_users(count=10, role=CustomUser.PATIENT):
         users.append(user)
     return users
 
-def create_dummy_companies(count=5):
-    companies = []
-    for _ in range(count):
-        company = Company.objects.create(
-            name=fake.company()[:250],
-            address1=fake.address()[:250],
-            address2=fake.address()[:250],
-            phone1= "0712345678",
-            phone2="0712345678",
-            email1=fake.company_email()[:254],
-            email2=fake.company_email()[:254],
-            # logo can be left blank or set to a default if needed
-        )
-        companies.append(company)
-    return companies
+def create_facility_profile():
+    """
+    The facility this demo deployment runs as -- the one Company -- and two
+    of its branches. Named for what DEMO_FACILITY_TYPE makes it.
+    """
+    lab = os.environ.get('DEMO_FACILITY_TYPE', 'hospital') == 'standalone_lab'
+    company = Company.objects.create(
+        name="EaSyMed Diagnostics" if lab else "EaSyMed Demo Hospital",
+        address1="Ngong Road, Kilimani",
+        address2="P.O. Box 12345-00100, Nairobi",
+        phone1="0712345678",
+        phone2="0733123456",
+        email1="info@easymed.demo",
+        email2="accounts@easymed.demo",
+        patient_id_prefix="ESMED-",
+        kra_pin="P051234567X",
+    )
+    for name, address in [("Westlands Branch", "Woodvale Grove, Westlands"),
+                          ("Thika Road Branch", "Thika Road Mall, Roysambu")]:
+        CompanyBranch.objects.create(
+            name=name, company=company, address=address,
+            phone="0712345679", email=f"{name.split()[0].lower()}@easymed.demo")
+    return company
 
-def create_dummy_company_branches(company, count=3):
-    branches = []
-    for _ in range(count):
-        branch = CompanyBranch.objects.create(
-            name=(fake.company_suffix() + " Branch")[:250],
-            company=company,
-            address=fake.address()[:250],
-            phone=fake.phone_number()[:250],
-            email=fake.company_email()[:254],
-            # logo can be left blank or set to a default if needed
-        )
-        branches.append(branch)
-    return branches
 
 def create_dummy_insurance_companies(count=3):
     insurance_companies = []
@@ -2558,9 +2554,11 @@ def create_credit_accounts(rng=None):
         else:
             print(f"   - {account.name}: the price list")
 
-    for name, doctor in DEMO_REFERRING_FACILITIES:
+    for index, (name, doctor) in enumerate(DEMO_REFERRING_FACILITIES):
+        slug = ''.join(ch for ch in name.lower().split()[0] if ch.isalpha())
         InsuranceCompany.objects.create(
-            name=name, account_type=Type.FACILITY, contact_person=doctor)
+            name=name, account_type=Type.FACILITY, contact_person=doctor,
+            email=f"lab@{slug}.demo", phone=f"07221{index:02d}000")
     print(f"   - {len(DEMO_REFERRING_FACILITIES)} referring facilities")
 
     # About one adult in six works for one of them.

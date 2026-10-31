@@ -257,10 +257,15 @@ def test_the_platform_sets_the_facility_type_not_the_tenant(standalone_lab, admi
     client = APIClient()
     client.force_authenticate(admin_user)
 
-    client.patch(f'/company/company/{standalone_lab.id}/', {'facility_type': 'hospital'}, format='json')
+    response = client.patch('/company/profile/', {
+        'facility_type': 'hospital', 'enabled_modules': ['doctor'], 'name': 'Bench Labs',
+    }, format='json')
 
+    assert response.status_code == 200
     standalone_lab.refresh_from_db()
+    assert standalone_lab.name == 'Bench Labs'
     assert standalone_lab.facility_type == 'standalone_lab'
+    assert standalone_lab.enabled_modules == []
 
 
 @pytest.mark.django_db

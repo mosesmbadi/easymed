@@ -18,7 +18,9 @@ const UserDetailsUpdateForm = ({auth, selectedRowData, loading, setLoading, hand
         phone: selectedRowData?.phone || "",
         email: selectedRowData?.email || "",
         role: selectedRowData?.role || "",
-        profession: selectedRowData?.profession || ""
+        profession: selectedRowData?.profession || "",
+        // Printed beside their name on results they approve (e.g. KMLTTB).
+        registration_number: selectedRowData?.registration_number || ""
       }
     
       console.log("ROW_DATA INITIAL VALUES ",initialValues);
@@ -161,6 +163,14 @@ const UserDetailsUpdateForm = ({auth, selectedRowData, loading, setLoading, hand
               name="profession"
               component="div"
               className="text-warning text-xs"
+          />
+        </Grid>
+        <Grid item md={6} xs={12}>
+          <Field
+            className="border border-gray focus:outline-none p-4 rounded-lg w-full"
+            type="text"
+            placeholder="Registration No. (e.g. KMLTTB)"
+            name="registration_number"
           />
         </Grid>
         <Grid item md={6} xs={12}>

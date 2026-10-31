@@ -415,7 +415,7 @@
         <span class="sig-label">Name:</span>
         <div class="sig-line-text">
           {% if first_labtestrequest.referring_doctor or first_labtestrequest.referring_facility %}
-          {{ first_labtestrequest.referring_doctor|default:"" }}{% if first_labtestrequest.referring_doctor and first_labtestrequest.referring_facility %}, {% endif %}{{ first_labtestrequest.referring_facility|default:"" }}
+          {{ first_labtestrequest.referring_doctor|default:"" }}{% if first_labtestrequest.referring_doctor and first_labtestrequest.referring_facility %}, {% endif %}{{ first_labtestrequest.referring_facility|default:"" }}{% if first_labtestrequest.external_reference %} (ref. {{ first_labtestrequest.external_reference }}){% endif %}
           {% elif attendance_process.doctor %}
           {{ attendance_process.doctor.first_name }}
           {% else %}
@@ -459,11 +459,19 @@
       <div class="signature-header">APPROVED BY</div>
       <div class="signature-row">
         <span class="sig-label">Name:</span>
-        <div class="sig-line-text"></div>
+        <div class="sig-line-text">
+          {% if approved_by %}{{ approved_by.first_name }} {{ approved_by.last_name }}{% endif %}
+        </div>
       </div>
+      {% if approved_by.registration_number %}
+      <div class="signature-row">
+        <span class="sig-label">Reg. No:</span>
+        <div class="sig-line-text">{{ approved_by.registration_number }}</div>
+      </div>
+      {% endif %}
       <div class="signature-row">
         <span class="sig-label">Date:</span>
-        <div class="sig-line-text"></div>
+        <div class="sig-line-text">{% if approved_by and approved_on %}{{ approved_on|date:"d/m/Y H:i" }}{% endif %}</div>
       </div>
       <div class="signature-row">
         <span class="sig-label">Sign:</span>

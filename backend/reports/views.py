@@ -56,7 +56,7 @@ def get_invoice_items_by_date_range(request):
                     for item in invoice_items
                 ]
 
-                company = Company.objects.first()
+                company = Company.current()
 
                 # Prepare the data for the template
                 context = {
@@ -118,7 +118,7 @@ def get_invoice_items_by_item_and_date_range(request):
                 end_date = timezone.datetime.strptime(end_date_str, '%Y-%m-%d')
                 invoice_items = InvoiceItem.objects.filter(item_id=item_id, item_created_at__range=(start_date, end_date))
 
-                company = Company.objects.first()
+                company = Company.current()
 
                 # Prepare the data for the template
                 context = {

@@ -48,9 +48,10 @@ LabTestProfile  (e.g. "Renal Function")
 | Model | Key fields |
 | --- | --- |
 | `ProcessTestRequest` | Per-visit container; `reference` = visit `track_number`. Created with the `AttendanceProcess` |
-| `LabTestRequest` | `process`, `test_profile`, `requested_by`, `referring_doctor`, `referring_facility`, `note`, `has_result` |
-| `LabTestRequestPanel` | One test on a request: `test_panel`, `lab_test_request`, `patient_sample`, `result`, `test_code` (`TC-NNNN`), `category` (qualitative/quantitative), `result_approved`, `approved_on`, `is_billed`, `auto_interpretation`, `clinical_action`, `requires_attention` |
-| `PatientSample` | `specimen`, `process`, `lab_test_request`, `patient_sample_code` (unique, yearly sequence), `is_sample_collected`, `collected_on` |
+| `LabTestRequest` | `process`, `test_profile`, `requested_by`, `referring_doctor`, `referring_facility`, `consignment`, `external_reference` (the sender's own number), `note`, `has_result` |
+| `SampleConsignment` | A delivery of samples from another facility: `reference` (`RS-YYMMDD-NNN`), `facility` (a `facility` credit account), `received_at`, `received_by`, `courier`, `request_form` (scan), `note` |
+| `LabTestRequestPanel` | One test on a request: `test_panel`, `lab_test_request`, `patient_sample`, `result`, `test_code` (`TC-NNNN`), `category` (qualitative/quantitative), `result_approved`, `approved_on`, `approved_by` (signs the report), `is_billed`, `auto_interpretation`, `clinical_action`, `requires_attention` |
+| `PatientSample` | `specimen`, `process`, `lab_test_request`, `patient_sample_code` (unique, yearly sequence), `is_sample_collected`, `collected_on`; for a sample sent in, `collected_externally` (no draw kit of ours deducted), `collected_by`, `received_on`, `condition`, `rejected`, `rejection_reason` |
 | `PatientSampleConsumable` | What a collected sample actually consumed (and whether it was short) |
 | `ReagentConsumptionLog` | Reagent used per panel run |
 | `PublicLabTestRequest` | Lab test booked from the public site |
@@ -88,11 +89,56 @@ Lab stock lives in the department resolved by `utils.lab_department()`.
 
 ## Walk-in visits (`walk_in.py`)
 
-`create_walk_in_visit()` builds, in one transaction, exactly what a doctor's
-order builds: an `AttendanceProcess` on track `lab` (reason
-`"Walk-in lab request"`), one `LabTestRequest` per profile with
-`referring_doctor`/`referring_facility`, one `LabTestRequestPanel` per test, and
-one invoice line per test. It either uses an existing patient or creates one.
+`create_lab_visit()` builds, in one transaction, exactly what a doctor's order
+builds:
+- an `AttendanceProcess` on track `lab`;
+- one `LabTestRequest` per profile;
+- one `LabTestRequestPanel` per test;
+- one invoice line per test.
+
+**Billing.** Lines billed to a corporate or referring-facility account are
+created `billed`, so they skip the till; anything else waits for the cashier.
+Billing checks the reagents are there. If one isn't, the `ValidationError` it
+raises rolls the whole visit back, and the endpoints answer 400.
+
+`create_walk_in_visit()` wraps it for the counter: it uses an existing patient
+or registers one. A new patient gives a `date_of_birth` or an `age_years`; an
+age is turned into an estimated date, and `Patient.date_of_birth_estimated` is
+set.
+
+## Referred-in samples (`referrals.py`)
+
+A clinic sends samples with a request form. `receive_consignment()` books in a
+`SampleConsignment`. For each patient on the form it:
+- finds the patient by the clinic's own number for them
+  (`Patient.referred_from` + `external_id`), or registers them;
+- builds a lab visit billed to the clinic's account;
+- marks the samples collected externally, with their condition.
+
+**A rejected sample** (one with a `rejection_reason`) is recorded but not
+billed, and the clinic is emailed and texted (`notifications.lab`). The whole
+consignment is all or nothing.
+
+`POST referred-samples/` takes JSON, or multipart with the scanned
+`request_form` and `entries` as a JSON string. `GET referred-samples/` lists
+consignments; `?facility=` narrows them.
+
+## Results delivery
+
+When the last billed, unrejected result on a visit is approved,
+`notifications.lab.notify_results_ready` sends messages (see the
+`notifications` app):
+- **A walk-in nobody here is treating** gets an SMS (and WhatsApp, when set up)
+  that their results are ready. The message never contains the results.
+- **The referring facility** (the consignment's, or a facility account matching
+  `referring_facility`) is emailed the report PDF.
+- **A patient of our own doctors** is not messaged.
+
+Every message is recorded as an `OutboundMessage`, sent or not. A channel
+that's not set up is marked `skipped`.
+
+The report's APPROVED BY block shows the approver's name and
+`registration_number` (e.g. KMLTTB), and the requester's reference.
 
 Access: `HasAnyNamedPermission('CAN_ACCESS_LABORATORY_DASHBOARD',
 'CAN_ACCESS_RECEPTION_DASHBOARD')`.
@@ -121,7 +167,8 @@ Other paths:
 | Path | Purpose |
 | --- | --- |
 | `POST walk-in-requests/` | Create a walk-in visit |
-| `GET walk-in-requests/patients/?search=` | Find a returning patient (lab cannot use the reception-only patients API) |
+| `GET/POST referred-samples/` | List or book in samples sent by another facility |
+| `GET walk-in-requests/patients/?search=` or `?id=` | Find a returning patient (lab cannot use the reception-only patients API); returns their accounts on file |
 | `GET lab-test-request-by-patient-id/<patient_id>/` | |
 | `GET lab-test-request-by-process-id/<process_id>/` | |
 | `GET lab-test-request-panels-by-lab-test-request-id/<id>/` | |
@@ -147,7 +194,7 @@ results back to the backend using `BACKEND_USERNAME`/`BACKEND_PASSWORD` and
 
 ## Tests
 
-`laboratory/tests/`: `test_walk_in.py`, `test_lab_billing_and_costs.py`,
+`laboratory/tests/`: `test_walk_in.py`, `test_referred_samples.py`, `test_lab_billing_and_costs.py`,
 `test_specimen_consumables.py`, `test_demo_data.py`.
 
 ## Known issues

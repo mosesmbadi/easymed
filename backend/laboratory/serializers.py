@@ -7,7 +7,10 @@ from inventory.models import Item, ItemPrice
 from rest_framework import serializers
 from rest_framework.exceptions import NotFound
 
+from django.utils import timezone
+
 from billing.models import PaymentMode
+from company.models import InsuranceCompany
 from customuser.models import CustomUser
 from patient.models import Patient
 from inventory.services import stock as stock_service
@@ -37,7 +40,8 @@ from .models import (
     PatientSampleArchive,
     DisposedSample,
     RetestSample,
-    ReleasedSample
+    ReleasedSample,
+    SampleConsignment,
     )
 
 
@@ -839,12 +843,28 @@ class ReleasedSampleSerializer(serializers.ModelSerializer):
 
 
 class WalkInPatientSerializer(serializers.Serializer):
-    """Just enough to register someone at the lab counter."""
+    """
+    Just enough to register someone at the lab counter. A date of birth, or
+    their age in years when that is all they give -- the date is then worked
+    back from it and marked as an estimate.
+    """
     first_name = serializers.CharField(max_length=40)
     second_name = serializers.CharField(max_length=40)
     gender = serializers.ChoiceField(choices=['M', 'F', 'O'])
-    date_of_birth = serializers.DateField()
+    date_of_birth = serializers.DateField(required=False, allow_null=True)
+    age_years = serializers.IntegerField(required=False, allow_null=True, min_value=0, max_value=130)
     phone = serializers.CharField(max_length=30, required=False, allow_blank=True)
+
+    def validate(self, attrs):
+        years = attrs.pop('age_years', None)
+        if attrs.get('date_of_birth'):
+            attrs['date_of_birth_estimated'] = False
+        elif years is not None:
+            attrs['date_of_birth'] = Patient.birth_date_for_age(years)
+            attrs['date_of_birth_estimated'] = True
+        else:
+            raise serializers.ValidationError("Give a date of birth, or the age in years.")
+        return attrs
 
 
 class WalkInLabRequestSerializer(serializers.Serializer):
@@ -885,3 +905,84 @@ class WalkInLabRequestSerializer(serializers.Serializer):
             raise serializers.ValidationError(
                 "Choose an existing patient or register a new one, not both.")
         return attrs
+
+
+class ReferredSampleEntrySerializer(serializers.Serializer):
+    """One patient on another facility's request form."""
+    patient = serializers.PrimaryKeyRelatedField(
+        queryset=Patient.objects.all(), required=False, allow_null=True)
+    new_patient = WalkInPatientSerializer(required=False, allow_null=True)
+    external_reference = serializers.CharField(max_length=60, required=False, allow_blank=True)
+    referring_doctor = serializers.CharField(max_length=150, required=False, allow_blank=True)
+    panels = serializers.PrimaryKeyRelatedField(
+        queryset=LabTestPanel.objects.select_related('item'), many=True)
+    collected_at = serializers.DateTimeField(required=False, allow_null=True)
+    collected_by = serializers.CharField(max_length=150, required=False, allow_blank=True)
+    condition = serializers.ChoiceField(
+        choices=PatientSample.Condition.choices, required=False, allow_blank=True)
+    rejection_reason = serializers.CharField(max_length=255, required=False, allow_blank=True)
+
+    validate_panels = WalkInLabRequestSerializer.validate_panels
+
+    def validate(self, attrs):
+        has_patient = attrs.get('patient') is not None
+        has_new = bool(attrs.get('new_patient'))
+        if has_patient == has_new:
+            raise serializers.ValidationError(
+                "Pick the patient, or give their details from the form -- not both.")
+        if attrs.get('collected_at') and attrs['collected_at'] > timezone.now():
+            raise serializers.ValidationError({'collected_at': "That is in the future."})
+        return attrs
+
+
+class ReceiveConsignmentSerializer(serializers.Serializer):
+    """Input for laboratory.referrals.receive_consignment."""
+    facility = serializers.PrimaryKeyRelatedField(
+        queryset=InsuranceCompany.objects.filter(account_type=InsuranceCompany.AccountType.FACILITY))
+    received_at = serializers.DateTimeField(required=False, allow_null=True)
+    courier = serializers.CharField(max_length=150, required=False, allow_blank=True)
+    note = serializers.CharField(required=False, allow_blank=True)
+    request_form = serializers.FileField(required=False, allow_null=True)
+    entries = ReferredSampleEntrySerializer(many=True)
+
+    def validate_entries(self, entries):
+        if not entries:
+            raise serializers.ValidationError("Add at least one patient from the request form.")
+        return entries
+
+
+class SampleConsignmentSerializer(serializers.ModelSerializer):
+    facility_name = serializers.CharField(source='facility.name', read_only=True)
+    received_by_name = serializers.SerializerMethodField()
+    patients = serializers.SerializerMethodField()
+
+    class Meta:
+        model = SampleConsignment
+        fields = ['id', 'reference', 'facility', 'facility_name', 'received_at', 'received_by_name',
+                  'courier', 'note', 'request_form', 'patients']
+
+    def get_received_by_name(self, obj):
+        user = obj.received_by
+        return f"{user.first_name} {user.last_name}".strip() if user else ''
+
+    def get_patients(self, obj):
+        rows = {}
+        for request in obj.requests.select_related('process__attendanceprocess__patient', 'test_profile'):
+            visit = request.process.attendanceprocess
+            row = rows.setdefault(visit.id, {
+                'visit_id': visit.id,
+                'track_number': visit.track_number,
+                'patient_name': f"{visit.patient.first_name} {visit.patient.second_name}",
+                'patient_number': visit.patient.unique_id,
+                'external_reference': request.external_reference,
+                'tests': [],
+                'rejected': False,
+                'rejection_reason': '',
+            })
+            row['tests'] += [panel.test_panel.name for panel in request.labtestrequestpanel_set.all()]
+            sample = request.process.patientsample_set.first()
+            if sample:
+                row['rejected'] = sample.rejected
+                row['rejection_reason'] = sample.rejection_reason
+                row['condition'] = sample.get_condition_display()
+        return list(rows.values())

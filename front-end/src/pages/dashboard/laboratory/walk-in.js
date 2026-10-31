@@ -21,7 +21,15 @@ const emptyPatient = {
   second_name: "",
   gender: "",
   date_of_birth: "",
+  age_years: "",
   phone: "",
+};
+
+// What to send for a new patient: a date of birth, or their age when that is
+// all they give.
+const patientPayload = (patient, byAge) => {
+  const { age_years, date_of_birth, ...rest } = patient;
+  return byAge ? { ...rest, age_years: Number(age_years) } : { ...rest, date_of_birth };
 };
 
 const money = (value) =>
@@ -64,6 +72,7 @@ const WalkInLabRequest = () => {
   const [mode, setMode] = useState("existing");
   const [existingPatient, setExistingPatient] = useState(null);
   const [newPatient, setNewPatient] = useState(emptyPatient);
+  const [byAge, setByAge] = useState(false);
   const [referringDoctor, setReferringDoctor] = useState("");
   const [referringFacility, setReferringFacility] = useState("");
   const [note, setNote] = useState("");
@@ -150,7 +159,7 @@ const WalkInLabRequest = () => {
     const problems = [];
     if (mode === "existing" && !existingPatient) problems.push("Pick the patient, or register them as new.");
     if (mode === "new") {
-      ["first_name", "second_name", "gender", "date_of_birth"].forEach((field) => {
+      ["first_name", "second_name", "gender", byAge ? "age_years" : "date_of_birth"].forEach((field) => {
         if (!newPatient[field]) problems.push(`${field.replace(/_/g, " ")} is required.`);
       });
     }
@@ -168,17 +177,23 @@ const WalkInLabRequest = () => {
       ...(billTo ? { payment_mode: Number(billTo) } : {}),
       ...(mode === "existing"
         ? { patient: existingPatient.value }
-        : { new_patient: newPatient }),
+        : { new_patient: patientPayload(newPatient, byAge) }),
     };
 
     setSaving(true);
     try {
       const visit = await createWalkInLabRequest(payload, auth);
+      const account = billToOptions.find((option) => String(option.id) === String(billTo));
       setCreated({
         trackNumber: visit.track_number,
         patientName: visit.patient_name,
         total,
         tests: selectedPanels.map((panel) => panel.name),
+        // A corporate or referring-facility account is billed on the spot;
+        // an insurer's lines still go through the cashier.
+        onAccount: account && ["corporate", "facility"].includes(account.account_type)
+          ? account.insurance_company_name || account.payment_mode
+          : null,
       });
       toast.success("Walk-in request created");
       reset();
@@ -204,18 +219,30 @@ const WalkInLabRequest = () => {
               {created.patientName} &middot; {created.trackNumber}
             </p>
             <p>{created.tests.join(", ")}</p>
-            <p>
-              Total: <span className="font-semibold">{money(created.total)}</span>. The
-              tests appear under Phlebotomy once paid.
-            </p>
+            {created.onAccount ? (
+              <p>
+                Billed to {created.onAccount}. The tests are on the Phlebotomy list now.
+              </p>
+            ) : (
+              <p>
+                Total: <span className="font-semibold">{money(created.total)}</span>. The
+                tests appear under Phlebotomy once paid.
+              </p>
+            )}
           </div>
           <div className="flex gap-2">
-            <Link
-              href="/dashboard/finance/accounts-receivable/invoices"
-              className="bg-primary text-white rounded-xl px-4 py-2 text-sm"
-            >
-              Take Payment
-            </Link>
+            {created.onAccount ? (
+              <Link href="/dashboard/laboratory" className="bg-primary text-white rounded-xl px-4 py-2 text-sm">
+                Go to Phlebotomy
+              </Link>
+            ) : (
+              <Link
+                href="/dashboard/finance/accounts-receivable/invoices"
+                className="bg-primary text-white rounded-xl px-4 py-2 text-sm"
+              >
+                Take Payment
+              </Link>
+            )}
             <button
               type="button"
               onClick={() => setCreated(null)}
@@ -272,8 +299,17 @@ const WalkInLabRequest = () => {
                 <option value="O">Other</option>
               </select>
               <label className="text-sm">
-                Date of birth
-                <input type="date" className={inputClass} value={newPatient.date_of_birth} onChange={setPatientField("date_of_birth")} />
+                <span className="flex justify-between">
+                  {byAge ? "Age (years)" : "Date of birth"}
+                  <button type="button" className="text-primary text-xs" onClick={() => setByAge((v) => !v)}>
+                    {byAge ? "Enter date of birth" : "Only know the age?"}
+                  </button>
+                </span>
+                {byAge ? (
+                  <input type="number" min="0" max="130" className={inputClass} value={newPatient.age_years} onChange={setPatientField("age_years")} />
+                ) : (
+                  <input type="date" className={inputClass} value={newPatient.date_of_birth} onChange={setPatientField("date_of_birth")} />
+                )}
               </label>
               <label className="text-sm">
                 Phone (optional)

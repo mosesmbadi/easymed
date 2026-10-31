@@ -20,6 +20,7 @@ Email-login user (`USERNAME_FIELD = "email"`), built on `AbstractBaseUser` +
 | `role` | One of the roles below; default `patient` |
 | `is_active`, `is_staff`, `date_joined` | `save()` forces `is_staff=True` for non-patient roles |
 | `signature` | Image, printed on reports |
+| `registration_number` | Professional registration (e.g. KMLTTB, KMPDC), printed under APPROVED BY on lab results the user approves |
 | `can_manage_inventory` | Per-user grant to receive/adjust stock (see [inventory.md](inventory.md#permissions)) |
 | `group` | FK to `authperms.Group` — **one** group per user |
 | `user_permissions` | M2M to `authperms.Permission` |

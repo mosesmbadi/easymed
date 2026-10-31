@@ -62,7 +62,8 @@ INSTALLED_APPS = [
     'inpatient.apps.InpatientConfig',
     'company',
     'reports',
-    'roby'
+    'roby',
+    'notifications.apps.NotificationsConfig',
 ]
 
 MIDDLEWARE = [
@@ -242,6 +243,46 @@ EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", cast=str)
 DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", cast=str)
 
 
+# ---------------------------------------------------------------------------
+# Outside services. Each is off until its settings are filled in, and none of
+# them blocks the work it follows: a sale stands without eTIMS, a cashier can
+# still take M-Pesa by reference number, and results print without a message.
+# ---------------------------------------------------------------------------
+
+# KRA eTIMS (OSCU). The KRA PIN falls back to the facility profile's.
+ETIMS_ENABLED = config('ETIMS_ENABLED', default=False, cast=bool)
+ETIMS_BASE_URL = config('ETIMS_BASE_URL', default='')
+ETIMS_PIN = config('ETIMS_PIN', default='')
+ETIMS_BRANCH_ID = config('ETIMS_BRANCH_ID', default='00')
+ETIMS_DEVICE_SERIAL = config('ETIMS_DEVICE_SERIAL', default='')
+ETIMS_CMC_KEY = config('ETIMS_CMC_KEY', default='')
+
+# M-Pesa Daraja STK push. MPESA_CALLBACK_URL is this backend's public address;
+# the token in it is what tells a real Safaricom callback from a forged one.
+MPESA_ENABLED = config('MPESA_ENABLED', default=False, cast=bool)
+MPESA_ENVIRONMENT = config('MPESA_ENVIRONMENT', default='sandbox')
+MPESA_CONSUMER_KEY = config('MPESA_CONSUMER_KEY', default='')
+MPESA_CONSUMER_SECRET = config('MPESA_CONSUMER_SECRET', default='')
+MPESA_SHORTCODE = config('MPESA_SHORTCODE', default='')
+MPESA_PASSKEY = config('MPESA_PASSKEY', default='')
+MPESA_TRANSACTION_TYPE = config('MPESA_TRANSACTION_TYPE', default='CustomerPayBillOnline')
+MPESA_CALLBACK_URL = config('MPESA_CALLBACK_URL', default='')
+MPESA_CALLBACK_TOKEN = config('MPESA_CALLBACK_TOKEN', default='')
+# The finance sub-account M-Pesa money lands in; the first M-Pesa one if unset.
+MPESA_SUB_ACCOUNT_ID = config('MPESA_SUB_ACCOUNT_ID', default=None, cast=lambda v: int(v) if v else None)
+
+# Messages to patients and referring facilities. SMS via Africa's Talking,
+# WhatsApp via the Meta Cloud API; email uses the settings above.
+SMS_ENABLED = config('SMS_ENABLED', default=False, cast=bool)
+AFRICASTALKING_USERNAME = config('AFRICASTALKING_USERNAME', default='')
+AFRICASTALKING_API_KEY = config('AFRICASTALKING_API_KEY', default='')
+AFRICASTALKING_SENDER_ID = config('AFRICASTALKING_SENDER_ID', default='')
+WHATSAPP_ENABLED = config('WHATSAPP_ENABLED', default=False, cast=bool)
+WHATSAPP_TOKEN = config('WHATSAPP_TOKEN', default='')
+WHATSAPP_PHONE_NUMBER_ID = config('WHATSAPP_PHONE_NUMBER_ID', default='')
+RESULTS_EMAIL_ENABLED = config('RESULTS_EMAIL_ENABLED', default=False, cast=bool)
+
+
 
 CELERY_BROKER_URL = config('CELERY_BROKER_URL', 'redis://redis:6379/0')
 CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', 'redis://redis:6379/0')
@@ -293,6 +334,16 @@ CELERY_BEAT_SCHEDULE = {
     "check-medication-notifications": {
         "task": "inpatient.tasks.check_medication_notifications",
         'schedule': crontab(minute='*/60'),
+    },
+    # Catch-up for the outside services, for anything queued while the broker
+    # was down or the service was unreachable.
+    "send-queued-messages": {
+        "task": "notifications.tasks.send_queued_messages",
+        "schedule": crontab(minute='*/10'),
+    },
+    "resend-unsent-etims": {
+        "task": "billing.tasks.resend_unsent_etims",
+        "schedule": crontab(minute=15),
     },
 }
 

@@ -13,7 +13,7 @@ def generate_discharge_summary_pdf(admission_id, request):
         return None, {"error": "No discharge record found."}
     discharge = admission.discharge
     patient = admission.patient
-    company = Company.objects.first()
+    company = Company.current()
 
     # Last lab result
     last_lab_request = LabTestRequest.objects.filter(

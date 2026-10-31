@@ -4,7 +4,7 @@ from .models import (
     Invoice, InvoiceItem,
     PaymentMode, InvoicePayment,
     PaymentReceipt, PaymentAllocation,
-    MainAccount, SubAccount
+    MainAccount, SubAccount, MpesaPaymentRequest,
 )
 
 
@@ -246,3 +246,18 @@ class MainAccountSerializer(serializers.ModelSerializer):
     class Meta:
         model = MainAccount
         fields = '__all__'
+
+class MpesaPaymentRequestSerializer(serializers.ModelSerializer):
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+
+    class Meta:
+        model = MpesaPaymentRequest
+        fields = ['id', 'invoice', 'phone', 'amount', 'status', 'status_display',
+                  'mpesa_receipt_number', 'result_description', 'receipt', 'created_at']
+        read_only_fields = fields
+
+
+class MpesaStkPushRequestSerializer(serializers.Serializer):
+    invoice_id = serializers.IntegerField()
+    phone = serializers.CharField(max_length=20)
+    amount = serializers.DecimalField(max_digits=12, decimal_places=2, required=False, allow_null=True)

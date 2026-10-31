@@ -21,6 +21,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 
 from billing.filters import InvoiceFilterSearch, InvoiceFilter
 from .models import InvoiceItem, Invoice, InvoicePayment, PaymentReceipt, PaymentAllocation
+from .payments import PaymentAllocationError, allocate_payment
 from company.models import Company
 from inventory.models import InsuranceItemSalePrice
 from authperms.permissions import (
@@ -273,141 +274,16 @@ class AllocatePaymentView(APIView):
     def post(self, request, *args, **kwargs):
         req_ser = AllocatePaymentRequestSerializer(data=request.data)
         req_ser.is_valid(raise_exception=True)
-        data = req_ser.validated_data
-
-        patient_id = data.get('patient_id')
-        insurance_id = data.get('insurance_id')
-        invoice_ids = data['invoice_ids']
-        sub_account_id = data['sub_account']
-        amount = data['amount']
-        reference_number = data['reference_number']
-        payment_date = data.get('payment_date')  # Optional field
-
-        # Resolve sub_account and its linked payment_mode
         try:
-            sub_account = SubAccount.objects.select_related('payment_mode').get(id=sub_account_id)
-        except SubAccount.DoesNotExist:
-            return Response({"detail": "Invalid sub account."}, status=status.HTTP_400_BAD_REQUEST)
-        if not sub_account.payment_mode:
-            return Response({"detail": "Selected sub account has no linked payment mode."}, status=status.HTTP_400_BAD_REQUEST)
-        paymode = sub_account.payment_mode
-
-        # Filter invoices based on whether it's patient or insurance payment
-        if patient_id:
-            invoices = Invoice.objects.filter(id__in=invoice_ids, patient_id=patient_id)
-        elif insurance_id:
-            invoices = Invoice.objects.filter(
-                id__in=invoice_ids,
-                invoice_items__payment_mode__insurance_id=insurance_id
-            ).distinct()
-        else:
-            return Response({"detail": "Either patient_id or insurance_id must be provided."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if not invoices.exists():
-            return Response({"detail": "No invoices found for the selected customer/invoice selection."}, status=status.HTTP_400_BAD_REQUEST)
-
-        with transaction.atomic():
-            receipt = PaymentReceipt.objects.create(
-                patient_id=patient_id,
-                insurance_id=insurance_id,
-                sub_account=sub_account,
-                total_amount=amount,
-                reference_number=reference_number,
-                payment_date=payment_date,
-            )
-
-            remaining = float(amount)
-            is_insurance_payment = bool(insurance_id)
-
-            # Fetch allocatable items across invoices, oldest first.
-            # Insurance payments only apply to items billed with that insurance.
-            items_qs = InvoiceItem.objects.filter(invoice__in=invoices)
-            if is_insurance_payment:
-                items_qs = items_qs.filter(payment_mode__insurance_id=insurance_id)
-
-            items = items_qs.select_related('payment_mode', 'invoice', 'item').order_by('item_created_at', 'id')
-
-            per_invoice_applied = {}
-
-            for it in items:
-                if remaining <= 0:
-                    break
-
-                # Determine payable component for this item based on who is paying.
-                if is_insurance_payment:
-                    # The insurer owes its share of the line, which is what
-                    # actual_total holds on an insurance line.
-                    payable_component = float(it.actual_total or 0)
-                    already_applied = float(
-                        it.allocations.filter(receipt__insurance_id=insurance_id).aggregate(
-                            total=Sum('amount_applied')
-                        )['total'] or 0
-                    )
-                else:
-                    # The patient owes their own share: the whole line when it
-                    # is cash, the co-pay when it is insured. The line records
-                    # that directly, so there is nothing to work out here.
-                    payable_component = float(it.patient_amount or 0)
-
-                    already_applied = float(
-                        it.allocations.filter(
-                            receipt__patient_id=patient_id,
-                            receipt__insurance__isnull=True,
-                        ).aggregate(total=Sum('amount_applied'))['total'] or 0
-                    )
-
-                outstanding = max(0.0, payable_component - already_applied)
-
-                if outstanding <= 0:
-                    continue
-
-                apply_now = min(remaining, outstanding)
-                if apply_now > 0:
-                    PaymentAllocation.objects.create(
-                        receipt=receipt,
-                        invoice_item=it,
-                        amount_applied=apply_now,
-                    )
-                    remaining -= apply_now
-                    per_invoice_applied[it.invoice_id] = per_invoice_applied.get(it.invoice_id, 0.0) + apply_now
-
-            # Update invoices: cash_paid only for patient payments, status for all
-            for inv in invoices:
-                applied = per_invoice_applied.get(inv.id, 0.0)
-
-                # Fallback only for patient cash receipts when no allocatable items exist.
-                # For insurance receipts, allocation must remain tied to insurance items.
-                if not is_insurance_payment and applied <= 0 and remaining > 0:
-                    outstanding_cash = float(max(Decimal('0'), (inv.total_cash or Decimal('0')) - (inv.cash_paid or Decimal('0'))))
-                    if outstanding_cash > 0:
-                        invoice_level_apply = min(remaining, outstanding_cash)
-                        if invoice_level_apply > 0:
-                            applied = invoice_level_apply
-                            remaining -= invoice_level_apply
-
-                if applied > 0:
-                    update_fields = ['status', 'invoice_updated_at']
-
-                    # Only increment cash_paid for patient/cash payments
-                    if not is_insurance_payment:
-                        inv.cash_paid = (inv.cash_paid or Decimal('0')) + Decimal(str(applied))
-                        update_fields.append('cash_paid')
-
-                    # Determine status from total allocations across all items
-                    total_allocated = inv.invoice_items.aggregate(
-                        total=Sum('allocations__amount_applied')
-                    )['total'] or Decimal('0')
-                    inv.status = 'paid' if total_allocated >= (inv.invoice_amount or Decimal('0')) else 'pending'
-
-                    inv.save(update_fields=update_fields)
-
-            ser = PaymentReceiptSerializer(receipt)
-            return Response(ser.data, status=status.HTTP_201_CREATED)
+            receipt = allocate_payment(**req_ser.validated_data)
+        except PaymentAllocationError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(PaymentReceiptSerializer(receipt).data, status=status.HTTP_201_CREATED)
 
 
 def download_payment_receipt_pdf(request, receipt_id):
     receipt = get_object_or_404(PaymentReceipt, pk=receipt_id)
-    company = Company.objects.first()
+    company = Company.current()
 
     company_logo_url = request.build_absolute_uri(company.logo.url) if company and company.logo else None
 
@@ -440,7 +316,7 @@ def download_invoice_pdf(request, invoice_id):
     '''
     invoice = get_object_or_404(Invoice, pk=invoice_id)
     invoice_items = InvoiceItem.objects.filter(invoice=invoice)
-    company = Company.objects.first()
+    company = Company.current()
     patient = invoice.patient
     insurance_items = invoice_items.filter(payment_mode__payment_category="insurance")
     insurance_names_str = ", ".join(insurance_items.values_list('payment_mode__payment_mode', flat=True).distinct())
@@ -819,7 +695,7 @@ def download_accounting_summary_pdf(request):
         'both': 'Cash & Cash Equivalents Report',
     }
 
-    company = Company.objects.first()
+    company = Company.current()
     company_logo_url = (
         request.build_absolute_uri(company.logo.url)
         if company and getattr(company, 'logo', None) and company.logo
@@ -876,7 +752,7 @@ class AccountStatementView(APIView):
         if request.query_params.get('download') != 'pdf':
             return Response(statement)
 
-        company = Company.objects.first()
+        company = Company.current()
         company_logo_url = request.build_absolute_uri(company.logo.url) if company and company.logo else None
         html_template = get_template('account_statement.html').render({
             'company_logo_url': company_logo_url,
@@ -888,3 +764,76 @@ class AccountStatementView(APIView):
         response['Content-Disposition'] = (
             f'filename="statement_{account.id}_{statement["start"]:%Y%m%d}_{statement["end"]:%Y%m%d}.pdf"')
         return response
+
+
+class IntegrationsStatusView(APIView):
+    """Which outside services are switched on, so screens offer only those. Any signed-in user."""
+
+    def get(self, request):
+        from integrations import etims, mpesa
+
+        return Response({'mpesa': mpesa.is_configured(), 'etims': etims.is_configured()})
+
+
+class MpesaStkPushView(APIView):
+    """
+    Prompt the customer's phone to pay an invoice by M-Pesa. Answers 503 when
+    M-Pesa isn't configured, so the cashier falls back to entering the code.
+    """
+    permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser | IsReceptionistUser,)
+
+    def post(self, request):
+        from integrations.mpesa import MpesaNotConfigured
+        from .mpesa import MpesaRequestError, request_payment
+        from .serializers import MpesaPaymentRequestSerializer, MpesaStkPushRequestSerializer
+
+        req = MpesaStkPushRequestSerializer(data=request.data)
+        req.is_valid(raise_exception=True)
+        invoice = get_object_or_404(Invoice, pk=req.validated_data['invoice_id'])
+        try:
+            push = request_payment(
+                invoice=invoice, phone=req.validated_data['phone'],
+                amount=req.validated_data.get('amount'), requested_by=request.user)
+        except MpesaNotConfigured as exc:
+            return Response({'detail': str(exc), 'configured': False},
+                            status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        except MpesaRequestError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(MpesaPaymentRequestSerializer(push).data, status=status.HTTP_201_CREATED)
+
+
+class MpesaPaymentRequestView(APIView):
+    """Where a push has got to, for the cashier's screen to poll."""
+    permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser | IsReceptionistUser,)
+
+    def get(self, request, request_id):
+        from .models import MpesaPaymentRequest
+        from .serializers import MpesaPaymentRequestSerializer
+
+        push = get_object_or_404(MpesaPaymentRequest, pk=request_id)
+        return Response(MpesaPaymentRequestSerializer(push).data)
+
+
+class MpesaCallbackView(APIView):
+    """
+    Safaricom's confirmation of an STK push. Unauthenticated, as Safaricom
+    calls it; the secret token in the URL is what makes it trusted. Always
+    answers "accepted" so Safaricom doesn't retry a callback we have handled.
+    """
+    authentication_classes = ()
+    permission_classes = ()
+
+    def post(self, request, token):
+        import hmac
+
+        from .mpesa import handle_callback
+
+        expected = settings.MPESA_CALLBACK_TOKEN
+        if not expected or not hmac.compare_digest(str(token), str(expected)):
+            return Response({'ResultCode': 1, 'ResultDesc': 'Rejected'}, status=status.HTTP_403_FORBIDDEN)
+        try:
+            handle_callback(request.data)
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception("M-Pesa callback failed")
+        return Response({'ResultCode': 0, 'ResultDesc': 'Accepted'})

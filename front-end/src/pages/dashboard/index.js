@@ -15,6 +15,7 @@ import Link from "next/link";
 // counter to the bench to the report.
 const labShortcuts = [
   { href: "/dashboard/laboratory/walk-in", label: "New Walk-in", hint: "Register the patient and order their tests" },
+  { href: "/dashboard/laboratory/receive-samples", label: "Receive Samples", hint: "Book in samples another facility sent" },
   { href: "/dashboard/finance/accounts-receivable/invoices", label: "Take Payment", hint: "Bill the tests so the bench can run them" },
   { href: "/dashboard/laboratory", label: "Phlebotomy", hint: "Collect samples for paid tests" },
   { href: "/dashboard/laboratory/lab-results", label: "Lab Results", hint: "Enter, approve and print results" },
@@ -35,20 +36,20 @@ const Dashboard = () => {
   const dispatch = useDispatch();
   const auth = useAuth()
   const { processes } = useSelector((store)=>store.patient);
-  const { loaded, isStandaloneLab } = useFacility();
+  const { settled, isLabFirst } = useFacility();
 
   useEffect(()=>{
       dispatch(getAllProcesses(auth))
   },[])
 
-  if (!loaded) return null;
+  if (!settled) return null;
 
   return (
     <Container maxWidth="xl">
-      <h2 className="text-2xl py-2">{isStandaloneLab ? "Laboratory" : "New Visits"}</h2>
+      <h2 className="text-2xl py-2">{isLabFirst ? "Laboratory" : "New Visits"}</h2>
       <hr class="h-px mb-8 bg-gray border-0 dark:bg-gray"></hr>
 
-      {isStandaloneLab ? <LabHome /> : <AppointmentCard />}
+      {isLabFirst ? <LabHome /> : <AppointmentCard />}
     </Container>
   );
 };

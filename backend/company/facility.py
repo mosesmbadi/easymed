@@ -10,11 +10,12 @@ there would quietly satisfy them and skip the role check.
 """
 from django.http import JsonResponse
 
-from .models import Company
+from .models import MODULE_LABELS, Company
 
 
 # URL prefix -> module. Only writes are refused: a lab screen that reads the
-# (empty) triage attached to a visit should still render.
+# (empty) triage attached to a visit should still render. Radiology has no
+# backend of its own yet, so nothing to guard there.
 MODULE_URL_PREFIXES = (
     ('/inpatient/', 'inpatient'),
     ('/patients/triage/', 'triage'),
@@ -44,9 +45,8 @@ def module_enabled(module):
 
 
 def module_disabled_message(module):
-    company = current_company()
-    facility = company.get_facility_type_display() if company else ''
-    return f"The {module} module is not available to a {facility}."
+    label = MODULE_LABELS.get(module, module)
+    return f"{label} is not switched on for this facility."
 
 
 class FacilityModuleMiddleware:

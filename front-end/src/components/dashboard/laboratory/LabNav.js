@@ -6,9 +6,12 @@ const LabNav = () => {
     const router = useRouter();
     const pathName = router.pathname
     return (
-        <div className="flex items-center gap-8 my-4">
+        <div className="flex flex-wrap items-center gap-x-8 gap-y-2 my-4">
             <Link href="/dashboard/laboratory/walk-in" className={`${pathName === "/dashboard/laboratory/walk-in" ? 'bg-primary text-white' : 'bg-white shadow'}  text-sm rounded px-3 py-2 mb-1`}>
                 New Walk-in
+            </Link>
+            <Link href="/dashboard/laboratory/receive-samples" className={`${pathName === "/dashboard/laboratory/receive-samples" ? 'bg-primary text-white' : 'bg-white shadow'}  text-sm rounded px-3 py-2 mb-1`}>
+                Receive Samples
             </Link>
             <Link href="/dashboard/laboratory"className={`${pathName === "/dashboard/laboratory" ? 'bg-primary text-white' : 'bg-white shadow'}  text-sm rounded px-3 py-2 mb-1`}>
                 Phlebotomy

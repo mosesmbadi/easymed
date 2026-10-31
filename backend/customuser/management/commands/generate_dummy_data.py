@@ -2,9 +2,8 @@ from django.core.management.base import BaseCommand
 from customuser.management.utils.data_generators import (
     create_units,
     create_dummy_users,
-    create_dummy_companies,
+    create_facility_profile,
     create_dummy_insurance_companies,
-    create_dummy_company_branches,
     create_dummy_items,
     create_appointment_items,
     create_permissions_and_groups,
@@ -66,21 +65,13 @@ class Command(BaseCommand):
             users = create_dummy_users(count=DEFAULT_COUNT)
             self.stdout.write(self.style.SUCCESS(f"Created {len(users)} dummy users."))
 
-        if Company.objects.count() >= DEFAULT_COUNT:
-            self.stdout.write(self.style.WARNING("Skipping companies: already have 50 or more records."))
-            companies = Company.objects.all()[:DEFAULT_COUNT]
+        # The facility this deployment runs as. One, not a list: insurers,
+        # employers and referring clinics are credit accounts below.
+        if Company.current() is not None:
+            self.stdout.write(self.style.WARNING("Skipping facility profile: already set up."))
         else:
-            companies = create_dummy_companies(count=DEFAULT_COUNT)
-            self.stdout.write(self.style.SUCCESS(f"Created {len(companies)} dummy companies."))
-
-        if CompanyBranch.objects.count() >= DEFAULT_COUNT * DEFAULT_COUNT:
-            self.stdout.write(self.style.WARNING("Skipping company branches: already have enough records."))
-        else:
-            total_branches = 0
-            for company in companies:
-                branches = create_dummy_company_branches(company, count=DEFAULT_COUNT)
-                total_branches += len(branches)
-            self.stdout.write(self.style.SUCCESS(f"Created {total_branches} dummy company branches."))
+            company = create_facility_profile()
+            self.stdout.write(self.style.SUCCESS(f"Set up the facility profile: {company.name}."))
 
         if InsuranceCompany.objects.count() >= DEFAULT_COUNT:
             self.stdout.write(self.style.WARNING("Skipping insurance companies: already have 50 or more records."))

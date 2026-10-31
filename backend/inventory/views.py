@@ -911,7 +911,7 @@ def download_requisition_pdf(request, requisition_id):
     This view gets the generated pdf and downloads it locally
     pdf accessed here http://127.0.0.1:8080/download_requisition_pdf/26/
     '''
-    company = Company.objects.first()
+    company = Company.current()
     company_logo_url = request.build_absolute_uri(company.logo.url) if company and company.logo else None
     requisition = get_object_or_404(Requisition, pk=requisition_id)
     requisition_items = RequisitionItem.objects.filter(requisition=requisition).select_related('item')
@@ -955,7 +955,7 @@ def download_purchaseorder_pdf(request, purchaseorder_id):
     purchase_order = get_object_or_404(PurchaseOrder, pk=purchaseorder_id)
     purchase_order_items = PurchaseOrderItem.objects.filter(
         purchase_order=purchase_order).select_related('requisition_item', 'requisition_item__item')
-    company = Company.objects.first()
+    company = Company.current()
     user = CustomUser.objects.first()
 
     # Orders raised before the supplier was carried on the PO itself still
@@ -1017,7 +1017,7 @@ def download_purchaseorder_pdf(request, purchaseorder_id):
 def download_goods_receipt_note_pdf(request, purchase_order_id):
     incoming_items = IncomingItem.objects.filter(
         purchase_order_id=purchase_order_id).select_related('item', 'supplier', 'goods_receipt_note')
-    company = Company.objects.first()
+    company = Company.current()
 
     first_line = incoming_items.first()
     goods_receipt_note = first_line.goods_receipt_note if first_line else None
@@ -1088,7 +1088,7 @@ def download_supplier_invoice_pdf(request, supplier_id):
     supplier = get_object_or_404(Supplier, pk=supplier_id)
     supplier_invoices = SupplierInvoice.objects.filter(supplier=supplier).prefetch_related('incomingitem_set')
     incoming_items = IncomingItem.objects.filter(supplier_invoice__supplier=supplier)
-    company = Company.objects.first()
+    company = Company.current()
 
     company_logo_url = request.build_absolute_uri(company.logo.url) if company and company.logo else None
 
@@ -1203,7 +1203,7 @@ def download_supplier_payment_receipt_pdf(request, receipt_id):
         ),
         pk=receipt_id,
     )
-    company = Company.objects.first()
+    company = Company.current()
     company_logo_url = (
         request.build_absolute_uri(company.logo.url)
         if company and getattr(company, 'logo', None) and company.logo
