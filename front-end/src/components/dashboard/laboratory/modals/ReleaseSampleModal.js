@@ -23,7 +23,7 @@ const style = {
     outline: 'none',
 }
 
-const ReleaseSampleModal = ({ open, setOpen, selectedSample, archiveId = null }) => {
+const ReleaseSampleModal = ({ open, setOpen, selectedSample, archiveId = null, onReleased }) => {
     const auth = useAuth()
     const dispatch = useDispatch()
     const [loading, setLoading] = useState(false)
@@ -64,6 +64,7 @@ const ReleaseSampleModal = ({ open, setOpen, selectedSample, archiveId = null })
             dispatch(getAllReleasedSamples(auth))
             dispatch(getAllPhlebotomySamples(auth))
             toast.success('Sample released successfully')
+            onReleased?.()
             helpers.resetForm()
             setOpen(false)
         } catch (error) {

@@ -4,7 +4,6 @@ import { useSelector, useDispatch } from "react-redux";
 import { useAuth } from "@/assets/hooks/use-auth";
 import { allocatePayment, fetchSubAccounts } from "@/redux/service/billing";
 import { getInsuranceInvoices, getPatientInvoices, getPaymentModes } from "@/redux/features/billing";
-import { getAllPatients } from "@/redux/features/patients";
 import ViewInvoiceItems from "./ViewInvoiceItemsModal";
 import { getAllInsurance } from "@/redux/features/insurance";
 import UnifiedPaymentForm from "./UnifiedPaymentForm";
@@ -18,13 +17,11 @@ const InvoicePayModal = () => {
   const dispatch = useDispatch();
   const auth = useAuth();
   
-  const { patients } = useSelector((store) => store.patient);
   const { insurance } = useSelector((store) => store.insurance);
   const { invoices, paymodes } = useSelector((store) => store.billing);
   
   useEffect(() => {
     if (auth) {
-      dispatch(getAllPatients(auth));
       dispatch(getPaymentModes(auth));
       dispatch(getAllInsurance(auth));
       fetchSubAccounts(auth)
@@ -115,7 +112,6 @@ const InvoicePayModal = () => {
   return (
     <section className="p-6">
       <UnifiedPaymentForm
-        patients={patients}
         insurance={insurance}
         invoices={invoices}
         paymodes={paymodes}

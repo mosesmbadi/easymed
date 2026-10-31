@@ -133,6 +133,42 @@ Slices (`redux/store.js`): `auth`, `patient`, `inventory`, `insurance`,
 `appointment`, `doctor`, `laboratory`, `billing`, `prescription`, `user`,
 `announcement`, `menu`, `company`, `inpatient`.
 
+## Visit queues
+
+Every screen that lists visits (check-in, the reception card, nursing
+station, doctor desk, lab requests, lab results, pharmacy) asks the server
+for its own queue, one page at a time. Never download every visit to filter
+it in the browser: that took 19 s on two months of history.
+
+- **`useVisitQueue(filters, { pageSize })`** (`assets/hooks/use-visit-queue.js`)
+  takes the backend's filters (`track`, `track__in`, `queue`, `search_value`,
+  `search_field`; see [patient.md](patient.md#endpoints-patients)) and returns
+  `{rows, total, page, pageSize, setPage, setPageSize, loading, error}`.
+  New filters go back to page 1. Search is debounced.
+- **`<ServerPager>`** (`components/common/ServerPager.js`) is the pager
+  that goes with it. The DataGrid shows the one page it's given
+  (`<Paging enabled={false} />`); header filters are off, because they'd
+  only filter that page.
+- **The page lives in the store** (`patient.processes`, `processesCount`),
+  so reducers that patch a visit after a consultation or referral still
+  update the row on screen. One queue per screen.
+- **After changing a visit**, dispatch `refreshVisitQueues()`. Whichever
+  queue is open reloads its page.
+- **One visit by id:** `fetchVisit(auth, id)`. Don't look it up in the store,
+  which only holds a page.
+- **Headcounts:** `fetchVisitTrackCounts(auth)`.
+- **A visit's patient:** read `row.patient_details`. The patients API is
+  reception-only, so looking the patient up fails for clinical staff.
+
+Other long lists follow the same rule with **`useServerList(fetchPage,
+filters, { reloadOn })`** (`assets/hooks/use-server-list.js`), which keeps
+the page in the component. It's used for patients (`fetchPatientsPage`,
+which `refreshPatientLists()` reloads) and samples (`fetchSamplesPage`).
+**Pickers** search the server as you type: `AsyncSearchableSelect` for
+Formik, or `react-select/async`. They never use a full list.
+`getAllPatients` (every patient) is left only for the patient portal and
+unlinked legacy billing pages.
+
 ## Routes
 
 ### Public / patient

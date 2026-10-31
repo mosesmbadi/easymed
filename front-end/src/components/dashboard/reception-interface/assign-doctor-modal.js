@@ -10,7 +10,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { useAuth } from "@/assets/hooks/use-auth";
 import SeachableSelect from "@/components/select/Searchable";
 import { updateAttendanceProcesses } from "@/redux/service/patients";
-import { getAllProcesses } from "@/redux/features/patients";
+import { refreshVisitQueues } from "@/redux/features/patients";
 import { getItems } from "@/redux/features/inventory";
 import { billingInvoiceItems } from "@/redux/service/billing";
 
@@ -19,6 +19,8 @@ export default function AssignDoctorModal({
   assignOpen,
   setAssignOpen,
   selectedData,
+  // Called once the doctor is assigned and the consultation is on the bill.
+  onAssigned,
 }) {
   const [loading, setLoading] = useState(false);
   const dispatch = useDispatch();
@@ -55,7 +57,7 @@ export default function AssignDoctorModal({
       item:parseInt(item),
     }
     try{
-      billingInvoiceItems(auth, payload);
+      await billingInvoiceItems(auth, payload);
     }catch(error){
       console.log("FAILED SAVING ITEM",  error)
     }
@@ -69,12 +71,13 @@ export default function AssignDoctorModal({
         doctor: parseInt(formValue.doctor.value),
         track: "triage"
       };
-      await updateAttendanceProcesses(formData, selectedData?.id, auth).then(() => {
+      await updateAttendanceProcesses(formData, selectedData?.id, auth).then(async () => {
         helpers.resetForm();
-        saveInvoiceItem(selectedData.invoice, parseInt(formValue.item.value))
-        dispatch(getAllProcesses(authUser))
+        await saveInvoiceItem(selectedData.invoice, parseInt(formValue.item.value))
+        dispatch(refreshVisitQueues())
         toast.success("Doctor Assigned, proceed to Billing!");
         setLoading(false);
+        onAssigned?.({ doctor: formValue.doctor.label });
         handleClose();
       });
     } catch (err) {

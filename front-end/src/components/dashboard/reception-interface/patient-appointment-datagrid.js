@@ -38,7 +38,7 @@ const getActions = () => {
   return actions;
 };
 
-const PatientAppointmentDataGrid = ({ patientAppointments }) => {
+const PatientAppointmentDataGrid = ({ patientAppointments, loading = false, footer = null }) => {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [selectedRowData, setSelectedRowData] = useState({});
   const userActions = getActions();
@@ -60,8 +60,6 @@ const PatientAppointmentDataGrid = ({ patientAppointments }) => {
 
   const newAppointments = patientAppointments || []
   
-  console.log("DATAGRID: Received patientAppointments:", patientAppointments);
-  console.log("DATAGRID: newAppointments array:", newAppointments);
 
   const onMenuClick = async (menu, data) => {
     console.log("ATTENDANCE PROCESS DATA", data)
@@ -118,10 +116,10 @@ const PatientAppointmentDataGrid = ({ patientAppointments }) => {
       </section>
       <DataGrid
         dataSource={newAppointments}
+        noDataText={loading ? "Loading..." : "No visits"}
         allowColumnReordering={true}
         rowAlternationEnabled={true}
         showBorders={true}
-        remoteOperations={true}
         showColumnLines={true}
         showRowLines={true}
         wordWrapEnabled={true}
@@ -130,15 +128,8 @@ const PatientAppointmentDataGrid = ({ patientAppointments }) => {
         // height={"70vh"}
       >
         <Scrolling rowRenderingMode='virtual'></Scrolling>
-        <Paging defaultPageSize={10} />
-        <Pager
-          visible={true}
-          allowedPageSizes={allowedPageSizes}
-          showPageSizeSelector={showPageSizeSelector}
-          showInfo={showInfo}
-          showNavigationButtons={showNavButtons}
-        />
-        <HeaderFilter visible={true} />
+        {/* The page passes one page of visits and its own pager (footer). */}
+        <Paging enabled={false} />
         <Column
           dataField="id"
           caption="Action"
@@ -183,6 +174,7 @@ const PatientAppointmentDataGrid = ({ patientAppointments }) => {
         />
         <Column dataField="track" caption="Current Track" width={140} />
       </DataGrid>
+      {footer}
       <CreateAppointmentModal {...{ open, setOpen, selectedRowData }} />
       <AssignDoctorModal {...{ assignOpen, setAssignOpen, selectedRowData }} />
     </>

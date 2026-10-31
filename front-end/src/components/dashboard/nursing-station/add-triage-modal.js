@@ -7,7 +7,7 @@ import * as Yup from "yup";
 import { Formik, Field, Form, ErrorMessage } from "formik";
 import { toast } from "react-toastify";
 import { useAuth } from "@/assets/hooks/use-auth";
-import { getAllProcesses, getPatientTriage } from "@/redux/features/patients";
+import { refreshVisitQueues, getPatientTriage } from "@/redux/features/patients";
 import { updateAttendanceProcesses, updatePatientTriage } from "@/redux/service/patients";
 import { getVitalSignColor } from "@/utils/triage-flags";
 import { getTriageSettings } from "@/redux/features/patients";
@@ -22,7 +22,9 @@ export default function AddTriageModal({
   const dispatch = useDispatch();
   const { patientTriage, patients, triageSettings } = useSelector((store) => store.patient)
 
-  const triagePatient = patients.find((patient) => patient.id === selectedRowData?.patient)
+  // The visit carries the patient's details: the patients API is
+  // reception-only, so looking them up left this blank for clinical staff.
+  const triagePatient = selectedRowData?.patient_details || patients.find((p) => p.id === selectedRowData?.patient)
 
 
   useEffect(() => {
@@ -88,7 +90,7 @@ export default function AddTriageModal({
   const sendToDoc = async (payload, process_id) => {
     try {
       const response = await updateAttendanceProcesses(payload, process_id, auth)
-      dispatch(getAllProcesses(auth))
+      dispatch(refreshVisitQueues())
       console.log("SUCCESSFULLY SENT TO DOC", response)
 
     } catch (error) {
@@ -131,7 +133,7 @@ export default function AddTriageModal({
       >
         <DialogTitle id="alert-dialog-title">
           <div className="flex justify-between items-center">
-            <p>{`${triagePatient?.first_name} ${triagePatient?.second_name}`}</p>
+            <p>{`${triagePatient?.name || `${triagePatient?.first_name} ${triagePatient?.second_name}`}`}</p>
             <p>{`Gender: ${triagePatient?.gender}`}</p>
             <p>{`Age: ${triagePatient?.age}`}</p>
 

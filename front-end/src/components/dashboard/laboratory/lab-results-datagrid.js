@@ -2,8 +2,9 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { toast } from "react-toastify";
 import dynamic from "next/dynamic";
-import { Column, Paging, Pager, Scrolling,
- } from "devextreme-react/data-grid";
+import { Column, Paging, Scrolling } from "devextreme-react/data-grid";
+import ServerPager from "@/components/common/ServerPager";
+import { useVisitQueue } from "@/assets/hooks/use-visit-queue";
 import { labData } from "@/assets/dummy-data/laboratory";
 import { Grid } from "@mui/material";
 import { MdLocalPrintshop } from "react-icons/md";
@@ -20,7 +21,6 @@ const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
   ssr: false,
 });
 
-const allowedPageSizes = [5, 10, 'all'];
 
 const getActions = () => {
   let actions = [
@@ -48,16 +48,18 @@ const LabResultDataGrid = () => {
   const [searchQuery, setSearchQuery] = React.useState("");
   const userActions = getActions();
   const auth = useAuth();
-  const [showPageSizeSelector, setShowPageSizeSelector] = useState(true);
   const [approveOpen ,setApproveOpen] = useState(false)
   const [selectedData, setSelectedData] = useState(null)
-  const [showInfo, setShowInfo] = useState(true);
-  const [showNavButtons, setShowNavButtons] = useState(true);
 
-  const { processes, patients } = useSelector((store)=> store.patient)
+  const { patients } = useSelector((store)=> store.patient)
+  // Visits whose tests have gone back to the doctor or on to the pharmacy,
+  // searched by patient ID on the server.
+  const queue = useVisitQueue({
+    track__in: "lab,pharmacy,doctor",
+    search_value: searchQuery,
+    search_field: searchQuery ? "patient_number" : "",
+  });
 
-  const labTestsResultsSchedules = processes.filter((process)=> process.track==="lab" || process.track === "pharmacy" || process.track === "doctor")
-  const searchedProcesses = labTestsResultsSchedules.filter((process)=> process.patient_number.includes(searchQuery))
 
   const patientNameRender = (cellData) => {
     // The visit carries the name (or, for a coded sample, the facility's number).
@@ -141,25 +143,19 @@ const LabResultDataGrid = () => {
 
       {/* DATAGRID STARTS HERE */}
       <DataGrid
-        dataSource={searchedProcesses}
+        dataSource={queue.rows}
+        noDataText={queue.loading ? "Loading..." : queue.error || "No lab results"}
         allowColumnReordering={true}
         rowAlternationEnabled={true}
         showBorders={true}
-        remoteOperations={true}
         showColumnLines={false}
         showRowLines={true}
         wordWrapEnabled={true}
         className="w-full shadow"
       >
         <Scrolling rowRenderingMode='virtual'></Scrolling>
-        <Paging defaultPageSize={10} />
-        <Pager
-          visible={true}
-          allowedPageSizes={allowedPageSizes}
-          showPageSizeSelector={showPageSizeSelector}
-          showInfo={showInfo}
-          showNavigationButtons={showNavButtons}
-        />
+        {/* The server sends one page; ServerPager below asks for others. */}
+        <Paging enabled={false} />
         <Column
           dataField="patient_number" 
           caption="PId" 
@@ -175,6 +171,14 @@ const LabResultDataGrid = () => {
           cellRender={actionsFunc}
         />
       </DataGrid>
+      <ServerPager
+        page={queue.page}
+        pageSize={queue.pageSize}
+        total={queue.total}
+        loading={queue.loading}
+        onPageChange={queue.setPage}
+        onPageSizeChange={queue.setPageSize}
+      />
 
       {approveOpen && (<ApproveResults selectedData={selectedData} approveOpen={approveOpen} setApproveOpen={setApproveOpen}/>)}
     </>

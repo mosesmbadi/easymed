@@ -1,11 +1,11 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import dynamic from "next/dynamic";
 import { Column, Pager } from 'devextreme-react/data-grid';
 import { useDispatch, useSelector } from 'react-redux';
 import { useAuth } from '@/assets/hooks/use-auth';
 
 import { getAllPublicPrescriptions } from '@/redux/features/pharmacy';
-import { getAllPatients } from '@/redux/features/patients';
+import { fetchPatientsPage } from '@/redux/service/patients';
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
   ssr: false,
@@ -15,7 +15,8 @@ const PublicPrescriptionsDatagrid = () => {
   const auth = useAuth();
   const dispatch = useDispatch();
   const publicPrescriptions = useSelector((store)=> store.prescription.publicPrescriptions);
-  const allPatients = useSelector((store)=> store.patient.patients)
+  // Just the patients on this list, to name them -- not the whole register.
+  const [allPatients, setAllPatients] = useState([])
 
   console.log("PUBLIC PRESCRIPTIONS", publicPrescriptions)
 
@@ -23,10 +24,17 @@ const PublicPrescriptionsDatagrid = () => {
 
     if(auth){
       dispatch(getAllPublicPrescriptions(auth))
-      dispatch(getAllPatients(auth))
     }
 
   },[auth])
+
+  useEffect(() => {
+    const ids = [...new Set((publicPrescriptions || []).map((p) => p.patient).filter(Boolean))];
+    if (!auth || ids.length === 0) return;
+    fetchPatientsPage(auth, { id__in: ids.join(','), page: 1, page_size: Math.min(ids.length, 200) })
+      .then((data) => setAllPatients(data.results))
+      .catch(() => setAllPatients([]));
+  }, [auth, publicPrescriptions])
 
   const patientNameRender = (cellData) => {
     const patient = allPatients.find((patient) => patient.id === cellData.data.patient);

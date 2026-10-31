@@ -8,7 +8,7 @@ import { useSelector,useDispatch } from "react-redux";
 import { getAllInsurance } from "@/redux/features/insurance";
 import { editPatient } from "@/redux/service/patients";
 import { toast } from 'react-toastify'
-import { getAllPatients } from "@/redux/features/patients";
+import { refreshPatientLists } from "@/redux/features/patients";
 import { useAuth } from "@/assets/hooks/use-auth";
 
 const EditPatientDetails = ({ open, setOpen, selectedRowData }) => {
@@ -81,7 +81,7 @@ const EditPatientDetails = ({ open, setOpen, selectedRowData }) => {
         helpers.resetForm();
         toast.success("Patient Edited Successfully!");
         setLoading(false);
-        dispatch(getAllPatients(auth));
+        dispatch(refreshPatientLists());
         handleClose();
       });
     } catch (err) {

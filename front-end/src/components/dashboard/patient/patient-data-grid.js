@@ -1,17 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import dynamic from "next/dynamic";
-import {
-  Column,
-  Paging,
-  Pager,
-  HeaderFilter,
-  Scrolling,
-} from "devextreme-react/data-grid";
+import { Column, Paging, Scrolling } from "devextreme-react/data-grid";
+import ServerPager from "@/components/common/ServerPager";
+import { useServerList } from "@/assets/hooks/use-server-list";
+import { fetchPatientsPage } from "@/redux/service/patients";
 import { useRouter } from 'next/navigation'
 import AddPatientModal from "./add-patient-modal";
 import { Chip } from "@mui/material";
-import { getAllPatients } from "@/redux/features/patients";
 import { useSelector, useDispatch } from "react-redux";
 import CmtDropdownMenu from "@/assets/DropdownMenu";
 import { MdAddCircle } from "react-icons/md";
@@ -32,7 +28,6 @@ const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
   ssr: false,
 });
 
-const allowedPageSizes = [5, 10, 'all'];
 
 // A New Visit goes to check-in, which a standalone lab doesn't have; there the
 // patient's tests are ordered on the lab's walk-in screen instead.
@@ -60,7 +55,7 @@ const getActions = ({ canCheckIn, canOrderLab }) => {
 
 const PatientsDataGrid = () => {
   const [searchQuery, setSearchQuery] = React.useState("");
-  const { patients } = useSelector((store) => store.patient);
+  const { patientListVersion } = useSelector((store) => store.patient);
   const dispatch = useDispatch();
   const auth = useAuth()
   const { isModuleEnabled } = useFacility();
@@ -73,9 +68,6 @@ const PatientsDataGrid = () => {
   const [open,setOpen] = useState(false)
   const [editOpen,setEditOpen] = useState(false)
   const [selectedRowData,setSelectedRowData] = useState({});
-  const [showPageSizeSelector, setShowPageSizeSelector] = useState(true);
-  const [showNavButtons, setShowNavButtons] = useState(true);
-  const [showInfo, setShowInfo] = useState(true);
   const [labOpen, setLabOpen] = useState(false);
   const router = useRouter()
   const [processsFilter, setProcessFilter] = useState({ search: "" })
@@ -119,12 +111,22 @@ const PatientsDataGrid = () => {
 
   // Patients we only know through samples another facility sent are that
   // facility's patients, not ours: kept off the list unless asked for, or
-  // searched for by name or by the facility's number.
+  // searched for by name or by the facility's number. Filtered, searched and
+  // paged on the server.
   const [showReferred, setShowReferred] = useState(false);
-  const referredCount = patients.filter((patient) => patient.referred_from).length;
-  const listedPatients = showReferred || processsFilter.search
-    ? patients
-    : patients.filter((patient) => !patient.referred_from);
+  const [referredCount, setReferredCount] = useState(0);
+  const patientsPage = useServerList(fetchPatientsPage, {
+    search_value: processsFilter.search,
+    search_field: selectedSearchFilter.value,
+    referred: showReferred || processsFilter.search ? undefined : "false",
+  }, { reloadOn: patientListVersion });
+
+  useEffect(() => {
+    if (!auth) return;
+    fetchPatientsPage(auth, { referred: "true", page: 1, page_size: 1 })
+      .then((data) => setReferredCount(data.count))
+      .catch(() => setReferredCount(0));
+  }, [auth, patientListVersion]);
 
   const renderInsurances = ({ data }) => {
     if (data.insurances.length > 0) {
@@ -133,23 +135,6 @@ const PatientsDataGrid = () => {
       return 'NA';
     }
   };
-
-  // useEffect(() => {
-  //   dispatch(getAllPatients(auth));
-  // }, []);
-
-  useEffect(() => {
-      // This effect handles the debouncing logic
-      const timerId = setTimeout(() => {
-          // Dispatch the action only after a 500ms delay
-          dispatch(getAllPatients(auth, processsFilter, selectedSearchFilter))
-      }, 500); // 500ms delay, adjust as needed
-
-      // Cleanup function: clears the timer if searchTerm changes before the delay is over
-      return () => {
-          clearTimeout(timerId);
-      };
-  }, [processsFilter.search]); // The effect re-runs only when the local `searchTerm` state changes
 
   return (
     <>
@@ -174,28 +159,19 @@ const PatientsDataGrid = () => {
         )}
       </div>
       <DataGrid
-        dataSource={listedPatients}
+        dataSource={patientsPage.rows}
+        noDataText={patientsPage.loading ? "Loading..." : patientsPage.error || "No patients"}
         allowColumnReordering={true}
         rowAlternationEnabled={true}
         showBorders={true}
-        remoteOperations={true}
         showColumnLines={false}
         showRowLines={true}
         wordWrapEnabled={true}
-        allowPaging={false}
         className="shadow-xl w-full"
-        // height={"60vh"}
       >
-        <HeaderFilter visible={true} />
         <Scrolling rowRenderingMode='virtual'></Scrolling>
-        <Paging defaultPageSize={10} />
-        <Pager
-          visible={true}
-          showInfo={showInfo}
-          allowedPageSizes={allowedPageSizes}
-          showPageSizeSelector={showPageSizeSelector}
-          showNavigationButtons={showNavButtons}
-        />
+        {/* The server sends one page; ServerPager below asks for others. */}
+        <Paging enabled={false} />
         <Column 
           dataField="unique_id" 
           caption="Patient ID" 
@@ -236,6 +212,14 @@ const PatientsDataGrid = () => {
           cellRender={actionsFunc}
         />
       </DataGrid>
+      <ServerPager
+        page={patientsPage.page}
+        pageSize={patientsPage.pageSize}
+        total={patientsPage.total}
+        loading={patientsPage.loading}
+        onPageChange={patientsPage.setPage}
+        onPageSizeChange={patientsPage.setPageSize}
+      />
     </section>
     {open && <CreateAppointmentModal {...{setOpen,open,selectedRowData}} />}
     <EditPatientDetails open={editOpen} setOpen={setEditOpen} selectedRowData={selectedRowData}  />

@@ -1,5 +1,6 @@
-import React, { useState } from 'react'
-import { useSelector } from 'react-redux'
+import React, { useEffect, useState } from 'react'
+import { useAuth } from '@/assets/hooks/use-auth'
+import { fetchPatientById } from '@/redux/service/patients'
 import { toast } from 'react-toastify'
 import * as Yup from "yup"
 import { Dialog, DialogContent, DialogTitle } from '@mui/material'
@@ -11,9 +12,15 @@ import { formatMoney } from '@/functions/money'
 const MobileMoneyPayModal = ({patient_id, amount}) => {
     const [open, setOpen]=useState(false)
     const [loading, setLoading]=useState(false)
-    const { patients } = useSelector((store) => store.patient);
+    const auth = useAuth()
+    // Just this patient, for the phone to prefill -- not the whole register.
+    const [selectedPatient, setSelectedPatient] = useState(null)
 
-    const selectedPatient = patients.find((patient)=> patient.id === patient_id)
+    useEffect(() => {
+        if (open && patient_id && auth) {
+            fetchPatientById(patient_id, auth).then(setSelectedPatient).catch(() => setSelectedPatient(null))
+        }
+    }, [open, patient_id, auth])
 
     const handleClose = () => {
         setOpen(false)
@@ -60,6 +67,7 @@ const MobileMoneyPayModal = ({patient_id, amount}) => {
         <DialogTitle id="alert-dialog-slide-title">{`Pay ${formatMoney(amount)} with mobile money ?`}</DialogTitle>
         <DialogContent>
             <Formik
+                enableReinitialize
                 initialValues={initialValues}
                 validationSchema={validationSchema}
                 onSubmit={handlePay}

@@ -669,6 +669,17 @@ export const fetchPhlebotomySamples = (auth) => {
     })
 }
 
+/**
+ * A page of samples: `params` are the backend's filters (is_sample_collected,
+ * released, archived, disposed, search) plus page and page_size. Resolves to
+ * {count, results}.
+ */
+export const fetchSamplesPage = (auth, params) => {
+    const axiosInstance = UseAxios(auth);
+    return axiosInstance.get(`${APP_API_URL.PHLEBOTOMY_PATIENT_SAMPLES}`, { params })
+        .then((res) => res.data);
+}
+
 export const updatePhlebotomySamples = (payload, auth) => {
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve, reject) => {

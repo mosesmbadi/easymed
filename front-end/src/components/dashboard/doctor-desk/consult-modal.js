@@ -24,7 +24,9 @@ const ConsultPatientModal = ({
   const { patientTriage, patients, triageSettings } = useSelector((store) => store.patient);
   const dispatch = useDispatch();
 
-  const patient = patients.find((patient) => patient.id === selectedRowData.patient)
+  // The visit carries the patient's details: the patients API is
+  // reception-only, so looking them up left this blank for clinical staff.
+  const patient = selectedRowData?.patient_details || patients.find((p) => p.id === selectedRowData?.patient)
 
   const handleClose = () => {
     setConsultOpen(false);
@@ -95,7 +97,7 @@ const ConsultPatientModal = ({
       >
         <DialogTitle>
           <div className="flex justify-between">
-            <p>{`Name: ${patient?.first_name} ${patient?.second_name}`}</p>
+            <p>{`Name: ${patient?.name || `${patient?.first_name} ${patient?.second_name}`}`}</p>
             <p>{`Gender: ${patient?.gender}`}</p>
             <p>{`Age: ${patient?.age}`}</p>
           </div>

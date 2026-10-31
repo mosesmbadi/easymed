@@ -33,6 +33,16 @@ export const fetchPatient = (auth, processsFilter = { search: "" }, selectedSear
     })
 }
 
+/**
+ * A page of patients: `params` are the backend's filters (search_value,
+ * search_field, referred, id__in) plus page and page_size. Resolves to
+ * {count, results}.
+ */
+export const fetchPatientsPage = (auth, params) => {
+    const axiosInstance = UseAxios(auth);
+    return axiosInstance.get(`${APP_API_URL.FETCH_PATIENT}`, { params }).then((res) => res.data);
+}
+
 export const fetchPatientById = (patient_id, auth) => {
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve, reject) => {
@@ -342,6 +352,30 @@ export const fetchAllAttendanceProcesses = (auth, process_id = null, processsFil
                 reject(err.message)
             })
     })
+}
+
+/**
+ * One page of a visit queue: `params` are the backend's filters (track,
+ * track__in, queue, search_value, search_field) plus page and page_size.
+ * Resolves to {count, next, previous, results}.
+ */
+export const fetchVisitQueue = (auth, params) => {
+    const axiosInstance = UseAxios(auth);
+    return axiosInstance.get(`${APP_API_URL.PATIENT_ATTENDANCE_PROCESS}`, { params })
+        .then((res) => res.data);
+}
+
+/** One visit by id. */
+export const fetchVisit = (auth, id) => {
+    const axiosInstance = UseAxios(auth);
+    return axiosInstance.get(`${APP_API_URL.PATIENT_ATTENDANCE_PROCESS}`, { params: { process_id: id } })
+        .then((res) => res.data);
+}
+
+/** {track: number of visits on it}. */
+export const fetchVisitTrackCounts = (auth) => {
+    const axiosInstance = UseAxios(auth);
+    return axiosInstance.get(`${APP_API_URL.PATIENT_VISIT_TRACK_COUNTS}`).then((res) => res.data);
 }
 
 export const initiateNewAttendanceProcesses = (payload, auth) => {

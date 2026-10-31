@@ -18,9 +18,9 @@ import * as Yup from 'yup';
 import { toast } from 'react-toastify';
 import { useSelector, useDispatch } from 'react-redux';
 import { useAuth } from '@/assets/hooks/use-auth';
-import { createPatient, initiateNewAttendanceProcesses } from '@/redux/service/patients';
+import { createPatient, fetchPatientsPage, initiateNewAttendanceProcesses } from '@/redux/service/patients';
 import { getAllInsurance } from '@/redux/features/insurance';
-import { getAllPatients, getAllProcesses } from '@/redux/features/patients';
+import { refreshPatientLists, refreshVisitQueues } from '@/redux/features/patients';
 import { MdPersonAdd, MdPersonSearch } from 'react-icons/md';
 import { IoMdCheckmarkCircle } from 'react-icons/io';
 import AssignDoctorModal from '../reception-interface/assign-doctor-modal';
@@ -37,13 +37,28 @@ const UnifiedCheckInForm = ({ onSuccess }) => {
   
   const dispatch = useDispatch();
   const auth = useAuth();
-  const { patients } = useSelector((store) => store.patient);
   const { insurance } = useSelector((store) => store.insurance);
+  // Patients matching what's typed, 20 at a time from the server: the
+  // register is too long to load whole.
+  const [patientQuery, setPatientQuery] = useState('');
+  const [patientOptions, setPatientOptions] = useState([]);
+  const [searchingPatients, setSearchingPatients] = useState(false);
 
   useEffect(() => {
     dispatch(getAllInsurance(auth));
-    dispatch(getAllPatients(auth));
   }, []);
+
+  useEffect(() => {
+    if (!auth) return undefined;
+    const timer = setTimeout(() => {
+      setSearchingPatients(true);
+      fetchPatientsPage(auth, { search_value: patientQuery || undefined, referred: 'false', page: 1, page_size: 20 })
+        .then((data) => setPatientOptions(data.results))
+        .catch(() => setPatientOptions([]))
+        .finally(() => setSearchingPatients(false));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [auth, patientQuery]);
 
   // Patient Registration Schema
   const registerSchema = Yup.object().shape({
@@ -84,8 +99,7 @@ const UnifiedCheckInForm = ({ onSuccess }) => {
       const response = await createPatient(patientPayload, auth);
       toast.success('Patient registered successfully!');
       
-      // Refresh patients list
-      dispatch(getAllPatients(auth));
+      dispatch(refreshPatientLists());
       
       // Set the newly created patient as selected
       setSelectedPatient(response);
@@ -120,7 +134,7 @@ const UnifiedCheckInForm = ({ onSuccess }) => {
       resetForm();
       
       // Refresh processes
-      dispatch(getAllProcesses(auth));
+      dispatch(refreshVisitQueues());
       
       if (onSuccess) onSuccess();
     } catch (error) {
@@ -156,7 +170,7 @@ const UnifiedCheckInForm = ({ onSuccess }) => {
     setSelectedPatient(null);
     setVisitCreated(false);
     setCurrentProcess(null);
-    dispatch(getAllProcesses(auth));
+    dispatch(refreshVisitQueues());
     if (onSuccess) onSuccess();
   };
 
@@ -184,9 +198,16 @@ const UnifiedCheckInForm = ({ onSuccess }) => {
       {mode === 'search' && (
         <Box sx={{ mb: 3 }}>
           <Autocomplete
-            options={patients}
+            options={patientOptions}
+            // The server already matched the text; don't filter again here.
+            filterOptions={(options) => options}
+            loading={searchingPatients}
+            isOptionEqualToValue={(option, value) => option.id === value.id}
+            onInputChange={(event, value, reason) => {
+              if (reason === 'input' || reason === 'clear') setPatientQuery(value);
+            }}
             getOptionLabel={(option) => 
-              `${option.first_name} ${option.second_name} - ${option.phone} (${option.patient_number})`
+              `${option.first_name} ${option.second_name} - ${option.phone || 'no phone'} (${option.unique_id})`
             }
             onChange={(event, value) => handlePatientSelect(value)}
             value={selectedPatient}

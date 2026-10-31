@@ -4,28 +4,31 @@ import DashboardLayout from "@/components/layout/dashboard-layout";
 import { Container } from "@mui/material";
 import PatientAppointmentDataGrid from "@/components/dashboard/reception-interface/patient-appointment-datagrid";
 import AuthGuard from "@/assets/hoc/auth-guard";
-import { getAllProcesses } from "@/redux/features/patients";
-import { useDispatch, useSelector } from "react-redux";
-import { useEffect } from "react";
+import { useVisitQueue } from "@/assets/hooks/use-visit-queue";
+import ServerPager from "@/components/common/ServerPager";
 import ProtectedRoute from "@/assets/hoc/protected-route";
-import { useAuth } from "@/assets/hooks/use-auth";
 
 const ReceptionInterface = () => {
-  const { processes } = useSelector(( store ) => store.patients)
-  const dispatch = useDispatch();
-  const auth = useAuth();
-
-  useEffect(() =>{
-    console.log("RECEPTION: Dispatching getAllProcesses with auth:", auth);
-    dispatch(getAllProcesses(auth));
-  },[]);
-
-  console.log("RECEPTION: Current processes from Redux:", processes);
-
+  // Every visit, newest first, a page at a time. (This read `store.patients`,
+  // which doesn't exist, so the list was always empty.)
+  const queue = useVisitQueue({});
 
   return (
     <Container maxWidth="xl" className="mt-8">
-      <PatientAppointmentDataGrid patientAppointments={processes} />
+      <PatientAppointmentDataGrid
+        patientAppointments={queue.rows}
+        loading={queue.loading}
+        footer={
+          <ServerPager
+            page={queue.page}
+            pageSize={queue.pageSize}
+            total={queue.total}
+            loading={queue.loading}
+            onPageChange={queue.setPage}
+            onPageSizeChange={queue.setPageSize}
+          />
+        }
+      />
     </Container>
   );
 };

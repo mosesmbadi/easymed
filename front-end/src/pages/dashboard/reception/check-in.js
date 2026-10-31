@@ -8,29 +8,28 @@ import AuthGuard from '@/assets/hoc/auth-guard';
 import ProtectedRoute from '@/assets/hoc/protected-route';
 import UnifiedCheckInForm from '@/components/dashboard/reception/UnifiedCheckInForm';
 import CheckedInPatientsQueue from '@/components/dashboard/reception/CheckedInPatientsQueue';
-import { getAllProcesses } from '@/redux/features/patients';
-import { getAllPatients } from '@/redux/features/patients';
+import { refreshVisitQueues } from '@/redux/features/patients';
+import { fetchVisitTrackCounts } from '@/redux/service/patients';
+import { useVisitQueue } from '@/assets/hooks/use-visit-queue';
+import ServerPager from '@/components/common/ServerPager';
 
 const CheckInPage = () => {
   const dispatch = useDispatch();
   const auth = useAuth();
-  const { processes, patients } = useSelector((store) => store.patient);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const { visitQueueVersion } = useSelector((store) => store.patient);
+  // Checked in: still at reception or waiting for triage. A page at a time.
+  const queue = useVisitQueue({ track__in: 'reception,triage' }, { pageSize: 20 });
+  // Headcounts per track for the cards below, counted on the server.
+  const [trackCounts, setTrackCounts] = useState({});
+  const countOf = (track) => trackCounts[track] || 0;
 
-  // Filter for reception processes (checked-in patients)
-  const checkedInPatients = processes.filter((process) => 
-    process.track === 'reception' || process.track === 'triage'
-  );
-
-  // Load initial data
   useEffect(() => {
-    dispatch(getAllPatients(auth));
-    dispatch(getAllProcesses(auth, null, { track: 'reception', search: '' }));
-  }, [refreshTrigger]);
+    if (!auth) return;
+    fetchVisitTrackCounts(auth).then(setTrackCounts).catch(() => setTrackCounts({}));
+  }, [auth, visitQueueVersion]);
 
   const handleCheckInSuccess = () => {
-    // Refresh the data after successful check-in
-    setRefreshTrigger(prev => prev + 1);
+    dispatch(refreshVisitQueues());
     toast.success('Patient checked in successfully!');
   };
 
@@ -63,16 +62,25 @@ const CheckInPage = () => {
                   Checked-In Patients Queue
                 </Typography>
                 <Chip 
-                  label={`${checkedInPatients.length} Patients`} 
+                  label={`${queue.total} Patients`} 
                   color="primary" 
                   size="small"
                 />
               </Box>
               <Divider sx={{ mb: 2 }} />
               <CheckedInPatientsQueue 
-                processes={checkedInPatients} 
-                patients={patients}
+                processes={queue.rows}
+                loading={queue.loading}
+                rowOffset={(queue.page - 1) * queue.pageSize}
                 onUpdate={handleCheckInSuccess}
+              />
+              <ServerPager
+                page={queue.page}
+                pageSize={queue.pageSize}
+                total={queue.total}
+                loading={queue.loading}
+                onPageChange={queue.setPage}
+                onPageSizeChange={queue.setPageSize}
               />
             </CardContent>
           </Card>
@@ -84,7 +92,7 @@ const CheckInPage = () => {
         <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ bgcolor: '#e3f2fd', textAlign: 'center', p: 2 }}>
             <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
-              {checkedInPatients.length}
+              {countOf('reception') + countOf('triage')}
             </Typography>
             <Typography variant="body2" color="text.secondary">
               Waiting Patients
@@ -94,7 +102,7 @@ const CheckInPage = () => {
         <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ bgcolor: '#f3e5f5', textAlign: 'center', p: 2 }}>
             <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#9c27b0' }}>
-              {processes.filter(p => p.track === 'doctor').length}
+              {countOf('doctor')}
             </Typography>
             <Typography variant="body2" color="text.secondary">
               With Doctor
@@ -104,7 +112,7 @@ const CheckInPage = () => {
         <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ bgcolor: '#e8f5e9', textAlign: 'center', p: 2 }}>
             <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#388e3c' }}>
-              {processes.filter(p => p.track === 'lab').length}
+              {countOf('lab')}
             </Typography>
             <Typography variant="body2" color="text.secondary">
               In Lab
@@ -114,7 +122,7 @@ const CheckInPage = () => {
         <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ bgcolor: '#fff3e0', textAlign: 'center', p: 2 }}>
             <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#f57c00' }}>
-              {processes.filter(p => p.track === 'pharmacy').length}
+              {countOf('pharmacy')}
             </Typography>
             <Typography variant="body2" color="text.secondary">
               In Pharmacy

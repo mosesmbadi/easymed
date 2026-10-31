@@ -14,14 +14,13 @@ const AdmitModal = ({admitOpen, setAdmitOpen, selectedRowdata}) => {
   const auth = useAuth();
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
-  const { processes, patients } = useSelector((store)=> store.patient)
+  const { patients } = useSelector((store)=> store.patient)
   const [selectedWard, setSelectedWard] = useState("");
   const { beds, wards } = useSelector((store) => store.inpatient);
 
-  const patientRender = () => {
-    const patient = patients.find((patient) => patient.id === selectedRowdata.patient);
-    return patient ? patient : {};
-  }
+  // The visit carries the patient's details (the patients API is reception-only).
+  const patientRender = () =>
+    selectedRowdata?.patient_details || patients.find((patient) => patient.id === selectedRowdata.patient) || {};
 
   const handleClose = () => {
     setAdmitOpen(false);
@@ -86,7 +85,7 @@ const AdmitModal = ({admitOpen, setAdmitOpen, selectedRowdata}) => {
         >
             <DialogTitle>
               <div className="flex justify-between">
-                  <p>{`Name: ${patientRender()?.first_name} ${patientRender()?.second_name}`}</p>
+                  <p>{`Name: ${patientRender()?.name || `${patientRender()?.first_name} ${patientRender()?.second_name}`}`}</p>
                   <p>{`PId: ${patientRender()?.unique_id}`}</p>
                   <p>{`Gender: ${patientRender()?.gender}`}</p>
                   <p>{`Age: ${patientRender()?.age}`}</p>

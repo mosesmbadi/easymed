@@ -262,10 +262,17 @@ class InvoiceItem(models.Model):
         if self.payment_mode and self.payment_mode.payment_category == 'insurance':
             InsuranceItemSalePrice = apps.get_model('inventory', 'InsuranceItemSalePrice')
             if self.payment_mode.insurance_id:
-                ins_price = InsuranceItemSalePrice.objects.filter(
-                    item=self.item, 
-                    insurance_company_id=self.payment_mode.insurance_id
-                ).exists()
+                # A list of lines can hand over every agreed (item, insurer)
+                # pair at once (see InvoiceItemSerializer) instead of one
+                # query per line.
+                agreed = getattr(self, '_agreed_prices', None)
+                if agreed is not None:
+                    ins_price = (self.item_id, self.payment_mode.insurance_id) in agreed
+                else:
+                    ins_price = InsuranceItemSalePrice.objects.filter(
+                        item=self.item,
+                        insurance_company_id=self.payment_mode.insurance_id
+                    ).exists()
                 if ins_price:
                     return 'insurance'
                 if self.payment_mode.insurance.bills_list_price_when_unagreed:

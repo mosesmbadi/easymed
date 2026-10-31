@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import { Column, Paging, Pager, Scrolling } from "devextreme-react/data-grid";
+import { Column, Paging, Scrolling } from "devextreme-react/data-grid";
+import ServerPager from "@/components/common/ServerPager";
+import { useServerList } from "@/assets/hooks/use-server-list";
+import { fetchPatientsPage } from "@/redux/service/patients";
 import EditPatientDetails from "./edit-patient-details-modal";
 import CmtDropdownMenu from "@/assets/DropdownMenu";
 import { AiFillDelete } from "react-icons/ai";
@@ -8,7 +11,6 @@ import { BiEdit } from "react-icons/bi";
 import { LuMoreHorizontal } from "react-icons/lu";
 import DeletePatientModal from "./delete-patient-modal";
 import { Chip, Grid } from "@mui/material";
-import { getAllPatients } from "@/redux/features/patients";
 import { useSelector,useDispatch } from "react-redux";
 import AddPatientModal from "../patient/add-patient-modal";
 import { useAuth } from "@/assets/hooks/use-auth";
@@ -18,7 +20,6 @@ const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
   ssr: false,
 });
 
-const allowedPageSizes = [5, 10, 'all'];
 
 const getActions = () => {
   let actions = [
@@ -45,15 +46,10 @@ const AdminPatientsDataGrid = () => {
   const [selectedRowData, setSelectedRowData] = React.useState({});
   const dispatch = useDispatch();
   const auth = useAuth()
-  const { patients } = useSelector((store) => store.patient);
-  const [showPageSizeSelector, setShowPageSizeSelector] = useState(true);
-  const [showInfo, setShowInfo] = useState(true);
-  const [showNavButtons, setShowNavButtons] = useState(true);
-
-
-  useEffect(() =>{
-    dispatch(getAllPatients(auth));
-  },[]);
+  const { patientListVersion } = useSelector((store) => store.patient);
+  // Searched and paged on the server.
+  const patientsPage = useServerList(fetchPatientsPage, { search_value: searchQuery },
+    { reloadOn: patientListVersion });
 
   const onMenuClick = async (menu, data) => {
     if (menu.action === "delete") {
@@ -96,10 +92,6 @@ const AdminPatientsDataGrid = () => {
     }
   };
 
-  // filter users based on search query
-  const filteredPatients = patients?.filter((user) => {
-    return user.first_name.toLocaleLowerCase().includes(searchQuery.toLowerCase());
-  });
 
   return (
     <section>
@@ -111,7 +103,7 @@ const AdminPatientsDataGrid = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
             value={searchQuery}
             fullWidth
-            placeholder="Search by patient name"
+            placeholder="Search by name, patient number or phone"
           />
         </Grid>
         <div className="w-full flex justify-end">
@@ -119,27 +111,19 @@ const AdminPatientsDataGrid = () => {
         </div>
       </Grid>
       <DataGrid
-        dataSource={filteredPatients}
+        dataSource={patientsPage.rows}
+        noDataText={patientsPage.loading ? "Loading..." : patientsPage.error || "No patients"}
         allowColumnReordering={true}
         rowAlternationEnabled={true}
         showBorders={true}
-        remoteOperations={true}
         showColumnLines={true}
         showRowLines={true}
         wordWrapEnabled={true}
-        allowPaging={true}
         className="shadow-xl w-full"
-        // height={"70vh"}
       >
         <Scrolling rowRenderingMode='virtual'></Scrolling>
-        <Paging defaultPageSize={10} />
-        <Pager
-            visible={true}
-            allowedPageSizes={allowedPageSizes}
-            showPageSizeSelector={showPageSizeSelector}
-            showInfo={showInfo}
-            showNavigationButtons={showNavButtons}
-        />
+        {/* The server sends one page; ServerPager below asks for others. */}
+        <Paging enabled={false} />
         <Column
           dataField="first_name"
           caption="First Name"
@@ -171,6 +155,14 @@ const AdminPatientsDataGrid = () => {
           cellRender={actionsFunc}
         />
       </DataGrid>
+      <ServerPager
+        page={patientsPage.page}
+        pageSize={patientsPage.pageSize}
+        total={patientsPage.total}
+        loading={patientsPage.loading}
+        onPageChange={patientsPage.setPage}
+        onPageSizeChange={patientsPage.setPageSize}
+      />
       <EditPatientDetails {...{ open, setOpen, selectedRowData }} />
       <DeletePatientModal {...{deleteOpen,setDeleteOpen,selectedRowData}} />
     </section>

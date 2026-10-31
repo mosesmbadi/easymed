@@ -218,6 +218,10 @@ class PatientSampleSerializer(serializers.ModelSerializer):
     is_released = serializers.SerializerMethodField()
     consumables = serializers.SerializerMethodField()
     consumables_used = serializers.SerializerMethodField()
+    # Whose sample it is, so a sample list needn't load every visit to say.
+    patient_name = serializers.SerializerMethodField()
+    patient_number = serializers.SerializerMethodField()
+    track_number = serializers.SerializerMethodField()
 
     class Meta:
         model = PatientSample
@@ -236,10 +240,29 @@ class PatientSampleSerializer(serializers.ModelSerializer):
             'collected_on',
             'consumables',
             'consumables_used',
+            'patient_name',
+            'patient_number',
+            'track_number',
         ]
         read_only_fields = [
             'patient_sample_code',
         ]
+
+    def _visit(self, obj):
+        process = obj.process
+        return getattr(process, 'attendanceprocess', None) if process else None
+
+    def get_patient_name(self, obj):
+        visit = self._visit(obj)
+        return visit.patient.display_name if visit and visit.patient else ''
+
+    def get_patient_number(self, obj):
+        visit = self._visit(obj)
+        return visit.patient_number if visit else ''
+
+    def get_track_number(self, obj):
+        visit = self._visit(obj)
+        return visit.track_number if visit else ''
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -268,17 +291,22 @@ class PatientSampleSerializer(serializers.ModelSerializer):
         Empty until the sample is collected, and empty forever on a retest,
         which reuses a sample somebody already drew.
         """
-        return PatientSampleConsumableSerializer(
-            obj.consumables_used.select_related('item'), many=True).data
+        # .all() so a list's prefetch (PatientSampleViewSet) is used.
+        return PatientSampleConsumableSerializer(obj.consumables_used.all(), many=True).data
 
     def get_is_archived(self, obj):
         return hasattr(obj, 'archive_record')
 
     def get_is_disposed(self, obj):
+        # Annotated by PatientSampleViewSet; anywhere else, ask.
+        if hasattr(obj, 'disposed_flag'):
+            return obj.disposed_flag
         from .models import DisposedSample
         return DisposedSample.objects.filter(patient_sample_code=obj.patient_sample_code).exists()
 
     def get_is_retested(self, obj):
+        if hasattr(obj, 'retested_flag'):
+            return obj.retested_flag
         from .models import RetestSample
         return RetestSample.objects.filter(patient_sample_code=obj.patient_sample_code).exists()
 
@@ -610,7 +638,11 @@ def sample_consumable_rows(sample, availability_cache=None):
     cache = {} if availability_cache is None else availability_cache
     rows = []
 
-    for link in sample.specimen.consumables.select_related('item'):
+    specimen = sample.specimen
+    prefetched = getattr(specimen, '_prefetched_objects_cache', {})
+    links = (specimen.consumables.all() if 'consumables' in prefetched
+             else specimen.consumables.select_related('item'))
+    for link in links:
         item = link.item
         if item.id not in cache:
             cache[item.id] = _available_quantity(item)

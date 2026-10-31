@@ -44,6 +44,7 @@ export const API_URL = {
   GET_PATIENT_TRIAGE: "/patients/triage/",
 
   PATIENT_ATTENDANCE_PROCESS: "/patients/initiate-attendance-process/",
+  PATIENT_VISIT_TRACK_COUNTS: "/patients/initiate-attendance-process/track-counts/",
 
   /***************** AI TRIAGE APIS **********************/
   AI_TRIAGE_REQUEST: "/roby/triage/request/",
@@ -257,6 +258,7 @@ export const APP_API_URL = {
   GET_PATIENT_TRIAGE: "/api/patient/get-patient-triage",
 
   PATIENT_ATTENDANCE_PROCESS: "/api/patient/attendance-process",
+  PATIENT_VISIT_TRACK_COUNTS: "/api/patient/visit-track-counts",
 
   /***************** AI TRIAGE APIS **********************/
   AI_TRIAGE_REQUEST: "/api/ai-triage/request",

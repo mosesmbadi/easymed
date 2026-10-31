@@ -1,21 +1,18 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import dynamic from "next/dynamic";
-import { Column, Pager, Paging, Scrolling } from "devextreme-react/data-grid";
-import { useDispatch, useSelector } from 'react-redux';
+import { Column, Paging, Scrolling } from "devextreme-react/data-grid";
 import { LuMoreHorizontal } from 'react-icons/lu';
 import { BiPaperPlane } from 'react-icons/bi';
 
-import { useAuth } from '@/assets/hooks/use-auth';
+import { useServerList } from '@/assets/hooks/use-server-list';
+import ServerPager from '@/components/common/ServerPager';
+import { fetchSamplesPage } from '@/redux/service/laboratory';
 import CmtDropdownMenu from '@/assets/DropdownMenu';
-import { getAllPhlebotomySamples, getAllReleasedSamples } from '@/redux/features/laboratory';
-import { getAllProcesses, getAllPatients } from '@/redux/features/patients';
 import ReleaseSampleModal from './modals/ReleaseSampleModal';
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
     ssr: false,
 });
-
-const allowedPageSizes = [5, 10, 'all'];
 
 const getActions = () => [
     {
@@ -26,44 +23,19 @@ const getActions = () => [
 ];
 
 const PatientSampleList = () => {
-    const auth = useAuth();
-    const dispatch = useDispatch();
-    const [showPageSizeSelector] = useState(true);
-    const [showInfo] = useState(true);
-    const [showNavButtons] = useState(true);
     const [releaseOpen, setReleaseOpen] = useState(false);
     const [selectedSample, setSelectedSample] = useState(null);
+    const [search, setSearch] = useState('');
 
-    const { phlebotomySamples, releasedSamples } = useSelector((store) => store.laboratory);
-    const { processes, patients } = useSelector((store) => store.patient);
+    // Drawn and not yet released, filtered, searched and paged on the server.
+    // Each sample says whose it is, so no visit or patient list is needed.
+    const samples = useServerList(fetchSamplesPage, {
+        is_sample_collected: 'true',
+        released: 'false',
+        search,
+    });
 
     const userActions = getActions();
-
-    // Set of released patient_sample IDs for fast lookup
-    const releasedIds = new Set(releasedSamples.map(rs => rs.patient_sample));
-
-    // Only collected & not released
-    const collectedSamples = phlebotomySamples
-        .filter(ps => ps.is_sample_collected && !releasedIds.has(ps.id))
-        .map(ps => {
-            // A sample belongs to a ProcessTestRequest; the visit points at it.
-            const process = processes.find(p => p.process_test_req === ps.process);
-            const patient = process ? patients.find(pt => pt.id === process.patient) : null;
-            return {
-                ...ps,
-                track_number: process ? process.track_number : '',
-                patient_name: process?.patient_name
-                    || (patient ? `${patient.first_name} ${patient.second_name}` : ''),
-                patient_id: process ? process.patient_number : '',
-            };
-        });
-
-    useEffect(() => {
-        dispatch(getAllPhlebotomySamples(auth));
-        dispatch(getAllReleasedSamples(auth));
-        dispatch(getAllProcesses(auth));
-        dispatch(getAllPatients(auth));
-    }, []);
 
     const onMenuClick = (menu, data) => {
         if (menu.action === 'release') {
@@ -83,30 +55,31 @@ const PatientSampleList = () => {
 
     return (
         <div className='p-4'>
-            <h2 className='my-6 font-bold text-xl'>Patient Samples</h2>
+            <div className='flex flex-wrap items-center justify-between gap-4 my-6'>
+                <h2 className='font-bold text-xl'>Patient Samples</h2>
+                <input
+                    className='border border-gray rounded-xl py-2 px-4 text-sm focus:outline-none w-full max-w-sm'
+                    placeholder='Search by sample code, patient or track number'
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                />
+            </div>
             <DataGrid
-                dataSource={collectedSamples}
+                dataSource={samples.rows}
+                noDataText={samples.loading ? 'Loading...' : samples.error || 'No samples waiting'}
                 allowColumnReordering={true}
                 rowAlternationEnabled={true}
                 showBorders={true}
-                remoteOperations={true}
                 showColumnLines={true}
                 showRowLines={true}
                 wordWrapEnabled={true}
-                allowPaging={true}
                 className="shadow-xl"
             >
                 <Scrolling rowRenderingMode='virtual'></Scrolling>
-                <Paging defaultPageSize={10} />
-                <Pager
-                    visible={true}
-                    allowedPageSizes={allowedPageSizes}
-                    showPageSizeSelector={showPageSizeSelector}
-                    showInfo={showInfo}
-                    showNavigationButtons={showNavButtons}
-                />
+                {/* The server sends one page; ServerPager below asks for others. */}
+                <Paging enabled={false} />
                 <Column dataField="patient_sample_code" caption="Sample Code" />
-                <Column dataField="patient_id" caption="Patient ID" />
+                <Column dataField="patient_number" caption="Patient ID" />
                 <Column dataField="patient_name" caption="Patient Name" />
                 <Column dataField="track_number" caption="Process Track No." />
                 <Column dataField="specimen_name" caption="Specimen" />
@@ -118,11 +91,20 @@ const PatientSampleList = () => {
                     cellRender={actionsFunc}
                 />
             </DataGrid>
+            <ServerPager
+                page={samples.page}
+                pageSize={samples.pageSize}
+                total={samples.total}
+                loading={samples.loading}
+                onPageChange={samples.setPage}
+                onPageSizeChange={samples.setPageSize}
+            />
 
             <ReleaseSampleModal
                 open={releaseOpen}
                 setOpen={setReleaseOpen}
                 selectedSample={selectedSample}
+                onReleased={samples.refresh}
             />
         </div>
     );

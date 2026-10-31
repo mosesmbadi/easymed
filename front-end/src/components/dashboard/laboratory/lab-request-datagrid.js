@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import dynamic from "next/dynamic";
-import { Column, Paging, Pager, Scrolling,
- } from "devextreme-react/data-grid";
+import { Column, Paging, Scrolling } from "devextreme-react/data-grid";
+import ServerPager from "@/components/common/ServerPager";
+import { useVisitQueue } from "@/assets/hooks/use-visit-queue";
 import { labData, months } from "@/assets/dummy-data/laboratory";
 import { Grid } from "@mui/material";
 import { LuMoreHorizontal } from "react-icons/lu";
@@ -13,14 +14,12 @@ import EquipmentModal from "./equipment-modal";
 import RequestInfoModal from "./RequestInfoModal";
 import LabModal from "../doctor-desk/lab-modal";
 import ProcessFilter from "@/components/common/process/ProcessFilter";
-import { getAllProcesses } from "@/redux/features/patients";
 import { useAuth } from "@/assets/hooks/use-auth";
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
   ssr: false,
 });
 
-const allowedPageSizes = [5, 10, 'all'];
 
 const getActions = () => {
   let actions = [
@@ -39,11 +38,16 @@ const LabRequestDataGrid = ( ) => {
   const [labOpen, setLabOpen] = useState(false);
   const [requestInfoOpen,setRequestInfoOpen] = useState(false);
   const [selectedRowData, setSelectedRowData] = React.useState({});
-  const [showPageSizeSelector, setShowPageSizeSelector] = useState(true);
-  const [showInfo, setShowInfo] = useState(true);
-  const [showNavButtons, setShowNavButtons] = useState(true);
   const [processFilter, setProcessFilter] = useState({ track: "lab", search: "" })
   const [selectedSearchFilter, setSelectedSearchFilter] = useState({label: "", value: ""})
+  // Visits with a billed lab test -- the only ones the bench may run --
+  // filtered and paged on the server (queue=lab_requests).
+  const queue = useVisitQueue({
+    queue: "lab_requests",
+    track: processFilter.track,
+    search_value: processFilter.search,
+    search_field: selectedSearchFilter.value,
+  });
   
 
   const items = [
@@ -69,26 +73,8 @@ const LabRequestDataGrid = ( ) => {
 
   const dispatch = useDispatch();
   const auth = useAuth();
-  const { processes, patients } = useSelector((store)=> store.patient)
+  const { patients } = useSelector((store)=> store.patient)
   const { labTestPanels } = useSelector((store) => store.laboratory)
-
-  // Filter to only show processes related to lab tests that have been billed
-  const labTestsSchedules = processes.filter((process) => {
-    // Only include processes with track that includes lab
-    if (!process.track.includes(processFilter.track) || !process.process_test_req || !process.invoice_items) {
-      return false;
-    }
-    
-    // Check if any of the invoice items for lab tests have status "billed"
-    const hasBilledLabTests = process.invoice_items.some(item => 
-      item.category === "Lab Test" && item.status === "billed"
-    );
-    
-    return hasBilledLabTests;
-  });
-  
-  const searchedProcesses = labTestsSchedules.filter((process)=> process.patient_number.includes(searchQuery))
-
 
   const patientNameRender = (cellData) => {
     // The visit carries the name (or, for a coded sample, the facility's number).
@@ -123,15 +109,6 @@ const LabRequestDataGrid = ( ) => {
     );
   };
 
-  // Debounced fetch of processes when the search input changes
-  useEffect(() => {
-    if (!auth) return; // wait for auth context
-    const handler = setTimeout(() => {
-      dispatch(getAllProcesses(auth, null, processFilter, selectedSearchFilter));
-    }, 500);
-    return () => clearTimeout(handler);
-  }, [auth, processFilter.search, processFilter.track, selectedSearchFilter?.value]);
-
   return (
     <>
       <ProcessFilter 
@@ -144,11 +121,11 @@ const LabRequestDataGrid = ( ) => {
 
       {/* DATAGRID STARTS HERE */}
       <DataGrid
-        dataSource={searchedProcesses}
+        dataSource={queue.rows}
+        noDataText={queue.loading ? "Loading..." : queue.error || "No billed lab requests in this queue"}
         allowColumnReordering={true}
         rowAlternationEnabled={true}
         showBorders={true}
-        remoteOperations={true}
         showColumnLines={false}
         showRowLines={true}
         wordWrapEnabled={true}
@@ -157,14 +134,8 @@ const LabRequestDataGrid = ( ) => {
         className="w-full shadow"
       >
         <Scrolling rowRenderingMode='virtual'></Scrolling>
-        <Paging defaultPageSize={10} />
-        <Pager
-          visible={true}
-          allowedPageSizes={allowedPageSizes}
-          showPageSizeSelector={showPageSizeSelector}
-          showInfo={showInfo}
-          showNavigationButtons={showNavButtons}
-        />
+        {/* The server sends one page; ServerPager below asks for others. */}
+        <Paging enabled={false} />
         <Column 
           dataField="patient_number" 
           caption="PId" 
@@ -180,6 +151,14 @@ const LabRequestDataGrid = ( ) => {
           cellRender={actionsFunc}
         />
       </DataGrid>
+      <ServerPager
+        page={queue.page}
+        pageSize={queue.pageSize}
+        total={queue.total}
+        loading={queue.loading}
+        onPageChange={queue.setPage}
+        onPageSizeChange={queue.setPageSize}
+      />
       {labOpen && (<LabModal {...{ labOpen, setLabOpen, selectedRowData }}/>)}
       {requestInfoOpen && (
         <RequestInfoModal {...{requestInfoOpen, setRequestInfoOpen, selectedRowData}}/>

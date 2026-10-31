@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Grid, Button, TextField, CircularProgress } from "@mui/material";
 import Select from 'react-select';
+import AsyncSelect from 'react-select/async';
+import { fetchPatientsPage } from '@/redux/service/patients';
 import { toast } from "react-toastify";
 import dynamic from "next/dynamic";
 import { Column, Pager, Paging, Scrolling, Selection } from "devextreme-react/data-grid";
@@ -29,7 +31,6 @@ const getActions = () => {
 };
 
 const UnifiedPaymentForm = ({ 
-  patients, 
   insurance, 
   invoices,
   paymodes,
@@ -157,10 +158,7 @@ const UnifiedPaymentForm = ({
     if (!paymentCategory) return [];
     
     if (paymentCategory.value === 'cash') {
-      return patients.map(p => ({
-        value: p.id,
-        label: `${p.first_name} ${p.second_name}`,
-      }));
+      return [];  // searched on the server: see loadPatients
     } else {
       return insurance.map(ins => ({
         value: ins.id,
@@ -168,6 +166,15 @@ const UnifiedPaymentForm = ({
       }));
     }
   };
+
+  // Patients matching what's typed, from the server: the register is too
+  // long to load whole.
+  const loadPatients = (input) => fetchPatientsPage(auth, {
+    search_value: input || undefined, page: 1, page_size: 20,
+  }).then((data) => data.results.map((p) => ({
+    value: p.id,
+    label: p.display_name || `${p.first_name} ${p.second_name}`,
+  }))).catch(() => []);
 
   const getPaymodeOptions = () => {
     return (subAccounts || [])
@@ -216,14 +223,26 @@ const UnifiedPaymentForm = ({
             <label className="block text-sm font-medium text-gray-700 mb-2">
               {paymentCategory?.value === 'cash' ? 'Patient' : 'Insurance Company'} *
             </label>
-            <Select
-              options={getCustomerOptions()}
-              value={selectedCustomer}
-              onChange={setSelectedCustomer}
-              placeholder={paymentCategory ? `Select ${paymentCategory.value === 'cash' ? 'patient' : 'insurance company'}...` : "Select category first..."}
-              isDisabled={!paymentCategory}
-              isClearable
-            />
+            {paymentCategory?.value === 'cash' ? (
+              <AsyncSelect
+                cacheOptions
+                defaultOptions
+                loadOptions={loadPatients}
+                value={selectedCustomer}
+                onChange={setSelectedCustomer}
+                placeholder="Search by name, patient number or phone..."
+                isClearable
+              />
+            ) : (
+              <Select
+                options={getCustomerOptions()}
+                value={selectedCustomer}
+                onChange={setSelectedCustomer}
+                placeholder={paymentCategory ? "Select insurance company..." : "Select category first..."}
+                isDisabled={!paymentCategory}
+                isClearable
+              />
+            )}
           </Grid>
         </Grid>
       </div>

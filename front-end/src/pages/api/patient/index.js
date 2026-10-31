@@ -19,18 +19,21 @@ export default async function handler(req, res) {
                     'Authorization': req.headers.authorization,
                 }
             };
-            const query = req.query;
-            const search_field = query.search_field
-            const search_value = query.search_value
-
-            let url = `${API_URL.FETCH_PATIENT}?search=${search_value}`;
-            
-
-            if (search_field){
-                url = `${API_URL.FETCH_PATIENT}?search_field=${search_field}&search=${search_value}`
+            // Filters, search and page pass through (`search_value` is the
+            // backend's `search`; `page` returns {count, results}).
+            const { search_value, ...rest } = req.query;
+            const params = new URLSearchParams();
+            Object.entries(rest).forEach(([key, value]) => {
+                if (value !== undefined && value !== null && value !== "" && value !== "null") {
+                    params.append(key, value);
+                }
+            });
+            if (search_value && search_value !== "null" && search_value !== "undefined") {
+                params.append("search", search_value);
             }
-
-    
+            if (!params.get("search")) params.delete("search_field");
+            const qs = params.toString();
+            const url = `${API_URL.FETCH_PATIENT}${qs ? `?${qs}` : ""}`;
 
             await backendAxiosInstance.get(url, config).then(response => {
                 res.status(200).json(response.data);

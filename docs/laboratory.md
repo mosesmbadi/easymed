@@ -170,7 +170,8 @@ Router resources:
 | `reference-values/`, `lab-test-interpretations/` | Result interpretation |
 | `lab-reagents/`, `lab-equipment/`, `lab-settings/` | |
 | `lab-test-requests/`, `lab-test-requests-panel/` | Orders and results |
-| `process-test-request/`, `patient-samples/` | |
+| `process-test-request/` | |
+| `patient-samples/` | `PatientSampleViewSet`. Filters `is_sample_collected`, `released`, `archived`, `disposed`, `process`, `specimen`; `?search=` over the sample code, patient and track number; `?page=` for a page. Each sample carries `patient_name`, `patient_number`, `track_number` |
 | `public-lab-test-request/` | Public bookings |
 | `testkitcounters/` | Reagent availability **derived from the ledger** (historical route name; no counter table) |
 | `low-stock-reagents/` | Reagents low/out (`?status=`) |

@@ -8,9 +8,9 @@ import { useRouter } from 'next/navigation'
 import dynamic from "next/dynamic";
 import { Column, Pager } from "devextreme-react/data-grid";
 import { Grid, Container } from "@mui/material";
-import { createPrescription, fetchPatientById, updateAttendanceProcesses, updatePrescription } from "@/redux/service/patients";
+import { createPrescription, fetchPatientById, fetchVisit, updateAttendanceProcesses, updatePrescription } from "@/redux/service/patients";
 import { prescribeDrug } from "@/redux/service/patients";
-import { clearAllPrescriptionItems, getAllProcesses } from "@/redux/features/patients";
+import { clearAllPrescriptionItems } from "@/redux/features/patients";
 import { removeAPrescriptionItem } from "@/redux/features/patients";
 import { toast } from "react-toastify";
 import CmtDropdownMenu from "@/assets/DropdownMenu";
@@ -48,8 +48,9 @@ const PrescribePatient = () => {
   const { item, } = useSelector(({ inventory }) => inventory);
   const { prescriptionItems } = useSelector(({ patient }) => patient);
   const { prescriptionsPrescribed, prescriptions } = useSelector((store) => store.prescription);
-  const { processes, patients } = useSelector((store)=> store.patient);
-  const thisProcess = processes.find((process)=> process.id === parseInt(params.process_id))
+  // The visit being prescribed for, fetched by id: queues only hold a page
+  // of visits, so it may not be in the store.
+  const [thisProcess, setThisProcess] = useState(null);
   const auth = useAuth();
   let currentDate = new Date();
   let year = currentDate.getFullYear();
@@ -79,11 +80,18 @@ const PrescribePatient = () => {
   };
 
   useEffect(()=> {
-    if(auth){
-      getAllProcesses(auth)
+    if(auth && thisProcess){
       getPatientDetailsForThisTestRequest()
     }
   }, [thisProcess])
+
+  // useParams() is null while the page is prerendered.
+  const processId = params?.process_id;
+  useEffect(() => {
+    if (auth && processId) {
+      fetchVisit(auth, processId).then(setThisProcess).catch(() => setThisProcess(null));
+    }
+  }, [auth, processId])
 
   console.log("THE PATH HERE IS", pathname)
 

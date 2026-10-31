@@ -20,20 +20,28 @@ export default async function handler(req, res) {
                 }
             };
 
-            const query = req.query;
-            const process_id = query.process_id ? query.process_id : null;
-            const search_field = query.search_field
-            const search_value = query.search_value
-
-            let url = API_URL.PATIENT_ATTENDANCE_PROCESS;
-
+            const { process_id, search_value, ...rest } = req.query;
             if (process_id) {
-                url = `${API_URL.PATIENT_ATTENDANCE_PROCESS}${process_id}/`
-            } else if (search_field && search_value) {
-                url = `${API_URL.PATIENT_ATTENDANCE_PROCESS}?search_field=${search_field}&search=${search_value}`
-            } else if (search_value && search_value !== "null" && search_value !== null) {
-                url = `${API_URL.PATIENT_ATTENDANCE_PROCESS}?search=${search_value}`;
+                // One visit.
+                await backendAxiosInstance.get(`${API_URL.PATIENT_ATTENDANCE_PROCESS}${process_id}/`, config)
+                    .then(response => res.status(200).json(response.data))
+                    .catch(e => res.status(e.response?.status ?? 500).json(e.response?.data));
+                return;
             }
+
+            // A queue: pass its filters and page through (track, track__in,
+            // queue, page, page_size, search_field...). `search_value` is the
+            // backend's `search`.
+            const params = new URLSearchParams();
+            Object.entries(rest).forEach(([key, value]) => {
+                if (value !== undefined && value !== null && value !== "" && value !== "null") {
+                    params.append(key, value);
+                }
+            });
+            if (search_value && search_value !== "null") params.append("search", search_value);
+            if (!params.get("search")) params.delete("search_field");
+            const qs = params.toString();
+            const url = `${API_URL.PATIENT_ATTENDANCE_PROCESS}${qs ? `?${qs}` : ""}`;
 
             await backendAxiosInstance.get(url, config).then(response => {
                 res.status(200).json(response.data);

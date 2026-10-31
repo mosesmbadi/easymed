@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import {
-  Column, Paging, Pager,
-  HeaderFilter, Scrolling,
-} from "devextreme-react/data-grid";
+import { Column, Paging, Scrolling } from "devextreme-react/data-grid";
+import ServerPager from "@/components/common/ServerPager";
+import { useVisitQueue } from "@/assets/hooks/use-visit-queue";
 import { Chip } from "@mui/material";
 import CmtDropdownMenu from "@/assets/DropdownMenu";
 import { LuMoreHorizontal } from "react-icons/lu";
@@ -14,7 +13,6 @@ import { BiTransferAlt } from "react-icons/bi";
 import { FaBed, FaRobot, FaExclamationTriangle, FaFlask } from "react-icons/fa";
 import { MdOutlineContactSupport } from "react-icons/md";
 import { useDispatch, useSelector } from "react-redux";
-import { getAllPatients, getAllProcesses } from "@/redux/features/patients";
 import { useAuth } from "@/assets/hooks/use-auth";
 import { BiSupport } from 'react-icons/bi'
 import { GiMedicinePills } from 'react-icons/gi'
@@ -30,7 +28,6 @@ const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
   ssr: false,
 });
 
-const allowedPageSizes = [5, 10, 'all'];
 
 const getActions = () => {
   let actions = [
@@ -84,14 +81,16 @@ const DoctorPatientDataGrid = () => {
   const dispatch = useDispatch();
   const auth = useAuth();
   const router = useRouter();
-  const [showPageSizeSelector, setShowPageSizeSelector] = useState(true);
-  const [showInfo, setShowInfo] = useState(true);
-  const [showNavButtons, setShowNavButtons] = useState(true);
-  const { processes, patients } = useSelector((store) => store.patient)
   const [processFilter, setProcessFilter] = useState({ track: 'doctor', search: "" });
   const actionsWhenOnDoctorTrack = userActions;
   const actionsWhenOnResultedTrack = userActions.filter((action) => action.action !== "send to lab");
   const [selectedSearchFilter, setSelectedSearchFilter] = useState({ label: "", value: "" })
+  // This doctor's queue (or the lab tab), filtered and paged on the server.
+  const queue = useVisitQueue({
+    track: processFilter.track,
+    search_value: processFilter.search,
+    search_field: selectedSearchFilter.value,
+  });
 
   const items = [
     { label: "None", value: "" },
@@ -114,15 +113,12 @@ const DoctorPatientDataGrid = () => {
   ]
 
 
-  const doctorsSchedules = processes.filter((process) => process.track.includes(processFilter.track))
-
   const patientNameRender = (cellData) => {
-    const patient = patients.find((patient) => patient.id === cellData.data.patient);
     const hasCriticalTriage = cellData.data.has_critical_triage;
     const hasApprovedLabResults = cellData.data.has_approved_lab_results;
     return (
       <div className="flex items-center gap-2">
-        <span>{patient ? `${patient.first_name} ${patient.second_name}` : ""}</span>
+        <span>{cellData.data.patient_name}</span>
         {hasCriticalTriage && (
           <FaExclamationTriangle className="text-warning text-sm" title="Critical Triage Values Detected" />
         )}
@@ -133,12 +129,6 @@ const DoctorPatientDataGrid = () => {
     );
   }
 
-  useEffect(() => {
-    if (auth) {
-      dispatch(getAllPatients(auth));
-      dispatch(getAllProcesses(auth))
-    }
-  }, [auth]);
 
   const onMenuClick = async (menu, data) => {
     if (menu.action === "refer") {
@@ -198,19 +188,6 @@ const DoctorPatientDataGrid = () => {
     setSelectedRecords(selectedRowKeys);
   };
 
-  useEffect(() => {
-    // This effect handles the debouncing logic
-    const timerId = setTimeout(() => {
-      // Dispatch the action only after a 500ms delay
-      dispatch(getAllProcesses(auth, null, processFilter, selectedSearchFilter))
-    }, 500); // 500ms delay, adjust as needed
-
-    // Cleanup function: clears the timer if searchTerm changes before the delay is over
-    return () => {
-      clearTimeout(timerId);
-    };
-  }, [processFilter.search]); // The effect re-runs only when the local `searchTerm` state changes
-
   return (
     <section>
       <ProcessFilter
@@ -221,30 +198,22 @@ const DoctorPatientDataGrid = () => {
         items={items}
       />
       <DataGrid
-        dataSource={doctorsSchedules}
+        dataSource={queue.rows}
+        noDataText={queue.loading ? "Loading..." : queue.error || "No patients in this queue"}
         allowColumnReordering={true}
         rowAlternationEnabled={true}
         onSelectionChanged={onSelectionChanged}
         selectedRowKeys={selectedRecords}
         showBorders={true}
-        remoteOperations={true}
         showColumnLines={true}
         showRowLines={true}
         wordWrapEnabled={true}
-        allowPaging={true}
         className="shadow-xl w-full"
       // height={"70vh"}
       >
-        <HeaderFilter visible={true} />
         <Scrolling rowRenderingMode='virtual'></Scrolling>
-        <Paging defaultPageSize={10} />
-        <Pager
-          visible={true}
-          allowedPageSizes={allowedPageSizes}
-          showPageSizeSelector={showPageSizeSelector}
-          showInfo={showInfo}
-          showNavigationButtons={showNavButtons}
-        />
+        {/* The server sends one page; ServerPager below asks for others. */}
+        <Paging enabled={false} />
         <Column
           dataField="patient_number"
           caption="PId"
@@ -279,6 +248,14 @@ const DoctorPatientDataGrid = () => {
           cellRender={actionsFunc}
         />
       </DataGrid>
+      <ServerPager
+        page={queue.page}
+        pageSize={queue.pageSize}
+        total={queue.total}
+        loading={queue.loading}
+        onPageChange={queue.setPage}
+        onPageSizeChange={queue.setPageSize}
+      />
       {open && (<ReferPatientModal {...{ open, setOpen, selectedRowData }} />)}
       {consultOpen && (<ConsultPatientModal
         {...{ consultOpen, setConsultOpen, selectedRowData }}

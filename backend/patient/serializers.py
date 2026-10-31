@@ -211,6 +211,7 @@ class AttendanceProcessSerializer(serializers.ModelSerializer):
     invoice_items = serializers.SerializerMethodField()
     assigned_doctor = serializers.CharField(source='doctor.get_fullname', read_only=True)
     patient_name = serializers.SerializerMethodField()
+    patient_details = serializers.SerializerMethodField()
     has_critical_triage = serializers.SerializerMethodField()
     has_approved_lab_results = serializers.SerializerMethodField()
     referral = ReferralSerializer(read_only=True)
@@ -233,20 +234,46 @@ class AttendanceProcessSerializer(serializers.ModelSerializer):
     
     def get_patient_name(self, obj):
         return obj.patient.display_name
+
+    def get_patient_details(self, obj):
+        """
+        What a screen working on this visit shows about the patient. The
+        patients API is reception-only, so the nurse's, doctor's and lab's
+        pop-ups read it from here rather than looking the patient up.
+        """
+        patient = obj.patient
+        return {
+            'id': patient.id,
+            'unique_id': patient.unique_id,
+            'name': patient.display_name,
+            'first_name': patient.first_name,
+            'second_name': patient.second_name,
+            'gender': patient.get_gender_display() if patient.gender else None,
+            'age': patient.age,
+            'date_of_birth': patient.date_of_birth,
+            'phone': patient.phone,
+            'insurances': [{'id': i.id, 'name': i.name} for i in patient.insurances.all()],
+        }
     
     def get_invoice_items(self, obj):
-        invoice = obj.invoice.pk
-        invoice_items = InvoiceItem.objects.filter(invoice=invoice)
-        serialized_items = InvoiceItemSerializer(invoice_items, many=True)
+        # Through the relation, so the list view's prefetch is used.
+        invoice_items = obj.invoice.invoice_items.all() if obj.invoice_id else []
+        serialized_items = InvoiceItemSerializer(invoice_items, many=True, context=self.context)
         return serialized_items.data
 
-    def get_has_critical_triage(self, obj):
+    def _triage_settings(self):
+        # Read once per response, not once per visit.
         from .models import TriageSettings
+        if not hasattr(self, '_cached_triage_settings'):
+            self._cached_triage_settings = TriageSettings.objects.first()
+        return self._cached_triage_settings
+
+    def get_has_critical_triage(self, obj):
         triage = obj.triage
         if not triage:
             return False
 
-        settings = TriageSettings.objects.first()
+        settings = self._triage_settings()
         if not settings or not settings.is_active:
             return False
 
@@ -266,8 +293,11 @@ class AttendanceProcessSerializer(serializers.ModelSerializer):
 
     def get_has_approved_lab_results(self, obj):
         from laboratory.models import LabTestRequestPanel
-        if not obj.process_test_req:
+        if not obj.process_test_req_id:
             return False
+        # Annotated by AttendanceProcessViewSet; anywhere else, ask.
+        if hasattr(obj, 'approved_lab_results'):
+            return obj.approved_lab_results
             
         return LabTestRequestPanel.objects.filter(
             lab_test_request__process=obj.process_test_req,

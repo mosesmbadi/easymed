@@ -7,13 +7,20 @@ import {
   fetchPatientTriage,
   searchPatients,
   fetchPatientPrescribeDrugs,
-  fetchAllAttendanceProcesses,
   fetchTriageSettings,
+  fetchAllAttendanceProcesses,
 } from "@/redux/service/patients";
 
 
 const initialState = {
+  // The page of visits the open queue is showing (see useVisitQueue), not
+  // every visit: queues are filtered and paged on the server.
   processes: [],
+  processesCount: 0,
+  // Bumped when a visit changes, so whichever queue is open reloads its page.
+  visitQueueVersion: 0,
+  // Bumped when a patient is added, edited or removed, so patient lists reload.
+  patientListVersion: 0,
   processDetails: {},
   services: [],
   patients: [],
@@ -31,6 +38,15 @@ const PatientSlice = createSlice({
   reducers: {
     setProcesses: (state, action) => {
       state.processes = action.payload;
+    },
+    setProcessesCount: (state, action) => {
+      state.processesCount = action.payload;
+    },
+    refreshVisitQueues: (state) => {
+      state.visitQueueVersion += 1;
+    },
+    refreshPatientLists: (state) => {
+      state.patientListVersion += 1;
     },
     setOneProcess: (state, action) => {
       state.processDetails = action.payload;
@@ -110,22 +126,14 @@ export const {
   clearPrescriptionItems,
   setPatientPrescribedDrugs,
   setProcesses,
+  setProcessesCount,
+  refreshVisitQueues,
+  refreshPatientLists,
   setOneProcess,
   setPrescriptionItem,
   updateAttendaceProcessStoreClinicalNotes,
   updateAttendaceProcessStoreRefer
 } = PatientSlice.actions;
-
-export const getAllProcesses = (auth, process_id = null, processsFilter, selectedSearchFilter) => async (dispatch) => {
-  try {
-    console.log("REDUX ACTION: Calling fetchAllAttendanceProcesses with:", { auth, process_id, processsFilter, selectedSearchFilter });
-    const response = await fetchAllAttendanceProcesses(auth, process_id, processsFilter, selectedSearchFilter);
-    console.log("REDUX ACTION: fetchAllAttendanceProcesses response:", response);
-    dispatch(setProcesses(response));
-  } catch (error) {
-    console.log("ATTENDANCE_PROCESSES_ERROR ", error);
-  }
-};
 
 export const updateAttendanceProcessStoreClinicalNotesData = (payload) => (dispatch) => {
   dispatch(updateAttendaceProcessStoreClinicalNotes(payload));
@@ -154,6 +162,11 @@ export const getAllServices = () => async (dispatch) => {
   }
 };
 
+/**
+ * Every patient, unpaged. Staff screens page the list on the server instead
+ * (fetchPatientsPage); this is left for the patient portal and the unlinked
+ * legacy billing pages.
+ */
 export const getAllPatients = (auth, processsFilter, selectedSearchFilter) => async (dispatch) => {
   try {
     const response = await fetchPatient(auth, processsFilter, selectedSearchFilter);

@@ -51,6 +51,14 @@ class InvoiceItemSerializer(serializers.ModelSerializer):
     
     def get_price_source(self, obj):
         """'insurance', 'cash', 'cash_fallback' or 'account_list_price'; see InvoiceItem."""
+        if self.context is not None and getattr(obj.payment_mode, 'insurance_id', None):
+            # Every agreed price, loaded once and kept in the context the
+            # whole response shares, rather than a query per insurance line.
+            if '_agreed_prices' not in self.context:
+                from inventory.models import InsuranceItemSalePrice
+                self.context['_agreed_prices'] = set(
+                    InsuranceItemSalePrice.objects.values_list('item_id', 'insurance_company_id'))
+            obj._agreed_prices = self.context['_agreed_prices']
         return obj.price_source
 
     def get_sale_price(self, obj):

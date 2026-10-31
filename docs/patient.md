@@ -125,7 +125,7 @@ Router resources (full CRUD):
 
 | Path | ViewSet | Notes |
 | --- | --- | --- |
-| `patients/` | `PatientViewSet` | `IsReceptionistUser`; filter by `first_name`, `second_name`, `gender`, `user_id__id` |
+| `patients/` | `PatientViewSet` | `IsReceptionistUser`; filter by `first_name`, `second_name`, `gender`, `user_id__id`, `referred` (true/false), `id__in=1,2`; `?search=`. `?page=` returns `{count, results}` (`easymed.pagination.OptInPageNumberPagination`); without it the whole list |
 | `contact-details/` | `ContactDetailsViewSet` | |
 | `next-of-kin/` | `NextOfKinViewSet` | |
 | `publicappointments/` | `PublicAppointmentViewSet` | |
@@ -134,7 +134,8 @@ Router resources (full CRUD):
 | `consultations/` | `ConsultationViewSet` | writes blocked when `doctor` module is off |
 | `referrals/` | `ReferralViewSet` | writes blocked when `doctor` module is off |
 | `triage/` | `TriageViewSet` | writes blocked when `triage` module is off |
-| `initiate-attendance-process/` | `AttendanceProcessViewSet` | Visits. `?track=`, `?search=` over patient, staff, diagnosis, tests and drugs. `created_by` set from the request |
+| `initiate-attendance-process/` | `AttendanceProcessViewSet` | Visits. Filters (`AttendanceProcessFilterSet`): `?track=`, `?track__in=reception,triage`, `?queue=nursing` (triage, or a billed consultation), `?queue=lab_requests` (a billed lab test), `?process_test_req__in=`, `?patient=`; `?search=` over patient, staff, diagnosis, tests and drugs. **`?page=` (and `?page_size=`, default 10, max 200) returns `{count, next, previous, results}`**; without `page` the list comes back whole. `created_by` set from the request |
+| `initiate-attendance-process/track-counts/` | `AttendanceProcessViewSet.track_counts` | `{track: number of visits}` for queue headcounts |
 
 Other paths:
 
@@ -147,7 +148,7 @@ Other paths:
 | `GET reports/download_prescription_pdf/<prescription_id>/` | Prescription PDF (`templates/prescription.html`) |
 | `GET reports/lab-tests/` | Lab tests report PDF |
 
-`AttendanceProcessSerializer` returns, besides model fields: `patient_name`,
+`AttendanceProcessSerializer` returns, besides model fields: `patient_details` (name, sex, age, phone, number and insurances: the patients API is reception-only, so clinical screens read the patient from the visit), `patient_name`,
 `insurances`, `invoice_items`, `assigned_doctor`, `referral`, `clinical_note`,
 `has_critical_triage`, `has_approved_lab_results`.
 

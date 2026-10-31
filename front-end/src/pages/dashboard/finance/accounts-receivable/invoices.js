@@ -8,7 +8,7 @@ import dynamic from 'next/dynamic';
 import { useDispatch, useSelector } from 'react-redux';
 import { useAuth } from '@/assets/hooks/use-auth';
 import { getAllInvoices } from '@/redux/features/billing';
-import { getAllPatients } from '@/redux/features/patients';
+import { fetchPatientById } from '@/redux/service/patients';
 import { Column, Paging, Pager, Scrolling } from 'devextreme-react/data-grid';
 import CmtDropdownMenu from '@/assets/DropdownMenu';
 import { LuMoreHorizontal } from 'react-icons/lu';
@@ -50,7 +50,6 @@ const InvoicesPage = () => {
   const dispatch = useDispatch();
   const auth = useAuth();
   const { allInvoices } = useSelector(({ billing }) => billing);
-  const { patients } = useSelector(({ patient }) => patient);
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -85,12 +84,15 @@ const InvoicesPage = () => {
     dispatch(getAllInvoices(auth, processFilter, selectedSearchFilter, statusFilter));
   }, [auth, dispatch, processFilter, selectedSearchFilter, statusFilter]);
 
-  // Initial patients load (once when auth available)
+  // The phone to prefill in the M-Pesa prompt: just this patient's.
+  const [mpesaPhone, setMpesaPhone] = useState('');
   useEffect(() => {
-    if (auth?.token) {
-      dispatch(getAllPatients(auth));
-    }
-  }, [auth?.token, dispatch]);
+    setMpesaPhone('');
+    if (!mpesaInvoice?.patient || !auth) return;
+    fetchPatientById(mpesaInvoice.patient, auth)
+      .then((patient) => setMpesaPhone(patient?.phone || ''))
+      .catch(() => setMpesaPhone(''));
+  }, [mpesaInvoice, auth]);
 
   useEffect(() => {
     const id = setTimeout(() => {
@@ -354,7 +356,7 @@ const InvoicesPage = () => {
           open={Boolean(mpesaInvoice)}
           setOpen={(next) => !next && setMpesaInvoice(null)}
           invoice={mpesaInvoice}
-          defaultPhone={patients?.find?.((p) => p.id === mpesaInvoice.patient)?.phone || ''}
+          defaultPhone={mpesaPhone}
           onPaid={() => dispatch(getAllInvoices(auth, processFilter, selectedSearchFilter, statusFilter))}
         />
       )}

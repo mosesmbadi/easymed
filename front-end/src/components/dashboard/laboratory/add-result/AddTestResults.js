@@ -14,8 +14,9 @@ import { SlMinus } from 'react-icons/sl';
 import { useAuth } from '@/assets/hooks/use-auth';
 // Removed unused imports - using inline editing instead
 
-import { removeItemToLabResultsItems, getAllLabRequests, getAllPhlebotomySamples, getAllLabTestPanelsBySample, updateItemToLabResultsItems, getAllLabTestPanels } from '@/redux/features/laboratory';
-import SeachableSelect from '@/components/select/Searchable';
+import { removeItemToLabResultsItems, getAllLabRequests, getAllLabTestPanelsBySample, updateItemToLabResultsItems, getAllLabTestPanels } from '@/redux/features/laboratory';
+import { fetchSamplesPage } from '@/redux/service/laboratory';
+import AsyncSearchableSelect from '@/components/select/AsyncSearchable';
 import { updateLabRequestPanels, updateLabRequestPanelResult } from '@/redux/service/laboratory';
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
@@ -51,7 +52,6 @@ const AddTestResults = () => {
   const auth = useAuth();
 
   // Inline editing with auto-save - no modal needed
-  const { phlebotomySamples } = useSelector((store) => store.laboratory);
 
   const token = useAuth();
   const initialValues = {
@@ -64,7 +64,6 @@ const AddTestResults = () => {
     if (token) {
       dispatch(getAllLabRequests(token));
       dispatch(getAllLabTestPanels(auth))
-      dispatch(getAllPhlebotomySamples(token))
       if(selected){
         console.log("Fetching lab test panels for sample:", selected.label);
         dispatch(getAllLabTestPanelsBySample(selected.label, token));
@@ -191,13 +190,25 @@ const AddTestResults = () => {
       <Form className="">
       <Grid container spacing={2} className='my-2 flex items-center'>
         <Grid item md={12} xs={12}>
-          <SeachableSelect
+          <AsyncSearchableSelect
             label="Sample"
             name="lab_test_request"
+            placeholder="Search by sample code, patient or track number"
             setSelectedItem={(selectedOption) => {
               setSelectedItem(selectedOption);
             }}
-            options={phlebotomySamples.filter((sample)=>sample.is_sample_collected === true).map((labRequests) => ({ value: labRequests.id, label: `${labRequests?.patient_sample_code}` }))}
+            // Collected samples matching what's typed, from the server: the
+            // full list grows with every draw.
+            loadOptions={(input) => fetchSamplesPage(token, {
+              is_sample_collected: 'true', search: input || undefined, page: 1, page_size: 20,
+            }).then((data) => data.results.map((sample) => ({
+              value: sample.id,
+              // The label is the sample code: the panels are looked up by it.
+              label: sample.patient_sample_code,
+              patientName: sample.patient_name,
+            }))).catch(() => [])}
+            formatOptionLabel={(option) =>
+              option.patientName ? `${option.label} · ${option.patientName}` : option.label}
           />
           <ErrorMessage
             name="lab_test_request"

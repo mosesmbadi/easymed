@@ -98,7 +98,9 @@ const ViewPrescribedDrugsModal = ({ setOpen, open, selectedRowData }) => {
   const { patients } = useSelector((store) => store.patient);
   const auth = useAuth();
   const doc = doctors.find( doc => doc.id === selectedRowData.doctor);
-  const patient = patients.find (patient => patient.id === selectedRowData.patient)
+  // The visit carries the patient's details: the patients API is
+  // reception-only, so looking them up left this blank for clinical staff.
+  const patient = selectedRowData?.patient_details || patients.find((p) => p.id === selectedRowData?.patient)
   const prescription = prescriptions.find((prescription)=> prescription.id === selectedRowData.prescription)
   const [allMode, setAllMode] = useState('allPages');
   const [selectedItems, setSelectedItems] = useState([]);
@@ -206,7 +208,7 @@ const ViewPrescribedDrugsModal = ({ setOpen, open, selectedRowData }) => {
         <Grid item xs={4}>
           <div>
             <p className="text-primary text-xl uppercase">patient</p>
-            <p>{`${patient?.first_name} ${patient?.second_name}`}</p>
+            <p>{`${patient?.name || `${patient?.first_name} ${patient?.second_name}`}`}</p>
           </div>
         </Grid>
 

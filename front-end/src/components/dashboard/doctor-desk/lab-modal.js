@@ -7,7 +7,7 @@ import { Checkbox, DialogTitle, Grid } from "@mui/material";
 import { toast } from "react-toastify";
 import { sendLabRequests, sendLabRequestsPanels, updateLabRequest } from "@/redux/service/laboratory";
 import { useAuth } from "@/assets/hooks/use-auth";
-import { getPatientTriage, getAllPatients, getTriageSettings } from "@/redux/features/patients";
+import { getPatientTriage, getTriageSettings } from "@/redux/features/patients";
 import { useDispatch, useSelector } from "react-redux";
 import { updateAttendanceProcesses } from "@/redux/service/patients";
 import { updatePatientSampleArchive } from "@/redux/service/laboratory";
@@ -22,7 +22,9 @@ const LabModal = ({ labOpen, setLabOpen, selectedRowData, isRetest = false, arch
   const auth = useAuth();
   const dispatch = useDispatch();
 
-  const patient = patients.find((patient) => patient.id === selectedRowData.patient)
+  // The visit carries the patient's details: the patients API is
+  // reception-only, so looking them up left this blank for clinical staff.
+  const patient = selectedRowData?.patient_details || patients.find((p) => p.id === selectedRowData?.patient)
 
   const handleClose = () => {
     setLabOpen(false);
@@ -125,8 +127,7 @@ const LabModal = ({ labOpen, setLabOpen, selectedRowData, isRetest = false, arch
 
 
   useEffect(() => {
-    dispatch(getAllPatients(auth));
-    dispatch(getPatientTriage(selectedRowData?.triage, auth));
+        dispatch(getPatientTriage(selectedRowData?.triage, auth));
     if (!triageSettings) dispatch(getTriageSettings(auth));
   }, [selectedRowData]);
 
@@ -148,7 +149,7 @@ const LabModal = ({ labOpen, setLabOpen, selectedRowData, isRetest = false, arch
       >
         <DialogTitle>
           <div className="flex justify-between">
-            <p>{`Name: ${patient?.first_name} ${patient?.second_name}`}</p>
+            <p>{`Name: ${patient?.name || `${patient?.first_name} ${patient?.second_name}`}`}</p>
             <p>{`Gender: ${patient?.gender}`}</p>
             <p>{`Age: ${patient?.age}`}</p>
           </div>

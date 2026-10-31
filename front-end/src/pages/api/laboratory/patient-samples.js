@@ -17,7 +17,9 @@ export default async function handler(req, res) {
             const config = {
                 headers: {
                     'Authorization': req.headers.authorization,
-                }
+                },
+                // Filters, search and page pass straight through.
+                params: req.query,
             };
     
             await backendAxiosInstance.get(`${API_URL.PHLEBOTOMY_PATIENT_SAMPLES}`, config).then(response => {

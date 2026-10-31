@@ -5,6 +5,8 @@ from rest_framework.response import Response
 from rest_framework.request import Request
 from rest_framework import generics, viewsets, status
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import SearchFilter
+from easymed.pagination import OptInPageNumberPagination
 from drf_spectacular.utils import extend_schema
 from django.http import HttpResponse
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -107,6 +109,7 @@ from .referrals import receive_consignment
 # filters
 from .filters import (
     LabTestRequestFilter,
+    PatientSampleFilter,
 )
 
 
@@ -298,7 +301,8 @@ class PatientSampleByProcessId(generics.ListAPIView):
         # The serializer lists each sample's specimen consumables, so pull them
         # in one go rather than per sample.
         return PatientSample.objects.filter(process=process_id).select_related(
-            'specimen').prefetch_related('specimen__consumables__item')
+            'specimen', 'process__attendanceprocess__patient__referred_from',
+        ).prefetch_related('specimen__consumables__item')
 
 class LabTestRequestByProcessId(generics.ListAPIView):
     serializer_class = LabTestRequestSerializer
@@ -319,9 +323,38 @@ class ProcessTestRequestViewSet(viewsets.ModelViewSet):
 
 
 class PatientSampleViewSet(viewsets.ModelViewSet):
-    queryset = PatientSample.objects.select_related('specimen').prefetch_related(
-        'specimen__consumables__item', 'consumables_used__item').order_by('-id')
+    """
+    Samples. Filters in PatientSampleFilter, `?search=` over the sample code,
+    patient and track number, and `?page=` for a page (OptInPageNumberPagination).
+    """
+    queryset = PatientSample.objects.all()
     serializer_class = PatientSampleSerializer
+    filter_backends = [DjangoFilterBackend, SearchFilter]
+    filterset_class = PatientSampleFilter
+    search_fields = [
+        'patient_sample_code', 'process__attendanceprocess__track_number',
+        'process__attendanceprocess__patient_number',
+        'process__attendanceprocess__patient__first_name',
+        'process__attendanceprocess__patient__second_name',
+        'process__attendanceprocess__patient__external_id',
+    ]
+    pagination_class = OptInPageNumberPagination
+
+    def get_queryset(self):
+        # Everything PatientSampleSerializer reads, up front: it was six
+        # queries a sample, 2,267 for a list of 374.
+        from django.db.models import Exists, OuterRef
+        from .models import DisposedSample, RetestSample
+
+        def by_code(model):
+            return Exists(model.objects.filter(patient_sample_code=OuterRef('patient_sample_code')))
+
+        return (PatientSample.objects
+                .select_related('specimen', 'archive_record', 'release_record',
+                                'process__attendanceprocess__patient__referred_from')
+                .prefetch_related('specimen__consumables__item', 'consumables_used__item')
+                .annotate(disposed_flag=by_code(DisposedSample), retested_flag=by_code(RetestSample))
+                .order_by('-id'))
 
 '''
 TODO: This is not shwoing is_billed in response

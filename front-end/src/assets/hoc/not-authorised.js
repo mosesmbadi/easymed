@@ -4,7 +4,6 @@ import Link from "next/link";
 import { BiArrowBack, BiHome } from "react-icons/bi";
 import { MdContactSupport } from "react-icons/md";
 import { useAuth } from '../hooks/use-auth';
-import { getAllPatients } from "@/redux/features/patients";
 import { authContext } from "@/components/use-context";
 
 // Map roles to their default dashboard paths
@@ -50,10 +49,6 @@ const NotAuthorized = ({ isAuthenticated = false, requiredPermission = null, use
   useEffect(() => {
     // Set mounted to true after component mounts on client
     setMounted(true);
-
-    if (auth?.token) {
-      dispatch(getAllPatients(auth));
-    }
   }, [auth, dispatch]);
 
   // Prevent hydration mismatch by not rendering until client-side

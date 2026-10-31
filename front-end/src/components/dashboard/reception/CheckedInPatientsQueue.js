@@ -27,7 +27,7 @@ import { updateAttendanceProcesses } from '@/redux/service/patients';
 import { useAuth } from '@/assets/hooks/use-auth';
 import { toast } from 'react-toastify';
 
-const CheckedInPatientsQueue = ({ processes, patients, onUpdate }) => {
+const CheckedInPatientsQueue = ({ processes, onUpdate, loading = false, rowOffset = 0 }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedProcess, setSelectedProcess] = useState(null);
   const [assignDoctorOpen, setAssignDoctorOpen] = useState(false);
@@ -37,12 +37,7 @@ const CheckedInPatientsQueue = ({ processes, patients, onUpdate }) => {
   const router = useRouter();
 
   const handleMenuOpen = (event, process) => {
-    const patient = patients.find(p => p.id === process.patient);
-    const processWithPatient = {
-      ...process,
-      patient_name: patient ? `${patient.first_name} ${patient.second_name}` : 'Unknown'
-    };
-    setSelectedProcess(processWithPatient);
+    setSelectedProcess(process);
     setAnchorEl(event.currentTarget);
   };
 
@@ -61,9 +56,8 @@ const CheckedInPatientsQueue = ({ processes, patients, onUpdate }) => {
   };
 
   const handlePrescribe = () => {
-    const patient = patients.find(p => p.id === selectedProcess.patient);
-    if (patient) {
-      router.push(`/dashboard/patients/prescribe/${patient.id}`);
+    if (selectedProcess?.patient) {
+      router.push(`/dashboard/patients/prescribe/${selectedProcess.patient}`);
     }
     handleMenuClose();
   };
@@ -77,14 +71,10 @@ const CheckedInPatientsQueue = ({ processes, patients, onUpdate }) => {
     if (onUpdate) onUpdate();
   };
 
-  const getPatientName = (patientId) => {
-    const patient = patients.find(p => p.id === patientId);
-    return patient ? `${patient.first_name} ${patient.second_name}` : 'Unknown';
-  };
+  // The visit carries the patient's name and details.
+  const getPatientName = (process) => process.patient_name || 'Unknown';
 
-  const getPatientDetails = (patientId) => {
-    return patients.find(p => p.id === patientId);
-  };
+  const getPatientDetails = (process) => process.patient_details;
 
   const getTrackColor = (track) => {
     const colors = {
@@ -129,7 +119,7 @@ const CheckedInPatientsQueue = ({ processes, patients, onUpdate }) => {
     return (
       <Box sx={{ textAlign: 'center', py: 4 }}>
         <Typography variant="body1" color="text.secondary">
-          No patients in queue
+          {loading ? 'Loading...' : 'No patients in queue'}
         </Typography>
       </Box>
     );
@@ -153,13 +143,13 @@ const CheckedInPatientsQueue = ({ processes, patients, onUpdate }) => {
           </TableHead>
           <TableBody>
             {processes.map((process, index) => {
-              const patient = getPatientDetails(process.patient);
+              const patient = getPatientDetails(process);
               return (
                 <TableRow key={process.id} hover>
-                  <TableCell>{index + 1}</TableCell>
+                  <TableCell>{rowOffset + index + 1}</TableCell>
                   <TableCell>
                     <Typography variant="body2" fontWeight="bold">
-                      {getPatientName(process.patient)}
+                      {getPatientName(process)}
                     </Typography>
                     {patient && (
                       <Typography variant="caption" color="text.secondary">

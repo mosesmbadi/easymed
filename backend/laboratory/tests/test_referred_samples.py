@@ -377,3 +377,20 @@ def test_the_report_prints_the_number_and_says_what_was_not_given(lab_client, ca
 
     assert 'Mama Lucy Clinic STUDY-0042' in html
     assert 'Not given / Not given' in html
+
+
+@pytest.mark.django_db
+def test_the_bench_list_of_samples_is_filtered_searched_and_paged_on_the_server(
+        lab_client, cash_mode, clinic, urea, creatinine, django_assert_max_num_queries):
+    receive(lab_client, clinic, entry([urea]), coded_entry([creatinine]))
+
+    with django_assert_max_num_queries(25):
+        page = lab_client.get('/lab/patient-samples/', {'is_sample_collected': 'true', 'released': 'false',
+                                                        'page': 1, 'page_size': 1})
+    found = lab_client.get('/lab/patient-samples/', {'search': 'CCC 13939', 'page': 1})
+
+    assert page.status_code == 200, page.data
+    assert page.data['count'] == 2 and len(page.data['results']) == 1
+    assert found.data['count'] == 1
+    assert found.data['results'][0]['patient_name'] == 'Mama Lucy Clinic CCC 13939-01234'
+    assert found.data['results'][0]['track_number']

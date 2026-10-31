@@ -9,7 +9,7 @@ import { createPatient, patientNextOfKin, patientNextOfKinContact } from "@/redu
 import { toast } from "react-toastify";
 import { getAllInsurance } from "@/redux/features/insurance";
 import { useSelector, useDispatch } from "react-redux";
-import { getAllPatients } from "@/redux/features/patients";
+import { refreshPatientLists } from "@/redux/features/patients";
 import { useAuth } from "@/assets/hooks/use-auth";
 
 const AddPatientModal = () => {
@@ -118,7 +118,7 @@ const AddPatientModal = () => {
         createPatientNextOfKin(res.id, netOfKin, nextOfKinContactResponse.id)
         toast.success("Patient Created Successfully!");
         setLoading(false);
-        dispatch(getAllPatients(auth));
+        dispatch(refreshPatientLists());
         handleClose();
       });
     } catch (err) {

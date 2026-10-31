@@ -4,7 +4,7 @@ import DialogContent from "@mui/material/DialogContent";
 import { deletePatient } from "@/redux/service/patients";
 import { toast } from "react-toastify";
 import { useDispatch } from "react-redux";
-import { getAllPatients } from "@/redux/features/patients";
+import { refreshPatientLists } from "@/redux/features/patients";
 import { useAuth } from "@/assets/hooks/use-auth";
 
 const DeletePatientModal = ({ deleteOpen, setDeleteOpen, selectedRowData }) => {
@@ -22,7 +22,7 @@ const DeletePatientModal = ({ deleteOpen, setDeleteOpen, selectedRowData }) => {
       setLoading(true);
       await deletePatient(selectedRowData?.id, auth);
       toast.success("Patient Deleted Successfuly");
-      dispatch(getAllPatients(auth));
+      dispatch(refreshPatientLists());
       setLoading(false);
       handleClose();
     } catch (error) {

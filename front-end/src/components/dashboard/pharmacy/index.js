@@ -3,7 +3,9 @@ import { toast } from "react-toastify";
 import { useRouter } from "next/router";
 import { MdLocalPrintshop } from 'react-icons/md'
 import dynamic from "next/dynamic";
-import { Column, Paging, Pager, Scrolling } from "devextreme-react/data-grid";
+import { Column, Paging, Scrolling } from "devextreme-react/data-grid";
+import ServerPager from "@/components/common/ServerPager";
+import { useVisitQueue } from "@/assets/hooks/use-visit-queue";
 import { Grid } from "@mui/material";
 import { months } from "@/assets/dummy-data/laboratory";
 import { getAllPrescriptions, getAllPrescribedDrugs, getAllPrescriptionsPrescribedDrugs } from "@/redux/features/pharmacy";
@@ -11,7 +13,6 @@ import { getAllDoctors } from "@/redux/features/doctors";
 import { useSelector, useDispatch } from "react-redux";
 import { useAuth } from "@/assets/hooks/use-auth";
 import { downloadPDF } from '@/redux/service/pdfs';
-import { getAllPatients, getAllProcesses } from "@/redux/features/patients";
 
 
 import CmtDropdownMenu from "@/assets/DropdownMenu";
@@ -25,7 +26,6 @@ const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
   ssr: false,
 });
 
-const allowedPageSizes = [5, 10, 'all'];
 
 const getActions = () => {
   let actions = [
@@ -57,13 +57,15 @@ const PharmacyDataGrid = () => {
   const prescriptionsData = useSelector((store)=>store.prescription)
   const { doctors } = useSelector((store)=>store.doctor)
   const [selectedRowData,setSelectedRowData] = useState({});
-  const [showPageSizeSelector, setShowPageSizeSelector] = useState(true);
-  const [showInfo, setShowInfo] = useState(true);
-  const [showNavButtons, setShowNavButtons] = useState(true);
-  const { processes, patients } = useSelector((store)=> store.patient)
+  const { patients } = useSelector((store)=> store.patient)
   const [processsFilter, setProcessFilter] = useState({ track: "pharmacy", search: "" })
-  const filteredProcesses = processes.filter((process) => process.track.includes(processsFilter.track));
   const [selectedSearchFilter, setSelectedSearchFilter] = useState({label: "", value: ""})
+  // The pharmacy queue (or another tab), filtered and paged on the server.
+  const queue = useVisitQueue({
+    track: processsFilter.track,
+    search_value: processsFilter.search,
+    search_field: selectedSearchFilter.value,
+  });
 
   const items = [
     {label: "None", value: ""},
@@ -86,9 +88,9 @@ const PharmacyDataGrid = () => {
   ]
     
 
-  const searchedProcesses = filteredProcesses.filter((process)=> process.patient_number.includes(searchQuery))
 
   const patientNameRender = (cellData) => {
+    if (cellData.data.patient_name) return cellData.data.patient_name;
     const patient = patients.find((patient) => patient.id === cellData.data.patient);
     return patient ? `${patient.first_name} ${patient.second_name}` : ""
   }
@@ -120,8 +122,6 @@ const PharmacyDataGrid = () => {
       dispatch(getAllPrescriptions(auth));
       dispatch(getAllPrescribedDrugs(auth));
       dispatch(getAllDoctors(auth));
-      dispatch(getAllPatients(auth))
-      dispatch(getAllProcesses(auth))
     }
   }, [auth]);
 
@@ -150,19 +150,6 @@ const PharmacyDataGrid = () => {
     );
   };
 
-  useEffect(() => {
-      // This effect handles the debouncing logic
-      const timerId = setTimeout(() => {
-          // Dispatch the action only after a 500ms delay
-          dispatch(getAllProcesses(auth, null, processsFilter, selectedSearchFilter))
-      }, 500); // 500ms delay, adjust as needed
-
-      // Cleanup function: clears the timer if searchTerm changes before the delay is over
-      return () => {
-          clearTimeout(timerId);
-      };
-  }, [processsFilter.search]); // The effect re-runs only when the local `searchTerm` state changes
-
   return (
     <section className=" my-0">
       <ProcessFilter 
@@ -173,27 +160,20 @@ const PharmacyDataGrid = () => {
         items={items}
       />
       <DataGrid
-        dataSource={searchedProcesses}
+        dataSource={queue.rows}
+        noDataText={queue.loading ? "Loading..." : queue.error || "No patients in this queue"}
         allowColumnReordering={true}
         rowAlternationEnabled={true}
         showBorders={true}
-        remoteOperations={true}
         showColumnLines={true}
         showRowLines={true}
         wordWrapEnabled={true}
-        allowPaging={true}
         className="shadow-xl"
 
       >
         <Scrolling rowRenderingMode='virtual'></Scrolling>
-        <Paging defaultPageSize={10} />
-        <Pager
-          visible={true}
-          allowedPageSizes={allowedPageSizes}
-          showPageSizeSelector={showPageSizeSelector}
-          showInfo={showInfo}
-          showNavigationButtons={showNavButtons}
-        />
+        {/* The server sends one page; ServerPager below asks for others. */}
+        <Paging enabled={false} />
         <Column width={120} dataField="patient_number" caption="PID" />
         <Column 
           dataField="patient" 
@@ -211,6 +191,14 @@ const PharmacyDataGrid = () => {
           cellRender={actionsFunc}
         />
       </DataGrid>
+      <ServerPager
+        page={queue.page}
+        pageSize={queue.pageSize}
+        total={queue.total}
+        loading={queue.loading}
+        onPageChange={queue.setPage}
+        onPageSizeChange={queue.setPageSize}
+      />
       {open && <ViewPrescribedDrugsModal {...{setOpen,open,selectedRowData}} />}
     </section>
   );

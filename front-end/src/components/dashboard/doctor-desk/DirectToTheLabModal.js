@@ -7,21 +7,23 @@ import { Checkbox, DialogTitle, Grid } from "@mui/material";
 import { toast } from "react-toastify";
 import { sendLabRequests, sendLabRequestsPanels, updateLabRequest } from "@/redux/service/laboratory";
 import { useAuth } from "@/assets/hooks/use-auth";
-import { getPatientTriage, getAllPatients, getAllProcesses } from "@/redux/features/patients";
+import { getPatientTriage, refreshVisitQueues } from "@/redux/features/patients";
 import { useDispatch, useSelector } from "react-redux";
 
 import { updateAttendanceProcesses } from "@/redux/service/patients";
 import { billingInvoiceItems } from "@/redux/service/billing";
 import MultiTestProfileSelector from "@/components/common/MultiTestProfileSelector";
 
-const DirectToTheLabModal = ({ labOpen, setLabOpen, selectedData }) => {
+const DirectToTheLabModal = ({ labOpen, setLabOpen, selectedData, onSent }) => {
   const { patientTriage, patients } = useSelector((store) => store.patient);
   const [loading, setLoading] = React.useState(false);
   const [testProfileSections, setTestProfileSections] = useState([]);
   const auth = useAuth();
   const dispatch = useDispatch();
 
-  const patient = patients.find((patient)=> patient.id === selectedData.patient)
+  // The visit carries the patient's details: the patients API is
+  // reception-only, so looking them up left this blank for clinical staff.
+  const patient = selectedData?.patient_details || patients.find((p) => p.id === selectedData?.patient)
 
   const handleClose = () => {
     setLabOpen(false);
@@ -46,7 +48,7 @@ const DirectToTheLabModal = ({ labOpen, setLabOpen, selectedData }) => {
   const saveAllPanels = async (testReqPanelPayload) => {
     try{
       const response = await sendLabRequestsPanels(testReqPanelPayload, auth);
-      dispatch(getAllProcesses(auth));
+      dispatch(refreshVisitQueues());
       // Only create invoice items if there's a valid response with an item
       if (response && response.item) {
         const payload = {
@@ -104,10 +106,11 @@ const DirectToTheLabModal = ({ labOpen, setLabOpen, selectedData }) => {
 
       // Update attendance process track to lab
       await updateAttendanceProcesses({track: "lab"}, selectedData.id, auth);
-      dispatch(getAllProcesses(auth));
+      dispatch(refreshVisitQueues());
       
       helpers.resetForm();
       setLoading(false);
+      onSent?.();
       handleClose();
       
     } catch (err) {
@@ -119,8 +122,7 @@ const DirectToTheLabModal = ({ labOpen, setLabOpen, selectedData }) => {
 
 
   useEffect(() => {
-    dispatch(getAllPatients(auth));
-    if (selectedData?.triage) {
+        if (selectedData?.triage) {
       dispatch(getPatientTriage(selectedData.triage, auth));
     }
   }, [selectedData, auth, dispatch]);
@@ -137,7 +139,7 @@ const DirectToTheLabModal = ({ labOpen, setLabOpen, selectedData }) => {
       >
         <DialogTitle>
           <div className="flex justify-between">
-            <p>{`${patient?.first_name} ${patient?.second_name}`}</p>
+            <p>{`${patient?.name || `${patient?.first_name} ${patient?.second_name}`}`}</p>
             <p>{`${patient?.gender}`}</p>
             <p>{`${patient?.age}`}</p>            
           </div>

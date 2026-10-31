@@ -6,6 +6,9 @@ from django.shortcuts import get_object_or_404
 from django.conf import settings
 from django.template.loader import render_to_string
 from rest_framework import viewsets, status
+from rest_framework.decorators import action
+from easymed.pagination import OptInPageNumberPagination
+from django.db.models import Count
 from rest_framework.request import Request
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -46,6 +49,7 @@ from .serializers import (
 )
 from .filters import (
     AttendanceProcessFilter,
+    AttendanceProcessFilterSet,
     PatientFilter,
     ConsultationFilter,
     PatientFilterSearch,
@@ -79,6 +83,8 @@ class PatientViewSet(viewsets.ModelViewSet):
         'second_name', 'external_id', 'insurances__name', 'next_of_kin__first_name', 'next_of_kin__second_name',
         'next_of_kin__contacts__tel_no', 'next_of_kin__contacts__email_address',
     ]
+    # `?page=` for a page; without it the whole list, as older callers expect.
+    pagination_class = OptInPageNumberPagination
 
 
 
@@ -194,10 +200,21 @@ class TriageViewSet(viewsets.ModelViewSet):
 
 
 class AttendanceProcessViewSet(viewsets.ModelViewSet):
-    queryset = AttendanceProcess.objects.all().order_by('-id')
+    """
+    Visits. The queues ask for theirs with filters (AttendanceProcessFilterSet)
+    and a `page`; a request with `page` gets {count, next, previous, results}.
+    Without `page` the list comes back whole, as older callers expect.
+    """
     serializer_class = AttendanceProcessSerializer
     filter_backends = [AttendanceProcessFilter, DjangoFilterBackend]
-    filterset_fields = ['track']
+    filterset_class = AttendanceProcessFilterSet
+    pagination_class = OptInPageNumberPagination
+
+    @action(detail=False, methods=['get'], url_path='track-counts')
+    def track_counts(self, request):
+        """How many visits are on each track, for queue headcounts."""
+        rows = AttendanceProcess.objects.values('track').annotate(count=Count('id'))
+        return Response({row['track']: row['count'] for row in rows})
     search_fields = [
         'patient__first_name', 'patient__second_name', 'track_number', 'patient_number',
         'doctor__first_name', 'doctor__last_name',
@@ -207,6 +224,30 @@ class AttendanceProcessViewSet(viewsets.ModelViewSet):
         "process_test_req__attendace_test_requests__test_profile__name",
         "prescription__attendance_prescribed_drugs__item__name",
     ]
+    # The router reads the basename from here; get_queryset does the work.
+    queryset = AttendanceProcess.objects.all()
+
+    def get_queryset(self):
+        # Everything AttendanceProcessSerializer reads, up front. Every queue
+        # (check-in, nursing, doctor, lab, pharmacy) lists visits through
+        # here; one query per row per field made it 9,000 queries and 19 s.
+        from django.db.models import Exists, OuterRef
+        from laboratory.models import LabTestRequestPanel
+
+        approved = LabTestRequestPanel.objects.filter(
+            lab_test_request__process=OuterRef('process_test_req'), result_approved=True)
+        return (AttendanceProcess.objects
+                .select_related('patient__referred_from', 'doctor', 'triage', 'invoice',
+                                'referral', 'clinical_note')
+                .prefetch_related(
+                    'patient__insurances',
+                    'invoice__invoice_items__item',
+                    'invoice__invoice_items__payment_mode__insurance',
+                    'invoice__invoice_items__source_tag',
+                )
+                .annotate(approved_lab_results=Exists(approved))
+                .order_by('-id'))
+
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
 
