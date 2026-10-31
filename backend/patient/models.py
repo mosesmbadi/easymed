@@ -49,8 +49,26 @@ class Patient(models.Model):
         CustomUser, on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
-        return self.first_name
-    
+        return self.display_name
+
+    @property
+    def is_coded(self):
+        """
+        Known only by a code: a sample another facility sent without a name
+        (viral loads by CCC number, trial samples by study ID).
+        """
+        return not (self.first_name or self.second_name)
+
+    @property
+    def display_name(self):
+        """The name to print, or, for a coded patient, whose code it is."""
+        if not self.is_coded:
+            return f"{self.first_name} {self.second_name}".strip()
+        if self.external_id:
+            facility = self.referred_from.name if self.referred_from_id else ''
+            return f"{facility} {self.external_id}".strip()
+        return self.unique_id
+
     @property
     def age(self):
         if self.date_of_birth:

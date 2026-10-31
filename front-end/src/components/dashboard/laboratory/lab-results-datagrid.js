@@ -60,6 +60,8 @@ const LabResultDataGrid = () => {
   const searchedProcesses = labTestsResultsSchedules.filter((process)=> process.patient_number.includes(searchQuery))
 
   const patientNameRender = (cellData) => {
+    // The visit carries the name (or, for a coded sample, the facility's number).
+    if (cellData.data.patient_name) return cellData.data.patient_name;
     const patient = patients.find((patient) => patient.id === cellData.data.patient);
     return patient ? `${patient.first_name} ${patient.second_name}` : ""
   }

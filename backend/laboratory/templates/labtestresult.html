@@ -282,7 +282,7 @@
       <h3>Patient Particulars</h3>
       <div class="meta-row">
         <span class="meta-label">Name:</span>
-        <span class="meta-value">{{ patient.first_name }} {{ patient.second_name }}</span>
+        <span class="meta-value">{{ patient.display_name }}</span>
       </div>
       <div class="meta-row">
         <span class="meta-label">ID:</span>
@@ -290,7 +290,7 @@
       </div>
       <div class="meta-row">
         <span class="meta-label">Age/Gender:</span>
-        <span class="meta-value">{{ patient.age }} / {{ patient.gender }}</span>
+        <span class="meta-value">{{ patient.age|default_if_none:"Not given" }} / {{ patient.get_gender_display|default:"Not given" }}</span>
       </div>
       <div class="meta-row">
         <span class="meta-label">Ref:</span>

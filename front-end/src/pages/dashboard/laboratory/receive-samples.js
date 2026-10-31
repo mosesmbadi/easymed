@@ -38,6 +38,8 @@ const toIso = (local) => (local ? new Date(local).toISOString() : null);
 let rowSeq = 0;
 const emptyRow = () => ({
   key: ++rowSeq,
+  // Sent by number only (viral loads by CCC number, trial samples by study ID).
+  coded: false,
   first_name: "",
   second_name: "",
   gender: "",
@@ -100,16 +102,29 @@ const PatientRow = ({ row, index, onChange, onRemove, canRemove }) => {
           </button>
         )}
       </div>
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" checked={row.coded} onChange={set("coded")} />
+        Coded sample: no name on the form, only their number
+      </label>
       <div className="grid md:grid-cols-4 grid-cols-1 gap-3">
-        <input className={inputClass} placeholder="First name" value={row.first_name} onChange={set("first_name")} />
-        <input className={inputClass} placeholder="Last name" value={row.second_name} onChange={set("second_name")} />
+        {!row.coded && (
+          <>
+            <input className={inputClass} placeholder="First name" value={row.first_name} onChange={set("first_name")} />
+            <input className={inputClass} placeholder="Last name" value={row.second_name} onChange={set("second_name")} />
+          </>
+        )}
         <select className={inputClass} value={row.gender} onChange={set("gender")}>
           <option value="">Sex</option>
           <option value="M">Male</option>
           <option value="F">Female</option>
           <option value="O">Other</option>
         </select>
-        <input className={inputClass} placeholder="Their ref / patient no." value={row.external_reference} onChange={set("external_reference")} />
+        <input
+          className={inputClass}
+          placeholder={row.coded ? "Their patient / CCC / study no. (required)" : "Their ref / patient no."}
+          value={row.external_reference}
+          onChange={set("external_reference")}
+        />
         <input className={inputClass} type="number" min="0" max="130" placeholder="Age (years)" value={row.age_years} onChange={set("age_years")} />
         <label className="text-xs">
           Date of birth, if on the form
@@ -206,8 +221,14 @@ const ReceiveSamples = () => {
     if (!facility) problems.push("Pick the facility that sent the samples.");
     rows.forEach((row, i) => {
       const who = `Patient ${i + 1}`;
-      if (!row.first_name || !row.second_name || !row.gender) problems.push(`${who}: name and sex are required.`);
-      if (!row.age_years && !row.date_of_birth) problems.push(`${who}: give an age or a date of birth.`);
+      // Sex and age are taken when the form has them; the report says "Not
+      // given" otherwise. A name, or for a coded sample their number, is not optional.
+      if (row.coded && !row.external_reference.trim()) {
+        problems.push(`${who}: a coded sample needs the facility's number for the patient.`);
+      }
+      if (!row.coded && (!row.first_name.trim() || !row.second_name.trim())) {
+        problems.push(`${who}: give the name on the form, or tick "Coded sample".`);
+      }
       if (!row.panels.length) problems.push(`${who}: pick the tests on the form.`);
       if (row.reject && !row.rejection_reason) problems.push(`${who}: say why the sample is rejected.`);
     });
@@ -216,10 +237,14 @@ const ReceiveSamples = () => {
 
     const entries = rows.map((row) => ({
       new_patient: {
-        first_name: row.first_name,
-        second_name: row.second_name,
-        gender: row.gender,
-        ...(row.date_of_birth ? { date_of_birth: row.date_of_birth } : { age_years: Number(row.age_years) }),
+        first_name: row.coded ? "" : row.first_name.trim(),
+        second_name: row.coded ? "" : row.second_name.trim(),
+        gender: row.gender || null,
+        ...(row.date_of_birth
+          ? { date_of_birth: row.date_of_birth }
+          : row.age_years !== ""
+            ? { age_years: Number(row.age_years) }
+            : {}),
       },
       external_reference: row.external_reference,
       referring_doctor: row.referring_doctor,

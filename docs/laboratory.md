@@ -115,6 +115,22 @@ A clinic sends samples with a request form. `receive_consignment()` books in a
 - builds a lab visit billed to the clinic's account;
 - marks the samples collected externally, with their condition.
 
+**What the form must carry.** A name, or the clinic's own number for the
+patient. Sex, age and date of birth are optional on referred samples (the
+report prints "Not given"); walk-ins still need them.
+
+**Coded samples.** Some samples come by number only: HIV viral loads by CCC
+number, trial samples by study ID, sensitive tests a clinic codes on purpose.
+Booked in with blank names and an `external_reference`, the patient is
+`Patient.is_coded`, and `Patient.display_name` reads
+"<clinic> <their number>" everywhere a name would go: the bench, the
+report, invoices and statements. Coded patients don't come up in the walk-in
+search. An entry with neither a name nor a reference is refused.
+
+**Nobody messages a referred patient.** Results and rejections for a
+consignment go to the sending facility only; the patient SMS/WhatsApp is
+for walk-ins.
+
 **A rejected sample** (one with a `rejection_reason`) is recorded but not
 billed, and the clinic is emailed and texted (`notifications.lab`). The whole
 consignment is all or nothing.

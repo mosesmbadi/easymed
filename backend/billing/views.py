@@ -56,8 +56,22 @@ class InvoiceItemsByInsuranceCompany(generics.ListAPIView):
         ).order_by('-item_created_at')
 
 
+def with_invoice_relations(queryset):
+    """
+    Everything InvoiceSerializer reads, fetched up front. Without it a list
+    costs several queries per line plus one per invoice, and the till's
+    invoice list took over a minute on two months of history.
+    """
+    return queryset.select_related('patient__referred_from').prefetch_related(
+        'invoice_items__item',
+        'invoice_items__payment_mode__insurance',
+        'invoice_items__source_tag',
+        'invoice_items__allocations',
+    )
+
+
 class InvoiceViewset(viewsets.ModelViewSet):
-    queryset = Invoice.objects.all().order_by('-id')
+    queryset = with_invoice_relations(Invoice.objects.all()).order_by('-id')
     serializer_class = InvoiceSerializer
     permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser | IsReceptionistUser,)
     filter_backends = [InvoiceFilterSearch, DjangoFilterBackend]
@@ -72,7 +86,7 @@ class InvoicesByPatientId(generics.ListAPIView):
 
     def get_queryset(self):
         patient_id = self.kwargs['patient_id']
-        queryset = Invoice.objects.filter(patient_id=patient_id)
+        queryset = with_invoice_relations(Invoice.objects.filter(patient_id=patient_id))
 
         status_filter = self.request.query_params.get('status')
         if status_filter:

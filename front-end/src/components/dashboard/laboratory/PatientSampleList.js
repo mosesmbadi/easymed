@@ -46,12 +46,14 @@ const PatientSampleList = () => {
     const collectedSamples = phlebotomySamples
         .filter(ps => ps.is_sample_collected && !releasedIds.has(ps.id))
         .map(ps => {
-            const process = processes.find(p => p.id === ps.process);
+            // A sample belongs to a ProcessTestRequest; the visit points at it.
+            const process = processes.find(p => p.process_test_req === ps.process);
             const patient = process ? patients.find(pt => pt.id === process.patient) : null;
             return {
                 ...ps,
-                track_number: process ? process.reference : '',
-                patient_name: patient ? `${patient.first_name} ${patient.second_name}` : '',
+                track_number: process ? process.track_number : '',
+                patient_name: process?.patient_name
+                    || (patient ? `${patient.first_name} ${patient.second_name}` : ''),
                 patient_id: process ? process.patient_number : '',
             };
         });

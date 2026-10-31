@@ -9,7 +9,7 @@ Repository for Make-Easy HMIS
 The project is divided into two parts, the frontend and the backend.
 The frontend is built with Next.js and the backend with Django (DRF), PostgreSQL, Celery and Redis. The easiest way to get started is to use Docker. In the root directory
 there is a `docker-compose-local.yml` file that will set up all
-the services you need including celery and redis. Please note that we have two compose files; `docker-compose-local.yml` and `docker-compose.yml`. The latter is used for prod environment, so no need to touch that.
+the services you need including celery and redis. This repo is for development only: CI builds the images and pushes them to Docker Hub, and each hospital's deployment lives in its own repo (e.g. `afurqan-deployment`).
 
 ## i. Running with Docker
 
@@ -266,44 +266,22 @@ A device such us [this](https://www.whizz.co.ke/product/1443079/usr-tcp232-302-t
 
 ---
 
-# 8 Deployment with Terraform, Ansible and Github Action
+# 8 Images and Deployment
 
-First things first, you need to configure your AWS credentials. The assumption is you're on Linux and are familiar with aws cli. You can do this by running `aws configure` and entering your credentials.
-You can also set the credentials in the `~/.aws/credentials` file.
+This repo does not deploy. On every push to `main` or `standalone-lab`, GitHub Actions
+(`.github/workflows/ci-cd.yml`) runs the backend tests, then builds and pushes these
+images to Docker Hub:
 
-Next, you need to have terraform and ansible installed. You can install terraform by following the instructions [here](https://learn.hashicorp.com/tutorials/terraform/install-cli) and ansible by following the instructions [here](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html).
+- `mosesmbadi/easymed-backend`
+- `mosesmbadi/easymed-frontend`
+- `mosesmbadi/easymed-nginx`
+- `mosesmbadi/easymed-backup`
 
-After the prerequisites are out of the way, you can now proceed to deploy the application. The deployment process is divided into two parts, the infrastructure and the application.
+Each image is tagged with the full commit SHA, the branch name, and `latest` (from `main` only).
+Each hospital has its own deployment repo that pulls these images at a pinned SHA.
+See [docs/infrastructure.md](docs/infrastructure.md).
 
-First CD into /deployment directory and run the following commands:
-
-> CAUTION: The commands below will provison services in AWS!! We SHALL NOT be held liable for any damages!! Refer to LICENSE.
-
-Commands to run terraform
-
-```bash
-terraform init
-terraform plan
-terraform apply
-```
-
-To destroy all resources created
-`terraform destroy`
-
-That will provision our infrastracture. We then let ansible take care of the rest:
-`ansible-playbook -i inventory.ini ansible-playbook.yml`
-
-> If you want to automate the deployment, we use Github actions. The entire deployment process is handled by the github actions. You can check the actions in the `.github/workflows` directory.
-
-### Monitoring
-
-Monitoring will be handled by Prometheus and Grafana.
-To test the backend metrics manually, hit this endpoint `/metrics`
-
-### Trubleshooting
-
-If you get an error saying invalid AMI, you can check the available AMIs in your region by running the command below:
-`aws ec2 describe-images --owners amazon --filters "Name=name,Values=ubuntu/images/*" --region us-east-1`
+The backend exposes Prometheus metrics at `/metrics`.
 
 # 9. SCREENSHOTS
 

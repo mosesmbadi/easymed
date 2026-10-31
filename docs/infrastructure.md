@@ -1,17 +1,13 @@
 # Infrastructure and operations
 
-How EasyMed is run locally, deployed, monitored and backed up.
+How EasyMed is run locally, built into images and backed up. This repo holds no
+deployment: see [Deployments](#deployments-one-repo-per-hospital).
 
-## Compose files
+## Local development (`docker-compose-local.yml`)
 
-| File | Use | Notes |
-| --- | --- | --- |
-| `docker-compose-local.yml` | Local development | Builds backend from `backend/Dockerfile.local`. Frontend service is commented out — run it with `npm run dev` |
-| `docker-compose.yml` | Prod using published images | `mosesmbadi/easymedbackend`, `mosesmbadi/easymedfrontend` |
-| `docker-compose-cloud.yml` | The deployed server (used by CI) | Pulls CI-built images `${IMAGE_NAMESPACE}/easymed-{backend,frontend,nginx,backup}:${IMAGE_TAG}`; adds Nginx, Certbot, Prometheus |
-| `docker-compose-demo.yml` | Demo instance | Published images |
-
-### Local services (`docker-compose-local.yml`)
+The only compose file in this repo. Builds the backend from
+`backend/Dockerfile.local`. The frontend service is commented out — run it with
+`npm run dev`.
 
 | Service | Container | Port (host:container) | Command |
 | --- | --- | --- | --- |
@@ -64,22 +60,21 @@ registered in the backend as `laboratory.LabEquipment`. See
 
 ## Nginx (`nginx/`)
 
-Used by `docker-compose-cloud.yml`:
+Built into the `easymed-nginx` image and used by the hospital deployments. The
+image holds no host name: `templates/default.conf.template` is rendered when the
+container starts, from the deployment's `NGINX_SERVER_NAME` (host names) and
+`NGINX_CERT_DOMAIN` (the Let's Encrypt directory).
 
 - Port 80 serves `/.well-known/acme-challenge/` for Certbot and redirects the rest to HTTPS.
-- Port 443 terminates TLS for `easymed.proto-typesolutions.com` and proxies `/`
-  to `frontend:3000`.
+- Port 443 terminates TLS and proxies `/` to `frontend:3000`.
 
 The backend is reached by the frontend's server-side proxy routes, not directly
 by the browser.
 
-## Monitoring (`prometheus/`)
+## Monitoring
 
-`django_prometheus` exposes `/metrics` on the backend.
-
-`prometheus.yml` scrapes `backend:8080`, `celery:8080`, `front-end:3000` and
-itself every 15 s. `rules.yml` alerts: `BackendDown`, `HighCPUUsage`,
-`HighLatency`, `HighTraffic`, `HighErrorRate`, `HighSaturation`.
+`django_prometheus` exposes `/metrics` on the backend. Running a Prometheus
+server to scrape it is up to each deployment.
 
 ## Backups (`backup/`)
 
@@ -95,7 +90,9 @@ docker compose -f docker-compose-local.yml exec -it backup /restore.sh    # late
 
 Full instructions: [backup/README.md](../backup/README.md).
 
-## CI/CD (`.github/workflows/ci-cd.yml`)
+## CI (`.github/workflows/ci-cd.yml`)
+
+This repo tests EasyMed and publishes its images. **It does not deploy.**
 
 On push to `main` or `standalone-lab`:
 
@@ -104,52 +101,43 @@ On push to `main` or `standalone-lab`:
    Celery).
 2. **build-and-push** — one matrix job per image (`backend`, `frontend`, `nginx`,
    `backup`). Builds on the GitHub runner with layer caching and pushes
-   `<namespace>/easymed-<name>:<commit sha>` and `:latest` to Docker Hub. The
-   frontend build includes `next lint` and the production build, so a lint
-   error or compile failure stops the pipeline here, before anything is deployed.
-3. **deploy** — SSH to the staging server (`STAGING_DO_SERVER_*` secrets),
-   `git reset --hard <commit sha>` in `~/easymed` (for the compose file and
-   mounted configs), then with `IMAGE_TAG=<commit sha>`:
-   `docker compose -f docker-compose-cloud.yml pull`, `up -d --remove-orphans`,
-   and remove unused images older than a week. Only one deploy runs at a time.
+   `<namespace>/easymed-<name>` to Docker Hub with these tags:
+
+   | Tag | Moves? | Use |
+   | --- | --- | --- |
+   | full commit SHA | never | What a deployment pins |
+   | branch name (e.g. `standalone-lab`) | with the branch | Trying a branch on a test server |
+   | `latest` | with `main` only | Never pin a hospital to it |
+
+   The frontend build includes `next lint` and the production build, so a lint
+   error or compile failure fails CI and no image is published.
 
 Required GitHub settings:
 
 | Kind | Name | Purpose |
 | --- | --- | --- |
-| Secret | `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` | Push to Docker Hub (use an access token with Read & Write) |
-| Secret | `STAGING_DO_SERVER_PRIVATE_KEY`, `STAGING_DO_SERVER_IP`, `STAGING_DO_SERVER_USERNAME` | SSH deploy |
+| Secret | `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` | Push to Docker Hub (access token with Read & Write) |
 | Variable (optional) | `DOCKERHUB_NAMESPACE` | Docker Hub user/org for the images; default `mosesmbadi` |
 | Variable (optional) | `NEXT_PUBLIC_BACKEND_URL`, `NEXT_PUBLIC_HMIS_VERSION` | Baked into the frontend image; defaults `http://api:8080/`, `v0.0.1` |
 
-**Rolling back** on the server:
+Because one frontend image serves every hospital, anything baked into it must
+hold for all of them. The backend is always reached as `api` on the
+deployment's compose network.
 
-```
-cd ~/easymed
-IMAGE_TAG=<older commit sha> docker compose -f docker-compose-cloud.yml pull
-IMAGE_TAG=<older commit sha> docker compose -f docker-compose-cloud.yml up -d
-```
+## Deployments (one repo per hospital)
 
-Images from the last week are kept on the server, so a recent rollback doesn't
-need to download anything.
+Each hospital that runs EasyMed has its own deployment repo, e.g.
+`afurqan-deployment` for Afurqan Hospital. It contains only:
 
-## Terraform (`demo-deploy/`)
+- `docker-compose.yml`: pulls the images above at `EASYMED_TAG`. It builds nothing.
+- `.github/workflows/deploy.yml`: SSHes to that hospital's server, then pulls and starts.
+- `sample.env`: the template for the server's `.env` (secrets, domain, integrations).
 
-Provisions a demo on AWS Lightsail:
-
-| Module | Resources |
-| --- | --- |
-| `modules/persistent` | 50 GB Lightsail disk for Postgres, key pair |
-| `modules/app` | Ubuntu 22.04 `micro_2_0` instance, disk attachment, key pair, open ports 22, 80, 3000, 8000, 8080, 9090, 9091; `init.sh` bootstraps the host |
-
-Inputs: `aws_region`, `aws_access_key`, `aws_secret_key`, `postgres_disk_name`.
+To roll a hospital forward or back, run its deploy workflow with an easymed
+commit SHA, or change its `EASYMED_TAG` repository variable. To onboard a new
+hospital, copy an existing deployment repo and change its names, domain and
+secrets.
 
 ## Known issues
 
-- Prometheus scrapes `celery:8080` and `front-end:3000`; neither host name
-  matches a compose service, and Celery does not expose metrics.
-- The Lightsail instance opens 8000, 8080, 9090 and 9091 to the internet,
-  exposing the backend, Prometheus and the LIS server without the Nginx/TLS front.
-- The deploy step uses `git reset --hard` on the server, discarding any local
-  changes there.
 - `.env.sample` declares `DEMO_FACILITY_TYPE` twice and `NETWORK_*` twice.

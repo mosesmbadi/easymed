@@ -50,7 +50,7 @@ def deduct_test_kit(lab_test_panel_id):
 
         try:
             patient = lab_test_panel.patient_sample.process.attendanceprocess.patient
-            patient_name = f"{patient.first_name} {patient.second_name}"
+            patient_name = patient.display_name
         except Exception:
             patient_name = "Unknown"
 

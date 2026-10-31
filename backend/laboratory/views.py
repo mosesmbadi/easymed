@@ -855,13 +855,15 @@ class WalkInPatientSearchView(APIView):
             for word in term.split():
                 query &= (Q(first_name__icontains=word) | Q(second_name__icontains=word)
                           | Q(unique_id__icontains=word) | Q(phone__icontains=word))
-            patients = Patient.objects.filter(query).order_by('first_name', 'second_name')[:20]
+            # Coded patients (a sample sent in under a number) never walk in.
+            patients = (Patient.objects.filter(query).exclude(first_name='', second_name='')
+                        .order_by('first_name', 'second_name')[:20])
         patients = patients.prefetch_related('insurances')
         return Response([
             {
                 'id': patient.id,
                 'unique_id': patient.unique_id,
-                'name': f"{patient.first_name} {patient.second_name}",
+                'name': patient.display_name,
                 'gender': patient.get_gender_display(),
                 'age': patient.age,
                 'phone': patient.phone,

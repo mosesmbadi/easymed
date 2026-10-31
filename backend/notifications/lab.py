@@ -67,7 +67,7 @@ def notify_results_ready(process_id):
     account = _referring_account(requests)
     if account and account.email:
         reference = _their_reference(requests)
-        name = f"{patient.first_name} {patient.second_name}"
+        name = patient.display_name
         queue(
             channel=OutboundMessage.Channel.EMAIL, recipient=account.email, patient=patient,
             lab_results_id=process_id,
@@ -91,7 +91,7 @@ def notify_sample_rejected(visit_id):
     if not samples or account is None:
         return
     patient = visit.patient
-    name = f"{patient.first_name} {patient.second_name}"
+    name = patient.display_name
     reference = _their_reference(requests)
     theirs = f" (your ref {reference})" if reference else ""
     lab = _lab_name()

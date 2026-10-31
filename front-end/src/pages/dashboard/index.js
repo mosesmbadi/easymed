@@ -16,7 +16,7 @@ import Link from "next/link";
 const labShortcuts = [
   { href: "/dashboard/laboratory/walk-in", label: "New Walk-in", hint: "Register the patient and order their tests" },
   { href: "/dashboard/laboratory/receive-samples", label: "Receive Samples", hint: "Book in samples another facility sent" },
-  { href: "/dashboard/finance/accounts-receivable/invoices", label: "Take Payment", hint: "Bill the tests so the bench can run them" },
+  { href: "/dashboard/finance/accounts-receivable", label: "Take Payment", hint: "Bill the tests so the bench can run them" },
   { href: "/dashboard/laboratory", label: "Phlebotomy", hint: "Collect samples for paid tests" },
   { href: "/dashboard/laboratory/lab-results", label: "Lab Results", hint: "Enter, approve and print results" },
 ];

@@ -21,6 +21,16 @@ The centre of the clinical flow. Holds patient records and the
 
 `age` is computed from the year of birth only.
 
+`display_name` is the name to print: the full name, or for a coded patient
+(`is_coded`: no name, sent by another facility under a number) the clinic and
+its number, e.g. "Mama Lucy Clinic CCC 13939-01234". Use it rather than
+joining `first_name` and `second_name`. Both are on `PatientSerializer`, with
+`referred_from_name`.
+
+The Patients screen hides patients with a `referred_from` unless "Show
+patients from referred samples" is ticked or a search is typed; the API still
+returns them, because the lab screens look names up from it.
+
 ### `ContactDetails`, `NextOfKin`
 
 Next-of-kin (`patient.next_of_kin`) with name, relationship and a `ContactDetails`

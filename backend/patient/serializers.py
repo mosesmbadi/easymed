@@ -30,6 +30,9 @@ class ContactDetailsSerializer(serializers.ModelSerializer):
 
 class PatientSerializer(serializers.ModelSerializer):
     age = serializers.SerializerMethodField()
+    display_name = serializers.ReadOnlyField()
+    is_coded = serializers.ReadOnlyField()
+    referred_from_name = serializers.CharField(source='referred_from.name', read_only=True, default=None)
 
     class Meta:
         model = Patient
@@ -229,7 +232,7 @@ class AttendanceProcessSerializer(serializers.ModelSerializer):
         return InsuranceCompanySerializer(insurances, many=True).data
     
     def get_patient_name(self, obj):
-        return obj.patient.first_name + " " + obj.patient.second_name
+        return obj.patient.display_name
     
     def get_invoice_items(self, obj):
         invoice = obj.invoice.pk

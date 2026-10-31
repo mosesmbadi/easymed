@@ -583,7 +583,7 @@ class LabTestRequestPanel(models.Model):
 
     def get_patient_info(self):
         patient = self.patient_sample.process.attendanceprocess.patient
-        return f"{patient.first_name} {patient.second_name}, Age: {patient.age}, Sex: {patient.gender}"
+        return f"{patient.display_name}, Age: {patient.age}, Sex: {patient.gender}"
     
     def generate_interpretation(self):
         """

@@ -187,6 +187,8 @@ const WalkInLabRequest = () => {
       setCreated({
         trackNumber: visit.track_number,
         patientName: visit.patient_name,
+        patientId: visit.patient,
+        invoiceId: visit.invoice,
         total,
         tests: selectedPanels.map((panel) => panel.name),
         // A corporate or referring-facility account is billed on the spot;
@@ -225,8 +227,8 @@ const WalkInLabRequest = () => {
               </p>
             ) : (
               <p>
-                Total: <span className="font-semibold">{money(created.total)}</span>. The
-                tests appear under Phlebotomy once paid.
+                Total: <span className="font-semibold">{money(created.total)}</span>. Next: bill
+                the tests at the till. They appear under Phlebotomy once billed.
               </p>
             )}
           </div>
@@ -237,10 +239,13 @@ const WalkInLabRequest = () => {
               </Link>
             ) : (
               <Link
-                href="/dashboard/finance/accounts-receivable/invoices"
+                href={{
+                  pathname: "/dashboard/finance/accounts-receivable",
+                  query: { patient: created.patientId, invoice: created.invoiceId },
+                }}
                 className="bg-primary text-white rounded-xl px-4 py-2 text-sm"
               >
-                Take Payment
+                Bill &amp; Take Payment
               </Link>
             )}
             <button
