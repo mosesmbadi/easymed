@@ -16,7 +16,7 @@ including the known passwords below — reaches a deployment.
 
 | Role | Email | Password |
 | --- | --- | --- |
-| Administrator | `admin@mail.com` | `admin` |
+| Administrator | `lis@proto-typesolutions.com` (`DEMO_ADMIN_EMAIL`) | `DEMO_ADMIN_PASSWORD` from the env file; if unset, a random one printed in the backend log |
 | Doctor (GP) | `wanjiru.kamau@easymed.demo` | `demo1234` |
 | Doctor (Physician) | `otieno.odhiambo@easymed.demo` | `demo1234` |
 | Doctor (Paediatrician) | `amina.hassan@easymed.demo` | `demo1234` |

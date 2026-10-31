@@ -52,8 +52,10 @@ DEMO_SEED = 20260913
 # 'hospital' (the default) or 'standalone_lab'. A lab gets walk-ins only: no
 # triage, doctor or ward, as company.Company.DISABLED_MODULES has it.
 DEMO_FACILITY_TYPE = os.environ.get('DEMO_FACILITY_TYPE', 'hospital')
-ADMIN_EMAIL = 'admin@mail.com'
-ADMIN_PASSWORD = 'admin'
+ADMIN_EMAIL = os.environ.get('DEMO_ADMIN_EMAIL') or 'lis@proto-typesolutions.com'
+# Never in the code: the repository is on GitHub. Set it in .env.local (or the
+# server's env file); without it seed_staff makes one up and prints it.
+ADMIN_PASSWORD = os.environ.get('DEMO_ADMIN_PASSWORD', '')
 STAFF_PASSWORD = 'demo1234'
 STAFF_EMAIL_DOMAIN = 'easymed.demo'
 
@@ -363,8 +365,14 @@ def seed_staff():
 
     admin = CustomUser.objects.filter(is_superuser=True).order_by('id').first()
     if admin is None:
+        password = ADMIN_PASSWORD
+        if not password:
+            import secrets
+            password = secrets.token_urlsafe(12)
+            print(f"   DEMO_ADMIN_PASSWORD is not set: the admin {ADMIN_EMAIL} "
+                  f"was given the password {password}")
         admin = CustomUser.objects.create_superuser(
-            ADMIN_EMAIL, ADMIN_PASSWORD, first_name='System', last_name='Administrator')
+            ADMIN_EMAIL, password, first_name='System', last_name='Administrator')
     if admin.group_id is None and 'SYS_ADMIN' in groups:
         admin.group = groups['SYS_ADMIN']
         admin.save(update_fields=['group'])
