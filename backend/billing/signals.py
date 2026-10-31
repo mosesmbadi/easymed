@@ -8,7 +8,8 @@ from django.db.models import Sum
 from .services import check_stock_available, post_stock_for_invoice_item
 from .utils import update_service_billed_status
 from inventory.services.stock import InsufficientStock, StockError
-from .models import InvoiceItem, InvoicePayment
+from .models import Invoice, InvoiceItem, InvoicePayment
+from . import etims
 
 logger = logging.getLogger(__name__)
 
@@ -143,3 +144,16 @@ def update_invoice_cash_paid(sender, instance, created, **kwargs):
         instance.invoice.cash_paid += instance.payment_amount
         instance.invoice.save()
 
+
+@receiver(post_save, sender=Invoice)
+def send_settled_invoice_to_etims(sender, instance, **kwargs):
+    """
+    A settled invoice is a completed sale, which KRA wants through eTIMS.
+    Queued only; the sending never holds up, or undoes, the payment.
+    """
+    if instance.status != 'paid':
+        return
+    try:
+        etims.queue_invoice(instance)
+    except Exception:
+        logger.exception("Could not queue invoice %s for eTIMS", instance.pk)

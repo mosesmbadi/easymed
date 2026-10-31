@@ -12,7 +12,7 @@ import { getAllPatients } from '@/redux/features/patients';
 import { Column, Paging, Pager, Scrolling } from 'devextreme-react/data-grid';
 import CmtDropdownMenu from '@/assets/DropdownMenu';
 import { LuMoreHorizontal } from 'react-icons/lu';
-import { MdLocalPrintshop, MdPayment } from 'react-icons/md';
+import { MdLocalPrintshop, MdPayment, MdPhoneIphone } from 'react-icons/md';
 import { CiMoneyCheck1 } from 'react-icons/ci';
 import { FaPrint } from 'react-icons/fa';
 import { downloadPDF } from '@/redux/service/pdfs';
@@ -20,6 +20,7 @@ import { updateInvoices } from '@/redux/service/billing';
 import { toast } from 'react-toastify';
 import ViewInvoiceItems from '@/components/dashboard/billing/ViewInvoiceItemsModal';
 import SearchOnlyFilter from '@/components/common/process/SearchOnly';
+import MpesaPromptModal from '@/components/dashboard/billing/MpesaPromptModal';
 
 const DataGrid = dynamic(() => import('devextreme-react/data-grid'), { ssr: false });
 const allowedPageSizes = [5,10,'all'];
@@ -30,13 +31,17 @@ const statusOptions = [
   { value: 'paid', label: 'Paid' },
 ];
 
-const getActions = (isPaid = false) => {
+// M-Pesa prompts only when the deployment has Daraja set up.
+const getActions = (isPaid = false, mpesa = false) => {
   const actions = [
     { action: 'print', label: 'Print', icon: <MdLocalPrintshop className='text-success text-xl mx-2' /> },
     { action: 'invoice_items', label: 'Invoice Items', icon: <CiMoneyCheck1 className='text-success text-xl mx-2' /> },
   ];
   if (!isPaid) {
     actions.push({ action: 'mark_paid', label: 'Mark as Paid', icon: <MdPayment className='text-success text-xl mx-2' /> });
+    if (mpesa) {
+      actions.push({ action: 'mpesa', label: 'M-Pesa Prompt', icon: <MdPhoneIphone className='text-success text-xl mx-2' /> });
+    }
   }
   return actions;
 };
@@ -56,6 +61,16 @@ const InvoicesPage = () => {
   const [showPageSizeSelector, setShowPageSizeSelector] = useState(true);
   const [showInfo, setShowInfo] = useState(true);
   const [showNavButtons, setShowNavButtons] = useState(true);
+  const [integrations, setIntegrations] = useState({ mpesa: false, etims: false });
+  const [mpesaInvoice, setMpesaInvoice] = useState(null);
+
+  useEffect(() => {
+    if (!auth?.token) return;
+    fetch('/api/billing/integrations', { headers: { Authorization: `Bearer ${auth.token}` } })
+      .then((resp) => (resp.ok ? resp.json() : null))
+      .then((data) => data && setIntegrations(data))
+      .catch(() => {});
+  }, [auth?.token]);
 
   const items = [
     { label: 'None', value: '' },
@@ -171,12 +186,14 @@ const InvoicesPage = () => {
       handlePrint(data);
     } else if (menu.action === 'mark_paid') {
       handleMarkAsPaid(data);
+    } else if (menu.action === 'mpesa') {
+      setMpesaInvoice(data);
     }
   };
 
   const actionsFunc = ({ data }) => {
     const isPaid = data.status === 'paid';
-    const userActions = getActions(isPaid);
+    const userActions = getActions(isPaid, integrations.mpesa);
     return (
       <CmtDropdownMenu
         sx={{ cursor: 'pointer' }}
@@ -332,6 +349,15 @@ const InvoicesPage = () => {
         <Column dataField='' caption='' cellRender={actionsFunc} />
       </DataGrid>
       {open && <ViewInvoiceItems {...{ setOpen, open, selectedRowData }} />}
+      {mpesaInvoice && (
+        <MpesaPromptModal
+          open={Boolean(mpesaInvoice)}
+          setOpen={(next) => !next && setMpesaInvoice(null)}
+          invoice={mpesaInvoice}
+          defaultPhone={patients?.find?.((p) => p.id === mpesaInvoice.patient)?.phone || ''}
+          onPaid={() => dispatch(getAllInvoices(auth, processFilter, selectedSearchFilter, statusFilter))}
+        />
+      )}
     </Container>
   );
 };

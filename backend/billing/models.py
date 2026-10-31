@@ -266,7 +266,11 @@ class InvoiceItem(models.Model):
                     item=self.item, 
                     insurance_company_id=self.payment_mode.insurance_id
                 ).exists()
-                return 'insurance' if ins_price else 'cash_fallback'
+                if ins_price:
+                    return 'insurance'
+                if self.payment_mode.insurance.bills_list_price_when_unagreed:
+                    return 'account_list_price'
+                return 'cash_fallback'
         elif self.payment_mode:
             return 'cash'
         return 'unknown'
@@ -323,9 +327,19 @@ class InvoiceItem(models.Model):
                     'price_source': 'insurance',
                 }
 
-            # Insurance selected but nothing configured for this item. Bill the
-            # cash price to the patient rather than quietly sending an insurer
-            # a figure nobody agreed to.
+            # Nothing agreed for this item. An employer or a referring facility
+            # pays the price list; see InsuranceCompany.bills_list_price_when_unagreed.
+            if self.payment_mode.insurance.bills_list_price_when_unagreed:
+                return {
+                    'unit_price': cash_price,
+                    'item_amount': cash_price * qty,
+                    'patient_amount': 0,
+                    'actual_total': cash_price * qty,
+                    'price_source': 'account_list_price',
+                }
+
+            # An insurer: bill the cash price to the patient rather than
+            # quietly sending it a figure nobody agreed to.
             return {
                 'unit_price': cash_price,
                 'item_amount': cash_price * qty,
@@ -489,3 +503,65 @@ class SubAccount(models.Model):
             total=Sum('total_amount')
         )['total'] or 0
         return self.opening_bal + received - paid_out
+
+
+class EtimsSubmission(models.Model):
+    """
+    An invoice's trip to KRA eTIMS: sent once it is settled, retried until
+    KRA answers. Nothing waits on it -- the sale stands whether or not eTIMS
+    is configured or reachable -- but an invoice without a signed submission
+    is one the facility still owes KRA.
+    """
+    class Status(models.TextChoices):
+        PENDING = 'pending', 'Pending'
+        SENT = 'sent', 'Accepted by KRA'
+        FAILED = 'failed', 'Failed'
+
+    invoice = models.OneToOneField(Invoice, on_delete=models.CASCADE, related_name='etims')
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING)
+    attempts = models.PositiveIntegerField(default=0)
+    # What KRA's control unit gave back: the receipt number, its signature
+    # and the link printed as a QR code on the invoice.
+    receipt_number = models.CharField(max_length=50, blank=True, default='')
+    receipt_signature = models.CharField(max_length=100, blank=True, default='')
+    internal_data = models.CharField(max_length=200, blank=True, default='')
+    qr_url = models.URLField(max_length=500, blank=True, default='')
+    error = models.TextField(blank=True, default='')
+    request_payload = models.JSONField(null=True, blank=True)
+    response_payload = models.JSONField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"eTIMS {self.invoice.invoice_number}: {self.get_status_display()}"
+
+
+class MpesaPaymentRequest(models.Model):
+    """
+    An M-Pesa STK push: the cashier asks Safaricom to prompt the patient's
+    phone, and Safaricom calls back when they have paid -- or declined, or let
+    it time out. A paid callback books the money like the cashier would.
+    """
+    class Status(models.TextChoices):
+        PENDING = 'pending', 'Waiting for the customer'
+        PAID = 'paid', 'Paid'
+        FAILED = 'failed', 'Failed'
+        CANCELLED = 'cancelled', 'Cancelled by the customer'
+
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='mpesa_requests')
+    phone = models.CharField(max_length=15)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING)
+    merchant_request_id = models.CharField(max_length=100, blank=True, default='')
+    checkout_request_id = models.CharField(max_length=100, blank=True, default='', db_index=True)
+    mpesa_receipt_number = models.CharField(max_length=30, blank=True, default='')
+    result_description = models.CharField(max_length=255, blank=True, default='')
+    receipt = models.ForeignKey(PaymentReceipt, on_delete=models.SET_NULL, null=True, blank=True)
+    requested_by = models.ForeignKey(
+        'customuser.CustomUser', on_delete=models.SET_NULL, null=True, blank=True)
+    callback_payload = models.JSONField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"M-Pesa {self.phone} {self.amount}: {self.get_status_display()}"

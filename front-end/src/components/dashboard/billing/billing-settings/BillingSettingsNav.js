@@ -24,7 +24,7 @@ const BillingSettingsNav = () => {
             }`}
             onClick={() => setCurrentTab(0)}
           >
-            Insurances
+            Credit Accounts
           </p>
         </div>
         <div>
@@ -36,7 +36,7 @@ const BillingSettingsNav = () => {
             } `}
             onClick={() => setCurrentTab(1)}
           >
-            Insurance prices
+            Agreed Prices
           </p>
         </div>
         <div>

@@ -1,10 +1,11 @@
 services:
-    # nginx, backend, worker and frontend are built on the server from the
-    # checked-out code (see .github/workflows/ci-cd.yml); nothing is pulled
-    # from Docker Hub for them.
+    # nginx, backend, worker, frontend and backup are built by CI and pushed to
+    # Docker Hub (see .github/workflows/ci-cd.yml); the server only pulls them.
+    # The deploy sets IMAGE_TAG to the commit being deployed. Run by hand
+    # without it and you get :latest; to roll back, set IMAGE_TAG to an older
+    # commit SHA and run `pull` and `up -d` again.
     nginx:
-        build: ./nginx
-        image: easymed-nginx
+        image: ${IMAGE_NAMESPACE:-mosesmbadi}/easymed-nginx:${IMAGE_TAG:-latest}
         container_name: "nginx"
         volumes:
             - /var/log/nginx:/var/log/nginx
@@ -53,8 +54,7 @@ services:
         restart: unless-stopped
 
     backend:
-        build: ./backend
-        image: easymed-backend
+        image: ${IMAGE_NAMESPACE:-mosesmbadi}/easymed-backend:${IMAGE_TAG:-latest}
         container_name: api
         command: uvicorn --host 0.0.0.0 --port 8080 easymed.asgi:application
         ports:
@@ -71,8 +71,7 @@ services:
             - "service: backend"
 
     worker:
-        build: ./backend
-        image: easymed-backend
+        image: ${IMAGE_NAMESPACE:-mosesmbadi}/easymed-backend:${IMAGE_TAG:-latest}
         container_name: worker
         command: celery -A easymed worker --loglevel=INFO
         entrypoint: [] # Skip entrypoint to avoid running migrations
@@ -89,14 +88,10 @@ services:
             - "service: worker"
 
     frontend:
-        build:
-            context: ./front-end
-            # NEXT_PUBLIC_* are baked into the bundle at build time, so they
-            # come from the server's .env here, not from env_file at runtime.
-            args:
-                NEXT_PUBLIC_BACKEND_URL: ${NEXT_PUBLIC_BACKEND_URL:-http://api:8080/}
-                NEXT_PUBLIC_HMIS_VERSION: ${NEXT_PUBLIC_HMIS_VERSION:-v0.0.1}
-        image: easymed-frontend
+        # NEXT_PUBLIC_* are baked into this image when CI builds it (GitHub
+        # repository variables), so changing them in the server's .env has no
+        # effect on the bundle.
+        image: ${IMAGE_NAMESPACE:-mosesmbadi}/easymed-frontend:${IMAGE_TAG:-latest}
         container_name: front-end
         restart: unless-stopped
         ports:
@@ -148,7 +143,7 @@ services:
             - mks
 
     backup:
-        build: ./backup
+        image: ${IMAGE_NAMESPACE:-mosesmbadi}/easymed-backup:${IMAGE_TAG:-latest}
         container_name: easymed-backup
         env_file:
             - ./.env

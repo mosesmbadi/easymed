@@ -77,7 +77,7 @@ const CreateInsurancePriceModal = () => {
           onClick={handleClickOpen}
           className="bg-primary rounded-xl text-white px-4 py-2 text-sm flex items-center gap-1"
         >
-          <IoMdAdd /> Create Insurance Price
+          <IoMdAdd /> Create Agreed Price
         </button>
         <Dialog
           fullWidth
@@ -95,7 +95,7 @@ const CreateInsurancePriceModal = () => {
           <DialogContent>
             <section className="flex items-center justify-center gap-8 overflow-hidden">
               <div className="w-full space-y-4 px-4">
-                <h1 className="text-xl text-center">Create New Insurance price</h1>
+                <h1 className="text-xl text-center">Create New Agreed Price</h1>
                 <Formik
                     initialValues={initialValues}
                     validationSchema={validationSchema}
@@ -117,9 +117,9 @@ const CreateInsurancePriceModal = () => {
                         </Grid>
                         <Grid className='my-2' item md={6} xs={12}>
                             <SeachableSelect
-                                label="Select Insurance"
+                                label="Select Account"
                                 name="insurance_company"
-                                options={insurance.map((insurance) => ({ value: insurance.id, label: `${insurance?.name}` }))}
+                                options={insurance.map((insurance) => ({ value: insurance.id, label: `${insurance?.name}${insurance?.account_type_display ? ` (${insurance.account_type_display})` : ""}` }))}
                             />
                             <ErrorMessage
                                 name="insurance_company"

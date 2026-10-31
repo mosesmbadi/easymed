@@ -26,13 +26,24 @@ const DashboardLayout = ({ children }) => {
   const dispatch = useDispatch();
   const auth = useAuth();
   const router = useRouter();
-  const { loaded, isModuleEnabled } = useFacility();
+  const { loaded, status, failures, isModuleEnabled } = useFacility();
 
   useEffect(() => {
-    if (auth.token && !loaded) {
+    if (auth.token && status === "idle") {
       dispatch(getFacility(auth));
     }
-  }, [auth, loaded]);
+  }, [auth, status]);
+
+  // A failed load shows every module meanwhile; keep asking, backing off, so
+  // a lab's menus settle once the backend answers.
+  useEffect(() => {
+    if (!auth.token || status !== "failed" || failures > 5) return undefined;
+    const timer = setTimeout(
+      () => dispatch(getFacility(auth)),
+      Math.min(5000 * 2 ** (failures - 1), 60000)
+    );
+    return () => clearTimeout(timer);
+  }, [auth, status, failures]);
 
   const pageModule = moduleForPath(router.pathname);
   // Only block once the facility is known, so a hospital's pages don't blank

@@ -11,10 +11,12 @@ The centre of the clinical flow. Holds patient records and the
 
 | Field | Notes |
 | --- | --- |
-| `unique_id` | Patient number: company `patient_id_prefix` (default `ESMED-`) + running number, e.g. `ESMED-1042`. Generated on first save |
+| `unique_id` | Patient number: the facility profile's `patient_id_prefix` (default `ESMED-`) + running number, e.g. `ESMED-1042`. Generated on first save |
 | `first_name`, `second_name`, `date_of_birth`, `gender` (`M/F/O`) | Demographics |
 | `email`, `phone` | Contact |
-| `insurances` | M2M → `company.InsuranceCompany` |
+| `insurances` | M2M → `company.InsuranceCompany`: the patient's insurers and employer (credit accounts) |
+| `date_of_birth_estimated` | The date was worked back from an age (`Patient.birth_date_for_age`), not given |
+| `referred_from`, `external_id` | For someone known only through samples a clinic sent: that clinic's account and its own number for them, so the next sample finds the same patient |
 | `user` | Optional one-to-one → `CustomUser` (patients who sign in) |
 
 `age` is computed from the year of birth only.

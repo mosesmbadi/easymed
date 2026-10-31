@@ -24,6 +24,10 @@ including the known passwords below — reaches a deployment.
 | Nursing Officer | `esther.wambui@easymed.demo` | `demo1234` |
 | Nurses | `grace.muthoni@`, `faith.achieng@`, `brian.kiprono@`, `mercy.njeri@easymed.demo` | `demo1234` |
 | Lab | `peter.mwangi@easymed.demo`, `lucy.chebet@easymed.demo` | `demo1234` |
+
+Lab technologists, doctors and pharmacists carry registration numbers
+(`KMLTTB/...`, `KMPDC/...`, `PPB/...`), and the approver's prints on each lab
+report.
 | Pharmacy | `david.omondi@easymed.demo`, `ann.wairimu@easymed.demo` | `demo1234` |
 | Reception | `joyce.atieno@easymed.demo`, `samuel.kariuki@easymed.demo` | `demo1234` |
 
@@ -52,6 +56,9 @@ roughly 250 visits.
 | **Wards** | Admissions for the sickest cases, observation rounds twice a day, drugs charted on schedule, repeat labs, discharges — and a few patients still on the ward today |
 | **Billing** | Invoices in every state: paid at the till or by M-Pesa, part-paid, a few left owing; insured lines split between insurer and co-pay |
 | **Insurance** | Five insurers with agreed prices. Claims settled weekly, some short-paid, the last fortnight still outstanding |
+| **Corporate clients** | Safaricom (10% off the price list), Kenya Power and Bidco (the list as it is). About one patient in six is on a staff scheme, and their visits and walk-ins are billed to the employer. Each account settles its statement on the 10th, a few short. Finance > Accounts Receivable > Settings > Credit Accounts > Statement prints it |
+| **Referring facilities** | Three clinics with accounts here. On weekdays some send a cool box of samples, booked in through Laboratory > Receive Samples, billed to the clinic and run; about one sample in fifteen is turned away as haemolysed, short or unlabelled, uncharged. Walk-ins they referred are often billed to them too. They settle with the corporates |
+| **Messages** | Results-ready SMS and WhatsApp to walk-ins, results emailed to referring clinics, and rejection notices. No provider is set up in the demo, so every message is recorded in Django admin > Outbound messages as "not sent: channel not set up" |
 | **Finance** | A chart of accounts — till, M-Pesa, collections and supplier-payments accounts — with every receipt posted to one |
 | **Procurement** | Weekly reorders from pharmacy and lab: requisition, two approvals, purchase orders per supplier, deliveries (some in two parts), supplier invoices, payments three weeks later |
 | **Stock** | A full ledger: receipts, sales, lab consumption, collection draws, transfers to the lab, breakages, two posted stock takes with small shortages and one in progress |
@@ -60,13 +67,21 @@ roughly 250 visits.
 
 ### As a standalone lab
 
-Set `DEMO_FACILITY_TYPE=standalone_lab` before generating and the demo company
-becomes a standalone lab: Check-In, Nursing Station, Doctor Desk, In-patient
-and Radiology disappear, and the history is walk-ins only — six to ten a
-weekday, registered at the lab counter, paid at the till, drawn, resulted and
-approved. Pharmacy, billing, finance, inventory and procurement are as above.
-The facility type can also be changed later on the Company record in Django
-admin; tenants cannot change it themselves.
+Set `DEMO_FACILITY_TYPE=standalone_lab` before generating and the facility
+becomes "EaSyMed Diagnostics", a standalone lab:
+- Check-In, Nursing Station, Doctor Desk, In-patient and Radiology disappear.
+- The history is walk-ins (six to ten a weekday, registered at the lab counter,
+  paid at the till, drawn, resulted and approved) and samples sent in by the
+  three clinics, about every other weekday each.
+- Pharmacy, billing, finance, inventory and procurement are as above.
+
+The modules can be changed later under Django admin > Facility profile. Choose
+Custom to tick them individually, e.g. a lab with radiology. Facilities can't
+change their own modules.
+
+There is one facility profile per deployment, the facility the demo runs as,
+with two branches. Other organisations are credit accounts or suppliers, not
+companies.
 
 A price rise part-way through the period (amoxicillin, paracetamol,
 omeprazole) shows the frozen invoice prices at work: lines billed before it

@@ -64,7 +64,8 @@ def trigger_specimen_consumable_deduction(sender, instance, **kwargs):
     Idempotent per (sample, item), so the saves that follow a collected sample
     around cost nothing.
     """
-    if instance.is_sample_collected:
+    # A sample sent in by another facility was drawn with their kit.
+    if instance.is_sample_collected and not instance.collected_externally:
         deduct_specimen_consumables(instance.id)
 
 

@@ -89,7 +89,7 @@ class PharmacyDashboardMetricsView(APIView):
 
 def print_pharmacy_report(request):
     report_type = request.GET.get('type')
-    company = Company.objects.first()
+    company = Company.current()
     today = timezone.now()
     company_logo_url = request.build_absolute_uri(company.logo.url) if (company and getattr(company, 'logo', None)) else None
     

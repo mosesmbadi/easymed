@@ -128,7 +128,7 @@ const InsurancePrices = () => {
             showNavigationButtons={showNavButtons}
         />
         <Column dataField="item_name" caption="Item" />
-        <Column dataField="insurance_name" caption="Insurance" />
+        <Column dataField="insurance_name" caption="Account" />
         <Column
           dataField="sale_price"
           caption="Price"

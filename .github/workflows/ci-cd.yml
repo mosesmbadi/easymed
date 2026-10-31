@@ -2,14 +2,18 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main" , "standalone-lab"]
 
 env:
   # Where the stack lives on the server and which compose file runs it.
-  # Images are built there from the checked-out code; NEXT_PUBLIC_* build
-  # args come from the server's .env.
   SERVER_APP_DIR: easymed
   COMPOSE_FILE: docker-compose-cloud.yml
+  # Docker Hub namespace the images are pushed to and pulled from. Set the
+  # DOCKERHUB_NAMESPACE repository variable to override.
+  IMAGE_NAMESPACE: ${{ vars.DOCKERHUB_NAMESPACE || 'mosesmbadi' }}
+  # Every image is tagged with the commit it was built from; the server runs
+  # exactly that tag, so what was tested is what is deployed.
+  IMAGE_TAG: ${{ github.sha }}
 
 
 jobs:
@@ -62,12 +66,70 @@ jobs:
             backend-test:ci sh -c "python manage.py check && pytest -v --ds=easymed.settings.testing"
 
 
+  # ============================ BUILD & PUSH IMAGES ============================ #
+  # Images are built here, not on the server: a Next.js production build needs
+  # more memory than the server has spare while the stack is running.
+  # ============================================================================= #
+  build-and-push:
+    runs-on: ubuntu-latest
+    needs:
+      - test-backend
+
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - name: backend
+            context: ./backend
+          - name: frontend
+            context: ./front-end
+          - name: nginx
+            context: ./nginx
+          - name: backup
+            context: ./backup
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # NEXT_PUBLIC_* are baked into the frontend bundle at build time, so they
+      # come from repository variables now that the build is not on the server.
+      # The other images ignore these build args.
+      - name: Build and push ${{ matrix.name }}
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAMESPACE }}/easymed-${{ matrix.name }}:${{ env.IMAGE_TAG }}
+            ${{ env.IMAGE_NAMESPACE }}/easymed-${{ matrix.name }}:latest
+          build-args: |
+            NEXT_PUBLIC_BACKEND_URL=${{ vars.NEXT_PUBLIC_BACKEND_URL || 'http://api:8080/' }}
+            NEXT_PUBLIC_HMIS_VERSION=${{ vars.NEXT_PUBLIC_HMIS_VERSION || 'v0.0.1' }}
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+
+
   # =========================== DEPLOY TO DIGITAL OCEANS ======================== #
   # ============================================================================= #
   deploy:
     runs-on: ubuntu-latest
     needs:
-      - test-backend
+      - build-and-push
+
+    # One deploy at a time; a newer push waits rather than racing an older one.
+    concurrency:
+      group: deploy-staging
+      cancel-in-progress: false
 
     env:
       STAGING_DO_SERVER_PRIVATE_KEY: ${{ secrets.STAGING_DO_SERVER_PRIVATE_KEY }}
@@ -75,9 +137,6 @@ jobs:
       STAGING_DO_SERVER_USERNAME: ${{ secrets.STAGING_DO_SERVER_USERNAME }}
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
       - name: Set up SSH key
         run: |
           mkdir -p ~/.ssh
@@ -85,8 +144,12 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -T 10 -H $STAGING_DO_SERVER_IP >> ~/.ssh/known_hosts
 
-      # The heredoc is unquoted so SERVER_APP_DIR and COMPOSE_FILE expand here,
-      # on the runner; anything meant for the server's shell is escaped (\$).
+      # The heredoc is unquoted so the env values above expand here, on the
+      # runner; anything meant for the server's shell is escaped (\$).
+      #
+      # The server still checks out the repo -- at the exact commit the images
+      # were built from -- because the compose file and the nginx/prometheus
+      # config it mounts live there. It builds nothing.
       - name: Deploy
         run: |
           ssh -o StrictHostKeyChecking=no $STAGING_DO_SERVER_USERNAME@$STAGING_DO_SERVER_IP << EOF
@@ -94,25 +157,25 @@ jobs:
 
             echo "📦 Updating repository..."
             cd \$HOME/${SERVER_APP_DIR}
-
-            echo "🔄 Pulling latest changes..."
             git fetch origin
-            git reset --hard origin/main
+            git reset --hard ${IMAGE_TAG}
 
-            # Build before touching the running stack: if the build fails, the
+            export IMAGE_NAMESPACE=${IMAGE_NAMESPACE}
+            export IMAGE_TAG=${IMAGE_TAG}
+
+            # Pull before touching the running stack: if a pull fails, the
             # current containers stay up and set -e stops the deploy here.
-            echo "🏗️  Building images..."
-            docker compose -f ${COMPOSE_FILE} build --pull
+            echo "⬇️  Pulling images (${IMAGE_TAG})..."
+            docker compose -f ${COMPOSE_FILE} pull
 
             echo "🚀 Starting containers..."
             docker compose -f ${COMPOSE_FILE} up -d --remove-orphans
 
-            # Dangling images and build cache only. Not -a, which would drop the
-            # cached base layers and make every build start from scratch; and
-            # no --volumes, which would put postgres_data and letsencrypt at risk.
-            echo "🧹 Cleaning up unused Docker resources..."
-            docker image prune -f || true
-            docker builder prune -f --filter until=168h || true
+            # Images no container uses, older than a week. The week keeps recent
+            # tags on disk for a quick rollback; no --volumes, which would put
+            # postgres_data and letsencrypt at risk.
+            echo "🧹 Cleaning up old images..."
+            docker image prune -af --filter "until=168h" || true
 
             echo "✅ Deployment completed!"
           EOF

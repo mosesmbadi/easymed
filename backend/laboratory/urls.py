@@ -38,6 +38,7 @@ from .views import (
     ReleasedSampleViewSet,
     WalkInLabRequestView,
     WalkInPatientSearchView,
+    SampleConsignmentView,
 )
 
 router = DefaultRouter()
@@ -75,6 +76,7 @@ urlpatterns = [
     path('', include(router.urls)),
     path('walk-in-requests/', WalkInLabRequestView.as_view(), name='walk-in-lab-request'),
     path('walk-in-requests/patients/', WalkInPatientSearchView.as_view(), name='walk-in-patient-search'),
+    path('referred-samples/', SampleConsignmentView.as_view(), name='referred-samples'),
     path('lab-test-request-by-patient-id/<int:patient_id>/', LabTestRequestByPatientIdAPIView.as_view()),
     path('lab-test-request-panels-by-lab-test-request-id/<int:lab_test_request_id>/', LabTestRequestPanelByLabTestRequestId.as_view(), name='lab-test-request-panels'),
     path('lab-test-request-by-process-id/<int:process_id>/', LabTestRequestByProcessId.as_view(), name='lab-process-request'),

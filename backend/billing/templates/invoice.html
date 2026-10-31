@@ -422,6 +422,16 @@
     {% endif %}
   </div>
 
+  {% if company.kra_pin or invoice.etims.receipt_number %}
+  <div style="margin-top: 20px; font-size: 9px; color: #555; border-top: 1px solid #eee; padding-top: 8px;">
+    {% if company.kra_pin %}KRA PIN: {{ company.kra_pin }}{% endif %}
+    {% if invoice.etims.receipt_number %}
+      &nbsp;|&nbsp; eTIMS receipt {{ invoice.etims.receipt_number }}
+      {% if invoice.etims.internal_data %}&nbsp;|&nbsp; {{ invoice.etims.internal_data }}{% endif %}
+      {% if invoice.etims.qr_url %}<br>Verify: {{ invoice.etims.qr_url }}{% endif %}
+    {% endif %}
+  </div>
+  {% endif %}
 
 </body>
 

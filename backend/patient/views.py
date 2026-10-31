@@ -236,13 +236,13 @@ def download_prescription_pdf(request, prescription_id):
     '''
     prescription = get_object_or_404(Prescription, pk=prescription_id)
     prescribed_drugs = PrescribedDrug.objects.filter(prescription=prescription)
-    company = Company.objects.first()
+    company = Company.current()
     
     # Get attendance process to get the doctor
     attendance_process = AttendanceProcess.objects.filter(prescription=prescription).first()
     
     # Get signature and logo URLs
-    company_logo_url = request.build_absolute_uri(company.logo.url) if company.logo else None
+    company_logo_url = request.build_absolute_uri(company.logo.url) if company and company.logo else None
     doctor_sig_url = request.build_absolute_uri(attendance_process.doctor.signature.url) if attendance_process and attendance_process.doctor and attendance_process.doctor.signature else None
 
     # Render the HTML template with the context
@@ -276,7 +276,7 @@ def generate_lab_tests_report(request):
     doctor_id = request.GET.get('doctor_id')
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
-    company= Company.objects.first()
+    company= Company.current()
 
     if not doctor_id:
         return HttpResponseBadRequest("Missing doctor_id parameter.")

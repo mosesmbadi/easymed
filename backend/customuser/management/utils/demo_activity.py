@@ -335,6 +335,14 @@ ROLE_GROUP = {
 }
 
 
+# The boards staff are registered with; printed on what they sign.
+REGISTRATION_PREFIX = {
+    'labtech': 'KMLTTB/{index:05d}',
+    'doctor': 'KMPDC/A{index:05d}',
+    'pharmacist': 'PPB/{index:05d}',
+}
+
+
 def staff_email(first, last):
     return f"{first}.{last}@{STAFF_EMAIL_DOMAIN}".lower()
 
@@ -375,6 +383,8 @@ def seed_staff():
                 profession=profession,
                 phone=f"+2547{index:02d}{(index * 7919) % 1000000:06d}",
                 group=groups.get(ROLE_GROUP[role]),
+                registration_number=REGISTRATION_PREFIX[role].format(index=index)
+                if role in REGISTRATION_PREFIX else '',
             )
         staff[role].append(user)
 
@@ -797,7 +807,15 @@ class DemoWorld:
             'insurance_company_id', flat=True).distinct())
         self.insurer_modes = {
             mode.insurance_id: mode
-            for mode in PaymentMode.objects.filter(insurance_id__in=priced)
+            for mode in PaymentMode.objects.filter(
+                insurance_id__in=priced, insurance__account_type='insurer')
+        }
+        # Corporate clients and referring facilities, billed on account
+        # whether or not they agreed prices; see InsuranceCompany.
+        self.account_modes = {
+            mode.insurance_id: mode
+            for mode in PaymentMode.objects.filter(
+                insurance__account_type__in=['corporate', 'facility']).select_related('insurance')
         }
 
         self.drugs = {i.name: i for i in Item.objects.filter(
@@ -848,8 +866,22 @@ class DemoWorld:
         return self.consultations.get(name or 'General Appointment') \
             or self.consultations.get('General Appointment')
 
+    def employer_mode_for(self, patient):
+        """The corporate client paying for this patient, if they work for one."""
+        for account in patient.insurances.all():
+            mode = self.account_modes.get(account.id)
+            if mode and mode.insurance.account_type == 'corporate':
+                return mode
+        return None
+
     def payment_mode_for(self, patient):
-        """Most insured patients use their cover; the rest pay cash."""
+        """
+        Staff of a corporate client are billed to it. Most insured patients
+        use their cover; the rest pay cash.
+        """
+        employer = self.employer_mode_for(patient)
+        if employer and self.rng.random() < 0.95:
+            return employer
         covered = [c for c in patient.insurances.all() if c.id in self.insurer_modes]
         if covered and self.rng.random() < 0.7:
             return self.insurer_modes[covered[0].id]
@@ -1094,11 +1126,12 @@ def _enter_results(world, runs, scenario):
     world.counts['results entered'] += len(runs)
 
 
-def _approve(requests, runs):
+def _approve(requests, runs, approver=None):
     from laboratory.models import LabTestRequest
 
     for run in runs:
         run.result_approved = True
+        run.approved_by = approver
         run.save()
     LabTestRequest.objects.filter(pk__in=[r.pk for r in requests]).update(has_result=True)
 
@@ -1196,7 +1229,7 @@ def visit_script(world, patient, scenario, arrival):
         _set_track(visit, 'added result')
 
         yield world.later(10, 60)
-        _approve(requests, runs)
+        _approve(requests, runs, tech)
         _archive(world, visit, samples, orders, doctor, tech, mode)
 
         yield world.later(10, 40)
@@ -1344,7 +1377,7 @@ def retest_script(world, visit, archive_id, order, doctor, tech, mode):
     _enter_results(world, runs, {'key': 'retest'})
 
     yield world.later(10, 40)
-    _approve([request], runs)
+    _approve([request], runs, world.staff['labtech'][0])
     world.settle_patient(visit, visit.patient)
 
 
@@ -1599,6 +1632,40 @@ def insurer_settlement_script(world, first, last):
             world.counts['insurer settlements'] += 1
 
 
+def account_settlement_script(world, first, last):
+    """
+    On the 10th, each corporate client and referring facility settles last
+    month's statement -- most in full, some short, by bank transfer.
+    """
+    from billing.models import InvoiceItem
+    from billing.statements import account_statement, month_bounds
+    from billing.views import AllocatePaymentView
+
+    for day in _days(first + _dt.timedelta(days=1), last):
+        if day.day != 10:
+            continue
+        yield _at(day, 11, 0)
+        start, end = month_bounds(day.replace(day=1) - _dt.timedelta(days=1))
+        for account_id, mode in world.account_modes.items():
+            statement = account_statement(mode.insurance, start, end)
+            owed = statement['closing_balance']
+            if owed <= 0:
+                continue
+            amount = owed if world.rng.random() > 0.25 else (owed * Decimal('0.9')).quantize(Decimal('0.01'))
+            invoice_ids = list(InvoiceItem.objects.filter(
+                status='billed', payment_mode=mode, item_created_at__date__lte=end,
+            ).values_list('invoice_id', flat=True).distinct())
+            world.post_view(AllocatePaymentView, '/billing/allocate-payment/', {
+                'insurance_id': account_id,
+                'invoice_ids': invoice_ids,
+                'sub_account': world.accounts['collections'].id,
+                'amount': str(amount),
+                'reference_number': f"EFT-{world.today():%y%m}-{account_id:03d}",
+                'payment_date': world.today().isoformat(),
+            })
+            world.counts['account settlements'] += 1
+
+
 def stock_take_script(world, days_ago, post=True):
     """A cycle count in the pharmacy: most lines agree, a couple come up short."""
     from inventory.models import StockBalance, StockTake, StockTakeLine
@@ -1848,6 +1915,16 @@ def walk_in_script(world, patient, arrival):
         payload['referring_doctor'] = rng.choice(REFERRING_DOCTORS)
         payload['referring_facility'] = rng.choice(REFERRING_CLINICS)
 
+    # Staff of a corporate client are billed to it; a clinic with an account
+    # here often pays for what it sends, the rest of the time the patient does.
+    employer = world.employer_mode_for(patient) if patient else None
+    facility = next((mode for mode in world.account_modes.values()
+                     if mode.insurance.name == payload.get('referring_facility')), None)
+    if employer:
+        payload['payment_mode'] = employer.id
+    elif facility and rng.random() < 0.6:
+        payload['payment_mode'] = facility.id
+
     data = world.post_view(WalkInLabRequestView, '/lab/walk-in-requests/', payload)
     visit = AttendanceProcess.objects.get(pk=data['id'])
     world.counts['walk-in lab visits'] += 1
@@ -1873,8 +1950,76 @@ def walk_in_script(world, patient, arrival):
     _set_track(visit, 'added result')
 
     yield world.later(10, 45)
-    _approve(list(LabTestRequest.objects.filter(process=visit.process_test_req)), runs)
+    _approve(list(LabTestRequest.objects.filter(process=visit.process_test_req)), runs,
+             rng.choice(world.staff['labtech']))
     _set_track(visit, 'complete')
+
+
+REJECTIONS = [
+    ('haemolysed', 'Haemolysed in transit, please redraw'),
+    ('insufficient', 'Not enough sample for the tests requested'),
+    ('unlabelled', 'Tube not labelled with the patient name'),
+]
+
+
+def referred_samples_script(world, mode, arrival):
+    """
+    A clinic's cool box: one to four patients' samples with a request form,
+    booked in through the Receive Samples endpoint, billed to the clinic's
+    account and run -- a few turned away as unusable.
+    """
+    from laboratory.models import LabTestRequestPanel, SampleConsignment
+    from laboratory.views import SampleConsignmentView
+
+    rng = world.rng
+    yield arrival
+
+    facility = mode.insurance
+    initials = ''.join(word[0] for word in facility.name.split()[:3]).upper()
+    entries = []
+    for _ in range(rng.randint(1, 4)):
+        order = rng.choices(WALK_IN_ORDERS, weights=[o['weight'] for o in WALK_IN_ORDERS])[0]
+        panels = []
+        for name in order['tests']:
+            _, profile_panels = world.profile(name)
+            panels += [panel.id for panel in profile_panels if panel.can_run()[0]]
+        if not panels:
+            continue
+        entry = {
+            'new_patient': {
+                'first_name': rng.choice(KIN_NAMES), 'second_name': rng.choice(WALK_IN_SURNAMES),
+                'gender': rng.choice(['M', 'F']), 'age_years': rng.randint(2, 80),
+            },
+            'external_reference': f"{initials}-{rng.randint(1000, 9999)}",
+            'referring_doctor': facility.contact_person,
+            'collected_at': (world.clock.now - _dt.timedelta(minutes=rng.randint(60, 240))).isoformat(),
+            'collected_by': f"Nurse {rng.choice(WALK_IN_SURNAMES)}",
+            'panels': panels,
+        }
+        if rng.random() < 0.07:
+            entry['condition'], entry['rejection_reason'] = rng.choice(REJECTIONS)
+        entries.append(entry)
+    if not entries:
+        return
+
+    data = world.post_view(SampleConsignmentView, '/lab/referred-samples/', {
+        'facility': facility.id, 'entries': entries,
+        'courier': f"Rider {rng.randint(1, 12)}",
+        'received_at': world.clock.now.isoformat(),
+    })
+    world.counts['referred-sample consignments'] += 1
+    world.counts['referred samples'] += len(data['patients'])
+    world.counts['referred samples rejected'] += sum(1 for p in data['patients'] if p['rejected'])
+
+    consignment = SampleConsignment.objects.get(pk=data['id'])
+    runs = list(LabTestRequestPanel.objects.filter(
+        lab_test_request__consignment=consignment, is_billed=True).select_related('test_panel'))
+
+    yield world.later(40, 180)
+    _enter_results(world, runs, {'key': 'referred'})
+
+    yield world.later(10, 60)
+    _approve(list(consignment.requests.all()), runs, rng.choice(world.staff['labtech']))
 
 
 # ---------------------------------------------------------------------------
@@ -1900,6 +2045,14 @@ def _arrivals(world, patients, children, first, last, standalone_lab=False):
     child_scenarios = [s for s in SCENARIOS if s.get('child_ok')]
     scripts = []
     for day in _days(first, last):
+        # Clinics send their samples in on weekdays -- a lab's main trade,
+        # an occasional box at a hospital.
+        if day.weekday() < 5:
+            for mode in world.account_modes.values():
+                if mode.insurance.account_type == 'facility' and rng.random() < (0.5 if standalone_lab else 0.2):
+                    arrival = _at(day, 9, 0) + _dt.timedelta(minutes=rng.randint(0, 420))
+                    scripts.append((referred_samples_script(world, mode, arrival),
+                                    f"referred samples from {mode.insurance.name}, {day}"))
         if standalone_lab:
             count = rng.randint(6, 10) if day.weekday() < 5 else rng.randint(2, 4)
             scripts += _walk_ins(world, patients, day, count)
@@ -1960,6 +2113,7 @@ def seed_demo_world(clock, staff, days=DEMO_DAYS):
         (lab_topup_script(world, first, last), 'lab top-ups'),
         (supplier_payment_script(world, first, last), 'supplier payments'),
         (insurer_settlement_script(world, first, last), 'insurer settlements'),
+        (account_settlement_script(world, first, last), 'account settlements'),
         (archive_housekeeping_script(world, first, last), 'archive housekeeping'),
         (wastage_script(world, first, last), 'wastage'),
         (stock_take_script(world, 45), 'stock take 45 days ago'),

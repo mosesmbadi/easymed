@@ -20,7 +20,7 @@ export default async function handler(req, res) {
                 }
             };
     
-            await backendAxiosInstance.get(`${API_URL.FETCH_COMPANY_INFO}1/`, config).then(response => {
+            await backendAxiosInstance.get(`${API_URL.FETCH_COMPANY_INFO}`, config).then(response => {
                 res.status(200).json(response.data);
 
             }).catch(e => {
@@ -44,7 +44,7 @@ export default async function handler(req, res) {
             };
             const body = req.body;
 
-            await backendAxiosInstance.put(`${API_URL.FETCH_COMPANY_INFO}1/`,body.body, config).then(response => {
+            await backendAxiosInstance.patch(`${API_URL.FETCH_COMPANY_INFO}`,body.body, config).then(response => {
                 res.status(200).json(response.data);
 
             }).catch(e => {

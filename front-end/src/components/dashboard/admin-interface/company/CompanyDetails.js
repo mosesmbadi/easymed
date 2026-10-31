@@ -24,6 +24,7 @@ const CompanyDetails = () => {
         email1: companyInfo?.email1,
         email2: companyInfo?.email2,
         patient_id_prefix: companyInfo?.patient_id_prefix || '',
+        kra_pin: companyInfo?.kra_pin || '',
         logo: null,
     };
     
@@ -42,7 +43,8 @@ const CompanyDetails = () => {
         try{
 
             await updateCompanyInformation(formValue, auth);
-            toast.success("Successfully updated company information");
+            dispatch(getCompanyDetails(auth));
+            toast.success("Successfully updated the facility profile");
             setLoading(false);
 
         }catch(e){
@@ -64,6 +66,7 @@ const CompanyDetails = () => {
         initialValues={initialValues}
         validationSchema={validationSchema}
         onSubmit={updateCompanyInfo}
+        enableReinitialize
     >
         <Form>
             <section className="space-y-2 bg-white rounded-lg min-h-[80vh] p-2 flex flex-col gap-4 items-center justify-center">
@@ -167,6 +170,32 @@ const CompanyDetails = () => {
                                 This prefix will be added to all new patient IDs (e.g., ESMED-1, ESMED-2, etc.)
                             </p>
                         </Grid>
+                        <Grid item md={12} xs={12}>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                KRA PIN
+                            </label>
+                            <Field
+                                className="block border border-gray py-3 px-4 focus:outline-none w-full"
+                                type="text"
+                                placeholder="e.g. P051234567X"
+                                name="kra_pin"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                                Printed on invoices and sent to KRA eTIMS with each sale.
+                            </p>
+                        </Grid>
+                        {companyInfo?.facility_type && (
+                            <Grid item md={12} xs={12}>
+                                <p className="text-sm">
+                                    Modules: {companyInfo.enabled_modules?.length
+                                        ? companyInfo.enabled_modules.join(", ")
+                                        : "laboratory, pharmacy and billing only"}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                    Set by EaSyMed when your facility was set up. Contact support to change them.
+                                </p>
+                            </Grid>
+                        )}
                     </Grid>
                 </div>
                 <div>

@@ -115,8 +115,15 @@ Permissions come from the user's group; see [authperms.md](authperms.md).
   `radiology` → `/dashboard/radiology`.
 - The sidebar hides menu entries whose `module` is disabled.
 - `DashboardLayout` blocks a page whose route belongs to a disabled module.
-- Until the facility loads, switchable modules read as **off**, so a lab never
-  sees hospital menus flash up.
+- While the facility is loading, switchable modules read as **off**, so a lab
+  never sees hospital menus flash up.
+- If the request **fails**, they read as **on**, so a hospital never loses
+  Doctor Desk to a network blip. `DashboardLayout` then retries with backoff
+  (5s, 10s, 20s... up to six times). The backend still refuses writes to a
+  module that really is off.
+- `isLabFirst` (no check-in module) switches the home page to the lab shortcuts.
+  It depends on the modules, not on the facility type, so a `custom` facility
+  without check-in gets them too.
 
 The backend enforces the same rule on writes; see [company.md](company.md).
 

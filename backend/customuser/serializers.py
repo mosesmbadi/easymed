@@ -27,7 +27,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
         fields = ('id', 'email', 'first_name',
-                  'last_name', 'role', 'profession', 'age', 'phone')
+                  'last_name', 'role', 'profession', 'age', 'phone', 'registration_number')
 
     def get_age(self, obj: CustomUser):
         if obj.age:

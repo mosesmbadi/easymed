@@ -364,6 +364,40 @@ class ProcessTestRequest(models.Model):
         return self.reference
 
 
+class SampleConsignment(models.Model):
+    """
+    A delivery of samples from another facility: one cool box, one request
+    form, any number of patients. Each patient in it becomes a lab visit of
+    their own, billed to the sending facility's account.
+    """
+    reference = models.CharField(max_length=30, unique=True, editable=False)
+    facility = models.ForeignKey(
+        'company.InsuranceCompany', on_delete=models.PROTECT, related_name='consignments',
+        help_text="The referring facility's credit account.")
+    received_at = models.DateTimeField(default=timezone.now)
+    received_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True)
+    courier = models.CharField(max_length=150, blank=True, default='')
+    request_form = models.FileField(
+        upload_to="Lab Test Requests/referred", max_length=254, null=True, blank=True,
+        validators=[FileExtensionValidator(allowed_extensions=['pdf', 'png', 'jpg', 'jpeg'])])
+    note = models.TextField(blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-received_at']
+
+    def save(self, *args, **kwargs):
+        if not self.reference:
+            day = timezone.localtime(self.received_at or timezone.now())
+            prefix = f"RS-{day:%y%m%d}-"
+            count = SampleConsignment.objects.filter(reference__startswith=prefix).count()
+            self.reference = f"{prefix}{count + 1:03d}"
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.reference} from {self.facility}"
+
+
 class LabTestRequest(models.Model):
     process = models.ForeignKey(ProcessTestRequest, on_delete=models.CASCADE, null=True, blank=True, related_name="attendace_test_requests") # from patient app
     test_profile = models.ForeignKey(LabTestProfile, on_delete=models.CASCADE, null=True, blank=True)
@@ -373,6 +407,11 @@ class LabTestRequest(models.Model):
     # carrying a referral from a clinician elsewhere. Printed on the report.
     referring_doctor = models.CharField(max_length=150, null=True, blank=True)
     referring_facility = models.CharField(max_length=150, null=True, blank=True)
+    # A sample sent in by another facility: the delivery it came in, and the
+    # sender's own number for the patient or request, printed on the report.
+    consignment = models.ForeignKey(
+        SampleConsignment, on_delete=models.SET_NULL, null=True, blank=True, related_name='requests')
+    external_reference = models.CharField(max_length=60, blank=True, default='')
     requested_on = models.TimeField(auto_now_add=True, null=True, blank=True)
     has_result = models.BooleanField(default=False)
     created_on= models.DateField(auto_now_add=True)
@@ -388,6 +427,28 @@ class PatientSample(models.Model):
     process = models.ForeignKey(ProcessTestRequest, on_delete=models.CASCADE, null=True, blank=True) # from patient app
     is_sample_collected = models.BooleanField(default=False)
     collected_on = models.DateTimeField(null=True, blank=True)
+
+    # A sample another facility drew and sent in. Its draw kit was theirs, so
+    # none of ours is deducted; and it arrives in some condition, which may
+    # mean it can't be run.
+    class Condition(models.TextChoices):
+        ACCEPTABLE = 'acceptable', 'Acceptable'
+        HAEMOLYSED = 'haemolysed', 'Haemolysed'
+        CLOTTED = 'clotted', 'Clotted'
+        LIPAEMIC = 'lipaemic', 'Lipaemic'
+        INSUFFICIENT = 'insufficient', 'Insufficient volume'
+        LEAKED = 'leaked', 'Leaked or broken'
+        UNLABELLED = 'unlabelled', 'Unlabelled or mislabelled'
+        WRONG_CONTAINER = 'wrong_container', 'Wrong container'
+        DELAYED = 'delayed', 'Delayed in transit'
+
+    collected_externally = models.BooleanField(default=False)
+    collected_by = models.CharField(max_length=150, blank=True, default='')
+    received_on = models.DateTimeField(null=True, blank=True)
+    condition = models.CharField(
+        max_length=20, choices=Condition.choices, blank=True, default='')
+    rejected = models.BooleanField(default=False)
+    rejection_reason = models.CharField(max_length=255, blank=True, default='')
 
     def generate_sample_code(self):
         prefix = "DDLR"
@@ -499,6 +560,10 @@ class LabTestRequestPanel(models.Model):
     category = models.CharField(max_length=30, default="none")
     result_approved=models.BooleanField(default=False)
     approved_on = models.DateTimeField(null=True, blank=True) 
+    # Who signed the result off; their name and registration number print on
+    # the report.
+    approved_by = models.ForeignKey(
+        CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_results')
     is_billed = models.BooleanField(default=False)
     
     # Auto-generated interpretation based on result value

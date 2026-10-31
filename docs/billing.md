@@ -108,7 +108,10 @@ reversed.
 
 ## Payment allocation
 
-`POST /billing/allocate-payment/` (`AllocatePaymentView`):
+`payments.allocate_payment()` does the work. `POST /billing/allocate-payment/`
+(`AllocatePaymentView`) and the M-Pesa callback both call it, so money is
+booked the same way whether the cashier keys it in or Safaricom confirms it.
+The request body:
 
 ```json
 {
@@ -128,6 +131,75 @@ that insurer's lines; prior allocations by the same payer are subtracted.
 Patient payments also bump `cash_paid`; if nothing on the lines is allocatable,
 a patient payment falls back to the invoice's `total_cash − cash_paid`. Invoice
 `status` is then recomputed from total allocations.
+
+## Credit accounts and statements
+
+Insurers, employers and referring clinics are all `company.InsuranceCompany`
+credit accounts (see [company.md](company.md#insurancecompany-credit-accounts)).
+
+**Unagreed prices.** For an item the account has no agreed price for:
+- a **corporate or facility** account pays the price list
+  (`price_source='account_list_price'`);
+- an **insurer** doesn't, and the line falls back to the patient
+  (`cash_fallback`).
+
+**Billing on account.** Lab walk-ins and referred samples billed to a corporate
+or facility account are created `billed`. They skip the till and go straight
+onto the Phlebotomy list.
+
+`statements.account_statement(account, start, end)` builds a statement:
+- balance brought forward;
+- billed lines in the period, each counted on the day it was raised;
+- receipts against the account, each counted on its payment date;
+- the amount due.
+
+`GET accounts/<id>/statement/?start=&end=` returns it as JSON (the current month
+by default), and as PDF with `&download=pdf`.
+
+## eTIMS (`etims.py`, `integrations/etims.py`)
+
+When an invoice is settled in full (`status='paid'`), a `post_save` signal
+queues an `EtimsSubmission`, but only when eTIMS is configured. Sending it is a
+Celery task:
+- **Accepted:** the KRA receipt number, signature and verification link are
+  stored, and the invoice PDF prints them with the facility's KRA PIN.
+- **Failed:** the submission records the error and retries with backoff. The
+  payment itself is never held up or undone.
+- **Resending:** the `resend-unsent-etims` beat job retries hourly, the
+  `manage.py send_etims [--backfill]` command sends now, and Django admin has a
+  "Send to eTIMS now" action.
+
+The payload follows KRA's OSCU `trnsSales/saveSales` format. Every line uses tax
+type A (exempt) and KRA's catch-all item classification code. **Each item needs
+its own registered codes before going live.**
+
+Settings: `ETIMS_ENABLED`, `ETIMS_BASE_URL`, `ETIMS_CMC_KEY`, `ETIMS_BRANCH_ID`,
+`ETIMS_DEVICE_SERIAL`, and `ETIMS_PIN` (falls back to `Company.kra_pin`).
+
+## M-Pesa (`mpesa.py`, `integrations/mpesa.py`)
+
+`POST mpesa/stk-push/ {invoice_id, phone[, amount]}` prompts the customer's
+phone through Daraja, for what they owe on the invoice by default, and records
+an `MpesaPaymentRequest`.
+
+Safaricom then calls `POST mpesa/callback/<MPESA_CALLBACK_TOKEN>/`:
+- The call is **unauthenticated**; the token in the URL is the trust.
+- A **paid** callback books the money with `allocate_payment` into the M-Pesa
+  sub-account: `MPESA_SUB_ACCOUNT_ID`, or else the first sub-account whose
+  payment mode is `mobile_money`.
+- It is **idempotent**, so a repeated callback books nothing twice.
+- **Result code 1032** means the customer cancelled.
+
+`GET mpesa/stk-push/<id>/` lets the screen poll.
+
+When M-Pesa isn't configured the push answers `503 {configured: false}`, and
+`GET integrations/` reports `{mpesa, etims}` so screens offer only what's on.
+The cashier then takes M-Pesa as before, by typing the code in.
+
+Settings: `MPESA_ENABLED`, `MPESA_ENVIRONMENT` (`sandbox` or `production`),
+`MPESA_CONSUMER_KEY`, `MPESA_CONSUMER_SECRET`, `MPESA_SHORTCODE`,
+`MPESA_PASSKEY`, `MPESA_TRANSACTION_TYPE`, `MPESA_CALLBACK_URL` (this backend's
+public address), `MPESA_CALLBACK_TOKEN`, and `MPESA_SUB_ACCOUNT_ID`.
 
 ## Endpoints (`/billing/...`)
 
@@ -156,13 +228,20 @@ Other paths:
 | `GET accounting-summary/pdf/` | Same, as PDF |
 | `GET download_invoice_pdf/<invoice_id>/` | Invoice PDF |
 | `GET download_payment_receipt_pdf/<receipt_id>/` | Receipt PDF |
+| `GET accounts/<id>/statement/` | A credit account's statement; `?download=pdf` for the PDF |
+| `GET integrations/` | Which outside services are on: `{mpesa, etims}` |
+| `POST mpesa/stk-push/`, `GET mpesa/stk-push/<id>/` | Prompt a phone for payment; poll it |
+| `POST mpesa/callback/<token>/` | Safaricom's confirmation (unauthenticated) |
 
 Templates in `billing/templates/`; `templatetags/money.py` formats amounts using
 the `EASYMED_CURRENCY_*` settings.
 
 ## Tests
 
-`billing/tests/test_invoice_pricing.py`, `billing/tests/test_cash_payment_mode.py`.
+`billing/tests/test_invoice_pricing.py`, `billing/tests/test_cash_payment_mode.py`,
+`billing/tests/test_credit_accounts.py`, `billing/tests/test_integrations.py`.
+The integration tests stand in for KRA and Safaricom; none of them goes out to
+the internet.
 
 ## Known issues
 

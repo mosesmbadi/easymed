@@ -74,6 +74,11 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     role = models.CharField(
         max_length=20, choices=ROLE_CHOICES, default=BASE_ROLE)
     signature = models.ImageField(upload_to='signatures/', null=True, blank=True)
+    # Printed beside the name on results the user signs off, e.g. a lab
+    # technologist's KMLTTB registration number.
+    registration_number = models.CharField(
+        max_length=50, blank=True, default='',
+        help_text="Professional registration number, e.g. KMLTTB for lab staff.")
     can_manage_inventory = models.BooleanField(
         default=False,
         help_text="Granted individually. Lets this user receive stock inwards and adjust "

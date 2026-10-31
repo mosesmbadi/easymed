@@ -32,9 +32,19 @@ class Patient(models.Model):
     phone = models.CharField(max_length=30, null=True, blank=True)
     second_name = models.CharField(max_length=40)
     date_of_birth = models.DateField(null=True)
+    # Many people give an age, not a date. The date is then worked back from
+    # the age, and flagged so nobody mistakes it for a birthday.
+    date_of_birth_estimated = models.BooleanField(default=False)
     email = models.EmailField(null=True)
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES, null=True)
     insurances = models.ManyToManyField(InsuranceCompany, blank=True)
+    # Someone we only know through samples another facility sent: that
+    # facility's account, and its own number for them, so their next sample
+    # finds them instead of registering them again.
+    referred_from = models.ForeignKey(
+        InsuranceCompany, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='referred_patients')
+    external_id = models.CharField(max_length=60, blank=True, default='')
     user = models.OneToOneField(
         CustomUser, on_delete=models.CASCADE, null=True, blank=True)
 
@@ -47,7 +57,16 @@ class Patient(models.Model):
             patient_age:int = (datetime.now().year - self.date_of_birth.year)
             return patient_age
         return None
-    
+
+    @staticmethod
+    def birth_date_for_age(years, today=None):
+        """The date of birth to record for someone who gives only their age."""
+        today = today or datetime.now().date()
+        try:
+            return today.replace(year=today.year - int(years))
+        except ValueError:  # 29 February
+            return today.replace(year=today.year - int(years), day=28)
+
     def save(self, *args, **kwargs):
         if not self.unique_id:
             self.unique_id = self.generate_unique_id()
@@ -56,7 +75,7 @@ class Patient(models.Model):
     def generate_unique_id(self):
         # Get company prefix
         try:
-            company = Company.objects.first()
+            company = Company.current()
             prefix = company.patient_id_prefix if company and company.patient_id_prefix else "ESMED-"
         except:
             prefix = "ESMED-"

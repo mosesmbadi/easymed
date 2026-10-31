@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
-import * as Yup from "yup";
 import { Formik, Field, Form, ErrorMessage } from "formik";
 import { Grid } from "@mui/material";
 import { useDispatch } from "react-redux";
@@ -9,6 +8,10 @@ import { toast } from 'react-toastify'
 import { useAuth } from '@/assets/hooks/use-auth';
 import { updateInsurance } from "@/redux/service/insurance";
 import { updateInsuranceToStore } from "@/redux/features/insurance";
+import { ACCOUNT_TYPES, accountFields, accountValidationSchema } from "../../accounts";
+
+const inputClass = "block border border-gray py-3 px-4 focus:outline-none w-full";
+
 const EditInsuranceModal = ({ open, setOpen, selectedRowData }) => {
   const [loading, setLoading] = useState(false);
   const dispatch = useDispatch();
@@ -20,11 +23,12 @@ const EditInsuranceModal = ({ open, setOpen, selectedRowData }) => {
 
   const initialValues = {
     name: selectedRowData?.name || "",
+    account_type: selectedRowData?.account_type || "insurer",
+    contact_person: selectedRowData?.contact_person || "",
+    email: selectedRowData?.email || "",
+    phone: selectedRowData?.phone || "",
+    address: selectedRowData?.address || "",
   };
-
-  const validationSchema = Yup.object().shape({
-    name: Yup.string().required("Field is Required!"),
-  });
 
   const updateASpecimen = async (formValue, helpers) => {
     const formData = {
@@ -36,9 +40,10 @@ const EditInsuranceModal = ({ open, setOpen, selectedRowData }) => {
       const response = await updateInsurance(parseInt(selectedRowData?.id), formData, auth)
       dispatch(updateInsuranceToStore(response))
       setLoading(false);
-      toast.success("Insurance Updated Successfully!");
+      toast.success("Account updated");
       handleClose();
     } catch (err) {
+      setLoading(false);
       toast.error(err);
       console.log("EDIT_ERROR ", err);
     }
@@ -55,29 +60,34 @@ const EditInsuranceModal = ({ open, setOpen, selectedRowData }) => {
         aria-describedby="alert-dialog-description"
       >
     <DialogContent>
-    <h2 className='my-10 font-bold text-xl'>Edit Specimen</h2>
+    <h2 className='my-10 font-bold text-xl'>Edit Account</h2>
 
     <Formik
             initialValues={initialValues}
-            validationSchema={validationSchema}
+            validationSchema={accountValidationSchema}
             onSubmit={updateASpecimen}
+            enableReinitialize
         >
             <Form>
-                <Grid container spacing={0}>
-                    <Grid item md={10} xs={12}>
-                        <Field
-                            className="block border border-gray py-3 px-4 focus:outline-none w-full"
-                            type="text"
-                            placeholder="New Group Name"
-                            name="name"
-                        />
-                        <ErrorMessage
-                            name="name"
-                            component="div"
-                            className="text-warning text-xs"
-                        />
+                <Grid container spacing={2}>
+                    <Grid item md={6} xs={12}>
+                        <Field className={inputClass} type="text" placeholder="Account name" name="name" />
+                        <ErrorMessage name="name" component="div" className="text-warning text-xs" />
                     </Grid>
-                    <Grid item md={2} xs={6}>
+                    <Grid item md={6} xs={12}>
+                        <Field as="select" className={inputClass} name="account_type">
+                            {ACCOUNT_TYPES.map((type) => (
+                                <option key={type.value} value={type.value}>{type.label}</option>
+                            ))}
+                        </Field>
+                    </Grid>
+                    {accountFields.map((field) => (
+                        <Grid item md={6} xs={12} key={field.name}>
+                            <Field className={inputClass} type={field.type || "text"} placeholder={field.placeholder} name={field.name} />
+                            <ErrorMessage name={field.name} component="div" className="text-warning text-xs" />
+                        </Grid>
+                    ))}
+                    <Grid item xs={12}>
                         <div className="flex justify-end gap-2 h-full">
                             <button
                             type="submit"

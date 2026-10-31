@@ -16,9 +16,12 @@ export const fetchCompanyDetails = (auth) =>{
 
 export const updateCompanyInformation = (payload, auth) =>{
     const axiosInstance = UseAxios(auth);
+    // The form carries no new logo file; sending its empty value would clear
+    // the one on file.
+    const { logo, ...fields } = payload;
     return new Promise((resolve,reject) =>{
         axiosInstance.put(`${APP_API_URL.FETCH_COMPANY_INFO}`,{
-            body:payload,
+            body:fields,
         })
             .then((res) =>{
                 resolve(res.data)

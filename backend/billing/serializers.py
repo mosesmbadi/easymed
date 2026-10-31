@@ -4,7 +4,7 @@ from .models import (
     Invoice, InvoiceItem,
     PaymentMode, InvoicePayment,
     PaymentReceipt, PaymentAllocation,
-    MainAccount, SubAccount
+    MainAccount, SubAccount, MpesaPaymentRequest,
 )
 
 
@@ -50,7 +50,7 @@ class InvoiceItemSerializer(serializers.ModelSerializer):
         return payment_mode.insurance_id if payment_mode  else None
     
     def get_price_source(self, obj):
-        """Return the source of pricing: 'insurance', 'cash', or 'cash_fallback'."""
+        """'insurance', 'cash', 'cash_fallback' or 'account_list_price'; see InvoiceItem."""
         return obj.price_source
 
     def get_sale_price(self, obj):
@@ -117,6 +117,8 @@ class InvoiceSerializer(serializers.ModelSerializer):
 
 class PaymentModeSerializer(serializers.ModelSerializer):
     insurance_company_name = serializers.SerializerMethodField()
+    # Which kind of credit account the mode bills, for a mode that bills one.
+    account_type = serializers.SerializerMethodField()
     
     class Meta:
         model = PaymentMode 
@@ -124,6 +126,9 @@ class PaymentModeSerializer(serializers.ModelSerializer):
         
     def get_insurance_company_name(self, obj):
         return obj.insurance.name if obj.insurance else None
+
+    def get_account_type(self, obj):
+        return obj.insurance.account_type if obj.insurance else None
 
 
 class InvoicePaymentSerializer(serializers.ModelSerializer):
@@ -241,3 +246,18 @@ class MainAccountSerializer(serializers.ModelSerializer):
     class Meta:
         model = MainAccount
         fields = '__all__'
+
+class MpesaPaymentRequestSerializer(serializers.ModelSerializer):
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+
+    class Meta:
+        model = MpesaPaymentRequest
+        fields = ['id', 'invoice', 'phone', 'amount', 'status', 'status_display',
+                  'mpesa_receipt_number', 'result_description', 'receipt', 'created_at']
+        read_only_fields = fields
+
+
+class MpesaStkPushRequestSerializer(serializers.Serializer):
+    invoice_id = serializers.IntegerField()
+    phone = serializers.CharField(max_length=20)
+    amount = serializers.DecimalField(max_digits=12, decimal_places=2, required=False, allow_null=True)
