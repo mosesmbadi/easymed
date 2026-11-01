@@ -620,8 +620,12 @@ class LabTestRequestPanel(models.Model):
         if not self.test_code:
             self.test_code = self.generate_test_code()
 
-        # Atomically get or create PatientSample for the request/specimen pair
-        if self.lab_test_request and self.test_panel and self.lab_test_request.process:
+        # Atomically get or create PatientSample for the request/specimen pair.
+        # Only once: a rejected result sent for recollection is moved onto a
+        # new sample, and re-finding "the" sample on every save would put it
+        # straight back on the bad one.
+        if (not self.patient_sample_id and self.lab_test_request and self.test_panel
+                and self.lab_test_request.process):
             with transaction.atomic():
                 # Check if there are existing PatientSample objects
                 existing_samples = PatientSample.objects.filter(
@@ -630,10 +634,8 @@ class LabTestRequestPanel(models.Model):
                 )
                 
                 if existing_samples.exists():
-                    # If there are multiple, use the first one
-                    if existing_samples.count() > 1:
-                        print(f"Warning: Multiple PatientSample objects found for process={self.lab_test_request.process.id}, specimen={self.test_panel.specimen.id}")
-                    self.patient_sample = existing_samples.first()
+                    # More than one means a recollection; join the newest.
+                    self.patient_sample = existing_samples.order_by('-id').first()
                 else:
                     # Create a new one if none exist
                     self.patient_sample = PatientSample.objects.create(
@@ -670,6 +672,55 @@ class LabTestRequestPanel(models.Model):
 
     def __str__(self):
         return f"{self.test_panel.name}"
+
+
+class LabResultRejection(models.Model):
+    """
+    A result the reviewer would not sign off. The value is kept here and
+    cleared from the test, which goes back to the bench: run again on the same
+    sample when the measurement is in doubt, or on a fresh draw when the
+    sample itself is.
+    """
+    class Reason(models.TextChoices):
+        # The run is in doubt: repeat it on the same sample.
+        QC_FAILURE = 'qc_failure', 'QC failed or out of range'
+        INSTRUMENT = 'instrument', 'Instrument error or flag'
+        IMPLAUSIBLE = 'implausible', 'Implausible or inconsistent result'
+        DELTA = 'delta', 'Differs sharply from previous result'
+        CRITICAL = 'critical', 'Critical value to confirm'
+        ENTRY_ERROR = 'entry_error', 'Entered wrongly'
+        # The sample is in doubt: draw a new one.
+        HAEMOLYSED = 'haemolysed', 'Haemolysed'
+        CLOTTED = 'clotted', 'Clotted'
+        LIPAEMIC = 'lipaemic', 'Lipaemic'
+        INSUFFICIENT = 'insufficient', 'Insufficient volume'
+        CONTAMINATED = 'contaminated', 'Contaminated'
+        MISLABELLED = 'mislabelled', 'Unlabelled or mislabelled'
+        WRONG_CONTAINER = 'wrong_container', 'Wrong container'
+        OTHER = 'other', 'Other'
+
+    class Action(models.TextChoices):
+        RERUN = 'rerun', 'Rerun on the same sample'
+        RECOLLECT = 'recollect', 'Recollect a new sample'
+
+    panel = models.ForeignKey(LabTestRequestPanel, on_delete=models.CASCADE, related_name='rejections')
+    result = models.CharField(max_length=45, help_text="The value that was rejected")
+    reason = models.CharField(max_length=20, choices=Reason.choices)
+    action = models.CharField(max_length=10, choices=Action.choices)
+    note = models.CharField(max_length=300, blank=True, default='')
+    rejected_sample = models.ForeignKey(
+        PatientSample, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    replacement_sample = models.ForeignKey(
+        PatientSample, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    rejected_by = models.ForeignKey(
+        CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='rejected_results')
+    rejected_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-rejected_at', '-id']
+
+    def __str__(self):
+        return f"{self.panel} rejected ({self.get_reason_display()})"
 
 
 class PublicLabTestRequest(models.Model):

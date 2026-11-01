@@ -282,7 +282,27 @@ class LabTestRequestPanelViewSet(viewsets.ModelViewSet):
         # Whoever approves the result signs the report for it.
         approving = (serializer.validated_data.get('result_approved')
                      and not serializer.instance.result_approved)
+        if approving and not serializer.validated_data.get('result', serializer.instance.result):
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError("There is no result to approve.")
         serializer.save(**({'approved_by': self.request.user} if approving else {}))
+
+    @action(detail=True, methods=['post'])
+    def reject(self, request, pk=None):
+        """Send a result back to the bench: rerun, or recollect the sample."""
+        from .result_review import reject_result
+        from .serializers import LabResultRejectionSerializer
+
+        data = LabResultRejectionSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        rejection = reject_result(
+            self.get_object(),
+            reason=data.validated_data['reason'],
+            action=data.validated_data['action'],
+            note=data.validated_data.get('note', ''),
+            user=request.user,
+        )
+        return Response(LabResultRejectionSerializer(rejection).data, status=status.HTTP_201_CREATED)
 
 
 class LabTestRequestPanelByLabTestRequestId(generics.ListAPIView):

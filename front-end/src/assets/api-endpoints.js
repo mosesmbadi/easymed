@@ -279,6 +279,7 @@ export const APP_API_URL = {
   FETCH_LAB_REQUESTS_BY_PATIENT_ID: "/api/laboratory/labRequestsByPatientId",
   SEND_LAB_REQUESTS: "/api/laboratory/get-lab-requests",
   WALK_IN_LAB_REQUESTS: "/api/laboratory/walk-in-requests",
+  REJECT_LAB_RESULT: "/api/laboratory/reject-lab-result",
   WALK_IN_PATIENT_SEARCH: "/api/laboratory/walk-in-patients",
   FETCH_LAB_EQUIPMENT: "/api/laboratory/get-lab-equipment",
   LAB_EQUIPMENT_PARSER: "/api/laboratory/get-lab-parser",

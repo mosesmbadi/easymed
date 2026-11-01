@@ -18,6 +18,7 @@ const CategorizedItems = ({
   setPrescribedDrugsSum,
   setPrescribedDrugsCashSum,
   setPrescribedDrugsInsuranceSum,
+  onBilled,
 }, ref) => {
   const auth = useAuth();
   const [loading, setLoading] = useState(false);
@@ -209,6 +210,7 @@ const CategorizedItems = ({
       const response = await updateInvoiceItems(auth, payload, updatedInvoiceItem.id);
       setUpdatedInvoiceItem(response);
       updateInvoiceTotals(response);
+      onBilled?.(updatedInvoiceItem.id);
       toast.success("Item billed successfully");
     } catch (error) {
       console.error("Error billing item:", error);

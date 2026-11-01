@@ -79,9 +79,25 @@ the position.
    runs `deduct_specimen_consumables` **inline**, so the response tells the
    phlebotomist if the shelf was short.
 4. **Result** — saving a panel with a `result` queues `deduct_test_kit`
-   (Celery, idempotent per panel+reagent) to consume reagents.
-5. **Approve** — set `result_approved`; the visit's
-   `has_approved_lab_results` turns true.
+   (Celery, idempotent per panel run + reagent) to consume reagents.
+5. **Review** — the reviewer approves or rejects each result (Lab Results >
+   Approve Results).
+   - **Approve** sets `result_approved` and `approved_by`; the visit's
+     `has_approved_lab_results` turns true. A test with no result can't be
+     approved.
+   - **Reject** (`POST lab-test-requests-panel/<id>/reject/` with `reason`,
+     `action`, `note`; `result_review.reject_result`) keeps the value on a
+     `LabResultRejection`, clears it from the test, and sends the test back:
+     - `rerun`: the run is in doubt (QC failure, instrument flag, implausible
+       value, delta check, critical value to confirm, entry error). The test stays
+       on its sample and waits in Add Test Result for a new value. The rerun
+       consumes reagents again.
+     - `recollect`: the sample is in doubt (haemolysed, clotted, insufficient,
+       mislabelled...). The test moves to a new uncollected `PatientSample`,
+       which shows under the visit in Lab Requests for collection. Tests rejected
+       off the same sample share one new draw.
+   - Approved results can't be rejected.
+   - The panel serializer's `last_rejection` says why a test came back.
 6. **Report** — `download_labtestresult_pdf/<process_id>/` renders
    `templates/labtestresult.html`.
 

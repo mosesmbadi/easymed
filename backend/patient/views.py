@@ -236,6 +236,9 @@ class AttendanceProcessViewSet(viewsets.ModelViewSet):
 
         approved = LabTestRequestPanel.objects.filter(
             lab_test_request__process=OuterRef('process_test_req'), result_approved=True)
+        entered = (LabTestRequestPanel.objects
+                   .filter(lab_test_request__process=OuterRef('process_test_req'), result__isnull=False)
+                   .exclude(result=''))
         return (AttendanceProcess.objects
                 .select_related('patient__referred_from', 'doctor', 'triage', 'invoice',
                                 'referral', 'clinical_note')
@@ -245,7 +248,8 @@ class AttendanceProcessViewSet(viewsets.ModelViewSet):
                     'invoice__invoice_items__payment_mode__insurance',
                     'invoice__invoice_items__source_tag',
                 )
-                .annotate(approved_lab_results=Exists(approved))
+                .annotate(approved_lab_results=Exists(approved),
+                          entered_lab_results=Exists(entered))
                 .order_by('-id'))
 
     def perform_create(self, serializer):

@@ -23,8 +23,8 @@ const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
 
 const getActions = () => {
   let actions = [
-    { action: "add", label: "Add Test", icon: <AiOutlineDownload className="text-card text-xl" /> },
-    { action: "view", label: "Request Information", icon: <AiOutlineDownload className="text-card text-xl" /> },
+    { action: "add", label: "Add test", icon: <AiOutlineDownload className="text-card text-xl" /> },
+    { action: "view", label: "View details", icon: <AiOutlineDownload className="text-card text-xl" /> },
   ];
  
   return actions;

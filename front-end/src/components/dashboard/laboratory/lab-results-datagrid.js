@@ -7,7 +7,7 @@ import ServerPager from "@/components/common/ServerPager";
 import { useVisitQueue } from "@/assets/hooks/use-visit-queue";
 import { labData } from "@/assets/dummy-data/laboratory";
 import { Grid } from "@mui/material";
-import { MdLocalPrintshop } from "react-icons/md";
+import { MdLocalPrintshop, MdOutlineVerified } from "react-icons/md";
 import { IoEyeOutline } from "react-icons/io5";
 
 import { downloadResultPDF } from "@/redux/service/pdfs";
@@ -22,31 +22,33 @@ const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
 });
 
 
-const getActions = () => {
-  let actions = [
-    {
-      action: "preview",
-      label: "Preview Results",
-      icon: <IoEyeOutline className="text-primary text-xl mx-2" />,
-    },
-    {
-      action: "approve",
-      label: "Approve Results",
-      icon: <MdLocalPrintshop className="text-success text-xl mx-2" />,
-    },
-    {
-      action: "print",
-      label: "Print",
-      icon: <MdLocalPrintshop className="text-success text-xl mx-2" />,
-    },
-  ];
+// Nothing to preview, approve or print until a result is entered.
+const getActions = (hasResults) => [
+  {
+    action: "preview",
+    label: "Preview Results",
+    icon: <IoEyeOutline className="text-primary text-xl mx-2" />,
+    disabled: !hasResults,
+  },
+  {
+    action: "approve",
+    label: "Approve Results",
+    icon: <MdOutlineVerified className="text-success text-xl mx-2" />,
+    disabled: !hasResults,
+  },
+  {
+    action: "print",
+    label: "Print",
+    icon: <MdLocalPrintshop className="text-success text-xl mx-2" />,
+    disabled: !hasResults,
+  },
+];
 
-  return actions;
-};
+const ACTIONS_WITH_RESULTS = getActions(true);
+const ACTIONS_WITHOUT_RESULTS = getActions(false);
 
 const LabResultDataGrid = () => {
   const [searchQuery, setSearchQuery] = React.useState("");
-  const userActions = getActions();
   const auth = useAuth();
   const [approveOpen ,setApproveOpen] = useState(false)
   const [selectedData, setSelectedData] = useState(null)
@@ -105,7 +107,7 @@ const LabResultDataGrid = () => {
     return (
         <CmtDropdownMenu
           sx={{ cursor: "pointer" }}
-          items={userActions}
+          items={data.has_lab_results ? ACTIONS_WITH_RESULTS : ACTIONS_WITHOUT_RESULTS}
           onItemClick={(menu) => onMenuClick(menu, data)}
           TriggerComponent={
             <LuMoreHorizontal className="cursor-pointer text-xl flex items-center" />

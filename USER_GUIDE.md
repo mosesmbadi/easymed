@@ -325,11 +325,11 @@ their test isn't listed, check with billing.
 
 Row actions:
 
-- **Request Information**: the requesting doctor, the tests, and the samples to
+- **View details**: the requesting doctor, the tests, and the samples to
   collect.
 - **Add Test**: add another test to the same visit.
 
-**Step 2. Collect the sample.** In the request information, each sample is shown
+**Step 2. Collect the sample.** In the view details, each sample is shown
 with its **sample code**, what it is **Collected with** (the consumables needed),
 and a **Collect Sample** button. Select **Collect Sample** when you have drawn
 it. EasyMed takes the syringe, tube and gloves out of lab stock at that moment.

@@ -12,6 +12,9 @@ import { updateAttendanceProcesses, updatePatientTriage } from "@/redux/service/
 import { getVitalSignColor } from "@/utils/triage-flags";
 import { getTriageSettings } from "@/redux/features/patients";
 
+// Triage.notes is a CharField(max_length=300) on the backend.
+const NOTES_MAX_LENGTH = 300;
+
 export default function AddTriageModal({
   triageOpen,
   setTriageOpen,
@@ -68,7 +71,7 @@ export default function AddTriageModal({
     spo2: Yup.number().required("SPO2 is required!"),
     systolic: Yup.number().required("Systolic is required!"),
     diastolic: Yup.number().required("Diastolic is required!"),
-    // notes: Yup.string().required("Notes is required!"),
+    notes: Yup.string().max(NOTES_MAX_LENGTH, `Notes can be at most ${NOTES_MAX_LENGTH} characters`),
   });
 
   const calculateBMI = (height, weight) => {
@@ -78,7 +81,7 @@ export default function AddTriageModal({
         return bmi + " " + "(Underweight)"
       } else if (bmi >= 18.5 && bmi <= 24.9) {
         return bmi + " " + "(Ok)"
-      } else if (bmi >= 25 && bmi <= 24.9) {
+      } else if (bmi >= 25 && bmi <= 29.9) {
         return bmi + " " + "(Overweight)"
       } else {
         return bmi + " " + "(Obes)"
@@ -272,7 +275,15 @@ export default function AddTriageModal({
                       type="text"
                       placeholder="Notes"
                       name="notes"
+                      maxLength={NOTES_MAX_LENGTH}
                     />
+                    <div
+                      className={`text-right text-xs mt-1 ${
+                        (values.notes?.length || 0) >= NOTES_MAX_LENGTH ? "text-warning" : "text-gray-500"
+                      }`}
+                    >
+                      {`${values.notes?.length || 0}/${NOTES_MAX_LENGTH}`}
+                    </div>
                     <ErrorMessage
                       name="notes"
                       component="div"

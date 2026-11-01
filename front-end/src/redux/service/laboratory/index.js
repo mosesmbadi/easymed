@@ -176,6 +176,14 @@ export const updateLabRequestPanels = (payload, auth) => {
     })
 }
 
+// Send a result back to the bench: {reason, action: 'rerun'|'recollect', note}.
+export const rejectLabResult = (panelId, payload, auth) => {
+    const axiosInstance = UseAxios(auth);
+    return axiosInstance
+        .post(APP_API_URL.REJECT_LAB_RESULT, payload, { params: { id: panelId } })
+        .then((res) => res.data);
+}
+
 export const updateLabRequestPanelResult = (panelId, payload, auth) => {
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve, reject) => {

@@ -22,6 +22,7 @@ from .models import (
     PublicLabTestRequest,
     LabTestPanel,
     LabTestRequestPanel,
+    LabResultRejection,
     ProcessTestRequest,
     PatientSample,
     Specimen,
@@ -98,6 +99,23 @@ class LabTestProfileSerializer(serializers.ModelSerializer):
         fields = '__all__'        
 
 
+class LabResultRejectionSerializer(serializers.ModelSerializer):
+    reason_display = serializers.CharField(source='get_reason_display', read_only=True)
+    action_display = serializers.CharField(source='get_action_display', read_only=True)
+    rejected_by_name = serializers.CharField(source='rejected_by.get_fullname', read_only=True, default=None)
+    replacement_sample_code = serializers.CharField(
+        source='replacement_sample.patient_sample_code', read_only=True, default=None)
+
+    class Meta:
+        model = LabResultRejection
+        fields = [
+            'id', 'panel', 'result', 'reason', 'reason_display', 'action', 'action_display',
+            'note', 'replacement_sample', 'replacement_sample_code',
+            'rejected_by', 'rejected_by_name', 'rejected_at',
+        ]
+        read_only_fields = ['panel', 'result', 'replacement_sample', 'rejected_by', 'rejected_at']
+
+
 class LabTestRequestPanelSerializer(serializers.ModelSerializer):
     test_panel_name = serializers.ReadOnlyField(source='test_panel.name')
     item = serializers.CharField(source='test_panel.item.id', read_only=True)
@@ -109,6 +127,13 @@ class LabTestRequestPanelSerializer(serializers.ModelSerializer):
     is_qualitative = serializers.ReadOnlyField(source='test_panel.is_qualitative')
     is_quantitative = serializers.ReadOnlyField(source='test_panel.is_quantitative')
     tat = serializers.DurationField(source='test_panel.tat', read_only=True)
+    last_rejection = serializers.SerializerMethodField()
+
+    def get_last_rejection(self, instance):
+        # The newest, so the bench sees why a test came back and the reviewer
+        # what was wrong with the value it replaces.
+        latest = instance.rejections.select_related('rejected_by', 'replacement_sample').first()
+        return LabResultRejectionSerializer(latest).data if latest else None
 
     def get_sale_price(self, instance):
         item = instance.test_panel.item if instance.test_panel else None
@@ -188,6 +213,7 @@ class LabTestRequestPanelSerializer(serializers.ModelSerializer):
             'auto_interpretation',
             'clinical_action',
             'requires_attention',
+            'last_rejection',
         ]
 
 

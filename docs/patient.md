@@ -150,7 +150,7 @@ Other paths:
 
 `AttendanceProcessSerializer` returns, besides model fields: `patient_details` (name, sex, age, phone, number and insurances: the patients API is reception-only, so clinical screens read the patient from the visit), `patient_name`,
 `insurances`, `invoice_items`, `assigned_doctor`, `referral`, `clinical_note`,
-`has_critical_triage`, `has_approved_lab_results`.
+`has_critical_triage`, `has_lab_results` (any test has a result entered; Lab Results greys out its actions without one), `has_approved_lab_results`.
 
 ## WebSocket
 

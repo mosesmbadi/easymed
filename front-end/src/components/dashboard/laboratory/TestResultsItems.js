@@ -3,12 +3,14 @@ import { useRouter } from "next/router";
 import { useSelector } from 'react-redux';
 import { useAuth } from '@/assets/hooks/use-auth';
 import { fetchLabTestPanelsByTestRequestId, updateLabRequestPanels } from '@/redux/service/laboratory';
+import RejectResultDialog from './RejectResultDialog';
 
 const TestResultsPanels = ({ test }) => {
   const auth = useAuth()
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [resultItems, setResultItems] = useState([])
+  const [rejecting, setRejecting] = useState(null)
   const currentPath = router.pathname;
   const { labTestPanels } = useSelector((store) => store.laboratory);
 
@@ -62,7 +64,17 @@ const TestResultsPanels = ({ test }) => {
     ));
   }
 
+  // The rejected value is cleared from the test, which waits for a new one.
+  const markRejected = (panelId, rejection) => {
+    setResultItems(prevItems => prevItems.map(panel =>
+      panel.id === panelId
+        ? { ...panel, result: null, result_approved: false, auto_interpretation: null, clinical_action: null, requires_attention: false, last_rejection: rejection }
+        : panel
+    ));
+  }
+
   const approveLabResults = async (test_panel) => {
+    if (test_panel.result_approved) return
 
     const payload = {
       id: test_panel.id,
@@ -106,11 +118,27 @@ const TestResultsPanels = ({ test }) => {
             <span className='w-full text-center py-2'>{foundPanel.unit}</span>
             {current_interface === 'lab' && (
               <div className='w-full text-center py-2 flex justify-end' >
-                {item.result && (
-                  <button className="bg-primary text-white px-3 py-2 text-xs rounded-xl" onClick={() => approveLabResults(item)}>{item.result_approved === false ? 'approve' : 'approved'}</button>
+                {item.result && item.result_approved && (
+                  <button type="button" disabled className="bg-success text-white px-3 py-2 text-xs rounded-xl cursor-default">Approved</button>
+                )}
+                {item.result && !item.result_approved && (
+                  <div className='flex gap-2'>
+                    <button type="button" disabled={loading} className="bg-primary text-white px-3 py-2 text-xs rounded-xl disabled:opacity-50" onClick={() => approveLabResults(item)}>Approve</button>
+                    <button type="button" disabled={loading} className="border border-warning text-warning px-3 py-2 text-xs rounded-xl disabled:opacity-50" onClick={() => setRejecting({ panel: item, name: foundPanel.name })}>Reject</button>
+                  </div>
                 )}
               </div>)}
           </li>
+          {/* Sent back at review and waiting for a new result */}
+          {!item.result && item.last_rejection && (
+            <div className='mt-1 p-2 rounded bg-yellow-50 border-l-4 border-yellow-500 text-xs text-gray-700'>
+              {item.last_rejection.action === 'recollect'
+                ? `Rejected (${item.last_rejection.reason_display}). Recollect: new sample ${item.last_rejection.replacement_sample_code} is waiting for collection.`
+                : `Rejected (${item.last_rejection.reason_display}). Rerun on the same sample.`}
+              {` Previous result: ${item.last_rejection.result}.`}
+              {item.last_rejection.note && <span className='italic'>{` ${item.last_rejection.note}`}</span>}
+            </div>
+          )}
           {/* Display interpretation if available */}
           {item.auto_interpretation && (
             <div className={`mt-2 p-3 rounded ${item.requires_attention ? 'bg-red-50 border-l-4 border-red-500' : 'bg-blue-50 border-l-4 border-blue-500'}`}>
@@ -191,6 +219,15 @@ const TestResultsPanels = ({ test }) => {
         </li>
         {panels}
       </ul>
+      {rejecting && (
+        <RejectResultDialog
+          open
+          panel={rejecting.panel}
+          panelName={rejecting.name}
+          onClose={() => setRejecting(null)}
+          onRejected={(rejection) => markRejected(rejecting.panel.id, rejection)}
+        />
+      )}
     </>
   )
 }

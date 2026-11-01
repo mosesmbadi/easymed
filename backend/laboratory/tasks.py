@@ -34,9 +34,10 @@ def deduct_test_kit(lab_test_panel_id):
     sample is even drawn. Affording the test and running it are different
     events, and only the second one moves stock.
 
-    Idempotent per (panel, reagent): the panel's post_save fires on every save
-    once a result exists, and without this the same test would consume reagents
-    again each time somebody touched the row.
+    Idempotent per (panel run, reagent): the panel's post_save fires on every
+    save once a result exists, and without this the same test would consume
+    reagents again each time somebody touched the row. A rerun after a
+    rejected result is a new run.
     """
     try:
         lab_test_panel = LabTestRequestPanel.objects.select_related(
@@ -64,11 +65,16 @@ def deduct_test_kit(lab_test_panel_id):
         department = lab_department()
         warnings = []
 
+        # A result rejected at review is run again, which spends reagent again:
+        # each run has its own key. The first keeps the original form.
+        reruns = lab_test_panel.rejections.count()
+        run_key = f"lab-panel:{lab_test_panel.id}" + (f"-run{reruns + 1}" if reruns else "")
+
         with transaction.atomic():
             for link in reagent_links:
                 reagent = link.reagent_item
                 units = link.units_consumed_per_run
-                idempotency_key = f"lab-panel:{lab_test_panel.id}:reagent:{reagent.id}"
+                idempotency_key = f"{run_key}:reagent:{reagent.id}"
 
                 if StockMovement.objects.filter(
                     idempotency_key__startswith=f"{idempotency_key}:"

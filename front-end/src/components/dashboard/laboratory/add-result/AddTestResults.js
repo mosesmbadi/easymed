@@ -317,7 +317,7 @@ const AddTestResults = () => {
                 ></path>
               </svg>
             )}
-            Complete & Return
+            Save
           </button>
         </div>
       </Grid>

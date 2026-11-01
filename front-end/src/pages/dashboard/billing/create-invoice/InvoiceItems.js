@@ -26,6 +26,17 @@ const InvoiceItems = ({
     const { paymodes, } = useSelector(({ billing }) => billing);
     const itemRefs = useRef({});
     const [billAllLoading, setBillAllLoading] = useState(false);
+    // Rows bill themselves and keep the result in their own state; they report
+    // back here so the "Bill All Items" button knows when nothing is left.
+    const [billedHere, setBilledHere] = useState(() => new Set());
+
+    useEffect(() => {
+        setBilledHere(new Set());
+    }, [items, selectedInvoice]);
+
+    const markBilled = (id) => setBilledHere((prev) => new Set(prev).add(id));
+    const allBilled = !!items?.length &&
+        items.every((item) => item.status === 'billed' || billedHere.has(item.id));
 
     // Show exactly: one "Cash" entry (default/first cash mode) + the patient's own insurance modes.
     const defaultCashMode = paymodes.find((mode) => mode.is_default) ||
@@ -105,7 +116,8 @@ const InvoiceItems = ({
             <div className="flex justify-end mb-4">
                 <button
                     onClick={handleBillAll}
-                    disabled={billAllLoading}
+                    disabled={billAllLoading || allBilled}
+                    title={allBilled ? "Every item on this invoice is already billed" : undefined}
                     className="bg-primary text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                     {billAllLoading ? (
@@ -117,7 +129,7 @@ const InvoiceItems = ({
                             Processing...
                         </>
                     ) : (
-                        "Bill All Items"
+                        allBilled ? "All Items Billed" : "Bill All Items"
                     )}
                 </button>
             </div>
@@ -155,6 +167,7 @@ const InvoiceItems = ({
                                     setPrescribedDrugsSum={setPrescribedDrugsSum}
                                     setPrescribedDrugsCashSum={setPrescribedDrugsCashSum}
                                     setPrescribedDrugsInsuranceSum={setPrescribedDrugsInsuranceSum}
+                                    onBilled={markBilled}
                                     ref={(el) => (itemRefs.current[item.id] = el)}
                                 />
                             ))}
