@@ -25,7 +25,7 @@ def test_patient_with_invoice_cannot_be_deleted(patient):
         patient.delete()
 
 
-def test_staff_with_records_cannot_be_deleted(requisition):
+def test_staff_with_records_cannot_be_deleted(db, requisition):
     with pytest.raises(ProtectedError):
         requisition.requested_by.delete()
 
