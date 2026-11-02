@@ -402,7 +402,7 @@ class LabTestRequest(models.Model):
     process = models.ForeignKey(ProcessTestRequest, on_delete=models.CASCADE, null=True, blank=True, related_name="attendace_test_requests") # from patient app
     test_profile = models.ForeignKey(LabTestProfile, on_delete=models.CASCADE, null=True, blank=True)
     note = models.TextField(null=True, blank=True)
-    requested_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
+    requested_by = models.ForeignKey(CustomUser, on_delete=models.PROTECT, null=True, blank=True)
     # Who ordered the test when it was not one of our own doctors: a walk-in
     # carrying a referral from a clinician elsewhere. Printed on the report.
     referring_doctor = models.CharField(max_length=150, null=True, blank=True)

@@ -184,6 +184,8 @@ REST_FRAMEWORK = {
     ],
     
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+
+    "EXCEPTION_HANDLER": "utils.exceptions.api_exception_handler",
 }
 
 # CORS Configuration

@@ -12,7 +12,9 @@ from .models import (
 
 
 class CustomUserAdmin(admin.ModelAdmin):
-    pass
+    # Someone who leaves is deactivated (is_active), not deleted.
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 admin.site.register(CustomUser, CustomUserAdmin)

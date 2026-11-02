@@ -72,7 +72,7 @@ class Invoice(models.Model):
         ('pending', 'Pending'),
         ('paid', 'Paid'),
     )
-    patient = models.ForeignKey('patient.Patient', on_delete=models.SET_NULL, null=True)
+    patient = models.ForeignKey('patient.Patient', on_delete=models.PROTECT, null=True)
     invoice_number = models.CharField(max_length=50, null=True)
     invoice_date = models.DateField(null=True)
     invoice_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -179,7 +179,8 @@ class Invoice(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.invoice_number} - {self.invoice_date} - {self.invoice_amount} - {self.patient.first_name}"
+        customer = self.patient or "No patient"
+        return f"{self.invoice_number} - {self.invoice_date} - {self.invoice_amount} - {customer}"
 
 
 class InvoicePayment(models.Model):
@@ -417,7 +418,7 @@ class PaymentReceipt(models.Model):
     """
     Represents a single payment event that may be allocated across multiple invoices/items.
     """
-    patient = models.ForeignKey('patient.Patient', on_delete=models.SET_NULL, null=True, blank=True)
+    patient = models.ForeignKey('patient.Patient', on_delete=models.PROTECT, null=True, blank=True)
     insurance = models.ForeignKey('company.InsuranceCompany', on_delete=models.SET_NULL, null=True, blank=True)
     sub_account = models.ForeignKey('SubAccount', on_delete=models.SET_NULL, null=True, blank=True, related_name='receipts')
     payment_mode = models.ForeignKey(PaymentMode, on_delete=models.PROTECT, null=True, blank=True)

@@ -290,3 +290,8 @@ class UserListViewSet(viewsets.ModelViewSet):
     queryset = CustomUser.objects.all()
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['role']
+
+    def perform_destroy(self, instance):
+        # Their name stays on the records they signed; only the login goes.
+        instance.is_active = False
+        instance.save(update_fields=['is_active'])

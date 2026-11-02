@@ -91,7 +91,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
     payment_receipts = serializers.SerializerMethodField()
 
     def get_patient_name(self, obj):
-        return obj.patient.first_name
+        return obj.patient.first_name if obj.patient else None
 
     def get_patient_full_name(self, obj):
         return obj.patient.display_name if obj.patient else None

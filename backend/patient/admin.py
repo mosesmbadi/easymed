@@ -20,3 +20,6 @@ class PatientAdmin(admin.ModelAdmin):
         'id', 'unique_id', 'first_name', 'second_name',
         'date_of_birth', 'gender', 'phone', 'email',
         )
+
+    def has_delete_permission(self, request, obj=None):
+        return False

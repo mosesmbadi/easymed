@@ -27,7 +27,7 @@ const DeletePatientModal = ({ deleteOpen, setDeleteOpen, selectedRowData }) => {
       handleClose();
     } catch (error) {
       setLoading(false);
-      toast.error("An Error Occured while deleting the patient");
+      toast.error(error || "An Error Occured while deleting the patient");
     }
   };
 

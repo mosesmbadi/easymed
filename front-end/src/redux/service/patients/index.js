@@ -121,7 +121,7 @@ export const deletePatient = (id, auth) => {
             })
             .catch((err) => {
                 console.log("DELETE_ERROR ", err)
-                reject(err.message)
+                reject(err.response?.data?.error_message)
             })
     })
 }

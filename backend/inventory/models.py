@@ -578,7 +578,7 @@ class Requisition(AbstractBaseModel):
     department_approval_date = models.DateTimeField(null=True, blank=True)
     procurement_approval_date = models.DateTimeField(null=True, blank=True)
     department = models.ForeignKey(Department, on_delete=models.CASCADE, max_length=255, null=False, blank=False)
-    requested_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='req_requested_by')
+    requested_by = models.ForeignKey(CustomUser, on_delete=models.PROTECT, related_name='req_requested_by')
     approved_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='req_approved_by')
 
     @property
@@ -768,8 +768,8 @@ class PurchaseOrder(AbstractBaseModel):
     PO_number = models.CharField(unique=True, max_length=255, editable=False)
     file = models.FileField(upload_to='purchase-orders', null=True, blank=True)
     is_dispatched = models.BooleanField(default=False)
-    ordered_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='ordered_by')
-    approved_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, related_name='po_approved_by')
+    ordered_by = models.ForeignKey(CustomUser, on_delete=models.PROTECT, related_name='ordered_by')
+    approved_by = models.ForeignKey(CustomUser, on_delete=models.PROTECT, null=True, related_name='po_approved_by')
     status = models.CharField(max_length=50, choices=Status.choices, default=Status.PENDING)
     requisition = models.ForeignKey(Requisition, on_delete=models.SET_NULL, null=True, blank=True, related_name='requisition')
     created_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True)
