@@ -21,5 +21,7 @@ class PatientAdmin(admin.ModelAdmin):
         'date_of_birth', 'gender', 'phone', 'email',
         )
 
+    # Patients with invoices or receipts are refused by the database (PROTECT),
+    # so only those without billing history can actually go.
     def has_delete_permission(self, request, obj=None):
-        return False
+        return request.user.is_superuser
