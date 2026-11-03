@@ -1,5 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
+from .analyzer_api import AnalyzerMessageViewSet, AnalyzerResultViewSet, AnalyzerTestMappingViewSet
 from .views import (
     LabReagentViewSet,
     LabTestRequestViewSet,
@@ -48,6 +49,9 @@ router.register(r'lab-test-panel', LabTestPanelViewSet)
 router.register(r'lab-test-requests', LabTestRequestViewSet)
 router.register(r'lab-test-requests-panel', LabTestRequestPanelViewSet)
 router.register(r'lab-equipment', LabEquipmentViewSet)
+router.register(r'analyzer-messages', AnalyzerMessageViewSet, basename='analyzer-messages')
+router.register(r'analyzer-results', AnalyzerResultViewSet, basename='analyzer-results')
+router.register(r'analyzer-test-mappings', AnalyzerTestMappingViewSet, basename='analyzer-test-mappings')
 router.register(r'public-lab-test-request', PublicLabTestRequestViewSet)
 router.register(r'process-test-request', ProcessTestRequestViewSet)
 router.register(r'patient-samples', PatientSampleViewSet)

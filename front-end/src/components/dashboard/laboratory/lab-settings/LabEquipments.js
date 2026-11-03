@@ -13,6 +13,8 @@ import { useAuth } from "@/assets/hooks/use-auth";
 import { getAllLabEquipments } from "@/redux/features/laboratory";
 import CreateLabEquipmentPanelModal from "./modals/equipments/createLabEquipmentModal";
 import EditLabEquipmentModal from "./modals/equipments/EditLabEquipmentModal";
+import AnalyzerMappingsModal from "./modals/equipments/AnalyzerMappingsModal";
+import { TbArrowsExchange } from "react-icons/tb";
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
   ssr: false,
@@ -32,6 +34,11 @@ const getActions = () => {
       label: "Edit",
       icon: <BiEdit className="text-xl text-success  mx-2" />,
     },
+    {
+      action: "mappings",
+      label: "Test mappings",
+      icon: <TbArrowsExchange className="text-xl text-primary mx-2" />,
+    },
   ];
 
   return actions;
@@ -44,6 +51,7 @@ const LabEquipments = () => {
   const userActions = getActions();
   const [open, setOpen] = React.useState(false);
   const [deleteOpen, setDeleteOpen] = React.useState(false);
+  const [mappingsOpen, setMappingsOpen] = React.useState(false);
   const [selectedRowData, setSelectedRowData] = React.useState({});
   const { labEquipments } = useSelector((store)=> store.laboratory);
   const [showPageSizeSelector, setShowPageSizeSelector] = useState(true);
@@ -65,6 +73,9 @@ const LabEquipments = () => {
     } else if (menu.action === "edit") {
       setSelectedRowData(data);
       setOpen(true);
+    } else if (menu.action === "mappings") {
+      setSelectedRowData(data);
+      setMappingsOpen(true);
     }
   };
 
@@ -138,6 +149,12 @@ const LabEquipments = () => {
         />
         <Column dataField="data_format" caption="Data fomat" />
         <Column dataField="ip_address" caption="Ip Address" />
+        <Column dataField="sender_id" caption="Sender ID" />
+        <Column
+          dataField="is_active"
+          caption="Status"
+          cellRender={({ data }) => (data.is_active === false ? "Inactive" : "Active")}
+        />
         <Column
           dataField=""
           caption=""
@@ -145,6 +162,7 @@ const LabEquipments = () => {
         />
       </DataGrid>
       <EditLabEquipmentModal {...{ open, setOpen, selectedRowData }} />
+      <AnalyzerMappingsModal open={mappingsOpen} setOpen={setMappingsOpen} equipment={selectedRowData} />
       {/* <DeleteUserModal {...{ deleteOpen, setDeleteOpen, selectedRowData }} /> */}
     </section>
   );

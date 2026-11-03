@@ -42,7 +42,8 @@ const CreateLabEquipmentPanelModal = () => {
     ip_address: "",
     port: "",
     name: "",
-    data_format: ""
+    data_format: "",
+    sender_id: ""
   };
 
   const validationSchema = Yup.object().shape({
@@ -163,6 +164,18 @@ const CreateLabEquipmentPanelModal = () => {
                             component="div"
                             className="text-warning text-xs"
                             />
+                        </Grid>
+                        <Grid className='my-2' item md={12} xs={12}>
+                        <label htmlFor="sender_id">Sender ID</label>
+                            <Field
+                            className="block border rounded-md text-sm border-gray py-2.5 px-4 focus:outline-card w-full"
+                            placeholder="e.g. HumaCount 30TS"
+                            name="sender_id"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              The name the analyzer puts in its messages. Leave blank if unsure: results from an
+                              unrecognised analyzer show it in the Analyzer Inbox so you can copy it here.
+                            </p>
                         </Grid>
                         <Grid className='my-2' item md={12} xs={12}>
                             <div className="flex items-center justify-end">

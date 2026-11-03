@@ -70,7 +70,7 @@ def check_medication_notifications(self):
             if not admission:
                 continue
 
-            for drug in prescription.prescribeddrug_set.filter(is_dispensed=False):
+            for drug in prescription.attendance_prescribed_drugs.filter(is_dispensed=False):
                 due_times = get_due_doses(drug, now, one_hour_later)
                 for dose_time in due_times:
                     unit = drug.item.units_of_measure

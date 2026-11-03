@@ -69,6 +69,12 @@ class LabEquipment(models.Model):
     port = models.CharField(max_length=20, null=True)
     data_format = models.CharField(max_length=10, choices=FORMAT_CHOICE, default="hl7")
     com_mode = models.CharField(max_length=20, choices=COM_MODE_CHOICE, default="tcp")
+    # What the analyzer calls itself in its messages (HL7 MSH-3, ASTM H-5).
+    # The LIS server passes it along with every result so results can be told
+    # apart by machine; the Analyzer Inbox shows it for messages it could not
+    # place, so it can be copied here.
+    sender_id = models.CharField(max_length=100, blank=True, default='')
+    is_active = models.BooleanField(default=True)
 
     def __str__(self):
         return self.name
@@ -832,3 +838,108 @@ class ReleasedSample(models.Model):
 
     def __str__(self):
         return f"{self.patient_sample_code} - Released to {self.facility_name}"
+
+
+class AnalyzerTestMapping(models.Model):
+    """
+    Which test panel an analyzer's result code is the result for.
+
+    Matching by panel name breaks the day someone renames a panel, and cannot
+    tell two panels of the same name apart; a mapping points at the panel
+    itself. Codes the analyzer sends that nobody wants imported (histograms,
+    scale markers, parameters the lab does not report) are mapped to no
+    panel, which files them as ignored instead of leaving them in the inbox.
+    """
+    equipment = models.ForeignKey(
+        LabEquipment, on_delete=models.CASCADE, related_name='test_mappings')
+    analyzer_code = models.CharField(max_length=50)
+    test_panel = models.ForeignKey(
+        LabTestPanel, on_delete=models.CASCADE, null=True, blank=True,
+        related_name='analyzer_mappings')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['analyzer_code']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['equipment', 'analyzer_code'], name='unique_analyzer_code_per_equipment'),
+        ]
+
+    def save(self, *args, **kwargs):
+        self.analyzer_code = self.analyzer_code.strip()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        target = self.test_panel.name if self.test_panel else 'ignored'
+        return f"{self.equipment.name}: {self.analyzer_code} -> {target}"
+
+
+class AnalyzerMessage(models.Model):
+    """
+    One message from an analyzer, kept as received.
+
+    Stored before anything is matched, so a result is never lost because its
+    sample was not registered yet or its code was not mapped: it waits in the
+    Analyzer Inbox until someone sorts it out.
+    """
+    equipment = models.ForeignKey(
+        LabEquipment, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='messages')
+    sender = models.CharField(max_length=100, blank=True, default='')
+    # The sample code as the analyzer sent it; corrected in place when a
+    # technician assigns the results to the right sample.
+    sample_code = models.CharField(max_length=100, blank=True, default='', db_index=True)
+    patient_name = models.CharField(max_length=255, blank=True, default='')
+    raw_message = models.TextField(blank=True, default='')
+    received_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ['-received_at']
+
+    def __str__(self):
+        return f"{self.sender or 'Unknown analyzer'} / {self.sample_code or 'no sample'} @ {self.received_at}"
+
+
+class AnalyzerResult(models.Model):
+    """One result from an analyzer message and what became of it."""
+
+    class Status(models.TextChoices):
+        POSTED = 'posted', 'Posted'
+        NO_SAMPLE = 'no_sample', 'No sample code'
+        SAMPLE_NOT_FOUND = 'sample_not_found', 'Sample not found'
+        UNMAPPED = 'unmapped', 'Code not mapped'
+        NOT_REQUESTED = 'not_requested', 'Test not requested'
+        ALREADY_APPROVED = 'already_approved', 'Result already approved'
+        INVALID = 'invalid', 'Invalid value'
+        IGNORED = 'ignored', 'Ignored'
+
+    # Statuses that are finished with; everything else waits in the inbox.
+    CLOSED_STATUSES = (Status.POSTED, Status.IGNORED)
+
+    message = models.ForeignKey(
+        AnalyzerMessage, on_delete=models.CASCADE, related_name='results')
+    analyzer_code = models.CharField(max_length=50)
+    value = models.CharField(max_length=255, blank=True, default='')
+    unit = models.CharField(max_length=50, blank=True, default='')
+    flag = models.CharField(max_length=20, blank=True, default='')
+    reference_range = models.CharField(max_length=50, blank=True, default='')
+    status = models.CharField(max_length=20, choices=Status.choices, db_index=True)
+    detail = models.CharField(max_length=255, blank=True, default='')
+    lab_test_request_panel = models.ForeignKey(
+        LabTestRequestPanel, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='analyzer_results')
+    updated_at = models.DateTimeField(auto_now=True)
+    resolved_by = models.ForeignKey(
+        CustomUser, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='resolved_analyzer_results')
+
+    class Meta:
+        ordering = ['-message__received_at', 'id']
+
+    @property
+    def is_open(self):
+        return self.status not in self.CLOSED_STATUSES
+
+    def __str__(self):
+        return f"{self.analyzer_code}={self.value} ({self.status})"
