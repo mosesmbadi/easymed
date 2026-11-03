@@ -11,8 +11,6 @@ import { IoEyeOutline } from "react-icons/io5";
 
 import { downloadResultPDF } from "@/redux/service/pdfs";
 import { useAuth } from "@/assets/hooks/use-auth";
-import CmtDropdownMenu from "@/assets/DropdownMenu";
-import { LuMoreHorizontal } from "react-icons/lu";
 import ApproveResults from "./add-result/ApproveResults";
 import { useSelector } from "react-redux";
 
@@ -22,31 +20,8 @@ const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
 
 const allowedPageSizes = [5, 10, 'all'];
 
-const getActions = () => {
-  let actions = [
-    {
-      action: "preview",
-      label: "Preview Results",
-      icon: <IoEyeOutline className="text-primary text-xl mx-2" />,
-    },
-    {
-      action: "approve",
-      label: "Approve Results",
-      icon: <MdLocalPrintshop className="text-success text-xl mx-2" />,
-    },
-    {
-      action: "print",
-      label: "Print",
-      icon: <MdLocalPrintshop className="text-success text-xl mx-2" />,
-    },
-  ];
-
-  return actions;
-};
-
 const LabResultDataGrid = () => {
   const [searchQuery, setSearchQuery] = React.useState("");
-  const userActions = getActions();
   const auth = useAuth();
   const [showPageSizeSelector, setShowPageSizeSelector] = useState(true);
   const [approveOpen ,setApproveOpen] = useState(false)
@@ -59,12 +34,34 @@ const LabResultDataGrid = () => {
   const labTestsResultsSchedules = processes.filter((process)=> process.track==="lab" || process.track === "pharmacy" || process.track === "doctor")
   const searchedProcesses = labTestsResultsSchedules.filter((process)=> process.patient_number.includes(searchQuery))
 
-  const patientNameRender = (cellData) => {
+  const patientName = (data) => {
     // The visit carries the name (or, for a coded sample, the facility's number).
-    if (cellData.data.patient_name) return cellData.data.patient_name;
-    const patient = patients.find((patient) => patient.id === cellData.data.patient);
+    if (data.patient_name) return data.patient_name;
+    const patient = patients.find((patient) => patient.id === data.patient);
     return patient ? `${patient.first_name} ${patient.second_name}` : ""
   }
+
+  const patientNameRender = ({ data }) => (
+    <div className="flex items-center gap-3">
+      <span>{patientName(data)}</span>
+      <button
+        type="button"
+        title="View and approve results"
+        aria-label="View and approve results"
+        onClick={() => handleView(data)}
+      >
+        <IoEyeOutline className="text-primary text-xl" />
+      </button>
+      <button
+        type="button"
+        title="Print results"
+        aria-label="Print results"
+        onClick={() => handlePrint(data)}
+      >
+        <MdLocalPrintshop className="text-success text-xl" />
+      </button>
+    </div>
+  )
 
   const handlePrint = async (data) => {
     try {
@@ -77,39 +74,9 @@ const LabResultDataGrid = () => {
     }
   };
 
-  const handlePreview = async (data) => {
-    try {
-      const response = await downloadResultPDF(data.process_test_req, `_labtestresult_pdf`, auth);
-      window.open(response.url, '_blank');
-      toast.success("Preview ready");
-    } catch (error) {
-      console.log(error);
-      toast.error(error);
-    }
-  };
-
-  const onMenuClick = async (menu, data) => {
-    if (menu.action === "print"){
-      handlePrint(data);
-    } else if (menu.action === "preview"){
-      handlePreview(data);
-    } else if (menu.action === "approve"){
-      setSelectedData(data);
-      setApproveOpen(true)
-    }
-  };
-
-  const actionsFunc = ({ data }) => {
-    return (
-        <CmtDropdownMenu
-          sx={{ cursor: "pointer" }}
-          items={userActions}
-          onItemClick={(menu) => onMenuClick(menu, data)}
-          TriggerComponent={
-            <LuMoreHorizontal className="cursor-pointer text-xl flex items-center" />
-          }
-        />
-    );
+  const handleView = (data) => {
+    setSelectedData(data);
+    setApproveOpen(true)
   };
 
   return (
@@ -168,11 +135,6 @@ const LabResultDataGrid = () => {
           dataField="patient" 
           caption="Patient Name" 
           cellRender={patientNameRender}
-        />
-        <Column
-          dataField=""
-          caption=""
-          cellRender={actionsFunc}
         />
       </DataGrid>
 
