@@ -219,7 +219,7 @@ const AnalyzerInbox = () => {
           )}
         </span>
         <span className="font-mono">{first.sample_code || <span className="text-warning">no sample code</span>}</span>
-        {first.patient_name && <span className="text-gray-500">"{first.patient_name}"</span>}
+        {first.patient_name && <span className="text-gray-500">&ldquo;{first.patient_name}&rdquo;</span>}
         <span className="text-gray-500">{(data.items || data.collapsedItems || []).length} results</span>
         {needsSample && (
           <button
