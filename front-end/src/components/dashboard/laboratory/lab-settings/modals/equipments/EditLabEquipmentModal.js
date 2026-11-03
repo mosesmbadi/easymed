@@ -45,7 +45,9 @@ const EditLabEquipmentModal = ({ open, setOpen, selectedRowData }) => {
     ip_address: selectedRowData?.ip_address || "",
     port: selectedRowData?.port || "",
     name: selectedRowData?.name || "",
-    data_format: getDataFormats() || ""
+    data_format: getDataFormats() || "",
+    sender_id: selectedRowData?.sender_id || "",
+    is_active: selectedRowData?.is_active ?? true
   };
 
   const validationSchema = Yup.object().shape({
@@ -159,6 +161,23 @@ const EditLabEquipmentModal = ({ open, setOpen, selectedRowData }) => {
                         component="div"
                         className="text-warning text-xs"
                         />
+                    </Grid>
+                    <Grid className='my-2' item md={9} xs={12}>
+                    <label htmlFor="sender_id">Sender ID</label>
+                        <Field
+                        className="block border rounded-md text-sm border-gray py-2.5 px-4 focus:outline-card w-full"
+                        placeholder="e.g. HumaCount 30TS"
+                        name="sender_id"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          The name the analyzer puts in its messages, as shown in the Analyzer Inbox.
+                        </p>
+                    </Grid>
+                    <Grid className='my-2 flex items-center' item md={3} xs={12}>
+                        <label className="flex items-center gap-2 text-sm">
+                            <Field type="checkbox" name="is_active" />
+                            Active
+                        </label>
                     </Grid>
                     <Grid className='my-2' item md={12} xs={12}>
                         <div className="flex items-center justify-end">

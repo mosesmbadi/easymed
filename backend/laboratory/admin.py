@@ -14,7 +14,10 @@ from .models import (
     ReferenceValue,
     LabTestInterpretation,
     TestPanelReagent,
-    ReagentConsumptionLog
+    ReagentConsumptionLog,
+    AnalyzerTestMapping,
+    AnalyzerMessage,
+    AnalyzerResult,
 )
 
 admin.site.register(LabReagent)
@@ -45,6 +48,28 @@ admin.site.register(ProcessTestRequest)
 admin.site.register(LabTestRequest)
 admin.site.register(LabTestRequestPanel)
 admin.site.register(LabEquipment)
+
+
+@admin.register(AnalyzerTestMapping)
+class AnalyzerTestMappingAdmin(admin.ModelAdmin):
+    list_display = ['equipment', 'analyzer_code', 'test_panel']
+    list_filter = ['equipment']
+    search_fields = ['analyzer_code', 'test_panel__name']
+
+
+@admin.register(AnalyzerMessage)
+class AnalyzerMessageAdmin(admin.ModelAdmin):
+    list_display = ['received_at', 'equipment', 'sender', 'sample_code']
+    list_filter = ['equipment']
+    search_fields = ['sample_code', 'sender']
+
+    class AnalyzerResultInline(admin.TabularInline):
+        model = AnalyzerResult
+        extra = 0
+        fields = ['analyzer_code', 'value', 'unit', 'status', 'detail', 'lab_test_request_panel']
+        readonly_fields = fields
+
+    inlines = [AnalyzerResultInline]
 @admin.register(Specimen)
 class SpecimenAdmin(admin.ModelAdmin):
     list_display = ['name', 'max_archive_duration']
