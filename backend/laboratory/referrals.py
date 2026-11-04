@@ -69,6 +69,7 @@ def receive_consignment(*, facility, received_by, entries, received_at=None,
             bill=not rejected,
             consignment=consignment,
             external_reference=entry.get('external_reference', ''),
+            requested_profiles=entry.get('profiles'),
         )
         # The draw happened at the clinic: the samples arrive collected, with
         # no draw kit of ours spent on them.

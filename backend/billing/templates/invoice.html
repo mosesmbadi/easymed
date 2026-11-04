@@ -311,12 +311,13 @@
   <table class="invoice-items">
     <thead>
       <tr>
-        <th style="width: 15%">Category</th>
-        <th style="width: 30%">Item Name</th>
-        <th style="width: 10%; text-align: center">Qty</th>
-        <th style="width: 15%; text-align: right">Price</th>
-        <th style="width: 15%; text-align: right">Co-Pay</th>
-        <th style="width: 15%; text-align: right">Amount</th>
+        <th style="width: 14%">Category</th>
+        <th style="width: 26%">Particulars</th>
+        <th style="width: 6%; text-align: center">Qty</th>
+        <th style="width: 14%; text-align: right">Price</th>
+        <th style="width: 13%; text-align: right">Co-Pay</th>
+        <th style="width: 13%; text-align: right">Discount</th>
+        <th style="width: 14%; text-align: right">Amount</th>
       </tr>
     </thead>
     <tbody>
@@ -324,7 +325,7 @@
       <tr>
         <td>{{ invoice_item.item.category }}</td>
         <td>{{ invoice_item.item.name }}</td>
-        <td style="text-align: center">1</td>
+        <td style="text-align: center">{{ invoice_item.quantity }}</td>
         <td style="text-align: right">
           {% if invoice_item.insurance_sale_price %}
           {{ invoice_item.insurance_sale_price|floatformat:2 }}
@@ -339,6 +340,7 @@
           -
           {% endif %}
         </td>
+        <td style="text-align: right">{% if invoice_item.discount %}{{ invoice_item.discount|floatformat:2 }}{% else %}-{% endif %}</td>
         <td style="text-align: right">{{ invoice_item.total_amount|floatformat:2 }}</td>
       </tr>
       {% endfor %}
@@ -353,25 +355,37 @@
           <td class="amount">{{ subtotal|floatformat:2 }}</td>
         </tr>
         <tr>
-          <td class="label">Cash Total:</td>
+          <td class="label">Cash:</td>
           <td class="amount">{{ cash_total|floatformat:2 }}</td>
         </tr>
+        {% if discount_total %}
         <tr>
-          <td class="label">Insurance Total:</td>
-          <td class="amount">{{ insurance_total|floatformat:2 }}</td>
+          <td class="label">Discount:</td>
+          <td class="amount">-{{ discount_total|floatformat:2 }}</td>
         </tr>
+        {% endif %}
+        <tr>
+          <td class="label">Credit:</td>
+          <td class="amount">{{ credit_total|floatformat:2 }}</td>
+        </tr>
+        {% if credited_total %}
+        <tr>
+          <td class="label">Credit Notes (already deducted):</td>
+          <td class="amount">{{ credited_total|floatformat:2 }}</td>
+        </tr>
+        {% endif %}
         <tr>
           <td class="label">Tax:</td>
           <td class="amount">{{ tax|floatformat:2 }}</td>
         </tr>
         <tr class="total-row">
           <td class="label">Total Amount:</td>
-          <td class="amount">{{ invoice.invoice_amount|floatformat:2 }}</td>
+          <td class="amount">{{ net_total|floatformat:2 }}</td>
         </tr>
-        {% if invoice.cash_paid and invoice.cash_paid > 0 %}
+        {% if paid %}
         <tr>
           <td class="label">Amount Paid:</td>
-          <td class="amount">{{ invoice.cash_paid|floatformat:2 }}</td>
+          <td class="amount">{{ paid|floatformat:2 }}</td>
         </tr>
         <tr>
           <td class="label">Balance:</td>

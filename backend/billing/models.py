@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import models, transaction
 from django.db.models import Sum
@@ -202,7 +204,7 @@ class InvoiceItem(models.Model):
         ('billed', 'Billed'),
     )
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='invoice_items')
-    item = models.ForeignKey('inventory.Item', on_delete=models.CASCADE)
+    item = models.ForeignKey('inventory.Item', on_delete=models.PROTECT)
     item_created_at = models.DateTimeField(auto_now_add=True)
     item_updated_at = models.DateTimeField(auto_now=True)
     payment_mode = models.ForeignKey(PaymentMode, on_delete=models.PROTECT, null=True)
@@ -226,6 +228,19 @@ class InvoiceItem(models.Model):
     # an insurance line, the patient on any other. This is the figure the
     # payment allocator and the insurance receivables screen both work in.
     actual_total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    # What has come off the line since. Discounts come off the patient's share
+    # only: a price agreed with an insurer or an employer is not ours to cut.
+    # item_amount stays the gross figure, and patient_amount and actual_total
+    # are what is left after these.
+    discount = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0,
+        help_text="Discount given on this line at the till")
+    invoice_discount = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0,
+        help_text="This line's share of a discount given on the invoice's total")
+    credited_amount = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0,
+        help_text="Taken off by credit notes, patient and payer portions together")
     status = models.CharField(
         max_length=10, choices=STATUS_CHOICES, default='pending')
     source_tag = models.ForeignKey(
@@ -250,7 +265,18 @@ class InvoiceItem(models.Model):
     @property
     def insurer_amount(self):
         """The payer's share -- zero on a cash line."""
-        return (self.item_amount or 0) - (self.patient_amount or 0)
+        return self.net_amount - (self.patient_amount or 0)
+
+    @property
+    def net_amount(self):
+        """What the line is worth after discounts and credit notes, whoever pays."""
+        return ((self.item_amount or 0) - (self.discount or 0)
+                - (self.invoice_discount or 0) - (self.credited_amount or 0))
+
+    @property
+    def is_billed_to_patient(self):
+        """True when the patient, not an insurer or account, owes `actual_total`."""
+        return self.price_source in ('cash', 'cash_fallback', 'unknown')
 
     @property
     def is_priced(self):
@@ -379,15 +405,26 @@ class InvoiceItem(models.Model):
         banked = None
         if self.pk:
             banked = type(self).objects.filter(pk=self.pk).values(
-                'status', 'quantity').first()
+                'status', 'quantity', 'discount', 'invoice_discount').first()
         already_sold = bool(banked and banked['status'] == 'billed')
+
+        self.discount = Decimal(str(self.discount or 0))
+        self.invoice_discount = Decimal(str(self.invoice_discount or 0))
+        if self.discount < 0:
+            raise DjangoValidationError("A discount can't be negative.")
 
         if not already_sold:
             pricing = self.get_pricing_for_item()
+            if self.discount > pricing['patient_amount']:
+                raise DjangoValidationError(
+                    f"The discount on {self.item.name} is more than the "
+                    f"{pricing['patient_amount']} the patient pays for it.")
             self.unit_price = pricing['unit_price']
             self.item_amount = pricing['item_amount']
-            self.patient_amount = pricing['patient_amount']
+            self.patient_amount = pricing['patient_amount'] - self.discount
             self.actual_total = pricing['actual_total']
+            if pricing['price_source'] in ('cash', 'cash_fallback'):
+                self.actual_total -= self.discount
         elif banked['quantity'] != self.quantity:
             # A billed line is a sold thing. Changing how many were sold would
             # leave the stored totals describing a different sale from the one
@@ -399,8 +436,26 @@ class InvoiceItem(models.Model):
                 f"{banked['quantity']}. Reverse the line and raise a new one "
                 f"rather than changing the quantity on a sold line."
             )
+        else:
+            self._apply_discount_change(banked)
 
         super().save(*args, **kwargs)
+
+    def _apply_discount_change(self, banked):
+        """A discount changed on a sold line moves what the patient owes by the difference."""
+        change = (self.discount + self.invoice_discount
+                  - banked['discount'] - banked['invoice_discount'])
+        if not change:
+            return
+        paid = self.allocations.filter(receipt__insurance__isnull=True).aggregate(
+            total=Sum('amount_applied'))['total'] or 0
+        if self.patient_amount - change < paid:
+            raise DjangoValidationError(
+                f"That discount would take {self.item.name} below the {paid} "
+                f"already paid for it. Issue a credit note instead.")
+        self.patient_amount -= change
+        if self.is_billed_to_patient:
+            self.actual_total -= change
 
     class Meta:
         indexes = [
@@ -412,6 +467,54 @@ class InvoiceItem(models.Model):
 
     def __str__(self):
         return self.status + '-' + self.item.name + ' - ' + str(self.item_created_at)
+
+
+class CreditNote(models.Model):
+    """
+    A reversal of something already billed: a whole invoice or part of it.
+
+    Issued, never edited. It takes the value off the lines it names, so every
+    balance and report that reads a line sees the customer's reduced total.
+    """
+    credit_note_number = models.CharField(max_length=50, unique=True, editable=False)
+    invoice = models.ForeignKey(Invoice, on_delete=models.PROTECT, related_name='credit_notes')
+    reason = models.CharField(max_length=255)
+    total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    # Value credited that had already been paid, so is now owed back.
+    refund_due = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    issued_by = models.ForeignKey(
+        'customuser.CustomUser', on_delete=models.SET_NULL, null=True, blank=True)
+    issued_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ['-issued_at', '-id']
+
+    def save(self, *args, **kwargs):
+        if not self.credit_note_number:
+            prefix, suffix = "DDLC", f"-{timezone.now().year}"
+            last = CreditNote.objects.select_for_update().filter(
+                credit_note_number__startswith=prefix, credit_note_number__endswith=suffix,
+            ).order_by('-credit_note_number').first()
+            number = int(last.credit_note_number[len(prefix):-len(suffix)]) + 1 if last else 1
+            self.credit_note_number = f"{prefix}{number:05d}{suffix}"
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.credit_note_number} on {self.invoice.invoice_number}: {self.total_amount}"
+
+
+class CreditNoteLine(models.Model):
+    """How much one invoice line was credited, and whose debt that reduced."""
+    credit_note = models.ForeignKey(CreditNote, on_delete=models.CASCADE, related_name='lines')
+    invoice_item = models.ForeignKey(
+        InvoiceItem, on_delete=models.PROTECT, related_name='credit_note_lines')
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    patient_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    payer_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    restocked = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.credit_note.credit_note_number}: {self.amount} on line {self.invoice_item_id}"
 
 
 class PaymentReceipt(models.Model):

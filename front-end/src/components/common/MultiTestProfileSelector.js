@@ -167,7 +167,7 @@ const MultiTestProfileSelector = ({
               <option value="">Select Test Profile</option>
               {labTestProfiles.map((test, index) => (
                 <option key={index} value={test.id}>
-                  {test?.name}
+                  {test?.full_name || test?.name}
                 </option>
               ))}
             </select>
@@ -187,15 +187,26 @@ const MultiTestProfileSelector = ({
                 </span>
               </div>
               <Grid container spacing={2}>
-                {section.panelsData.map((panel) => (
-                  <Grid className="flex items-center" key={panel.id} item xs={4}>
-                    <Checkbox
-                      checked={section.selectedPanels.some((panelItem) => panelItem.id === panel.id)}
-                      onChange={() => handleCheckboxChange(panel, section.id)}
-                      size="small"
-                    />
-                    <span className="text-sm">{panel.name}</span>
-                  </Grid>
+                {section.panelsData.map((panel, index) => (
+                  <React.Fragment key={panel.id}>
+                    {/* A main profile's panels arrive in report order: head each sub profile. */}
+                    {new Set(section.panelsData.map((row) => row.test_profile)).size > 1 &&
+                      panel.test_profile !== section.panelsData[index - 1]?.test_profile && (
+                        <Grid item xs={12}>
+                          <span className="text-xs font-semibold uppercase text-gray-500">
+                            {panel.test_profile_name}
+                          </span>
+                        </Grid>
+                      )}
+                    <Grid className="flex items-center" item xs={4}>
+                      <Checkbox
+                        checked={section.selectedPanels.some((panelItem) => panelItem.id === panel.id)}
+                        onChange={() => handleCheckboxChange(panel, section.id)}
+                        size="small"
+                      />
+                      <span className="text-sm">{panel.name}</span>
+                    </Grid>
+                  </React.Fragment>
                 ))}
               </Grid>
             </div>

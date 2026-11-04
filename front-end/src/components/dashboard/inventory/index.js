@@ -23,6 +23,8 @@ import { useAuth } from "@/assets/hooks/use-auth";
 import { getAllInvoiceItems } from "@/redux/features/billing";
 import { getAllTheDepartments } from "@/redux/features/auth";
 import SearchOnlyFilter from "@/components/common/process/SearchOnly";
+import ForceDeleteDialog from "@/components/common/ForceDeleteDialog";
+import { isAdmin } from "@/utils/permissions";
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
   ssr: false,
@@ -47,6 +49,8 @@ const InventoryDataGrid = ({ department }) => {
   const [selectedDepartment, setSelectedDepartment] = useState(department)
   const [processFilter, setProcessFilter] = useState({ search: "" });
   const [selectedSearchFilter, setSelectedSearchFilter] = useState({ label: "", value: "" })
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [rowToDelete, setRowToDelete] = useState(null);
 
   const items = [
     { label: "None", value: "" },
@@ -288,7 +292,34 @@ const InventoryDataGrid = ({ department }) => {
           cellRender={renderPackaging}
         />
         <Column dataField="lot_value" caption="This Lot Value" cellRender={renderLotValue} />
+        {isAdmin(auth) && (
+          <Column
+            caption=""
+            width={70}
+            allowSorting={false}
+            cellRender={({ data }) => (
+              <button
+                type="button"
+                className="text-warning underline text-xs"
+                onClick={() => {
+                  setRowToDelete(data);
+                  setDeleteOpen(true);
+                }}
+              >
+                Delete
+              </button>
+            )}
+          />
+        )}
       </DataGrid>
+      <ForceDeleteDialog
+        open={deleteOpen}
+        setOpen={setDeleteOpen}
+        resource="stock"
+        id={rowToDelete?.id}
+        name={rowToDelete ? `${rowToDelete.item_name}, lot ${rowToDelete.lot_number}` : "This stock"}
+        onDeleted={() => dispatch(getAllInventories(auth))}
+      />
     </section>
   );
 };

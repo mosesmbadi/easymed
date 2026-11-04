@@ -96,10 +96,75 @@ class LabReagent(models.Model):
 
 
 class LabTestProfile(models.Model):
+    """
+    A named group of tests. Profiles nest: URINALYSIS REPORT is what a doctor
+    requests, and Macroscopy, Microscopy and Biochemistry are the sub profiles
+    its panels are reported under.
+
+    `sort_order` is what puts sub profiles in order under their parent on the
+    report, and `item` is what lets the profile itself be charged for when its
+    panels are never sold alone.
+    """
     name = models.CharField(max_length=255)
+    parent = models.ForeignKey(
+        'self', on_delete=models.PROTECT, null=True, blank=True, related_name='sub_profiles',
+        help_text="The main profile this one is reported under. Empty for a main profile.")
+    sort_order = models.PositiveIntegerField(
+        default=0, help_text="Lower numbers print first among profiles at the same level")
+    item = models.OneToOneField(
+        'inventory.Item', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='lab_test_profile',
+        help_text="The invoice line raised when this profile is requested. Empty when only its panels are charged.")
 
     def __str__(self):
         return self.name
+
+    def lineage(self):
+        """This profile's chain of parents, outermost first, ending with itself."""
+        chain, seen, node = [], set(), self
+        while node is not None and node.pk not in seen:
+            seen.add(node.pk)
+            chain.insert(0, node)
+            node = node.parent
+        return chain
+
+    @property
+    def full_name(self):
+        return " > ".join(profile.name for profile in self.lineage())
+
+    def display_key(self):
+        """Sorts profiles into report order: a parent, then its sub profiles in turn."""
+        return tuple((profile.sort_order, profile.name.lower(), profile.pk) for profile in self.lineage())
+
+    def with_descendants(self):
+        """This profile and everything nested under it."""
+        found, queue = {}, [self]
+        while queue:
+            node = queue.pop()
+            if node.pk not in found:
+                found[node.pk] = node
+                queue.extend(node.sub_profiles.all())
+        return list(found.values())
+
+    def panels_in_report_order(self):
+        """Every panel under this profile, in the order the report prints them."""
+        panels = LabTestPanel.objects.filter(
+            test_profile__in=[profile.pk for profile in self.with_descendants()],
+        ).select_related(
+            'item', 'specimen', 'units', 'test_profile__parent__parent',
+        ).prefetch_related(
+            'reagent_links__reagent_item', 'specimen__consumables__item')
+        return sorted(panels, key=LabTestPanel.display_key)
+
+    @property
+    def sale_price(self):
+        """What requesting this profile costs on top of its panels' own prices."""
+        return self.item.current_sale_price if self.item_id else None
+
+    def set_sale_price(self, price, created_by=None):
+        from inventory.services import stock as stock_service
+
+        return stock_service.set_sale_price(self.item, price, created_by=created_by)
 
     def billing_items(self):
         """Return the set of billing Items for all panels in this profile."""
@@ -186,7 +251,7 @@ class TestPanelReagent(models.Model):
 class LabTestPanel(models.Model):
     name = models.CharField(max_length=255)
     specimen = models.ForeignKey(Specimen, on_delete=models.CASCADE, null=True, blank=True)
-    test_profile = models.ForeignKey(LabTestProfile, on_delete=models.CASCADE)
+    test_profile = models.ForeignKey(LabTestProfile, on_delete=models.PROTECT)
     units = models.ForeignKey('inventory.Unit', on_delete=models.SET_NULL, null=True, blank=True, related_name='lab_test_panels')
     # The catalogue entry an invoice line points at. One panel, one item: the
     # panel's sale price is stored against it, so two panels sharing one would
@@ -198,6 +263,12 @@ class LabTestPanel(models.Model):
     is_quantitative = models.BooleanField(default=True)
     # turn around time
     tat = models.DurationField(null=True, blank=True)
+    sort_order = models.PositiveIntegerField(
+        default=0, help_text="Lower numbers print first among the panels of a profile")
+
+    def display_key(self):
+        """Sorts panels into report order, profile first."""
+        return (self.test_profile.display_key(), self.sort_order, self.name.lower(), self.pk)
 
     def clean(self):
         if self.item and self.item.category != 'Lab Test':
@@ -560,7 +631,7 @@ class PatientSampleConsumable(models.Model):
 class LabTestRequestPanel(models.Model):
     patient_sample = models.ForeignKey(PatientSample, null=True, on_delete=models.CASCADE)
     result = models.CharField(max_length=45, null=True)
-    test_panel = models.ForeignKey(LabTestPanel, on_delete=models.SET("Deleted Panel"))
+    test_panel = models.ForeignKey(LabTestPanel, on_delete=models.PROTECT)
     lab_test_request = models.ForeignKey(LabTestRequest, on_delete=models.CASCADE)
     test_code = models.CharField(max_length=100, null=True)
     category = models.CharField(max_length=30, default="none")
@@ -600,14 +671,16 @@ class LabTestRequestPanel(models.Model):
             return None, None, False
         
         try:
-            # Get the interpretation for this profile
-            interp = self.test_panel.test_profile.interpretations.first()
-            if interp:
-                return (
-                    interp.interpretation,
-                    interp.clinical_action,
-                    interp.requires_immediate_attention
-                )
+            # The panel's own profile speaks first, then whichever main profile
+            # it is reported under.
+            for profile in reversed(self.test_panel.test_profile.lineage()):
+                interp = profile.interpretations.first()
+                if interp:
+                    return (
+                        interp.interpretation,
+                        interp.clinical_action,
+                        interp.requires_immediate_attention
+                    )
             return None, None, False
         except Exception as e:
             print(f"Error generating interpretation: {e}")

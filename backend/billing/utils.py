@@ -16,6 +16,10 @@ def update_service_billed_status(instance):
     field of the related PrescribedDrug or LabTestRequestPanel
     '''
     # TODO: Also update Consultation
+    # A line credited back to nothing has been un-sold; see billing.adjustments.
+    if instance.credited_amount and instance.net_amount <= 0:
+        return
+
     if instance.status == 'billed' and instance.item.category == 'Drug':
         try:
             prescription = instance.invoice.attendanceprocess.prescription

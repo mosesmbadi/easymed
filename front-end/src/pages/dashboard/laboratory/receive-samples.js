@@ -87,7 +87,12 @@ const PatientRow = ({ row, index, onChange, onRemove, canRemove }) => {
     (sections) => {
       const byId = new Map();
       sections.forEach((s) => s.selectedPanels.forEach((p) => byId.set(p.id, p)));
-      onChange(row.key, { panels: [...byId.values()] });
+      onChange(row.key, {
+        panels: [...byId.values()],
+        profiles: sections
+          .filter((s) => s.testProfile && s.selectedPanels.length > 0)
+          .map((s) => Number(s.testProfile)),
+      });
     },
     [row.key, onChange]
   );
@@ -253,6 +258,7 @@ const ReceiveSamples = () => {
       condition: row.condition,
       rejection_reason: row.reject ? row.rejection_reason : "",
       panels: row.panels.map((panel) => panel.id),
+      profiles: row.profiles ?? [],
     }));
     const body = new FormData();
     body.append("facility", facility);

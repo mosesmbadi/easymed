@@ -13,10 +13,13 @@ import { getAllIncomingItems, getItems } from '@/redux/features/inventory';
 import { months } from "@/assets/dummy-data/laboratory";
 import CmtDropdownMenu from '@/assets/DropdownMenu';
 import { LuMoreHorizontal } from 'react-icons/lu';
+import { AiFillDelete } from 'react-icons/ai';
 import { BiEdit } from 'react-icons/bi';
 import { TbBox } from 'react-icons/tb';
 import EditItemModal from './EditItemModal';
 import ManageItemUnits from './ManageItemUnits';
+import ForceDeleteDialog from '@/components/common/ForceDeleteDialog';
+import { isAdmin } from '@/utils/permissions';
 
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
@@ -46,7 +49,10 @@ const ItemsGrid = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const dispatch = useDispatch();
   const auth = useAuth();
-  const userActions = getActions();
+  const userActions = isAdmin(auth)
+    ? [...getActions(), { action: "delete", label: "Delete", icon: <AiFillDelete className="text-warning text-xl mx-2" /> }]
+    : getActions();
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const { item } = useSelector((store) => store.inventory);
   const [showPageSizeSelector, setShowPageSizeSelector] = useState(true);
   const [showInfo, setShowInfo] = useState(true);
@@ -75,6 +81,9 @@ const ItemsGrid = () => {
     } else if (menu.action === "pack-sizes") {
       setSelectedRowData(data);
       setUnitsOpen(true);
+    } else if (menu.action === "delete") {
+      setSelectedRowData(data);
+      setDeleteOpen(true);
     }
   };
 
@@ -260,6 +269,14 @@ const ItemsGrid = () => {
           cellRender={actionsFunc}
         />
       </DataGrid>
+      <ForceDeleteDialog
+        open={deleteOpen}
+        setOpen={setDeleteOpen}
+        resource="item"
+        id={selectedRowData?.id}
+        name={selectedRowData?.name || "This item"}
+        onDeleted={() => dispatch(getItems(auth))}
+      />
       {editOpen && (
         <EditItemModal
           open={editOpen}

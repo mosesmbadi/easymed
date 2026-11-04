@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import * as Yup from 'yup'
-import { Grid } from '@mui/material';
-import { ErrorMessage, Field, Form, Formik } from 'formik'
+import { Form, Formik } from 'formik'
 import { toast } from 'react-toastify';
 import dynamic from "next/dynamic";
 
@@ -10,186 +8,142 @@ import CmtDropdownMenu from '@/assets/DropdownMenu';
 import { LuMoreHorizontal } from 'react-icons/lu';
 import { useDispatch, useSelector } from 'react-redux';
 import { Column, Pager, Paging, Scrolling } from "devextreme-react/data-grid";
+import { AiFillDelete } from 'react-icons/ai';
 import { BiEdit } from 'react-icons/bi';
-import { addProfileToStore, getAllLabTestProfiles } from '@/redux/features/laboratory';
+import { getAllLabTestProfiles } from '@/redux/features/laboratory';
 import { createLabTestProfile } from '@/redux/service/laboratory';
+import ForceDeleteDialog from '@/components/common/ForceDeleteDialog';
+import { isAdmin } from '@/utils/permissions';
 import EditTestProfileModal from './modals/profiles/EditProfileModal';
+import ProfileFields, { profilePayload, profileValidation } from './modals/profiles/ProfileFields';
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
     ssr: false,
-  });
-  
-  const allowedPageSizes = [5, 10, 'all'];
+});
 
-  const getActions = () => {
-    let actions = [
-      {
-        action: "update",
-        label: "Edit Item",
-        icon: <BiEdit className="text-success text-xl mx-2" />,
-      },
-    ];
-  
-    return actions;
-  };
+const allowedPageSizes = [5, 10, 'all'];
 
+const initialValues = { name: "", parent: "", sort_order: 0, sale_price: "" };
 
 const TestProfile = () => {
     const auth = useAuth()
-    const userActions = getActions();
-    const dispatch =  useDispatch()
+    const dispatch = useDispatch()
     const [loading, setLoading] = useState(false);
     const [editOpen, setEditOpen] = useState(false);
-    const [showPageSizeSelector, setShowPageSizeSelector] = useState(true);
-    const [showInfo, setShowInfo] = useState(true);
-    const [showNavButtons, setShowNavButtons] = useState(true);
-    const { labTestProfiles }  = useSelector((store)=> store.laboratory);
+    const [deleteOpen, setDeleteOpen] = useState(false);
+    const { labTestProfiles } = useSelector((store) => store.laboratory);
     const [selectedRowData, setSelectedRowData] = useState({})
 
-    const initialValues = {
-        name: ""
-    }
+    const userActions = [
+        { action: "update", label: "Edit Item", icon: <BiEdit className="text-success text-xl mx-2" /> },
+        ...(isAdmin(auth)
+            ? [{ action: "delete", label: "Delete", icon: <AiFillDelete className="text-warning text-xl mx-2" /> }]
+            : []),
+    ];
 
-    const validationSchema = Yup.object().shape({
-        name: Yup.string().required("Fiels is required!"),
-    });
+    const reload = () => dispatch(getAllLabTestProfiles(auth));
 
     const addNewProfile = async (values, helpers) => {
         setLoading(true)
-        try{
-            const response = await createLabTestProfile( values, auth )
-            dispatch(addProfileToStore(response))
-            setLoading(false)
+        try {
+            await createLabTestProfile(profilePayload(values), auth)
+            reload();
             helpers.resetForm();
-            toast.success('Specimen created succesfully')
-        }catch(error){
-            setLoading(false)
-            toast.error('Error Creating Specimen')
+            toast.success('Profile created successfully')
+        } catch (error) {
+            toast.error('Error creating profile')
             console.log("ERR", error)
+        } finally {
+            setLoading(false)
         }
     }
 
     useEffect(() => {
-        dispatch(getAllLabTestProfiles(auth))
-    },[])
+        reload();
+    }, [])
 
-    const onMenuClick = async (menu, data) => {
-        if (menu.action === "update"){
-          setSelectedRowData(data);
-          setEditOpen(true);      
-        }
-      };
-    
-      const actionsFunc = ({ data }) => {
-        return (
-          <>
-            <CmtDropdownMenu
-              sx={{ cursor: "pointer" }}
-              items={userActions}
-              onItemClick={(menu) => onMenuClick(menu, data)}
-              TriggerComponent={
-                <LuMoreHorizontal className="cursor-pointer text-xl" />
-              }
-            />
-          </>
-        );
-      };
+    const onMenuClick = (menu, data) => {
+        setSelectedRowData(data);
+        if (menu.action === "update") setEditOpen(true);
+        if (menu.action === "delete") setDeleteOpen(true);
+    };
 
+    const actionsFunc = ({ data }) => (
+        <CmtDropdownMenu
+            sx={{ cursor: "pointer" }}
+            items={userActions}
+            onItemClick={(menu) => onMenuClick(menu, data)}
+            TriggerComponent={<LuMoreHorizontal className="cursor-pointer text-xl" />}
+        />
+    );
 
-
-  return (
-    <div>
-        <h2 className='my-10 font-bold text-xl'>Add Profiles</h2>
-        <Formik
-            initialValues={initialValues}
-            validationSchema={validationSchema}
-            onSubmit={addNewProfile}
-        >
-            <Form>
-                <Grid container spacing={0}>
-                    <Grid item md={10} xs={12}>
-                        <Field
-                            className="block border border-gray py-3 px-4 focus:outline-none w-full"
-                            type="text"
-                            placeholder="New Test Profile"
-                            name="name"
-                        />
-                        <ErrorMessage
-                            name="name"
-                            component="div"
-                            className="text-warning text-xs"
-                        />
-                    </Grid>
-                    <Grid item md={2} xs={6}>
-                        <div className="flex justify-end gap-2 h-full">
-                            <button
+    return (
+        <div>
+            <h2 className='my-10 font-bold text-xl'>Add Profiles</h2>
+            <Formik
+                initialValues={initialValues}
+                validationSchema={profileValidation}
+                onSubmit={addNewProfile}
+            >
+                <Form>
+                    <ProfileFields parents={labTestProfiles} />
+                    <div className="flex justify-end mt-4">
+                        <button
                             type="submit"
-                            className="bg-primary px-4 py-2 text-white"
-                            >
-                            {loading && (
-                                <svg
-                                aria-hidden="true"
-                                role="status"
-                                class="inline mr-2 w-4 h-4 text-gray-200 animate-spin dark:text-gray-600"
-                                viewBox="0 0 100 101"
-                                fill="none"
-                                xmlns="http://www.w3.org/2000/svg"
-                                >
-                                <path
-                                    d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
-                                    fill="currentColor"
-                                ></path>
-                                <path
-                                    d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
-                                    fill="#1C64F2"
-                                ></path>
-                                </svg>
-                            )}
-                            Add Profile
+                            disabled={loading}
+                            className="bg-primary px-4 py-2 text-white disabled:opacity-60"
+                        >
+                            {loading ? "Saving..." : "Add Profile"}
                         </button>
-                        </div>
-                    </Grid>
-                </Grid>
-            </Form>
-        </Formik>
-        <div className='my-10'>
-        <DataGrid
-        dataSource={labTestProfiles}
-        allowColumnReordering={true}
-        rowAlternationEnabled={true}
-        showBorders={true}
-        remoteOperations={true}
-        showColumnLines={true}
-        showRowLines={true}
-        wordWrapEnabled={true}
-        allowPaging={true}
-        className="shadow-xl"
-        // height={"70vh"}
-      >
-        <Scrolling rowRenderingMode='virtual'></Scrolling>
-        <Paging defaultPageSize={10} />
-        <Pager
-          visible={true}
-          allowedPageSizes={allowedPageSizes}
-          showPageSizeSelector={showPageSizeSelector}
-          showInfo={showInfo}
-          showNavigationButtons={showNavButtons}
-        />
-        <Column 
-          dataField="name" 
-          caption="Name"
-        />
-        <Column
-          dataField=""
-          caption=""
-          width={50}
-          cellRender={actionsFunc}
-        />
-      </DataGrid>
-      <EditTestProfileModal open={editOpen} setOpen={setEditOpen} selectedRowData={selectedRowData}  />
+                    </div>
+                </Form>
+            </Formik>
+            <div className='my-10'>
+                <DataGrid
+                    dataSource={labTestProfiles}
+                    allowColumnReordering={true}
+                    rowAlternationEnabled={true}
+                    showBorders={true}
+                    remoteOperations={true}
+                    showColumnLines={true}
+                    showRowLines={true}
+                    wordWrapEnabled={true}
+                    allowPaging={true}
+                    className="shadow-xl"
+                >
+                    <Scrolling rowRenderingMode='virtual'></Scrolling>
+                    <Paging defaultPageSize={10} />
+                    <Pager
+                        visible={true}
+                        allowedPageSizes={allowedPageSizes}
+                        showPageSizeSelector={true}
+                        showInfo={true}
+                        showNavigationButtons={true}
+                    />
+                    <Column dataField="full_name" caption="Name" />
+                    <Column dataField="sort_order" caption="Report Order" width={110} />
+                    <Column
+                        dataField="sale_price"
+                        caption="Sale Price"
+                        width={120}
+                        cellRender={({ data }) =>
+                            Number(data.sale_price) ? `Ksh ${Number(data.sale_price).toLocaleString()}` : "-"
+                        }
+                    />
+                    <Column dataField="" caption="" width={50} cellRender={actionsFunc} />
+                </DataGrid>
+                <EditTestProfileModal open={editOpen} setOpen={setEditOpen} selectedRowData={selectedRowData} />
+                <ForceDeleteDialog
+                    open={deleteOpen}
+                    setOpen={setDeleteOpen}
+                    resource="profile"
+                    id={selectedRowData?.id}
+                    name={selectedRowData?.name || "This profile"}
+                    onDeleted={reload}
+                />
+            </div>
         </div>
-    </div>
-  )
+    )
 }
 
 export default TestProfile

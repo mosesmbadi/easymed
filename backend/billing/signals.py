@@ -5,6 +5,7 @@ from django.dispatch import receiver
 from django.core.exceptions import ValidationError
 from django.db.models import Sum
 
+from .adjustments import settle_if_nothing_owed
 from .services import check_stock_available, post_stock_for_invoice_item
 from .utils import update_service_billed_status
 from inventory.services.stock import InsufficientStock, StockError
@@ -126,6 +127,25 @@ def post_stock_after_billing(sender, instance, created, **kwargs):
     except StockError as exc:
         logger.exception("Could not post stock for invoice item %s: %s", instance.pk, exc)
         raise ValidationError(str(exc))
+
+
+@receiver(post_save, sender=InvoiceItem)
+def keep_invoice_status_true(sender, instance, created, **kwargs):
+    """
+    A line can leave nothing to pay, or put something new to pay on an invoice
+    already closed.
+
+    Nothing else settles a zero-value invoice, since no payment will ever come
+    in to do it, and it would sit on the cashier's unpaid list forever. And a
+    re-test added to a settled invoice has to bring it back onto that list, or
+    its line can never be billed.
+    """
+    invoice = instance.invoice
+    if created and instance.status == 'pending' and invoice.status == 'paid':
+        invoice.status = 'pending'
+        invoice.save(update_fields=['status', 'invoice_updated_at'])
+    elif instance.status == 'billed' and not instance.patient_amount and not instance.insurer_amount:
+        settle_if_nothing_owed(invoice)
 
 
 # `calculate_actual_total` used to live here, as a pre_save that recomputed

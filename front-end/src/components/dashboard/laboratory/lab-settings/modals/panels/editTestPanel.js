@@ -76,6 +76,7 @@ const EditTestPanelModal = ({ open, setOpen, selectedRowData }) => {
     name: selectedRowData?.name || "",
     units: getSelectedUnit() || "",
     sale_price: selectedRowData?.sale_price ?? "",
+    sort_order: selectedRowData?.sort_order ?? 0,
     is_qualitative: selectedRowData?.is_qualitative || false,
     is_quantitative: selectedRowData?.is_quantitative || true,
     tat: selectedRowData?.tat ? (() => {
@@ -92,10 +93,17 @@ const EditTestPanelModal = ({ open, setOpen, selectedRowData }) => {
     item: Yup.object().required("Field is Required!"),
     specimen: Yup.object().required("Field is Required!"),
     test_profile: Yup.object().required("Field is Required!"),
+    // Optional: a panel only sold as part of a priced profile bills at zero.
     sale_price: Yup.number()
+      .transform((value, original) => (original === "" ? null : value))
+      .nullable()
       .typeError("Must be a number")
-      .min(0, "Cannot be negative")
-      .required("The panel is what the patient is charged for, so it needs a price"),
+      .min(0, "Cannot be negative"),
+    sort_order: Yup.number()
+      .transform((value, original) => (original === "" ? 0 : value))
+      .typeError("Must be a number")
+      .integer("Must be a whole number")
+      .min(0, "Cannot be negative"),
   });
 
   const handleEditTestPanel = async (formValue, helpers) => {
@@ -105,7 +113,8 @@ const EditTestPanelModal = ({ open, setOpen, selectedRowData }) => {
       test_profile: formValue.test_profile.value,
       units: formValue.units?.value || null,
       item: formValue.item.value,
-      sale_price: formValue.sale_price,
+      sale_price: formValue.sale_price === "" ? null : formValue.sale_price,
+      sort_order: parseInt(formValue.sort_order) || 0,
       // Sent whole: the server replaces the set, so a reagent removed here is
       // actually unlinked there.
       reagent_items: reagentRows.map((row) => ({
@@ -230,7 +239,22 @@ const EditTestPanelModal = ({ open, setOpen, selectedRowData }) => {
                         What the patient pays for this test. Changing it opens a new
                         effective-dated price &mdash; invoices already raised keep theirs.
                       </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Leave at 0 if this panel is only ever sold as part of a priced profile.
+                      </p>
                       <ErrorMessage name="sale_price" component="div" className="text-warning text-xs" />
+                    </Grid>
+                    <Grid className='my-2' item md={6} xs={12}>
+                      <label htmlFor="sort_order">Report Order</label>
+                      <Field
+                        className="block border rounded-md text-sm border-gray py-2.5 px-4 focus:outline-card w-full"
+                        name="sort_order"
+                        type="number"
+                        min="0"
+                        step="1"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Lower numbers print first among the panels of a profile on the report.</p>
+                      <ErrorMessage name="sort_order" component="div" className="text-warning text-xs" />
                     </Grid>
                     <Grid className="my-2" item md={6} xs={12}>
                       <div className="flex items-center gap-2">

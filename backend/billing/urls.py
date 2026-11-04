@@ -1,12 +1,13 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import download_invoice_pdf, download_payment_receipt_pdf, download_accounting_summary_pdf, AllocatePaymentView
+from .views import download_credit_note_pdf, download_invoice_pdf, download_payment_receipt_pdf, download_accounting_summary_pdf, AllocatePaymentView
 from django.conf.urls.static import static
 
 from django.conf import settings
 
 
 from .views import (
+    CreditNoteViewSet,
     InvoiceViewset,
     InvoiceItemViewset,
     PaymentModeViewset,
@@ -31,6 +32,7 @@ router = DefaultRouter()
 
 router.register(r'invoices', InvoiceViewset)
 router.register(r'invoice-items', InvoiceItemViewset)
+router.register(r'credit-notes', CreditNoteViewSet)
 router.register(r'payment-modes', PaymentModeViewset)
 router.register(r'payment-receipts', PaymentReceiptViewset)
 router.register(r'invoice-payments', InvoicePaymentViewset)
@@ -40,6 +42,7 @@ router.register(r'sub-accounts', SubAccountViewSet)
 urlpatterns = [
     path('', include(router.urls)),
     path('download_invoice_pdf/<int:invoice_id>/', download_invoice_pdf, name='download_invoice_pdf'),
+    path('download_credit_note_pdf/<int:credit_note_id>/', download_credit_note_pdf, name='download_credit_note_pdf'),
     path('download_payment_receipt_pdf/<int:receipt_id>/', download_payment_receipt_pdf, name='download_payment_receipt_pdf'),
     path('allocate-payment/', AllocatePaymentView.as_view(), name='allocate-payment'),
     path('invoices/patient/<int:patient_id>/', InvoicesByPatientId.as_view()),

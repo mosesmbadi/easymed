@@ -100,6 +100,7 @@ from authperms.permissions import (
     IsReceptionistUser,
     HasAnyNamedPermission,
 )
+from utils.purge import ForceDeleteMixin, purge_lab_panel, purge_lab_profile
 from patient.serializers import AttendanceProcessSerializer
 from .walk_in import create_walk_in_visit
 from .referrals import receive_consignment
@@ -187,13 +188,21 @@ class LabTestInterpretationViewSet(viewsets.ModelViewSet):
 
 
 '''Lab Test Profile and Panel'''
-class LabTestProfileViewSet(viewsets.ModelViewSet):
-    queryset = LabTestProfile.objects.all()
+class LabTestProfileViewSet(ForceDeleteMixin, viewsets.ModelViewSet):
+    queryset = LabTestProfile.objects.select_related('parent__parent', 'item')
     serializer_class = LabTestProfileSerializer
     permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser | IsPatientUser | IsReceptionistUser,)
 
+    def list(self, request, *args, **kwargs):
+        # A tree order, so each main profile is followed by its sub profiles.
+        rows = sorted(self.filter_queryset(self.get_queryset()), key=LabTestProfile.display_key)
+        return Response(self.get_serializer(rows, many=True).data)
 
-class LabTestPanelViewSet(viewsets.ModelViewSet):
+    def purge(self, instance, user):
+        purge_lab_profile(instance, user)
+
+
+class LabTestPanelViewSet(ForceDeleteMixin, viewsets.ModelViewSet):
     '''
     This need s whole lot of testing to see if the ref value are actually
     gotten dynamically using the patients age and sex
@@ -203,6 +212,13 @@ class LabTestPanelViewSet(viewsets.ModelViewSet):
         'reagent_links__reagent_item', 'specimen__consumables__item')
     serializer_class = LabTestPanelSerializer
     permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser | IsReceptionistUser,)
+
+    def perform_destroy(self, instance):
+        # The billing item exists only for this panel, and takes it along.
+        (instance.item if instance.item_id else instance).delete()
+
+    def purge(self, instance, user):
+        purge_lab_panel(instance, user)
 
     @action(detail=False, methods=['get'], url_path='labtestpanels-byprofile-id/(?P<profile_id>[^/.]+)')
     def by_test_profile(self, request, profile_id=None):
@@ -223,7 +239,8 @@ class LabTestPanelViewSet(viewsets.ModelViewSet):
             except Patient.DoesNotExist:
                 return Response({"error": "Patient not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        lab_test_panels = LabTestPanel.objects.filter(test_profile=test_profile)
+        # Asking for a main profile brings in everything nested under it.
+        lab_test_panels = test_profile.panels_in_report_order()
         serializer = LabTestPanelSerializer(lab_test_panels, many=True, context={'patient': patient})
         return Response(serializer.data)
 
@@ -282,12 +299,20 @@ class LabTestRequestPanelViewSet(viewsets.ModelViewSet):
         serializer.save(**({'approved_by': self.request.user} if approving else {}))
 
 
+# Results come up for entry in the order the report will print them.
+REQUEST_PANEL_ORDER = (
+    'test_panel__test_profile__sort_order', 'test_panel__test_profile__name',
+    'test_panel__sort_order', 'test_panel__name', 'id',
+)
+
+
 class LabTestRequestPanelByLabTestRequestId(generics.ListAPIView):
     serializer_class = LabTestRequestPanelSerializer
 
     def get_queryset(self):
         lab_test_request_id = self.kwargs['lab_test_request_id']
-        return LabTestRequestPanel.objects.filter(lab_test_request_id=lab_test_request_id)
+        return LabTestRequestPanel.objects.filter(lab_test_request_id=lab_test_request_id).order_by(
+            *REQUEST_PANEL_ORDER)
     
     
 class PatientSampleByProcessId(generics.ListAPIView):
@@ -336,7 +361,8 @@ class LabTestRequestPanelBySampleView(generics.ListAPIView):
         except PatientSample.DoesNotExist:
             return LabTestRequestPanel.objects.none()  # No panels if patient sample is not found
 
-        return LabTestRequestPanel.objects.filter(patient_sample=patient_sample)
+        return LabTestRequestPanel.objects.filter(patient_sample=patient_sample).order_by(
+            *REQUEST_PANEL_ORDER)
 
     def get(self, request, *args, **kwargs):
         patient_sample_code = self.kwargs.get('patient_sample_code')
@@ -405,8 +431,7 @@ def render_labtestresult_pdf(request, processtestrequest_id):
     context = {
         'processtestrequest': processtestrequest,
         'labtestrequests': labtestrequests,
-        'qualitative_panels': [],
-        'quantitative_panels': [],
+        'report_sections': [],
         'profile_interpretations': [],
         'patient': patient,
         'company': company,
@@ -425,8 +450,13 @@ def render_labtestresult_pdf(request, processtestrequest_id):
 
     profile_interpretations_dict = {}
 
+    ordered = sorted(
+        panels.select_related('test_panel__test_profile__parent__parent', 'test_panel__units'),
+        key=lambda row: row.test_panel.display_key())
+    sections = {}
+
     # Only process panels that have results (already filtered in the query)
-    for panel in panels:
+    for panel in ordered:
         interpretation, action, attention = panel.generate_interpretation()
         
         profile = panel.test_panel.test_profile
@@ -448,8 +478,15 @@ def render_labtestresult_pdf(request, processtestrequest_id):
             'unit': panel.test_panel.units.symbol if panel.test_panel.units else '',
         }
 
+        # Main profile, then sub profile, then the panels in their order. The
+        # rows are sorted that way, so groups appear in the order first met.
+        lineage = panel.test_panel.test_profile.lineage()
+        section = sections.setdefault(lineage[0].pk, {'name': lineage[0].name, 'groups': {}})
+        group_name = " - ".join(profile.name for profile in lineage[1:])
+        section['groups'].setdefault(group_name, {'name': group_name, 'panels': []})['panels'].append(panel_data)
+
         if panel.test_panel.is_qualitative:
-            context['qualitative_panels'].append(panel_data)
+            panel_data['is_qualitative'] = True
         else:
             # Fetch reference values based on the patient
             reference_value = panel.test_panel.reference_values.filter(
@@ -483,8 +520,10 @@ def render_labtestresult_pdf(request, processtestrequest_id):
                     # Handle non-numeric results
                     pass
 
-            context['quantitative_panels'].append(panel_data)
-
+    context['report_sections'] = [
+        {'name': section['name'], 'groups': list(section['groups'].values())}
+        for section in sections.values()
+    ]
     context['profile_interpretations'] = list(profile_interpretations_dict.values())
 
     html_template = get_template('labtestresult.html').render(context)
@@ -897,6 +936,7 @@ class WalkInLabRequestView(APIView):
                 referring_facility=data.get('referring_facility', ''),
                 note=data.get('note', ''),
                 payment_mode=data.get('payment_mode'),
+                requested_profiles=data.get('profiles'),
             )
         except DjangoValidationError as exc:
             # Billed on account and a reagent isn't there: nothing was kept.

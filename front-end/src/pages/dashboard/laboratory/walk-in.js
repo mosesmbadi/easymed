@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { useSelector } from "react-redux";
 import { Container } from "@mui/material";
 import AsyncSelect from "react-select/async";
 import { toast } from "react-toastify";
@@ -97,9 +98,15 @@ const WalkInLabRequest = () => {
     return [...byId.values()];
   }, [sections]);
 
-  const total = selectedPanels.reduce((sum, panel) => sum + Number(panel.sale_price || 0), 0);
-  // The panel list reports an unpriced test as 0.
-  const unpriced = selectedPanels.filter((panel) => !Number(panel.sale_price));
+  const { labTestProfiles } = useSelector((store) => store.laboratory);
+  const requestedProfiles = sections
+    .filter((section) => section.testProfile && section.selectedPanels.length > 0)
+    .map((section) => Number(section.testProfile));
+  const total =
+    selectedPanels.reduce((sum, panel) => sum + Number(panel.sale_price || 0), 0) +
+    labTestProfiles
+      .filter((profile) => requestedProfiles.includes(profile.id))
+      .reduce((sum, profile) => sum + Number(profile.sale_price || 0), 0);
 
   const loadPatients = (input) =>
     input && input.trim().length >= 2
@@ -171,6 +178,7 @@ const WalkInLabRequest = () => {
 
     const payload = {
       panels: selectedPanels.map((panel) => panel.id),
+      profiles: requestedProfiles,
       referring_doctor: referringDoctor,
       referring_facility: referringFacility,
       note,
@@ -372,11 +380,6 @@ const WalkInLabRequest = () => {
               {selectedPanels.length} test{selectedPanels.length === 1 ? "" : "s"} &middot; Total{" "}
               <span className="font-semibold">{money(total)}</span>
             </p>
-            {unpriced.length > 0 && (
-              <p className="text-warning">
-                No price set for {unpriced.map((p) => p.name).join(", ")}. Price it under Lab Settings &gt; Test Panels first.
-              </p>
-            )}
           </div>
           <button
             type="submit"

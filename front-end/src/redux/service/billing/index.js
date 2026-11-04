@@ -248,6 +248,41 @@ export const fetchInvoiceItemsByInvoiceId = (auth, invoice_id) =>{
 }
 
 
+const errorDetail = (err) => {
+    const data = err.response?.data;
+    if (typeof data?.detail === "string") return data.detail;
+    if (data && typeof data === "object") return Object.values(data).flat().join(" ");
+    return err.message;
+};
+
+export const applyInvoiceDiscount = (auth, id, amount) =>
+    UseAxios(auth)
+        .post(APP_API_URL.INVOICE_DISCOUNT, { id, amount })
+        .then((res) => res.data)
+        .catch((err) => { throw errorDetail(err); });
+
+export const fetchCreditNotes = (auth) =>
+    UseAxios(auth).get(APP_API_URL.CREDIT_NOTES).then((res) => res.data);
+
+export const issueCreditNote = (auth, payload) =>
+    UseAxios(auth)
+        .post(APP_API_URL.CREDIT_NOTES, payload)
+        .then((res) => res.data)
+        .catch((err) => { throw errorDetail(err); });
+
+export const searchInvoices = (auth, search) =>
+    UseAxios(auth)
+        .get(APP_API_URL.SEARCH_INVOICES, { params: { search } })
+        .then((res) => res.data);
+
+export const openCreditNotePdf = async (auth, id) => {
+    const res = await UseAxios(auth).get(APP_API_URL.CREDIT_NOTE_PDF, {
+        params: { id },
+        responseType: "blob",
+    });
+    window.open(URL.createObjectURL(res.data), "_blank");
+};
+
 export const fetchPaymentModes = (auth) =>{
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve,reject) =>{

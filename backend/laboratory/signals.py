@@ -7,6 +7,7 @@ from laboratory.tasks import deduct_specimen_consumables, deduct_test_kit
 
 from .models import (
     DisposedSample,
+    LabTestRequest,
     LabTestRequestPanel,
     PatientSample,
     PatientSampleArchive,
@@ -26,6 +27,19 @@ def _dispatch(task, *args):
     except Exception as exc:
         logger.warning("Celery unavailable (%s); running %s inline", exc, task.name)
         task(*args)
+
+
+@receiver(post_save, sender=LabTestRequest)
+def charge_requested_profile(sender, instance, created, **kwargs):
+    """
+    A priced profile goes on the invoice as soon as it is requested, whichever
+    screen asked for it. The doctor's modal builds a request from the browser
+    one record at a time, so this is the one place all of them pass through.
+    """
+    if created and not getattr(instance, 'skip_profile_charge', False):
+        from .walk_in import raise_profile_charge
+
+        raise_profile_charge(instance)
 
 
 @receiver(post_save, sender=LabTestRequestPanel)

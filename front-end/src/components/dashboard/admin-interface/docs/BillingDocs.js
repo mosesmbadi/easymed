@@ -166,6 +166,8 @@ const BillingDocs = () => {
             ['Unit Price', 'sale_price — the frozen per-unit price the line was sold at'],
             ['Payment Mode', 'payment_mode_name — cash, insurance, etc.'],
             ['Line Total', 'item_amount — unit_price x quantity, whoever pays'],
+            ['Discount', 'discount + invoice_discount — admin only, off the patient share only'],
+            ['PT PAY', 'patient_amount — what the patient owes after any discount'],
             ['Patient Pays', 'patient_amount — the co-pay, or the whole line on cash'],
             ['Status', 'status — pending, paid, etc.'],
           ]}

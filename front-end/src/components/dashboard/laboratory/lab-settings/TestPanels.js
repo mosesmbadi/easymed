@@ -14,6 +14,8 @@ import { getAllLabTestPanels } from "@/redux/features/laboratory";
 import CreateTestPanelModal from "./modals/panels/CreateTestPanel";
 import EditTestPanelModal from "./modals/panels/editTestPanel";
 import ManagePanelReagents from "./modals/panels/ManagePanelReagents";
+import ForceDeleteDialog from "@/components/common/ForceDeleteDialog";
+import { isAdmin } from "@/utils/permissions";
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
   ssr: false,
@@ -47,7 +49,7 @@ const TestPanels = () => {
   const auth = useAuth();
   const dispatch = useDispatch();
   const [searchQuery, setSearchQuery] = React.useState("");
-  const userActions = getActions();
+  const userActions = getActions().filter((row) => row.action !== "delete" || isAdmin(auth));
   const [open, setOpen] = React.useState(false);
   const [reagentsOpen, setReagentsOpen] = React.useState(false);
   const [deleteOpen, setDeleteOpen] = React.useState(false);
@@ -138,14 +140,16 @@ const TestPanels = () => {
           showNavigationButtons={showNavButtons}
         />
         <Column dataField="name" caption="Name" />
+        <Column dataField="test_profile_full_name" caption="Profile" />
+        <Column dataField="sort_order" caption="Order" width={70} />
         <Column dataField="specimen_name" caption="Specimen" />
         <Column
           dataField="sale_price"
           caption="Sale Price"
           cellRender={({ data }) =>
-            data.sale_price == null || data.sale_price === ''
-              ? <span className="text-warning">Not priced</span>
-              : `Ksh ${Number(data.sale_price).toLocaleString()}`
+            Number(data.sale_price)
+              ? `Ksh ${Number(data.sale_price).toLocaleString()}`
+              : <span className="text-gray">Ksh 0</span>
           }
         />
         <Column
@@ -198,7 +202,14 @@ const TestPanels = () => {
         setOpen={setReagentsOpen}
         selectedRowData={selectedRowData}
       />
-      {/* <DeleteModal {...{ deleteOpen, setDeleteOpen, selectedRowData }} /> */}
+      <ForceDeleteDialog
+        open={deleteOpen}
+        setOpen={setDeleteOpen}
+        resource="panel"
+        id={selectedRowData?.id}
+        name={selectedRowData?.name || "This panel"}
+        onDeleted={() => dispatch(getAllLabTestPanels(auth))}
+      />
     </section>
   );
 };
