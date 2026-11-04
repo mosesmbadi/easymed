@@ -15,6 +15,7 @@ from drf_spectacular.utils import (extend_schema)
 
 
 from authperms.permissions import (IsReceptionistUser)
+from utils.purge import ForceDeleteMixin, purge_patient
 from laboratory.models import LabTestRequest
 from company.models import Company
 from customuser.models import CustomUser
@@ -67,7 +68,7 @@ class ContactDetailsViewSet(viewsets.ModelViewSet):
     serializer_class = ContactDetailsSerializer
 
 
-class PatientViewSet(viewsets.ModelViewSet):
+class PatientViewSet(ForceDeleteMixin, viewsets.ModelViewSet):
     queryset = (Patient.objects.select_related('referred_from')
                 .prefetch_related('insurances').order_by('-id'))
     serializer_class = PatientSerializer
@@ -79,6 +80,9 @@ class PatientViewSet(viewsets.ModelViewSet):
         'second_name', 'external_id', 'insurances__name', 'next_of_kin__first_name', 'next_of_kin__second_name',
         'next_of_kin__contacts__tel_no', 'next_of_kin__contacts__email_address',
     ]
+
+    def purge(self, instance, user):
+        purge_patient(instance, user)
 
 
 

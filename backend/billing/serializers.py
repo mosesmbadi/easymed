@@ -1,6 +1,10 @@
+from decimal import Decimal
+
 from rest_framework import serializers
 from django.core.exceptions import ValidationError
+from authperms.permissions import IsSystemsAdminUser
 from .models import (
+    CreditNote, CreditNoteLine,
     Invoice, InvoiceItem,
     PaymentMode, InvoicePayment,
     PaymentReceipt, PaymentAllocation,
@@ -18,6 +22,7 @@ class InvoiceItemSerializer(serializers.ModelSerializer):
     price_source = serializers.SerializerMethodField()
     insurer_amount = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
     source_tag_name = serializers.CharField(source='source_tag.name', read_only=True)
+    net_amount = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
 
     class Meta:
         model = InvoiceItem
@@ -27,7 +32,15 @@ class InvoiceItemSerializer(serializers.ModelSerializer):
         # can bill any amount it likes, and the till was already sending figures
         # the model then quietly recomputed -- so say plainly that they are the
         # server's to set.
-        read_only_fields = ['unit_price', 'item_amount', 'patient_amount', 'actual_total']
+        read_only_fields = ['unit_price', 'item_amount', 'patient_amount', 'actual_total',
+                            'invoice_discount', 'credited_amount']
+
+    def validate_discount(self, value):
+        current = self.instance.discount if self.instance else 0
+        request = self.context.get('request')
+        if value != current and not (request and IsSystemsAdminUser().has_permission(request, None)):
+            raise serializers.ValidationError("Only an admin can give a discount.")
+        return value
 
     def get_category(self, obj):
         item = obj.item
@@ -89,6 +102,20 @@ class InvoiceSerializer(serializers.ModelSerializer):
     patient_name = serializers.SerializerMethodField()
     patient_full_name = serializers.SerializerMethodField()
     payment_receipts = serializers.SerializerMethodField()
+    line_discount = serializers.SerializerMethodField()
+    invoice_discount = serializers.SerializerMethodField()
+    credited_amount = serializers.SerializerMethodField()
+
+    # Summed from the lines `with_invoice_relations()` prefetches, so a list of
+    # invoices costs no query per invoice.
+    def get_line_discount(self, obj):
+        return sum((line.discount for line in obj.invoice_items.all()), 0)
+
+    def get_invoice_discount(self, obj):
+        return sum((line.invoice_discount for line in obj.invoice_items.all()), 0)
+
+    def get_credited_amount(self, obj):
+        return sum((line.credited_amount for line in obj.invoice_items.all()), 0)
 
     def get_patient_name(self, obj):
         return obj.patient.first_name if obj.patient else None
@@ -116,8 +143,59 @@ class InvoiceSerializer(serializers.ModelSerializer):
         fields = ['id', 'invoice_number', 'invoice_date', 'patient',
                 'invoice_items', 'cash_paid', 'total_cash', 'patient_name', 'patient_full_name',
                 'invoice_amount', 'status', 'invoice_description',
-                'invoice_file', 'invoice_created_at', 'invoice_updated_at', 'payment_receipts']
+                'invoice_file', 'invoice_created_at', 'invoice_updated_at', 'payment_receipts',
+                'line_discount', 'invoice_discount', 'credited_amount']
         read_only_fields = ['invoice_number']
+
+
+class InvoiceDiscountSerializer(serializers.Serializer):
+    amount = serializers.DecimalField(max_digits=10, decimal_places=2, min_value=0)
+
+
+class CreditNoteLineSerializer(serializers.ModelSerializer):
+    item_name = serializers.CharField(source='invoice_item.item.name', read_only=True)
+
+    class Meta:
+        model = CreditNoteLine
+        fields = ['id', 'invoice_item', 'item_name', 'amount', 'patient_amount',
+                  'payer_amount', 'restocked']
+
+
+class CreditNoteSerializer(serializers.ModelSerializer):
+    lines = CreditNoteLineSerializer(many=True, read_only=True)
+    invoice_number = serializers.CharField(source='invoice.invoice_number', read_only=True)
+    patient = serializers.IntegerField(source='invoice.patient_id', read_only=True)
+    patient_name = serializers.SerializerMethodField()
+    issued_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CreditNote
+        fields = ['id', 'credit_note_number', 'invoice', 'invoice_number', 'patient', 'patient_name',
+                  'reason', 'total_amount', 'refund_due', 'issued_by', 'issued_by_name',
+                  'issued_at', 'lines']
+        read_only_fields = fields
+
+    def get_patient_name(self, obj):
+        return obj.invoice.patient.display_name if obj.invoice.patient_id else None
+
+    def get_issued_by_name(self, obj):
+        user = obj.issued_by
+        return f"{user.first_name} {user.last_name}".strip() if user else None
+
+
+class IssueCreditNoteLineSerializer(serializers.Serializer):
+    invoice_item = serializers.IntegerField()
+    # Left out, the line's whole remaining value is credited.
+    amount = serializers.DecimalField(
+        max_digits=10, decimal_places=2, min_value=Decimal('0.01'), required=False, allow_null=True)
+
+
+class IssueCreditNoteSerializer(serializers.Serializer):
+    invoice = serializers.PrimaryKeyRelatedField(queryset=Invoice.objects.all())
+    reason = serializers.CharField(max_length=255)
+    # Left out, every billed line on the invoice is credited in full.
+    lines = IssueCreditNoteLineSerializer(many=True, required=False)
+    restock = serializers.BooleanField(default=True)
 
 
 class PaymentModeSerializer(serializers.ModelSerializer):

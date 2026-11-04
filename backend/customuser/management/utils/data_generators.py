@@ -590,6 +590,58 @@ def create_item_department_links():
     }
 
 
+# Reports built the way the lab prints them: a main profile is what is requested
+# and charged for, its sub profiles head the report's sections, and the panels in
+# them are never sold alone so carry no price of their own.
+NESTED_REPORT_PROFILES = [
+    {'name': 'URINALYSIS REPORT', 'price': '600.00', 'specimen': 'Urine', 'subs': [
+        ('Macroscopy', [('Colour', True), ('Consistency', True)]),
+        ('Microscopy', [('Pus Cells', False), ('Red Cells', False), ('Epithelial Cells', False)]),
+        ('Biochemistry', [('pH', False), ('SG', False), ('GLU', True), ('PROT', True), ('UROBIL', True)]),
+    ]},
+    {'name': 'FULL HEMOGRAM REPORT', 'price': '1200.00', 'specimen': 'Blood', 'subs': [
+        ('Wbc', [('Wbc Count', False), ('Gran', False), ('Lymp', False), ('Baso', False)]),
+        ('Rbc', [('Rbc Count', False), ('Hb', False), ('Mcv', False)]),
+        ('Platelets', [('Plts Count', False), ('Mpv', False)]),
+    ]},
+]
+
+
+def create_nested_report_profiles():
+    from inventory.services import stock as stock_service
+
+    created = []
+    for order, spec in enumerate(NESTED_REPORT_PROFILES, start=1):
+        specimen, _ = Specimen.objects.get_or_create(name=spec['specimen'])
+        main, _ = LabTestProfile.objects.get_or_create(name=spec['name'], defaults={'sort_order': order})
+        if not main.item_id:
+            main.item, _ = Item.objects.get_or_create(
+                name=f"{main.name} (Profile)", category="Lab Test", units_of_measure="test",
+                defaults={"item_code": lab_item_code(main.name, 'Profile'), "desc": f"{main.name} test profile",
+                          "vat_rate": 0.0, "slow_moving_period": 90})
+            tag_item_departments(main.item, "Lab")
+            main.save(update_fields=['item'])
+        stock_service.set_sale_price(main.item, Decimal(spec['price']))
+
+        for sub_order, (sub_name, panels) in enumerate(spec['subs'], start=1):
+            sub, _ = LabTestProfile.objects.get_or_create(
+                name=sub_name, parent=main, defaults={'sort_order': sub_order})
+            for panel_order, (panel_name, qualitative) in enumerate(panels, start=1):
+                item, _ = Item.objects.get_or_create(
+                    name=panel_name, category="Lab Test", units_of_measure="test",
+                    defaults={"item_code": lab_item_code(panel_name, main.name),
+                              "desc": f"{panel_name}, part of {main.name}",
+                              "vat_rate": 0.0, "slow_moving_period": 90})
+                tag_item_departments(item, "Lab")
+                stock_service.set_sale_price(item, Decimal('0.00'))
+                LabTestPanel.objects.get_or_create(
+                    name=panel_name, test_profile=sub,
+                    defaults={'item': item, 'specimen': specimen, 'sort_order': panel_order,
+                              'is_qualitative': qualitative, 'is_quantitative': not qualitative})
+        created.append(main)
+    return created
+
+
 def create_demo_lab_profiles_and_panels():
     # Common specimens
     specimen_names = ["Blood", "Urine", "Stool", "Sputum", "CSF", "Saliva", "Swab", "Serum", "Plasma"]

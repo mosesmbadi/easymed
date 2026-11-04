@@ -3,7 +3,7 @@ from random import randrange, choices
 
 from django.db import transaction
 
-from inventory.models import Item, ItemPrice
+from inventory.models import Item
 from rest_framework import serializers
 from rest_framework.exceptions import NotFound
 
@@ -76,12 +76,6 @@ class LabReagentSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class LabTestProfileSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = LabTestProfile
-        fields = '__all__'
-
-
 class PublicLabTestRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = PublicLabTestRequest
@@ -92,10 +86,78 @@ class LabEquipmentSerializer(serializers.ModelSerializer):
         model = LabEquipment
         fields = '__all__'
 
+def _new_lab_billing_item(name, desc):
+    """A Lab Test catalogue entry for the lab to bill against, tagged to the Lab."""
+    from inventory.models import Department, ItemDepartment
+    from inventory.utils import generate_unique_item_code
+
+    item, _ = Item.objects.get_or_create(
+        name=name, category='Lab Test', units_of_measure='test',
+        defaults={'desc': desc, 'item_code': generate_unique_item_code()})
+    lab = Department.objects.filter(name__iexact='Lab').first()
+    if lab:
+        ItemDepartment.objects.get_or_create(
+            item=item, department=lab, defaults={'is_primary': True})
+    return item
+
+
 class LabTestProfileSerializer(serializers.ModelSerializer):
+    """
+    A profile, where it sits under its parent, and what requesting it costs.
+
+    Pricing a profile opens a billing item for it, so insurers can agree a rate
+    for it like anything else on the price list.
+    """
+    parent_name = serializers.ReadOnlyField(source='parent.name')
+    full_name = serializers.ReadOnlyField()
+    sale_price = serializers.DecimalField(
+        max_digits=12, decimal_places=2, required=False, allow_null=True, min_value=0,
+        help_text="Charged once each time the profile is requested.")
+
     class Meta:
         model = LabTestProfile
-        fields = '__all__'        
+        fields = '__all__'
+        read_only_fields = ['item']
+
+    def validate_parent(self, parent):
+        if parent and self.instance and self.instance.pk in {p.pk for p in parent.lineage()}:
+            raise serializers.ValidationError(
+                "A profile can't sit under itself or one of its own sub profiles.")
+        return parent
+
+    def _apply_price(self, profile, sale_price):
+        if sale_price is None or (not profile.item_id and not sale_price):
+            return
+        if not profile.item_id:
+            profile.item = _new_lab_billing_item(
+                f"{profile.name} (Profile)", f"{profile.name} test profile")
+            profile.save(update_fields=['item'])
+        request = self.context.get('request')
+        user = getattr(request, 'user', None)
+        profile.set_sale_price(sale_price, created_by=user if user and user.is_authenticated else None)
+
+    def create(self, validated_data):
+        sale_price = validated_data.pop('sale_price', None)
+        with transaction.atomic():
+            profile = super().create(validated_data)
+            self._apply_price(profile, sale_price)
+        return profile
+
+    def update(self, instance, validated_data):
+        sale_price = validated_data.pop('sale_price', None)
+        with transaction.atomic():
+            profile = super().update(instance, validated_data)
+            # The invoice line prints the item's name, so it follows the profile's.
+            if profile.item_id and 'name' in validated_data:
+                Item.objects.filter(pk=profile.item_id).update(name=f"{profile.name} (Profile)")
+                profile.item.refresh_from_db()
+            self._apply_price(profile, sale_price)
+        return profile
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['sale_price'] = instance.sale_price
+        return data
 
 
 class LabTestRequestPanelSerializer(serializers.ModelSerializer):
@@ -453,6 +515,7 @@ class LabTestPanelSerializer(serializers.ModelSerializer):
     available_runs = serializers.SerializerMethodField()
     item_name = serializers.ReadOnlyField(source='item.name')
     test_profile_name = serializers.ReadOnlyField(source='test_profile.name')
+    test_profile_full_name = serializers.ReadOnlyField(source='test_profile.full_name')
     specimen_name = serializers.ReadOnlyField(source='specimen.name')
     unit_symbol = serializers.ReadOnlyField(source='units.symbol')
     sale_price = serializers.DecimalField(
@@ -544,20 +607,11 @@ class LabTestPanelSerializer(serializers.ModelSerializer):
         duplicated. One already billing for another panel is refused: two
         panels on one item would share a price and bill twice.
         '''
-        from inventory.models import Department, ItemDepartment
-        from inventory.utils import generate_unique_item_code
-
-        item, _ = Item.objects.get_or_create(
-            name=name, category='Lab Test', units_of_measure='test',
-            defaults={'desc': f'{name} test', 'item_code': generate_unique_item_code()})
+        item = _new_lab_billing_item(name, f'{name} test')
         if LabTestPanel.objects.filter(item=item).exists():
             raise serializers.ValidationError({
                 'name': f"'{name}' already bills for another panel. Give this panel "
                         f"a different name, or pick its billing item."})
-        lab = Department.objects.filter(name__iexact='Lab').first()
-        if lab:
-            ItemDepartment.objects.get_or_create(
-                item=item, department=lab, defaults={'is_primary': True})
         return item
 
     def update(self, instance, validated_data):
@@ -877,6 +931,9 @@ class WalkInLabRequestSerializer(serializers.Serializer):
     new_patient = WalkInPatientSerializer(required=False, allow_null=True)
     panels = serializers.PrimaryKeyRelatedField(
         queryset=LabTestPanel.objects.select_related('item'), many=True)
+    profiles = serializers.PrimaryKeyRelatedField(
+        queryset=LabTestProfile.objects.all(), many=True, required=False,
+        help_text="The profiles picked, so a priced main profile is charged once.")
     referring_doctor = serializers.CharField(max_length=150, required=False, allow_blank=True)
     referring_facility = serializers.CharField(max_length=150, required=False, allow_blank=True)
     note = serializers.CharField(required=False, allow_blank=True)
@@ -887,16 +944,9 @@ class WalkInLabRequestSerializer(serializers.Serializer):
         if not panels:
             raise serializers.ValidationError("Pick at least one test.")
         # The same test twice would bill the patient twice for one sample.
-        unique = list({panel.id: panel for panel in panels}.values())
-        # sale_price reads 0 when there is no price at all, so ask the price
-        # list directly; a deliberate price of 0 is still allowed.
-        unpriced = [panel.name for panel in unique
-                    if not panel.item_id or ItemPrice.current_for(panel.item) is None]
-        if unpriced:
-            raise serializers.ValidationError(
-                f"No price is set for {', '.join(unpriced)}. Price it under "
-                f"Lab Settings > Test Panels before taking a walk-in for it.")
-        return unique
+        # A panel with no price is billed at zero: many are only ever sold as
+        # part of a profile, which is where their price sits.
+        return list({panel.id: panel for panel in panels}.values())
 
     def validate(self, attrs):
         has_patient = attrs.get('patient') is not None
@@ -937,6 +987,8 @@ class ReferredSampleEntrySerializer(serializers.Serializer):
     referring_doctor = serializers.CharField(max_length=150, required=False, allow_blank=True)
     panels = serializers.PrimaryKeyRelatedField(
         queryset=LabTestPanel.objects.select_related('item'), many=True)
+    profiles = serializers.PrimaryKeyRelatedField(
+        queryset=LabTestProfile.objects.all(), many=True, required=False)
     collected_at = serializers.DateTimeField(required=False, allow_null=True)
     collected_by = serializers.CharField(max_length=150, required=False, allow_blank=True)
     condition = serializers.ChoiceField(

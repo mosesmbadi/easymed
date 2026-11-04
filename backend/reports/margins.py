@@ -199,9 +199,10 @@ def margin_by_item(start, end):
             'collection_cost': ZERO,
         })
         row['quantity'] += line.quantity or 1
-        row['revenue'] += line.item_amount or ZERO
+        # After discounts and credit notes: what was given back was not earned.
+        row['revenue'] += line.net_amount
         row['patient_revenue'] += line.patient_amount or ZERO
-        row['insurer_revenue'] += (line.item_amount or ZERO) - (line.patient_amount or ZERO)
+        row['insurer_revenue'] += line.insurer_amount
         row['direct_cost'] += direct.get(line.id, ZERO)
 
     for item_id, costs in lab.items():

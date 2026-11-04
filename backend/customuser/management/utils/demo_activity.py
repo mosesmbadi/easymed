@@ -1955,6 +1955,82 @@ def walk_in_script(world, patient, arrival):
     _set_track(visit, 'complete')
 
 
+def report_profile_script(world, patient, profile_name, arrival, adjustment=None):
+    """
+    A main profile requested at the counter: charged once on its own line, its
+    panels billed at zero, and printed in sections on the report. Some visits
+    get a discount at the till, and some a credit note afterwards.
+    """
+    from billing.adjustments import apply_invoice_discount, issue_credit_note
+    from billing.models import InvoiceItem
+    from laboratory.models import LabTestProfile, LabTestRequest, LabTestRequestPanel
+    from laboratory.views import WalkInLabRequestView
+    from patient.models import AttendanceProcess
+
+    rng = world.rng
+    yield arrival
+
+    profile = LabTestProfile.objects.get(name=profile_name)
+    data = world.post_view(WalkInLabRequestView, '/lab/walk-in-requests/', {
+        'patient': patient.id, 'profiles': [profile.id],
+        'panels': [panel.id for panel in profile.panels_in_report_order()],
+    })
+    visit = AttendanceProcess.objects.get(pk=data['id'])
+    world.counts['main profiles requested'] += 1
+
+    yield world.later(2, 10)
+    charge = None
+    for line in InvoiceItem.objects.filter(invoice_id=visit.invoice_id, status='pending'):
+        line.source_tag = world.lab
+        line.status = 'billed'
+        if adjustment == 'line discount' and line.item_id == profile.item_id:
+            line.discount = (profile.sale_price * Decimal('0.10')).quantize(Decimal('0.01'))
+        line.save()
+        if line.item_id == profile.item_id:
+            charge = line
+    if adjustment == 'invoice discount':
+        apply_invoice_discount(visit.invoice, Decimal('100.00'))
+    if adjustment in ('line discount', 'invoice discount'):
+        world.counts[f'{adjustment}s given'] += 1
+    world.settle_patient(visit, visit.patient)
+
+    yield world.later(5, 20)
+    runs = list(LabTestRequestPanel.objects.filter(
+        lab_test_request__process=visit.process_test_req).select_related('test_panel', 'patient_sample'))
+    _collect(runs)
+
+    yield world.later(30, 120)
+    _enter_results(world, runs, {})
+    _set_track(visit, 'added result')
+
+    yield world.later(10, 45)
+    _approve(list(LabTestRequest.objects.filter(process=visit.process_test_req)), runs,
+             rng.choice(world.staff['labtech']))
+    _set_track(visit, 'complete')
+
+    if adjustment == 'credit note':
+        yield world.later(60, 600)
+        charge.refresh_from_db()
+        issue_credit_note(
+            invoice=visit.invoice, reason="Charged in error, part refunded",
+            lines=[{'invoice_item': charge.pk, 'amount': (charge.net_amount / 2).quantize(Decimal('0.01'))}],
+            issued_by=world.admin)
+        world.counts['credit notes issued'] += 1
+
+
+def _report_profile_visits(world, patients, first, last):
+    adjustments = [None, None, 'line discount', 'invoice discount', 'credit note']
+    span = (last - first).days or 1
+    visits = []
+    for index in range(20):
+        day = first + _dt.timedelta(days=world.rng.randrange(span))
+        profile = 'URINALYSIS REPORT' if index % 2 else 'FULL HEMOGRAM REPORT'
+        visits.append((report_profile_script(
+            world, world.rng.choice(patients), profile, _at(day, 9, 30),
+            adjustments[index % len(adjustments)]), 'report profile visit'))
+    return visits
+
+
 REJECTIONS = [
     ('haemolysed', 'Haemolysed in transit, please redraw'),
     ('insufficient', 'Not enough sample for the tests requested'),
@@ -2113,6 +2189,7 @@ def seed_demo_world(clock, staff, days=DEMO_DAYS):
     adults = [p for p in patients if _age(p) >= 14] or patients
 
     scripts = _arrivals(world, adults, children, first, last, standalone_lab=standalone_lab)
+    scripts += _report_profile_visits(world, adults, first, last)
     scripts += [
         (procurement_script(world, world.pharmacy, staff['pharmacist'][0], first, last), 'pharmacy reorders'),
         (procurement_script(world, world.lab, staff['labtech'][0], first, last), 'lab reorders'),

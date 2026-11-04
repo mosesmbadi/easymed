@@ -122,6 +122,20 @@
       background-color: #f9f9f9;
     }
 
+    .section-title {
+      font-size: 13px;
+      color: #333;
+      margin: 0 0 8px 0;
+      text-transform: uppercase;
+    }
+
+    table.results-table tr.group-row td {
+      background-color: #eee;
+      color: #333;
+      font-weight: bold;
+      padding: 6px 10px;
+    }
+
     .flag-low {
       color: #d8a500;
       font-weight: bold;
@@ -318,7 +332,8 @@
   </div>
   </div>
 
-  {% if quantitative_panels %}
+  {% for section in report_sections %}
+  <h2 class="section-title">{{ section.name }}</h2>
   <table class="results-table">
     <thead>
       <tr>
@@ -330,10 +345,21 @@
       </tr>
     </thead>
     <tbody>
-      {% for panel in quantitative_panels %}
+      {% for group in section.groups %}
+      {% if group.name %}
+      <tr class="group-row">
+        <td colspan="5">{{ group.name }}</td>
+      </tr>
+      {% endif %}
+      {% for panel in group.panels %}
       <tr>
         <td>{{ panel.test_panel_name }}</td>
         <td>{{ panel.result }}</td>
+        {% if panel.is_qualitative %}
+        <td></td>
+        <td></td>
+        <td></td>
+        {% else %}
         <td>
           {% if panel.flag == "Low" %}
           <span class="flag-low">Low</span>
@@ -345,31 +371,17 @@
         </td>
         <td>{{ panel.ref_value_low }} - {{ panel.ref_value_high }}</td>
         <td>{{ panel.unit }}</td>
+        {% endif %}
       </tr>
+      {% endfor %}
       {% endfor %}
     </tbody>
   </table>
-  {% endif %} {% if qualitative_panels %}
-  <table class="results-table">
-    <thead>
-      <tr>
-        <th>Test Panel</th>
-        <th>Result</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for panel in qualitative_panels %}
-      <tr>
-        <td>{{ panel.test_panel_name }}</td>
-        <td>{{ panel.result }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  {% endif %} {% if first_labtestrequest and first_labtestrequest.note %}
+  {% endfor %}
+  {% if first_labtestrequest and first_labtestrequest.note %}
   <p><strong>Notes:</strong></p>
   <p>{{ first_labtestrequest.note }}</p>
-  {% endif %} {% if quantitative_panels or qualitative_panels %}
+  {% endif %} {% if report_sections %}
   {% if profile_interpretations %}
   <div class="interpretation-section">
     <div class="interpretation-title">Clinical Interpretations</div>

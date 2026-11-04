@@ -68,9 +68,10 @@ class IsLabTechUser(BasePermission):
 
 class IsSystemsAdminUser(BasePermission):
     def has_permission(self, request, view):
-        return bool(
-            (request.user and request.user.is_staff and request.user.role == CustomUser.BASE_ROLE) or
-            (request.user and request.user.is_staff and request.user.is_superuser))
+        user = request.user
+        if not (user and user.is_authenticated):
+            return False
+        return bool(user.is_superuser or user.role == CustomUser.SYS_ADMIN)
 
 class IsPatientUser(BasePermission):
     def has_permission(self, request, view):

@@ -158,18 +158,19 @@ def test_the_same_test_twice_is_billed_once(lab_client, cash_mode, urea):
 
 
 @pytest.mark.django_db
-def test_an_unpriced_test_is_refused_and_nothing_is_created(
+def test_an_unpriced_test_goes_on_the_bill_at_zero(
         lab_client, cash_mode, renal, blood, urea):
+    """Panels only ever sold as part of a profile have no price of their own."""
     unpriced = make_panel("Uric Acid", renal, blood, price=None)
 
     response = lab_client.post(WALK_IN_URL, {
         'new_patient': new_patient_payload(), 'panels': [urea.id, unpriced.id],
     }, format='json')
 
-    assert response.status_code == 400
-    assert 'Uric Acid' in str(response.data)
-    assert Patient.objects.count() == 0
-    assert AttendanceProcess.objects.count() == 0
+    assert response.status_code == 201, response.data
+    visit = AttendanceProcess.objects.get(id=response.data['id'])
+    line = InvoiceItem.objects.get(invoice=visit.invoice, item=unpriced.item)
+    assert line.item_amount == 0
 
 
 @pytest.mark.django_db

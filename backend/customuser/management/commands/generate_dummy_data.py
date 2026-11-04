@@ -1,5 +1,6 @@
 from django.core.management.base import BaseCommand
 from customuser.management.utils.data_generators import (
+    create_nested_report_profiles,
     create_units,
     create_dummy_users,
     create_facility_profile,
@@ -195,9 +196,13 @@ class Command(BaseCommand):
         # Price the service items (lab tests, appointments). Services hold no
         # stock, so they no longer need fake 9999-unit inventory rows just to
         # give billing a price to read.
+        nested = create_nested_report_profiles()
+        self.stdout.write(self.style.SUCCESS(f"Report profiles with sub profiles: {len(nested)}"))
+
         self.stdout.write(self.style.NOTICE("\nPricing service items..."))
         from decimal import Decimal
 
+        from inventory.models import ItemPrice
         from inventory.services import stock as stock_service
 
         service_categories = ['Lab Test', 'General Appointment', 'Specialized Appointment']
@@ -206,7 +211,9 @@ class Command(BaseCommand):
         for category in service_categories:
             default_price = Decimal('1000.00') if 'Appointment' in category else Decimal('500.00')
             for item in Item.objects.filter(category=category):
-                if not item.current_sale_price:
+                # A price of 0 is a decision, not a gap: those panels are sold
+                # as part of a profile.
+                if ItemPrice.current_for(item) is None:
                     stock_service.set_sale_price(item, default_price)
                     priced_services += 1
 

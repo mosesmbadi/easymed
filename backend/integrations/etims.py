@@ -47,7 +47,10 @@ def build_sale_payload(invoice):
     pin = kra_pin()
     items = []
     for seq, line in enumerate(lines, start=1):
-        amount = _money(line.item_amount)
+        # What was actually charged: KRA is told the sale net of any discount.
+        gross = _money(line.item_amount)
+        discount = _money((line.discount or 0) + (line.invoice_discount or 0))
+        amount = _money(line.item_amount - line.discount - line.invoice_discount)
         items.append({
             'itemSeq': seq,
             'itemCd': line.item.item_code or f"ITEM{line.item_id}",
@@ -58,9 +61,9 @@ def build_sale_payload(invoice):
             'qtyUnitCd': 'U',
             'qty': line.quantity,
             'prc': _money(line.unit_price),
-            'splyAmt': amount,
+            'splyAmt': gross,
             'dcRt': 0,
-            'dcAmt': 0,
+            'dcAmt': discount,
             'taxTyCd': DEFAULT_TAX_TYPE,
             'taxblAmt': amount,
             'taxAmt': 0,

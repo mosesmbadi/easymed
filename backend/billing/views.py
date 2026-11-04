@@ -16,11 +16,13 @@ from rest_framework.response import Response
 from django.db.models import Sum, Q
 from django.db import transaction
 from decimal import Decimal
+from rest_framework.decorators import action
 from rest_framework.views import APIView
 from django_filters.rest_framework import DjangoFilterBackend
 
 from billing.filters import InvoiceFilterSearch, InvoiceFilter
-from .models import InvoiceItem, Invoice, InvoicePayment, PaymentReceipt, PaymentAllocation
+from .models import CreditNote, InvoiceItem, Invoice, InvoicePayment, PaymentReceipt, PaymentAllocation
+from .adjustments import AdjustmentError, apply_invoice_discount, issue_credit_note
 from .payments import PaymentAllocationError, allocate_payment
 from company.models import Company
 from inventory.models import InsuranceItemSalePrice
@@ -29,8 +31,10 @@ from authperms.permissions import (
     IsLabTechUser,
     IsNurseUser,
     IsReceptionistUser,
+    IsSystemsAdminUser,
 )
 from .serializers import (
+    CreditNoteSerializer, InvoiceDiscountSerializer, IssueCreditNoteSerializer,
     InvoiceItemSerializer, InvoiceSerializer,
     PaymentModeSerializer, InvoicePaymentSerializer,
     PaymentReceiptSerializer, AllocatePaymentRequestSerializer,
@@ -73,12 +77,73 @@ def with_invoice_relations(queryset):
 class InvoiceViewset(viewsets.ModelViewSet):
     queryset = with_invoice_relations(Invoice.objects.all()).order_by('-id')
     serializer_class = InvoiceSerializer
-    permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser | IsReceptionistUser,)
+    permission_classes = (
+        IsDoctorUser | IsNurseUser | IsLabTechUser | IsReceptionistUser | IsSystemsAdminUser,)
     filter_backends = [InvoiceFilterSearch, DjangoFilterBackend]
     filterset_class = InvoiceFilter
     search_fields = [
         'patient__first_name', 'patient__second_name', 'invoice_number'
     ]
+
+    @action(detail=True, methods=['post'], url_path='discount', permission_classes=[IsSystemsAdminUser])
+    def discount(self, request, pk=None):
+        """Set the discount on what the patient pays across this invoice. 0 takes it off."""
+        serializer = InvoiceDiscountSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            invoice = apply_invoice_discount(self.get_object(), serializer.validated_data['amount'])
+        except AdjustmentError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        fresh = with_invoice_relations(Invoice.objects.filter(pk=invoice.pk)).get()
+        return Response(InvoiceSerializer(fresh).data)
+
+
+class CreditNoteViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Credit notes can be read by anyone at the till, issued only by an admin,
+    and never changed afterwards. Issue another one to correct one.
+    """
+    queryset = CreditNote.objects.select_related(
+        'invoice__patient', 'issued_by').prefetch_related('lines__invoice_item__item')
+    serializer_class = CreditNoteSerializer
+    permission_classes = (
+        IsDoctorUser | IsNurseUser | IsLabTechUser | IsReceptionistUser | IsSystemsAdminUser,)
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['invoice', 'invoice__patient']
+
+    def get_permissions(self):
+        if self.action == 'create':
+            return [IsSystemsAdminUser()]
+        return super().get_permissions()
+
+    def create(self, request, *args, **kwargs):
+        serializer = IssueCreditNoteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        try:
+            note = issue_credit_note(
+                invoice=data['invoice'], reason=data['reason'], lines=data.get('lines'),
+                restock=data['restock'], issued_by=request.user)
+        except AdjustmentError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(self.get_serializer(note).data, status=status.HTTP_201_CREATED)
+
+
+def download_credit_note_pdf(request, credit_note_id):
+    note = get_object_or_404(
+        CreditNote.objects.select_related('invoice__patient', 'issued_by'), pk=credit_note_id)
+    company = Company.current()
+    company_logo_url = (request.build_absolute_uri(company.logo.url)
+                        if company and getattr(company, 'logo', None) else None)
+    html = get_template('credit_note.html').render({
+        'note': note,
+        'lines': note.lines.select_related('invoice_item__item'),
+        'company': company,
+        'company_logo_url': company_logo_url,
+    })
+    response = HttpResponse(HTML(string=html).write_pdf(), content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="{note.credit_note_number}.pdf"'
+    return response
 
 
 class InvoicesByPatientId(generics.ListAPIView):
@@ -155,7 +220,8 @@ class InvoicesByInsuranceId(APIView):
 class InvoiceItemViewset(viewsets.ModelViewSet):
     queryset = InvoiceItem.objects.all().order_by('-id')
     serializer_class = InvoiceItemSerializer
-    permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser | IsReceptionistUser,)
+    permission_classes = (
+        IsDoctorUser | IsNurseUser | IsLabTechUser | IsReceptionistUser | IsSystemsAdminUser,)
 
     def partial_update(self, request, *args, **kwargs):
         try:
@@ -363,14 +429,20 @@ def download_invoice_pdf(request, invoice_id):
         item.total_amount = item.item_amount or regular_sale_price
 
     subtotal = sum(item.total_amount for item in invoice_items)
-    
-    insurance_total = sum(item.total_amount for item in invoice_items if item.payment_mode and item.payment_mode.payment_category == 'insurance')
-    cash_total = subtotal - insurance_total
+    discount_total = sum(item.discount + item.invoice_discount for item in invoice_items)
+    credited_total = sum(item.credited_amount for item in invoice_items)
+    net_total = subtotal - discount_total - credited_total
+
+    # What each side owes now, with the patient's shown before discount so the
+    # summary adds up: Cash - Discount + Credit = Total.
+    credit_total = sum(item.insurer_amount for item in invoice_items)
+    cash_total = net_total - credit_total + discount_total
 
     # tax = sum((item.item.vat_rate or 0) * item.total_amount / 100 for item in invoice_items)
-    
-    cash_paid = invoice.cash_paid or 0
-    balance = invoice.invoice_amount - cash_paid
+
+    paid = PaymentAllocation.objects.filter(invoice_item__invoice=invoice).aggregate(
+        total=Sum('amount_applied'))['total'] or 0
+    balance = net_total - paid
 
     html_template = get_template('invoice.html').render({
         'company_logo_url': company_logo_url,
@@ -378,8 +450,12 @@ def download_invoice_pdf(request, invoice_id):
         'invoice_items': invoice_items,
         'company': company,
         'subtotal': subtotal,
-        'insurance_total': insurance_total,
+        'credit_total': credit_total,
         'cash_total': cash_total,
+        'discount_total': discount_total,
+        'credited_total': credited_total,
+        'net_total': net_total,
+        'paid': paid,
         'tax': 0.00,
         'patient': patient,
         'insurance_name': insurance_names_str,

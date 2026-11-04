@@ -3,7 +3,7 @@ from decimal import ROUND_HALF_UP, Decimal
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
-from django.db.models import Sum
+from django.db.models import ProtectedError, Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.template.loader import get_template
@@ -19,6 +19,7 @@ from weasyprint import HTML
 
 from company.models import Company
 from customuser.models import CustomUser
+from utils.purge import ForceDeleteMixin, purge_item, purge_stock_row
 
 from .permissions import CanManageInventory
 from .filters import (
@@ -136,12 +137,15 @@ def _consumable_department_for(item):
     return stock_service.default_department()
 
 
-class ItemViewSet(viewsets.ModelViewSet):
+class ItemViewSet(ForceDeleteMixin, viewsets.ModelViewSet):
     queryset = Item.objects.prefetch_related(
         'unit_conversions', 'consumable_links__consumable').all()
     serializer_class = ItemSerializer
     filter_backends = (DjangoFilterBackend,)
     filterset_class = ItemFilter
+
+    def purge(self, instance, user):
+        purge_item(instance, user)
 
     @action(detail=True, methods=['get'], url_path='consumables')
     def consumables(self, request, pk=None):
@@ -425,7 +429,7 @@ class RequisitionItemViewSet(viewsets.ModelViewSet):
 # Stock
 # ---------------------------------------------------------------------------
 
-class StockBalanceViewSet(mixins.CreateModelMixin, viewsets.ReadOnlyModelViewSet):
+class StockBalanceViewSet(ForceDeleteMixin, mixins.CreateModelMixin, viewsets.ReadOnlyModelViewSet):
     '''
     Stock on hand, one row per item / lot / location.
 
@@ -437,6 +441,17 @@ class StockBalanceViewSet(mixins.CreateModelMixin, viewsets.ReadOnlyModelViewSet
     queryset = StockBalance.objects.select_related('item', 'lot', 'department')
     serializer_class = StockBalanceSerializer
     permission_classes = [CanManageInventory]
+
+    def perform_destroy(self, instance):
+        # Stock on hand is the running total of its movements, so a row can only
+        # go together with them. That is the admin override, never a plain delete.
+        raise ProtectedError(
+            "Stock is the total of its ledger movements.",
+            set(StockMovement.objects.filter(lot=instance.lot, department=instance.department)),
+        )
+
+    def purge(self, instance, user):
+        purge_stock_row(instance, user)
     filter_backends = [InventoryFilterSearch, DjangoFilterBackend]
     filterset_class = StockBalanceFilter
     search_fields = ['lot__lot_number', 'item__name', 'item__item_code', 'department__name']

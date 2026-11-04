@@ -1,8 +1,9 @@
 # What the numbers on an invoice line mean
 
-Four money fields sit on `billing.InvoiceItem`. They used to be written by three
-different pieces of code using two different conventions, so this is the
-reference for which is which.
+Four money fields sit on `billing.InvoiceItem`, plus three recording what has
+since come off the line. The first four used to be written by three different
+pieces of code using two different conventions, so this is the reference for
+which is which.
 
 ---
 
@@ -12,14 +13,18 @@ reference for which is which.
 | --- | --- |
 | `unit_price` | What **one base unit** was charged at, frozen when the line was billed |
 | `item_amount` | The **whole line**, whoever ends up paying: `unit_price x quantity` |
-| `patient_amount` | The **patient's own share**: the co-pay, or all of it on a cash line |
-| `actual_total` | Receivable from the party the line is **billed to** — the insurer on an insurance line, the patient on any other |
+| `patient_amount` | The **patient's own share** still standing: the co-pay, or all of it on a cash line, less discounts and credits |
+| `actual_total` | Receivable from the party the line is **billed to** — the insurer on an insurance line, the patient on any other — less what has come off it |
+| `discount` | Given on this line at the till |
+| `invoice_discount` | This line's share of a discount given on the invoice's total |
+| `credited_amount` | Taken off by credit notes, patient and payer portions together |
 
 Two invariants hold on every line:
 
 ```
 item_amount     == unit_price x quantity
-patient_amount  +  insurer_amount  ==  item_amount      # insurer_amount is a property
+net_amount      == item_amount - discount - invoice_discount - credited_amount   # property
+patient_amount  +  insurer_amount  ==  net_amount                                # insurer_amount is a property
 ```
 
 ### Cash line, 3 tablets at 100
@@ -53,6 +58,17 @@ panel's Sale Price is stored there. It is the only service line that can be
 refused at billing: if the panel's reagents are not in Lab stock, the line is
 rejected naming the reagent. See `LAB_REAGENTS_SETUP.md`.
 
+### A zero-value line
+
+An item with no price bills at zero. Panels that are never sold alone have no
+price of their own: the money sits on their profile, whose billing item adds one
+line each time the profile is requested. Each panel still gets its own zero
+line, because billing that line is what releases it to Phlebotomy. A profile's
+price is added to any price its panels have, so leave those panels at 0.
+
+Nothing will ever be paid against an invoice of only zero lines, so it closes
+itself once they are all billed (`billing.adjustments.settle_if_nothing_owed`).
+
 ---
 
 ## An insurance price is a split
@@ -72,10 +88,10 @@ under-billed every insurer by exactly the amount the patient had already paid.
 
 | On `Invoice` | Is |
 | --- | --- |
-| `invoice_amount` | `Sum(actual_total)` — receivable from all billed parties together |
+| `invoice_amount` | `Sum(actual_total)` — receivable from all billed parties together, after discounts and credits |
 | `total_cash` | `Sum(actual_total)` over cash-mode lines |
 | `patient_due` *(property)* | `Sum(patient_amount)` — everything the patient owes, co-pays included |
-| `gross_total` *(property)* | `Sum(item_amount)` — what the invoice is worth in total |
+| `gross_total` *(property)* | `Sum(item_amount)` — what the invoice was worth before anything came off it |
 
 `invoice_amount` deliberately excludes a co-pay on an insurance line, because
 that money is owed by the patient and not by the party the line was billed to.
@@ -87,21 +103,16 @@ that money is owed by the patient and not by the party the line was billed to.
 | --- | --- |
 | Payment allocation (`AllocatePaymentView`) | An insurer pays against `actual_total`; a patient pays against `patient_amount` |
 | Insurance receivables (`billing/views.py`) | `actual_total` on that insurer's lines |
-| Invoice PDF | `item_amount` per line, quantity included |
-| Gross margin report (`reports/margins.py`) | `item_amount` as revenue, split by `patient_amount` |
-
-> **Known gap:** the invoice PDF still computes `balance = invoice_amount -
-> cash_paid`. On an invoice with insurance lines that is not what the patient
-> owes: it counts the insurer's share and leaves out the co-pay. `patient_due`
-> is the right figure; the PDF has not been switched to it.
+| Invoice PDF | `item_amount` per line; its balance is the net total less everything allocated |
+| Gross margin report (`reports/margins.py`) | `net_amount` as revenue, split by `patient_amount` |
 
 ---
 
 ## One writer
 
-`InvoiceItem.get_pricing_for_item()` decides all four numbers.
-`InvoiceItem.save()` is the only thing that applies them. Nothing else writes
-money:
+`InvoiceItem.get_pricing_for_item()` decides the price of a line and
+`InvoiceItem.save()` applies it. After that, only `billing/adjustments.py` and a
+changed `discount` move the money. Nothing else writes it:
 
 - the **API refuses** them — all four are `read_only` on `InvoiceItemSerializer`,
   so a client cannot post its own totals;
@@ -124,24 +135,46 @@ time a signal, a status change or a stock posting touched the row. `unit_price`
 holds what it was actually sold at, and `InvoiceItem.sale_price` quotes that
 rather than the live list.
 
-### Correcting a billed line — not possible yet
+### Correcting a billed line
 
-There is **no reversal flow for an invoice line** today. The intended route —
-reverse the line, then raise a corrected one — is only partly built:
+Issue a credit note (below). The quantity on a billed line still can't be
+changed: credit the line and raise a new one.
 
-- `billing.services.reverse_stock_for_invoice_item` would put back the stock a
-  line took out, but **nothing calls it**. It also only covers `INVOICE_ITEM`
-  movements, so a lab test's reagents (`LAB_TEST`) and its sample's collection
-  items (`SAMPLE_COLLECTION`) would not come back through it.
-- A single stock movement can be reversed with
-  `POST /inventory/stock-movements/<id>/reverse/` and a reason. No screen
-  offers this, and it does not touch the invoice line.
-- The line itself cannot be voided, and its quantity cannot be changed once it
-  is billed. Quantity is a positive number, so a negative correcting line
-  cannot be raised either.
+---
 
-Until that exists there is no in-system way to credit a patient for a wrongly
-billed line. The stock side can be put right movement by movement.
+## Discounts
+
+Admin only, at `InvoiceItemSerializer.discount` and
+`POST /billing/invoices/<id>/discount/`. Discounts come off the **patient's
+share only**. A price agreed with an insurer or an employer is not the
+facility's to cut, so a line billed wholly to credit has nothing to discount.
+
+A discount on the total is spread over the billed lines in proportion to what
+the patient still owes on each, so the payment allocator needs no special case.
+Posting a new amount replaces the old one, and 0 takes it off. Neither kind can
+take a line below what has already been paid on it: that calls for a credit note.
+
+The till's summary reads `Cash - Discount + Credit = Total`.
+
+## Credit notes
+
+Admin only to issue, `POST /billing/credit-notes/`, and never edited afterwards.
+A note covers a whole invoice or named lines, each in full or for part of its
+value. On an insured line a part credit splits between the co-pay and the payer
+in proportion.
+
+- The value comes off `patient_amount` and `actual_total`, so balances, statements
+  and margins all follow. A statement shows the reduced figure on the line's
+  original date, not a separate entry on the note's date.
+- A line credited **in full** has its stock put back as ledger reversals, unless
+  `restock` is false. Reagents and draw kits a test has used stay used, and a
+  test not yet run comes back off the Phlebotomy list.
+- `refund_due` records value credited that had already been paid. **Paying that
+  back is not modelled yet**: no money leaves a cash account, so account balances
+  still include it until it is handled outside the system.
+- Credit notes are **not sent to KRA**. eTIMS receives the sale net of discounts
+  when an invoice settles, but a reversal of a sale already signed is a separate
+  submission that has not been built.
 
 ---
 

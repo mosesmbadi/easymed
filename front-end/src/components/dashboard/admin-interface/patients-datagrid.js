@@ -6,7 +6,7 @@ import CmtDropdownMenu from "@/assets/DropdownMenu";
 import { AiFillDelete } from "react-icons/ai";
 import { BiEdit } from "react-icons/bi";
 import { LuMoreHorizontal } from "react-icons/lu";
-import DeletePatientModal from "./delete-patient-modal";
+import ForceDeleteDialog from "@/components/common/ForceDeleteDialog";
 import { Chip, Grid } from "@mui/material";
 import { getAllPatients } from "@/redux/features/patients";
 import { useSelector,useDispatch } from "react-redux";
@@ -172,7 +172,14 @@ const AdminPatientsDataGrid = () => {
         />
       </DataGrid>
       <EditPatientDetails {...{ open, setOpen, selectedRowData }} />
-      <DeletePatientModal {...{deleteOpen,setDeleteOpen,selectedRowData}} />
+      <ForceDeleteDialog
+        open={deleteOpen}
+        setOpen={setDeleteOpen}
+        resource="patient"
+        id={selectedRowData?.id}
+        name={`${selectedRowData?.first_name ?? ""} ${selectedRowData?.second_name ?? ""}`.trim() || "This patient"}
+        onDeleted={() => dispatch(getAllPatients(auth))}
+      />
     </section>
   );
 };
