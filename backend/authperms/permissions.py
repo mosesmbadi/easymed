@@ -14,6 +14,11 @@ from customuser.models import (
 Permissions will be imported into views like so
 permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser,)
 '''
+def is_admin(user):
+    """A superuser or sysadmin passes every role check; the menu shows them everything too."""
+    return user.is_superuser or getattr(user, 'role', None) == CustomUser.SYS_ADMIN
+
+
 def HasAnyNamedPermission(*names):
     """
     Permission class requiring one of the named permissions (the same names the
@@ -34,34 +39,34 @@ def HasAnyNamedPermission(*names):
 
 class IsStaffUser(BasePermission):
     def has_permission(self, request, view):
-        if request.user.is_superuser:
+        if is_admin(request.user):
             return True
         return bool(request.user and request.user.is_staff)
     
 
 class IsDoctorUser(BasePermission):
     def has_permission(self, request, view):
-        if request.user.is_superuser:
+        if is_admin(request.user):
             return True
         return bool(request.user and request.user.is_staff and request.user.role == Doctor.BASE_ROLE)
 
 
 class IsNurseUser(BasePermission):
     def has_permission(self, request, view):
-        if request.user.is_superuser:
+        if is_admin(request.user):
             return True
         return bool(request.user and request.user.is_staff and request.user.role == Nurse.BASE_ROLE)
 
 class IsSeniorNurseUser(BasePermission):
     def has_permission(self, request, view):
-        if request.user.is_superuser:
+        if is_admin(request.user):
             return True
         return bool(request.user and request.user.is_staff and request.user.role == Nurse.SENIOR_NURSE)
 
 
 class IsLabTechUser(BasePermission):
     def has_permission(self, request, view):
-        if request.user.is_superuser:
+        if is_admin(request.user):
             return True
         return bool(request.user and request.user.is_staff and request.user.role == LabTech.BASE_ROLE)
 
@@ -75,13 +80,13 @@ class IsSystemsAdminUser(BasePermission):
 
 class IsPatientUser(BasePermission):
     def has_permission(self, request, view):
-        if request.user.is_superuser:
+        if is_admin(request.user):
             return True
         return bool(request.user and request.user.role == CustomUser.BASE_ROLE)
 
 
 class IsReceptionistUser(BasePermission):
     def has_permission(self, request, view):
-        if request.user.is_superuser:
+        if is_admin(request.user):
             return True
         return bool(request.user and request.user.is_staff and request.user.role == Receptionist.BASE_ROLE)
