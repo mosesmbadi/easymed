@@ -136,6 +136,12 @@
       padding: 6px 10px;
     }
 
+    table.results-table tr.block-gap td {
+      background-color: #fff;
+      border-bottom: 2px solid #ccc;
+      padding: 6px;
+    }
+
     .flag-low {
       color: #d8a500;
       font-weight: bold;
@@ -352,6 +358,11 @@
       </tr>
       {% endif %}
       {% for panel in group.panels %}
+      {% ifchanged panel.report_group %}{% if not forloop.first %}
+      <tr class="block-gap">
+        <td colspan="5"></td>
+      </tr>
+      {% endif %}{% endifchanged %}
       <tr>
         <td>{{ panel.test_panel_name }}</td>
         <td>{{ panel.result }}</td>
@@ -365,8 +376,10 @@
           <span class="flag-low">Low</span>
           {% elif panel.flag == "High" %}
           <span class="flag-high">High</span>
-          {% else %}
+          {% elif panel.flag == "Normal" %}
           <span class="flag-normal">Normal</span>
+          {% else %}
+          N/A
           {% endif %}
         </td>
         <td>{{ panel.ref_value_low }} - {{ panel.ref_value_high }}</td>

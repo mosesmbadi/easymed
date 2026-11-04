@@ -265,10 +265,14 @@ class LabTestPanel(models.Model):
     tat = models.DurationField(null=True, blank=True)
     sort_order = models.PositiveIntegerField(
         default=0, help_text="Lower numbers print first among the panels of a profile")
+    # Blocks with no heading of their own, as an analyzer lays out a CBC. Use a
+    # sub profile instead when the block needs a name on the report.
+    report_group = models.PositiveSmallIntegerField(
+        default=0, help_text="Panels sharing a number print together, with a gap before the next number")
 
     def display_key(self):
         """Sorts panels into report order, profile first."""
-        return (self.test_profile.display_key(), self.sort_order, self.name.lower(), self.pk)
+        return (self.test_profile.display_key(), self.report_group, self.sort_order, self.name.lower(), self.pk)
 
     def clean(self):
         if self.item and self.item.category != 'Lab Test':

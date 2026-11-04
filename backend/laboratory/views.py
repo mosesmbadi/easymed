@@ -302,7 +302,7 @@ class LabTestRequestPanelViewSet(viewsets.ModelViewSet):
 # Results come up for entry in the order the report will print them.
 REQUEST_PANEL_ORDER = (
     'test_panel__test_profile__sort_order', 'test_panel__test_profile__name',
-    'test_panel__sort_order', 'test_panel__name', 'id',
+    'test_panel__report_group', 'test_panel__sort_order', 'test_panel__name', 'id',
 )
 
 
@@ -471,6 +471,7 @@ def render_labtestresult_pdf(request, processtestrequest_id):
                 
         panel_data = {
             'test_panel_name': panel.test_panel.name,
+            'report_group': panel.test_panel.report_group,
             'result': panel.result,
             'flag': 'N/A',
             'ref_value_low': 'N/A',

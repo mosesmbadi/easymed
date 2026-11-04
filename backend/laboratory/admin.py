@@ -31,7 +31,7 @@ class LabTestProfileAdmin(admin.ModelAdmin):
 
 @admin.register(LabTestPanel)
 class LabTestPanelAdmin(admin.ModelAdmin):
-    list_display = ['name', 'test_profile', 'specimen', 'units', 'is_qualitative', 'is_quantitative']
+    list_display = ['name', 'test_profile', 'report_group', 'sort_order', 'specimen', 'units', 'is_qualitative', 'is_quantitative']
     list_filter = ['test_profile', 'specimen', 'is_qualitative', 'is_quantitative']
     search_fields = ['name', 'test_profile__name', 'specimen__name']
 
