@@ -492,6 +492,25 @@ export const fetchSupplierInvoicesBySupplier = (auth, supplier_id) => {
         });
     });
 };
+
+export const fetchSupplierInvoices = (auth, params = {}) =>
+    UseAxios(auth)
+        .get(APP_API_URL.FETCH_SUPPLIER_INVOICE, { params })
+        .then((res) => res.data);
+
+export const fetchSupplierInvoiceDetails = (auth, id) =>
+    UseAxios(auth)
+        .get(APP_API_URL.SUPPLIER_INVOICE_DETAILS, { params: { id } })
+        .then((res) => res.data);
+
+export const openSupplierInvoiceReport = async (auth, params = {}) => {
+    const res = await UseAxios(auth).get(APP_API_URL.SUPPLIER_INVOICE_REPORT, {
+        params,
+        responseType: "blob",
+    });
+    window.open(URL.createObjectURL(res.data), "_blank");
+};
+
 export const fetchInvoice = async (auth, supplier_id) => {
     if (!auth?.token) {
         console.error("Auth token is missing");

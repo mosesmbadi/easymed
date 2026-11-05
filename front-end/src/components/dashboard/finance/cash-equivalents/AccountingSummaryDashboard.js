@@ -14,10 +14,27 @@ import { useSelector } from "react-redux";
 import { toLocalMediaUrl } from "@/assets/utils/media-url";
 import { Print as PrintIcon, KeyboardArrowDown, KeyboardArrowRight } from "@mui/icons-material";
 import { Button, CircularProgress } from "@mui/material";
+import { LuMoreHorizontal } from "react-icons/lu";
+import { MdSwapHoriz } from "react-icons/md";
+import CmtDropdownMenu from "@/assets/DropdownMenu";
+import { isAdmin } from "@/utils/permissions";
+import TransferFundsModal from "./TransferFundsModal";
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), { ssr: false });
 
 const allowedPageSizes = [5, 10, 25, "all"];
+
+const subAccountActions = [
+  { action: "transfer", label: "Transfer", icon: <MdSwapHoriz className="text-success text-xl mx-2" /> },
+];
+
+const isMoneyIn = (action) => action === "Received" || action === "Transfer In";
+
+// Transfers read as what they are; everything else keeps its Credit/Debit label.
+const transactionLabel = (action) => {
+  if (action === "Transfer In" || action === "Transfer Out") return action;
+  return action === "Received" ? "Credit" : "Debit";
+};
 
 const fmt = (value) =>
   `Ksh ${Number(value || 0).toLocaleString(undefined, {
@@ -33,7 +50,9 @@ const AccountingSummaryDashboard = () => {
   const [activeFilter, setActiveFilter] = useState(null); // { type: 'main'|'sub', value, subValue? }
   const [expandedAccounts, setExpandedAccounts] = useState(new Set());
   const [summarySearch, setSummarySearch] = useState("");
+  const [transferAccount, setTransferAccount] = useState(null);
   const auth = useAuth();
+  const canTransfer = isAdmin(auth);
   const companyDetails = useSelector((store) => store.company.companyDetails);
 
   // Date filters
@@ -63,6 +82,8 @@ const AccountingSummaryDashboard = () => {
         const key = `${sa.main_account_name}::${sa.name}`;
         const totals = lookup[key] || {};
         return {
+          id: sa.id,
+          active: sa.active,
           main_account: sa.main_account_name,
           sub_account: sa.name,
           total_debit: totals.total_debited || 0,
@@ -345,14 +366,14 @@ const AccountingSummaryDashboard = () => {
       for (const tx of txs) {
         const amt = Number(tx.amount || 0);
         txTotal += amt;
-        const isCredit = tx.action === 'Received';
+        const isCredit = isMoneyIn(tx.action);
         txRows += `
           <tr>
             <td>${tx.date || ''}</td>
             <td>${tx.invoice_number || ''}</td>
             <td>${tx.customer || ''}</td>
             <td>${tx.sub_account || ''}</td>
-            <td class="${isCredit ? 'text-green' : 'text-red'}">${isCredit ? 'Credit' : 'Debit'}</td>
+            <td class="${isCredit ? 'text-green' : 'text-red'}">${transactionLabel(tx.action)}</td>
             <td class="text-right">${fmt(amt)}</td>
           </tr>`;
       }
@@ -470,6 +491,7 @@ const AccountingSummaryDashboard = () => {
                 <th className="text-right px-4 py-3 font-semibold">Total Debit</th>
                 <th className="text-right px-4 py-3 font-semibold">Total Credit</th>
                 <th className="text-right px-4 py-3 font-semibold">Balance</th>
+                {canTransfer && <th className="px-4 py-3 w-8"></th>}
               </tr>
             </thead>
             <tbody>
@@ -522,6 +544,7 @@ const AccountingSummaryDashboard = () => {
                       }`}>
                         {fmt(group.balance)}
                       </td>
+                      {canTransfer && <td className="px-4 py-3"></td>}
                     </tr>
 
                     {/* Sub Account Rows (collapsible) */}
@@ -577,6 +600,25 @@ const AccountingSummaryDashboard = () => {
                               }`}>
                                 {fmt(sub.balance)}
                               </td>
+                              {canTransfer && (
+                                // The row's own click filters the transactions; the menu shouldn't.
+                                <td className="px-4 py-2 text-right" onClick={(e) => e.stopPropagation()}>
+                                  {sub.active && (
+                                    <CmtDropdownMenu
+                                      items={subAccountActions}
+                                      onItemClick={() => {
+                                        setTransferAccount(sub);
+                                      }}
+                                      TriggerComponent={
+                                        <LuMoreHorizontal
+                                          aria-label={`Actions for ${sub.sub_account}`}
+                                          className="cursor-pointer text-xl"
+                                        />
+                                      }
+                                    />
+                                  )}
+                                </td>
+                              )}
                             </tr>
                           );
                         })}
@@ -602,11 +644,22 @@ const AccountingSummaryDashboard = () => {
                 }`}>
                   {fmt(grandTotals.balance)}
                 </td>
+                {canTransfer && <td className="px-4 py-3"></td>}
               </tr>
             </tbody>
           </table>
         </div>
       </div>
+
+      <TransferFundsModal
+        account={transferAccount}
+        accounts={subAccountRows}
+        onClose={() => setTransferAccount(null)}
+        onTransferred={() => {
+          setTransferAccount(null);
+          loadData();
+        }}
+      />
 
       {/* ── Transactions Drill-down ── */}
       <div className="bg-white rounded shadow-md p-4">
@@ -676,18 +729,17 @@ const AccountingSummaryDashboard = () => {
           <Column
             dataField="action"
             caption="Type"
-            width={120}
+            width={130}
             cellRender={(cell) => {
-              const isCredit = cell.value === "Received";
               return (
                 <span
                   className={
-                    isCredit
+                    isMoneyIn(cell.value)
                       ? "text-green-600 font-medium"
                       : "text-red-500 font-medium"
                   }
                 >
-                  {isCredit ? "Credit" : "Debit"}
+                  {transactionLabel(cell.value)}
                 </span>
               );
             }}

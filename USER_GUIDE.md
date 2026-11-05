@@ -463,8 +463,8 @@ Open **Finance → Accounts Receivable → Billing**.
 - **A billed price never changes.** If the price list changes tomorrow, today's
   bill stays as it was.
 - **You can't change the quantity of a billed item.** Check the quantity before
-  you select **bill**. To correct a billed item, contact your system
-  administrator.
+  you select **bill**. To correct a billed item, have an administrator issue a
+  [credit note](#credit-notes-administrators) and raise the item again.
 - **Billing can be refused for stock reasons.** The message names the item and
   what's missing. For example:
   - *"Insufficient stock for Amoxicillin at Pharmacy: need 21, 10 available."*
@@ -474,6 +474,48 @@ Open **Finance → Accounts Receivable → Billing**.
   Ask the store keeper to receive or transfer stock, then bill again.
 - **Billing a drug takes it out of pharmacy stock.** The pharmacist then hands it
   over (see [Pharmacy](#9-pharmacy-dispensing)).
+
+### Discounts (administrators)
+
+Only administrators see the discount controls. A discount comes off what the
+**patient** pays. An insurer's or employer's price is agreed, so credit is never
+discounted.
+
+| Discount | When | How |
+| --- | --- | --- |
+| **On one item** | Before you bill the item | Enter the amount in the item's **Discount** box, then select **bill** |
+| **On the total** | After items are billed | Enter the amount in **Discount on total**, then select **Apply** |
+
+The discount on the total only covers items that are already billed, so bill
+everything first. It's shared across those items. Applying a new amount replaces
+the old one, and applying `0` removes it.
+
+Neither discount can take an item below what has already been paid on it. Use a
+credit note instead.
+
+The summary at the bottom reads **Cash − Discount + Credit = Total**.
+
+### Credit notes (administrators)
+
+A credit note reverses something already billed and reduces what the customer
+owes. Open **Finance → Accounts Receivable → Credit Notes**. Everyone with access
+can see the list and print a note, but only administrators can issue one.
+
+1. Search for the invoice by number or patient name.
+2. Tick the items to credit, or select **Whole invoice**. To credit part of an
+   item, lower its **Credit** amount.
+3. Enter the **Reason**.
+4. Leave **Put stock back on the shelf** ticked if the goods came back. It only
+   applies to items credited in full. Reagents and draw kits already used stay
+   used.
+5. Select **Issue Credit Note**.
+
+A credit note can't be edited afterwards. To correct one, issue another.
+
+> **Refund Due** shows money already paid on what you credited. EasyMed records
+> that it is owed back but doesn't pay it out, so account balances don't change.
+> Handle the refund itself outside the system. Credit notes also aren't sent to
+> KRA.
 
 ---
 
@@ -508,7 +550,8 @@ Receipts** and print them from there.
 
 | Tab | Use |
 | --- | --- |
-| **Invoices** | All invoices, paid and unpaid. Print an invoice from here |
+| **Invoices** | All invoices, paid and unpaid. Filter by status and date, and print an invoice from here |
+| **Credit Notes** | Reversals of billed items (see [Credit notes](#credit-notes-administrators)) |
 | **Debtors** | Who owes money: patients and insurers |
 | **Reports** | Billing reports (see [Reports](#14-reports)) |
 | **Settings** | Payment modes, insurance companies, insurance prices |
@@ -732,14 +775,57 @@ Requisition ──► Approved (department) ──► Approved (procurement) ─
    **Expiry Date**, and the location it's **Received in**. Saving records the
    supplier invoice, the **Goods Received Note** and the stock in one step. If
    any line fails, nothing is saved, so you can fix it and try again.
-5. **Supplier invoices.** Track each invoice as **Pending** or **Paid**.
+5. **Supplier invoices.** Track each invoice under the **Invoices** tab (see
+   below).
 6. **Make Payments.** Choose the **supplier**, then the account to pay from.
    **Select Invoices to Pay**, then enter the **Payment Amount**, reference and
    date. The payment is applied to the selected invoices and recorded under
    **Payment History**. Receipts can be printed.
 
-**Aging Statements** shows how long supplier invoices have been outstanding.
-**Creditors** shows who you owe.
+**Creditors** shows who you owe. **Aging Statements** is coming soon. Until then,
+use the **Age (Days)** column on the **Invoices** tab.
+
+### Supplier invoices
+
+The **Invoices** tab lists every supplier invoice with its **Amount**, **Paid**,
+**Outstanding** and **Status**. Totals for the invoices showing appear above the
+table.
+
+| Status | Meaning |
+| --- | --- |
+| **Pending** | Nothing paid yet |
+| **Part Paid** | Some paid, the rest still owed |
+| **Paid** | Settled in full |
+
+**Find an invoice.** Use the **All / Pending / Paid** buttons, the **Supplier**
+list, **From Date** and **To Date**, or search by invoice number, supplier or PO
+number. **Pending** shows everything still owed, including part-paid invoices.
+
+**See how old it is.** **Age (Days)** counts from the day the invoice was recorded.
+It turns orange after 30 days and red after 60. Paid invoices show a dash.
+
+**Look inside.** From the row's action menu, select **View Invoice** to see the
+items received and every payment, with its reference, the account it came from
+and a link to its receipt.
+
+**Pay one invoice.** From the row's action menu, select **Record Payment**:
+
+1. Choose the account to **Pay from**. Only active accounts with money in them are
+   listed.
+2. Check the **Amount**. It starts at what's outstanding. Lower it for a part
+   payment.
+3. Enter the **Reference Number** (M-Pesa code, cheque number...) and the **Payment
+   Date**.
+4. Select **Record Payment**.
+
+The money comes off the account's balance and a receipt is added to **Payment
+History**. An invoice only shows as paid once its payment has been recorded.
+
+To pay several invoices at once, select **Make Payments**. If you've filtered by
+supplier, that supplier is already chosen.
+
+**Export.** **Export CSV** and **Export PDF** cover the invoices your filters
+select, not just the current page.
 
 ---
 
@@ -753,7 +839,34 @@ its balance:
 - **Sub-accounts** belong to a main account and are linked to a payment mode (for
   example *Account: ABSA Bank* or *M-Pesa till*). A sub-account's balance is its
   opening balance, plus payments received into it, minus supplier payments made
-  from it.
+  from it, plus or minus any transfers.
+
+### Moving money between accounts (administrators)
+
+Use a transfer when money moves between your own accounts, for example from M-Pesa
+to the bank or from the bank to petty cash.
+
+1. Select a main account's row to show its sub-accounts.
+2. On the sub-account the money is leaving, open the action menu at the end of
+   the row and select **Transfer**.
+3. Enter the **Transfer Amnt**, choose the **To Accnt**, and check the **Date**.
+   It starts at today. You can pick an earlier date but not a future one.
+4. Select **Transfer**. Both balances change straight away.
+
+You can't transfer more than the account holds, or use an inactive account.
+
+The **Transfers** tab lists every transfer, with who made it. Each transfer also
+appears in **Transactions** as a **Transfer Out** on one account and a **Transfer
+In** on the other.
+
+**Correcting a mistake.** Transfers can't be edited or deleted. On the **Transfers**
+tab, select **Reverse** to send the money back. This adds a new transfer dated
+today and keeps the original on record. Each transfer can be reversed once, and
+only while the money is still in the account it went to.
+
+An account with transfers on record can't be deleted.
+
+### Setting up accounts
 
 Under **Settings**, create main accounts and sub-accounts and set each
 sub-account's opening balance, minimum and maximum balance and transaction
@@ -958,8 +1071,17 @@ location it's issued from. Receive or transfer stock, then bill again.
 The selected drugs haven't been billed yet. Send the patient to billing.
 
 **I billed the wrong quantity.**
-A billed item's quantity can't be edited from the billing screen. Contact your
-system administrator to correct it.
+A billed item's quantity can't be edited. Ask an administrator to issue a
+[credit note](#credit-notes-administrators), then raise the item again.
+
+**The discount box is missing or won't apply.**
+Discounts are for administrators only. **Discount on total** appears once at least
+one item is billed. A discount can't exceed what the patient still owes.
+
+**A supplier invoice won't let me record a payment.**
+The account you chose may not hold enough money, or the invoice may already be
+paid. Move money in with a [transfer](#moving-money-between-accounts-administrators),
+or check the invoice's **Status**.
 
 **The price on an old invoice differs from today's price list.**
 That's expected. Items keep the price they were billed at.
@@ -1012,3 +1134,6 @@ administrator.
 | **GRN** | Goods Received Note: record of a delivery |
 | **Stock take** | Physical count used to correct balances |
 | **Sub-account** | A money account (till, bank, M-Pesa) under a main account |
+| **Transfer** | Money moved from one of your own accounts to another |
+| **Credit note** | A record reversing all or part of what was billed, reducing what the customer owes |
+| **Outstanding** | What is still owed on an invoice after payments |

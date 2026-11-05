@@ -8,7 +8,7 @@ from .models import (
     Invoice, InvoiceItem,
     PaymentMode, InvoicePayment,
     PaymentReceipt, PaymentAllocation,
-    MainAccount, SubAccount, MpesaPaymentRequest,
+    AccountTransfer, MainAccount, SubAccount, MpesaPaymentRequest,
 )
 
 
@@ -329,6 +329,40 @@ class MainAccountSerializer(serializers.ModelSerializer):
     class Meta:
         model = MainAccount
         fields = '__all__'
+
+
+class AccountTransferSerializer(serializers.ModelSerializer):
+    reference = serializers.ReadOnlyField()
+    from_account_name = serializers.CharField(source='from_account.name', read_only=True)
+    to_account_name = serializers.CharField(source='to_account.name', read_only=True)
+    reversal_of_reference = serializers.CharField(source='reversal_of.reference', read_only=True, default=None)
+    reversed_by_reference = serializers.SerializerMethodField()
+    created_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = AccountTransfer
+        fields = ['id', 'reference', 'from_account', 'from_account_name', 'to_account', 'to_account_name',
+                  'amount', 'transfer_date', 'note', 'reversal_of', 'reversal_of_reference',
+                  'reversed_by_reference', 'created_by', 'created_by_name', 'created_at']
+        read_only_fields = fields
+
+    def get_reversed_by_reference(self, obj):
+        reversal = getattr(obj, 'reversed_by', None)
+        return reversal.reference if reversal else None
+
+    def get_created_by_name(self, obj):
+        user = obj.created_by
+        return f"{user.first_name} {user.last_name}".strip() if user else None
+
+
+class MakeAccountTransferSerializer(serializers.Serializer):
+    from_account = serializers.PrimaryKeyRelatedField(queryset=SubAccount.objects.all())
+    to_account = serializers.PrimaryKeyRelatedField(queryset=SubAccount.objects.all())
+    amount = serializers.DecimalField(max_digits=15, decimal_places=2, min_value=Decimal('0.01'))
+    # Left out, the transfer is dated today.
+    transfer_date = serializers.DateField(required=False, allow_null=True)
+    note = serializers.CharField(max_length=255, required=False, allow_blank=True, default='')
+
 
 class MpesaPaymentRequestSerializer(serializers.ModelSerializer):
     status_display = serializers.CharField(source='get_status_display', read_only=True)

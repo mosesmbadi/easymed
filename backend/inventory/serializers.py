@@ -2,7 +2,6 @@ from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 from django.db import transaction
-from django.db.models import Sum
 from django.utils import timezone
 from rest_framework import serializers
 
@@ -415,12 +414,15 @@ class SupplierInvoiceSerializer(serializers.ModelSerializer):
     purchase_order_number = serializers.CharField(source='purchase_order.PO_number', read_only=True)
     requisition_number = serializers.SerializerMethodField()
     paid_amount = serializers.SerializerMethodField()
+    outstanding_amount = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
+    age_days = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = SupplierInvoice
         fields = ['id', 'invoice_no', 'invoice_number', 'supplier', 'supplier_name', 'purchase_order',
                   'purchase_order_number', 'requisition_number',
-                  'status', 'total_amount', 'amount', 'paid_amount', 'date_created']
+                  'status', 'total_amount', 'amount', 'paid_amount', 'outstanding_amount', 'age_days',
+                  'date_created']
         read_only_fields = ['total_amount', 'paid_amount', 'date_created', 'requisition_number', 'invoice_number']
 
     def get_requisition_number(self, obj):
@@ -429,8 +431,7 @@ class SupplierInvoiceSerializer(serializers.ModelSerializer):
         return None
 
     def get_paid_amount(self, obj):
-        total_paid = obj.payment_allocations.aggregate(total=Sum('amount_applied'))['total']
-        return float(total_paid or 0)
+        return float(obj.paid_amount)
 
 
 def _unit_cost_for(item, requisition_item=None):

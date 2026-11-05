@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Container, Box } from '@mui/material';
+import { useRouter } from 'next/router';
 import { toast } from 'react-toastify';
 import AuthGuard from '@/assets/hoc/auth-guard';
 import DashboardLayout from '@/components/layout/dashboard-layout';
@@ -12,6 +13,7 @@ import { useAuth } from '@/assets/hooks/use-auth';
 
 const APMakePaymentsPage = () => {
   const auth = useAuth();
+  const router = useRouter();
   const [subAccounts, setSubAccounts] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -80,6 +82,7 @@ const APMakePaymentsPage = () => {
           subAccounts={subAccounts}
           onSubmit={handleSubmit}
           loading={loading}
+          initialSupplierId={router.query.supplier}
         />
       </Box>
     </Container>

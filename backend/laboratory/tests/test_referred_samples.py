@@ -8,8 +8,10 @@ turned away, uncharged, with the clinic told why.
 """
 import json
 from decimal import Decimal
+from pathlib import Path
 
 import pytest
+from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import override_settings
 
@@ -154,7 +156,11 @@ def test_the_request_form_can_come_with_it(lab_client, cash_mode, clinic, urea):
     }, format='multipart')
 
     assert response.status_code == 201, response.data
-    assert SampleConsignment.objects.get().request_form.name.endswith('.pdf')
+    request_form = SampleConsignment.objects.get().request_form
+    assert request_form.name.endswith('.pdf')
+    # Guards the suite itself: an upload must never land in the source tree.
+    assert Path(request_form.path).exists()
+    assert not Path(request_form.path).is_relative_to(settings.BASE_DIR)
 
 
 @pytest.mark.django_db

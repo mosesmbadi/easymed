@@ -30,6 +30,7 @@ from .filters import (
     StockBalanceFilter,
     StockMovementFilter,
     SupplierFilter,
+    SupplierInvoiceFilter,
 )
 from .models import (
     Department,
@@ -825,13 +826,61 @@ class SupplierViewSet(viewsets.ModelViewSet):
 
 class SupplierInvoiceViewSet(viewsets.ModelViewSet):
     serializer_class = SupplierInvoiceSerializer
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['supplier', 'purchase_order', 'status']
+    filter_backends = [InventoryFilterSearch, DjangoFilterBackend]
+    filterset_class = SupplierInvoiceFilter
+    search_fields = ['invoice_no', 'supplier__official_name', 'supplier__common_name',
+                     'purchase_order__PO_number']
 
     def get_queryset(self):
         return SupplierInvoice.objects.all().select_related(
             'supplier', 'purchase_order', 'purchase_order__requisition'
-        ).prefetch_related('incomingitem_set__goods_receipt_note')
+        ).prefetch_related('incomingitem_set__goods_receipt_note', 'payment_allocations')
+
+    @action(detail=True, methods=['get'], url_path='details')
+    def details(self, request, pk=None):
+        '''What the invoice is for and how it has been paid so far.'''
+        invoice = self.get_object()
+        lines = invoice.incomingitem_set.select_related(
+            'item', 'item_unit', 'supplier', 'department').order_by('id')
+        allocations = invoice.payment_allocations.select_related(
+            'receipt', 'receipt__sub_account').order_by('applied_at')
+        return Response({
+            'invoice': self.get_serializer(invoice).data,
+            'lines': IncomingItemSerializer(lines, many=True).data,
+            'payments': [
+                {
+                    'id': allocation.id,
+                    'receipt': allocation.receipt_id,
+                    'reference_number': allocation.receipt.reference_number,
+                    'payment_date': allocation.receipt.payment_date,
+                    'sub_account_name': (
+                        allocation.receipt.sub_account.name if allocation.receipt.sub_account else None),
+                    'amount_applied': allocation.amount_applied,
+                }
+                for allocation in allocations
+            ],
+        })
+
+    @action(detail=False, methods=['get'], url_path='report')
+    def report(self, request):
+        '''The invoices the current filters select, as a PDF.'''
+        invoices = list(self.filter_queryset(self.get_queryset()))
+        company = Company.current()
+        html_template = get_template('supplier_invoice_list.html').render({
+            'company': company,
+            'company_logo_url': (
+                request.build_absolute_uri(company.logo.url) if company and company.logo else None),
+            'invoices': invoices,
+            'total_amount': sum((invoice.amount for invoice in invoices), Decimal('0')),
+            'total_paid': sum((invoice.paid_amount for invoice in invoices), Decimal('0')),
+            'total_outstanding': sum((invoice.outstanding_amount for invoice in invoices), Decimal('0')),
+            'date_from': request.query_params.get('date_from'),
+            'date_to': request.query_params.get('date_to'),
+            'status': request.query_params.get('status'),
+        })
+        response = HttpResponse(HTML(string=html_template).write_pdf(), content_type='application/pdf')
+        response['Content-Disposition'] = 'inline; filename="supplier_invoices.pdf"'
+        return response
 
 
 class PurchaseOrderViewSet(viewsets.ModelViewSet):

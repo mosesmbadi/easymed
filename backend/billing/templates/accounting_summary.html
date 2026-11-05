@@ -298,8 +298,8 @@
         <td>{{ tx.invoice_number }}</td>
         <td>{{ tx.customer }}</td>
         <td>{{ tx.sub_account }}</td>
-        <td class="{% if tx.action == 'Received' %}text-green{% else %}text-red{% endif %}">
-          {% if tx.action == 'Received' %}Credit{% else %}Debit{% endif %}
+        <td class="{% if tx.action == 'Received' or tx.action == 'Transfer In' %}text-green{% else %}text-red{% endif %}">
+          {% if tx.action == 'Transfer In' or tx.action == 'Transfer Out' %}{{ tx.action }}{% elif tx.action == 'Received' %}Credit{% else %}Debit{% endif %}
         </td>
         <td class="text-right">{{ tx.amount|money }}</td>
       </tr>

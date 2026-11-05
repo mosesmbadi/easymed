@@ -606,7 +606,50 @@ class SubAccount(models.Model):
         paid_out = self.supplier_receipts.aggregate(
             total=Sum('total_amount')
         )['total'] or 0
-        return self.opening_bal + received - paid_out
+        transferred_in = self.transfers_in.aggregate(
+            total=Sum('amount')
+        )['total'] or 0
+        transferred_out = self.transfers_out.aggregate(
+            total=Sum('amount')
+        )['total'] or 0
+        return self.opening_bal + received - paid_out + transferred_in - transferred_out
+
+
+class AccountTransfer(models.Model):
+    """
+    Money moved between two of the facility's own accounts: M-Pesa to bank, bank
+    to petty cash.
+
+    Never edited or deleted. A mistake is put right by a reversing transfer, so
+    the trail shows both what happened and that it was corrected.
+    See billing.transfers, which is the only thing that should create these.
+    """
+    from_account = models.ForeignKey(SubAccount, on_delete=models.PROTECT, related_name='transfers_out')
+    to_account = models.ForeignKey(SubAccount, on_delete=models.PROTECT, related_name='transfers_in')
+    amount = models.DecimalField(max_digits=15, decimal_places=2)
+    transfer_date = models.DateField()
+    note = models.CharField(max_length=255, blank=True, default='')
+    reversal_of = models.OneToOneField(
+        'self', on_delete=models.PROTECT, null=True, blank=True, related_name='reversed_by')
+    created_by = models.ForeignKey(
+        'customuser.CustomUser', on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-transfer_date', '-id']
+        constraints = [
+            models.CheckConstraint(check=models.Q(amount__gt=0), name='account_transfer_amount_positive'),
+            models.CheckConstraint(
+                check=~models.Q(from_account=models.F('to_account')),
+                name='account_transfer_between_different_accounts'),
+        ]
+
+    @property
+    def reference(self):
+        return f"TRF-{self.pk:05d}"
+
+    def __str__(self):
+        return f"{self.reference}: {self.amount} from {self.from_account.name} to {self.to_account.name}"
 
 
 class EtimsSubmission(models.Model):

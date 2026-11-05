@@ -346,6 +346,8 @@ export const APP_API_URL = {
   PURCHASE_ORDER_ITEM: "/api/inventory/purchase-order-item",
   FETCH_INCOMING_ITEMS: "/api/inventory/incomingItem",
   FETCH_SUPPLIER_INVOICE: "/api/inventory/supplier-invoice/",
+  SUPPLIER_INVOICE_DETAILS: "/api/inventory/supplier-invoice-details",
+  SUPPLIER_INVOICE_REPORT: "/api/inventory/supplier-invoice-report",
   FETCH_INVOICE: "/api/inventory/fetch-invoice/",
   FETCH_GOODS_RECEIPT_NOTE: "/api/inventory/goods-receipt-note/",
   GOODS_RECEIPTS: "/api/inventory/goods-receipts",
@@ -373,6 +375,8 @@ export const APP_API_URL = {
   PAYMENT_MODES: "/api/billing/payment-modes/",
   MAIN_ACCOUNTS: "/api/billing/main-accounts/",
   SUB_ACCOUNTS: "/api/billing/sub-accounts/",
+  ACCOUNT_TRANSFERS: "/api/billing/account-transfers",
+  ACCOUNT_TRANSFER_REVERSE: "/api/billing/account-transfer-reverse",
   ACCOUNTING_SUMMARY: "/api/billing/accounting-summary",
   INSURANCE_INVENTORY_PRICES: "/api/insurance/insurance-prices",
 

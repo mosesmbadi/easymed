@@ -12,6 +12,7 @@ from .models import (
     StockBalance,
     StockMovement,
     Supplier,
+    SupplierInvoice,
 )
 
 
@@ -135,6 +136,22 @@ class SupplierFilter(django_filters.FilterSet):
     class Meta:
         model = Supplier
         fields = ('common_name',)
+
+
+class SupplierInvoiceFilter(django_filters.FilterSet):
+    status = django_filters.CharFilter(method='filter_status')
+    date_from = django_filters.DateFilter(field_name='date_created', lookup_expr='date__gte')
+    date_to = django_filters.DateFilter(field_name='date_created', lookup_expr='date__lte')
+
+    class Meta:
+        model = SupplierInvoice
+        fields = ['supplier', 'purchase_order']
+
+    def filter_status(self, queryset, name, value):
+        # Pending means still owed, and a part-paid invoice still is.
+        if value == 'pending':
+            return queryset.filter(status__in=['pending', 'partial'])
+        return queryset.filter(status=value)
 
 
 class InventoryFilterSearch(filters.SearchFilter):

@@ -11,7 +11,9 @@ services:
     networks:
       - mks
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER"]
+      # $$ so the container's shell expands it from env_file. A single $ is
+      # substituted by Compose on the host, which doesn't read .env.local.
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER"]
       interval: 10s
       timeout: 5s
       retries: 5

@@ -69,6 +69,9 @@ celerybeat.pid
 # Django static files
 /backend/easymed/staticfiles/
 
+# Uploaded lab request forms: patient documents, never source
+/backend/easymed/static/images/Lab Test Requests/
+
 # Node.js / Next.js
 # =========================================
 /front-end/node_modules

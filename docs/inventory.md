@@ -151,7 +151,7 @@ Requisition ──approve (dept)──► approve (procurement) ──► Purcha
 | `PurchaseOrderItem` | `quantity_ordered`, `quantity_received`, link to requisition item |
 | `GoodsReceiptNote` | `grn_number` `YYYYMMDD-GRN-XXXXXX` |
 | `IncomingItem` | A received line: item, unit, quantity, `purchase_price`, `sale_price`, `lot_no`, `expiry_date`, `department`, supplier, PO, supplier invoice, GRN, `posted_at` |
-| `SupplierInvoice` | `invoice_no`, `amount`, `status`, `supplier`, `purchase_order` |
+| `SupplierInvoice` | `invoice_no`, `amount`, `status` (`pending`, `partial`, `paid`; `partial` is set by payment allocation and isn't in the field's choices), `supplier`, `purchase_order`. Properties: `paid_amount`, `outstanding_amount`, `age_days` (`None` once paid) |
 | `SupplierPaymentReceipt` / `SupplierPaymentAllocation` | Payments to suppliers from a billing `SubAccount`, allocated to supplier invoices |
 | `Quotation`, `QuotationItem`, `QuotationCustomer` | Price quotations for customers |
 
@@ -184,7 +184,8 @@ Router resources:
 | `requisition/` | `POST <id>/reject/`, `cancel/`, `reopen/` (body `{"reason": ...}`) |
 | `requisitionitems/`, `requisition/<id>/requisitionitems/` | |
 | `purchase-orders/`, `requisition/<id>/purchase-orders/`, `purchase-orders/<id>/purchaseorderitems/` | |
-| `incoming-item/`, `goods-receipt-note/`, `supplier-invoice/` | |
+| `incoming-item/`, `goods-receipt-note/` | |
+| `supplier-invoice/` | Filters: `supplier`, `purchase_order`, `date_from`, `date_to`, `status` (`pending` includes part-paid invoices), `search` (invoice number, supplier or PO number). Extra: `GET <id>/details/` (lines and payments), `GET report/` (PDF of the filtered list) |
 | `supplier-payment-receipts/` | Read-only |
 | `quotation/`, `quotationitem/` | |
 
@@ -225,7 +226,8 @@ WebSocket: `ws/inventory_notifications/` → `InventoryNotificationConsumer`.
 ## Tests
 
 `inventory/tests/`: `test_stock_ledger.py`, `test_requisition_process.py`,
-`test_supplier_invoice.py`, `test_item_consumables.py`, `test_inventory_views.py`.
+`test_supplier_invoice.py`, `test_supplier_invoice_list.py`, `test_item_consumables.py`,
+`test_inventory_views.py`.
 
 ## Known issues
 

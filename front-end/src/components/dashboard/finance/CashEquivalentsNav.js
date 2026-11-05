@@ -8,6 +8,7 @@ const CashEquivalentsNav = () => {
     const base = '/dashboard/finance/cash-equivalents';
     const links = [
         { href: `${base}`, label: 'Cash and Cash equivalents', exact: true },
+        { href: `${base}/transfers`, label: 'Transfers' },
         { href: `${base}/settings`, label: 'Settings' },
     ];
 

@@ -13,7 +13,7 @@ from django.conf import settings
 from weasyprint import HTML
 from rest_framework import serializers
 from rest_framework.response import Response
-from django.db.models import Sum, Q
+from django.db.models import ProtectedError, Sum, Q
 from django.db import transaction
 from decimal import Decimal
 from rest_framework.decorators import action
@@ -21,9 +21,10 @@ from rest_framework.views import APIView
 from django_filters.rest_framework import DjangoFilterBackend
 
 from billing.filters import InvoiceFilterSearch, InvoiceFilter
-from .models import CreditNote, InvoiceItem, Invoice, InvoicePayment, PaymentReceipt, PaymentAllocation
+from .models import AccountTransfer, CreditNote, InvoiceItem, Invoice, InvoicePayment, PaymentReceipt, PaymentAllocation
 from .adjustments import AdjustmentError, apply_invoice_discount, issue_credit_note
 from .payments import PaymentAllocationError, allocate_payment
+from .transfers import TransferError, make_transfer, reverse_transfer
 from company.models import Company
 from inventory.models import InsuranceItemSalePrice
 from authperms.permissions import (
@@ -38,7 +39,8 @@ from .serializers import (
     InvoiceItemSerializer, InvoiceSerializer,
     PaymentModeSerializer, InvoicePaymentSerializer,
     PaymentReceiptSerializer, AllocatePaymentRequestSerializer,
-    MainAccountSerializer, SubAccountSerializer
+    MainAccountSerializer, SubAccountSerializer,
+    AccountTransferSerializer, MakeAccountTransferSerializer,
     )
 
 
@@ -273,14 +275,65 @@ class PaymentModeViewset(viewsets.ModelViewSet):
         serializer_class = PaymentModeSerializer
 
 
-class MainAccountViewSet(viewsets.ModelViewSet):
+class RefuseDeleteWithTransfersMixin:
+    """Transfers are kept for good, so an account that has any can't be deleted."""
+
+    def destroy(self, request, *args, **kwargs):
+        try:
+            return super().destroy(request, *args, **kwargs)
+        except ProtectedError:
+            return Response(
+                {'detail': "This account has transfers on record, so it can't be deleted."},
+                status=status.HTTP_409_CONFLICT)
+
+
+class MainAccountViewSet(RefuseDeleteWithTransfersMixin, viewsets.ModelViewSet):
     queryset = MainAccount.objects.all().order_by('-id')
     serializer_class = MainAccountSerializer
 
 
-class SubAccountViewSet(viewsets.ModelViewSet):
+class SubAccountViewSet(RefuseDeleteWithTransfersMixin, viewsets.ModelViewSet):
     queryset = SubAccount.objects.all().order_by('-id')
     serializer_class = SubAccountSerializer
+
+
+class AccountTransferViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Transfers between sub-accounts. Anyone at the till can read them, only an
+    admin can make or reverse one, and none can be changed afterwards.
+    """
+    queryset = AccountTransfer.objects.select_related(
+        'from_account', 'to_account', 'reversal_of', 'reversed_by', 'created_by')
+    serializer_class = AccountTransferSerializer
+    permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser | IsReceptionistUser,)
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = {
+        'from_account': ['exact'],
+        'to_account': ['exact'],
+        'transfer_date': ['gte', 'lte'],
+    }
+
+    def get_permissions(self):
+        if self.action == 'create':
+            return [IsSystemsAdminUser()]
+        return super().get_permissions()
+
+    def create(self, request, *args, **kwargs):
+        serializer = MakeAccountTransferSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            transfer = make_transfer(**serializer.validated_data, created_by=request.user)
+        except TransferError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(self.get_serializer(transfer).data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['post'], url_path='reverse', permission_classes=[IsSystemsAdminUser])
+    def reverse(self, request, pk=None):
+        try:
+            reversal = reverse_transfer(self.get_object(), created_by=request.user)
+        except TransferError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(self.get_serializer(reversal).data, status=status.HTTP_201_CREATED)
 
 
 class PaymentReceiptViewset(viewsets.ReadOnlyModelViewSet):
@@ -578,6 +631,30 @@ class AccountingSummaryView(APIView):
                 'amount': alloc.amount_applied,
             })
 
+        # A transfer is two entries: money out of one account and into another.
+        transfers_qs = AccountTransfer.objects.select_related(
+            'from_account__main_account', 'to_account__main_account')
+        if start_date:
+            transfers_qs = transfers_qs.filter(transfer_date__gte=start_date)
+        if end_date:
+            transfers_qs = transfers_qs.filter(transfer_date__lte=end_date)
+
+        for transfer in transfers_qs:
+            for suffix, account, other, action_name, particulars in (
+                ('out', transfer.from_account, transfer.to_account, 'Transfer Out', 'Transfer to'),
+                ('in', transfer.to_account, transfer.from_account, 'Transfer In', 'Transfer from'),
+            ):
+                transactions.append({
+                    'id': f"tr-{transfer.id}-{suffix}",
+                    'date': transfer.transfer_date,
+                    'invoice_number': transfer.reference,
+                    'customer': f"{particulars} {other.name}",
+                    'tag': account.main_account.name,
+                    'sub_account': account.name,
+                    'action': action_name,
+                    'amount': transfer.amount,
+                })
+
         # Latest first for readability
         transactions = sorted(transactions, key=lambda x: x['date'], reverse=True)
             
@@ -594,7 +671,7 @@ class AccountingSummaryView(APIView):
                     'net_balance': 0,
                 }
             amount = float(trans['amount'])
-            if trans['action'] == 'Received':
+            if trans['action'] in ('Received', 'Transfer In'):
                 sub_account_totals_dict[key]['total_debited'] += amount
                 sub_account_totals_dict[key]['net_balance'] += amount
             else:
@@ -619,7 +696,7 @@ class AccountingSummaryView(APIView):
                 }
             
             amount = float(trans['amount'])
-            if trans['action'] == 'Received':
+            if trans['action'] in ('Received', 'Transfer In'):
                 totals_dict[tag]['total_debited'] += amount
                 totals_dict[tag]['net_balance'] += amount
             else:

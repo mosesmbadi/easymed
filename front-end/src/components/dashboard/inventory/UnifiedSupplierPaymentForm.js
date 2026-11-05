@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Grid, Button, TextField, CircularProgress } from "@mui/material";
 import Select from 'react-select';
 import { toast } from "react-toastify";
@@ -33,6 +33,7 @@ const UnifiedSupplierPaymentForm = ({
   onSubmit,
   onViewInvoiceItems,
   loading,
+  initialSupplierId,
 }) => {
   const dispatch = useDispatch();
   const auth = useAuth();
@@ -55,6 +56,20 @@ const UnifiedSupplierPaymentForm = ({
       dispatch(getAllSuppliers(auth));
     }
   }, [auth, dispatch]);
+
+  // Opened for one supplier: select them once, so clearing the form stays cleared.
+  const initialSupplierApplied = useRef(false);
+  useEffect(() => {
+    if (initialSupplierApplied.current || !initialSupplierId) return;
+    const match = (suppliers || []).find((sup) => sup.id === Number(initialSupplierId));
+    if (match) {
+      initialSupplierApplied.current = true;
+      setSelectedSupplier({
+        value: match.id,
+        label: match.official_name || match.common_name || 'Unknown Supplier',
+      });
+    }
+  }, [initialSupplierId, suppliers]);
 
   // Fetch supplier invoices when supplier is selected
   useEffect(() => {

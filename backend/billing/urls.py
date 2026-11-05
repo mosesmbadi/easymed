@@ -7,6 +7,7 @@ from django.conf import settings
 
 
 from .views import (
+    AccountTransferViewSet,
     CreditNoteViewSet,
     InvoiceViewset,
     InvoiceItemViewset,
@@ -38,6 +39,7 @@ router.register(r'payment-receipts', PaymentReceiptViewset)
 router.register(r'invoice-payments', InvoicePaymentViewset)
 router.register(r'main-accounts', MainAccountViewSet)
 router.register(r'sub-accounts', SubAccountViewSet)
+router.register(r'account-transfers', AccountTransferViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),

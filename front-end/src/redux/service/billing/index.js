@@ -283,6 +283,23 @@ export const openCreditNotePdf = async (auth, id) => {
     window.open(URL.createObjectURL(res.data), "_blank");
 };
 
+export const fetchAccountTransfers = (auth, params = {}) =>
+    UseAxios(auth)
+        .get(APP_API_URL.ACCOUNT_TRANSFERS, { params })
+        .then((res) => res.data);
+
+export const makeAccountTransfer = (auth, payload) =>
+    UseAxios(auth)
+        .post(APP_API_URL.ACCOUNT_TRANSFERS, payload)
+        .then((res) => res.data)
+        .catch((err) => { throw errorDetail(err); });
+
+export const reverseAccountTransfer = (auth, id) =>
+    UseAxios(auth)
+        .post(APP_API_URL.ACCOUNT_TRANSFER_REVERSE, { id })
+        .then((res) => res.data)
+        .catch((err) => { throw errorDetail(err); });
+
 export const fetchPaymentModes = (auth) =>{
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve,reject) =>{

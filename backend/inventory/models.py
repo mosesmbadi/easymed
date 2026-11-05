@@ -1,6 +1,7 @@
 import random
 import uuid
 from datetime import datetime
+from decimal import Decimal
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -852,6 +853,24 @@ class SupplierInvoice(AbstractBaseModel):
         if save and self.pk:
             SupplierInvoice.objects.filter(pk=self.pk).update(amount=total)
         return total
+
+    @property
+    def paid_amount(self):
+        '''Read from the allocations, so a prefetched list costs no query per invoice.'''
+        return sum((row.amount_applied for row in self.payment_allocations.all()), Decimal('0'))
+
+    @property
+    def outstanding_amount(self):
+        if self.status == 'paid':
+            return Decimal('0')
+        return max(Decimal(str(self.amount or 0)) - self.paid_amount, Decimal('0'))
+
+    @property
+    def age_days(self):
+        '''Days since the invoice was recorded. A paid invoice has stopped ageing.'''
+        if self.status == 'paid':
+            return None
+        return (timezone.localdate() - timezone.localdate(self.date_created)).days
 
     def __str__(self):
         return f"{self.invoice_no} - PO: {self.purchase_order.PO_number}"

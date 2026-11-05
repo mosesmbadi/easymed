@@ -77,10 +77,31 @@ Helper properties: `sale_price`, `insurer_amount`, `is_priced`, `price_source`.
 | Model | Purpose |
 | --- | --- |
 | `MainAccount` | Top-level liquidity account (Cash, Bank, Mobile Money...). `total_balance` sums sub-accounts |
-| `SubAccount` | Belongs to a main account, linked to a `PaymentMode`. `balance = opening_bal + receipts − supplier payments`. Also `min/max_bal`, `min/max_trans`, `active` |
+| `SubAccount` | Belongs to a main account, linked to a `PaymentMode`. `balance = opening_bal + receipts − supplier payments + transfers in − transfers out`. Also `min/max_bal`, `min/max_trans`, `active` |
+| `AccountTransfer` | Money moved between two sub-accounts: `from_account`, `to_account`, `amount`, `transfer_date`, `note`, `reversal_of`, `created_by` |
 
 Supplier payments (`inventory.SupplierPaymentReceipt`) draw down sub-accounts, so
 the finance module sees receivables and payables in one place.
+
+### Transfers (`transfers.py`)
+
+Admins make transfers from the action menu on a sub-account's row under Cash and
+Cash Equivalents. Every transfer is listed on the Transfers tab.
+
+`make_transfer()` refuses a transfer that:
+- is for more than the source account's balance;
+- is from an account to itself;
+- involves an inactive account;
+- is dated in the future (balances aren't worked out by date, so the money would
+  move today). Backdating is allowed.
+
+Transfers are never edited or deleted. `reverse_transfer()` corrects a mistake by
+sending the money back with a new transfer dated today, and each transfer can be
+reversed once. That is refused if the money has already left the destination
+account. An account with transfers on record can't be deleted either.
+
+`accounting-summary/` shows each transfer as two entries, `Transfer Out` and
+`Transfer In`, which count towards the accounts' credit and debit totals.
 
 ## Billing and stock
 
@@ -213,6 +234,8 @@ Router resources:
 | `payment-receipts/` | `PaymentReceiptViewset` (read-only) | default |
 | `invoice-payments/` | `InvoicePaymentViewset` | default |
 | `main-accounts/`, `sub-accounts/` | account CRUD | default |
+| `account-transfers/` | `AccountTransferViewSet`: list, retrieve, create; `?from_account=`, `?to_account=`, `?transfer_date__gte=`, `?transfer_date__lte=` | read: doctor, nurse, labtech or receptionist; create: admin |
+| `account-transfers/<id>/reverse/` | `POST` sends the money back | admin |
 
 Other paths:
 
@@ -239,7 +262,8 @@ the `EASYMED_CURRENCY_*` settings.
 ## Tests
 
 `billing/tests/test_invoice_pricing.py`, `billing/tests/test_cash_payment_mode.py`,
-`billing/tests/test_credit_accounts.py`, `billing/tests/test_integrations.py`.
+`billing/tests/test_credit_accounts.py`, `billing/tests/test_integrations.py`,
+`billing/tests/test_account_transfers.py`.
 The integration tests stand in for KRA and Safaricom; none of them goes out to
 the internet.
 
@@ -253,7 +277,7 @@ the internet.
 - `PaymentModeViewset`, account viewsets and `InvoicePaymentViewset` use only
   the default `IsAuthenticated` — any signed-in user, including a `patient`
   role, can create payment modes or payments.
-- `AccountingSummaryView` excludes pharmacists and sysadmins (non-superuser).
+- `AccountingSummaryView` excludes pharmacists.
 - `AllocatePaymentView` resolves the sub-account's payment mode but never stores
   it on the `PaymentReceipt` (`payment_mode` stays null), and does the
   allocation arithmetic in `float` rather than `Decimal`.

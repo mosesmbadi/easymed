@@ -66,6 +66,15 @@ def celery_runs_tasks_inline():
             "pytest --ds=easymed.settings.testing", returncode=4)
 
 
+@pytest.fixture(autouse=True)
+def uploads_go_to_a_temporary_directory(settings, tmp_path):
+    """
+    MEDIA_ROOT sits inside the source tree, so a test that uploads a file would
+    otherwise leave it there on every run, ready to be committed.
+    """
+    settings.MEDIA_ROOT = tmp_path / 'media'
+
+
 @pytest.fixture
 def user():
     return User.objects.create_user(

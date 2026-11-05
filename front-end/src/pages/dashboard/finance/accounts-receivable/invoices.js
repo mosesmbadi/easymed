@@ -108,7 +108,7 @@ const InvoicesPage = () => {
     
     // Date range filter
     if (dateFrom || dateTo) {
-      const invoiceDate = new Date(inv.date_created);
+      const invoiceDate = new Date(inv.invoice_date || inv.invoice_created_at);
       if (dateFrom && invoiceDate < new Date(dateFrom)) {
         return false;
       }
