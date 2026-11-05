@@ -8,263 +8,191 @@
   <style>
     @page {
       size: A4;
-      margin: 1cm;
+      margin: 1cm 1.2cm 1.8cm;
+
+      @bottom-center {
+        content: element(footer-content);
+        width: 100%;
+      }
     }
 
     body {
       font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
       font-size: 10px;
-      line-height: 1.4;
-      color: #333;
+      line-height: 1.3;
+      color: #222;
     }
 
-    .header-container {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 2px solid #555;
-      padding-bottom: 20px;
-      margin-bottom: 30px;
-      height: 150px;
+    /* Tables rather than flexbox: they lay out the same in WeasyPrint every time. */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .letterhead td {
+      vertical-align: top;
     }
 
     .company-logo img {
-      max-width: 180px;
-      height: 100%;
+      max-width: 200px;
+      max-height: 80px;
     }
 
     .company-info {
       text-align: right;
-      font-size: 11px;
+      font-size: 9px;
     }
 
-    .company-info h2 {
-      margin: 0 0 5px 0;
-      color: #555;
-      font-size: 18px;
-      text-transform: uppercase;
-    }
-
-    .company-info p {
-      margin: 2px 0;
+    .company-name {
+      font-size: 13px;
+      font-weight: bold;
     }
 
     .report-title {
-      text-align: center;
-      margin-bottom: 30px;
-    }
-
-    .report-title h1 {
-      font-size: 24px;
-      color: #333;
-      margin: 0;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-    }
-
-    .meta-container {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 30px;
-    }
-
-    .meta-box {
-      width: 48%;
-    }
-
-    .meta-box h3 {
-      font-size: 12px;
-      color: #555;
-      border-bottom: 1px solid #ddd;
-      padding-bottom: 5px;
-      margin-bottom: 10px;
-      text-transform: uppercase;
-    }
-
-    .meta-row {
-      display: flex;
-      margin-bottom: 4px;
-    }
-
-    .meta-label {
+      margin: 10px 0 12px;
+      text-align: right;
+      font-size: 13px;
       font-weight: bold;
-      width: 110px;
-      color: #555;
-    }
-
-    .meta-value {
-      flex: 1;
-    }
-
-    table.results-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 30px;
-    }
-
-    table.results-table th {
-      background-color: #555;
-      color: white;
-      padding: 10px;
-      text-align: left;
-      font-weight: 600;
-      font-size: 11px;
       text-transform: uppercase;
     }
 
-    table.results-table td {
-      padding: 10px;
-      border-bottom: 1px solid #eee;
-      color: #444;
+    .particulars {
+      border-bottom: 1px solid #222;
+      font-size: 9px;
     }
 
-    table.results-table tr:nth-child(even) {
-      background-color: #f9f9f9;
+    .particulars td {
+      padding: 1px 6px 3px 0;
+      vertical-align: top;
+    }
+
+    .particulars .label {
+      width: 11%;
+      white-space: nowrap;
+      color: #555;
+      text-transform: uppercase;
+    }
+
+    .particulars .value {
+      width: 22%;
+      font-weight: bold;
+    }
+
+    .requested {
+      margin: 8px 0 12px;
+      font-size: 9px;
+      font-style: italic;
     }
 
     .section-title {
-      font-size: 13px;
-      color: #333;
-      margin: 0 0 8px 0;
+      margin: 12px 0 6px;
+      font-size: 11px;
+      font-weight: bold;
       text-transform: uppercase;
     }
 
-    table.results-table tr.group-row td {
-      background-color: #eee;
-      color: #333;
+    table.results th {
+      padding: 3px 4px;
+      text-align: left;
+      font-size: 10px;
+      text-transform: uppercase;
+    }
+
+    table.results td {
+      padding: 2.5px 4px;
+    }
+
+    table.results tr {
+      break-inside: avoid;
+    }
+
+    .col-name { width: 34%; }
+    .col-result { width: 14%; }
+    .col-unit { width: 18%; }
+    .col-flag { width: 7%; }
+    .col-range { width: 27%; }
+
+    tr.group-row td {
+      padding-top: 6px;
       font-weight: bold;
-      padding: 6px 10px;
     }
 
-    table.results-table tr.block-gap td {
-      background-color: #fff;
-      border-bottom: 2px solid #ccc;
-      padding: 6px;
+    td.grouped {
+      padding-left: 18px;
     }
 
-    .flag-low {
-      color: #d8a500;
+    tr.block-gap td {
+      height: 6px;
+      padding: 0;
+    }
+
+    .abnormal {
       font-weight: bold;
     }
 
-    .flag-high {
-      color: #d30d0d;
-      font-weight: bold;
-    }
-
-    .flag-normal {
-      color: #0d7d2a;
+    .notes {
+      margin-top: 14px;
     }
 
     .interpretation-section {
-      margin-top: 30px;
-      padding: 15px;
-      background: #f9f9f9;
-      border-left: 4px solid #555;
-      page-break-inside: avoid;
+      margin-top: 16px;
+      break-inside: avoid;
     }
 
     .interpretation-title {
+      margin-bottom: 4px;
       font-weight: bold;
-      color: #333;
-      margin-bottom: 10px;
-      font-size: 14px;
       text-transform: uppercase;
     }
 
     .interpretation-item {
-      margin-bottom: 15px;
-      padding: 10px;
-      background: #fff;
-      border-radius: 4px;
-      border: 1px solid #e0e0e0;
+      margin-bottom: 6px;
+      padding: 5px 8px;
+      border-left: 2px solid #777;
     }
 
     .interpretation-item.critical {
-      border-left: 4px solid #d32f2f;
-      background: #ffebee;
+      border-left-color: #d32f2f;
+    }
+
+    .interpretation-test-name {
+      font-weight: bold;
     }
 
     .attention-flag {
-      display: inline-block;
-      background: #d32f2f;
-      color: white;
-      padding: 2px 8px;
-      border-radius: 3px;
-      font-size: 10px;
-      font-weight: bold;
-      margin-left: 10px;
+      margin-left: 6px;
+      color: #d32f2f;
     }
 
-    .signatures {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 60px;
-      page-break-inside: avoid;
-      clear: both;
+    .signatory {
+      margin-top: 28px;
+      break-inside: avoid;
     }
 
-    .signature-box {
-      width: 30%;
-      text-align: left;
+    .signatory img {
+      display: block;
+      max-height: 45px;
+      max-width: 160px;
+      margin-bottom: 3px;
     }
 
-    .signature-header {
-      font-weight: bold;
+    .signatory-name {
       font-size: 11px;
-      color: #555;
-      text-transform: uppercase;
-      margin-bottom: 20px;
-      border-bottom: 2px solid #eee;
-      padding-bottom: 5px;
-    }
-
-    .signature-row {
-      display: flex;
-      align-items: flex-end;
-      margin-bottom: 25px;
-    }
-
-    .sig-label {
-      font-size: 10px;
       font-weight: bold;
+    }
+
+    .performed-by {
+      margin-top: 6px;
+      font-size: 9px;
       color: #555;
-      width: 40px;
-    }
-
-    .sig-line {
-      flex: 1;
-      border-bottom: 1px solid #aaa;
-      height: 1px;
-    }
-
-    .sig-line-text {
-      flex: 1;
-      border-bottom: 1px solid #aaa;
-      font-size: 11px;
-      padding-left: 5px;
-      padding-bottom: 2px;
-    }
-
-    @page {
-      size: A4;
-      margin: 1cm;
-      margin-bottom: 2cm;
-
-      @bottom-center {
-        content: element(footer-content);
-        width: 100%;
-        text-align: center;
-      }
     }
 
     .footer {
       position: running(footer-content);
-      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-      font-size: 9px;
-      color: #888;
-      border-top: 1px solid #eee;
-      padding-top: 10px;
+      padding-top: 6px;
+      border-top: 1px solid #ddd;
+      font-size: 8px;
+      color: #777;
       text-align: center;
     }
 
@@ -275,79 +203,82 @@
 </head>
 
 <body>
-  <!-- Footer for running element -->
   <div class="footer">
     Generated by EaSyMed-HMIS | Printed on: {% now "Y-m-d H:i" %} | Page <span class="page"></span>
   </div>
 
-  <div class="header-container">
-    <div class="company-logo">
-      <img src="{{ company_logo_url }}" alt="Logo" />
-    </div>
-    <div class="company-info">
-      <h2>{{ company.name }}</h2>
-      <p>{{ company.address1 }}</p>
-      {% if company.address2 %}<p>{{ company.address2 }}</p>{% endif %}
-      <p>{{ company.phone1 }} {% if company.phone2 %} | {{ company.phone2 }}{% endif %}</p>
-      <p>{{ company.email1 }}</p>
-    </div>
-  </div>
+  <table class="letterhead">
+    <tr>
+      <td class="company-logo">
+        {% if company_logo_url %}<img src="{{ company_logo_url }}" alt="Logo" />{% endif %}
+      </td>
+      <td class="company-info">
+        <div class="company-name">{{ company.name }}</div>
+        {% if company.address1 %}<div>{{ company.address1 }}</div>{% endif %}
+        {% if company.address2 %}<div>{{ company.address2 }}</div>{% endif %}
+        <div>{% if company.phone1 %}{{ company.phone1 }}{% endif %}{% if company.phone1 and company.phone2 %} | {% endif %}{% if company.phone2 %}{{ company.phone2 }}{% endif %}</div>
+        {% if company.email1 %}<div>Email: {{ company.email1 }}</div>{% endif %}
+      </td>
+    </tr>
+  </table>
 
-  <div class="report-title">
-    <h1>Laboratory Report</h1>
-  </div>
+  <div class="report-title">Laboratory Report</div>
 
-  <div class="meta-container">
-    <div class="meta-box">
-      <h3>Patient Particulars</h3>
-      <div class="meta-row">
-        <span class="meta-label">Name:</span>
-        <span class="meta-value">{{ patient.display_name }}</span>
-      </div>
-      <div class="meta-row">
-        <span class="meta-label">ID:</span>
-        <span class="meta-value">{{ patient.id }}</span>
-      </div>
-      <div class="meta-row">
-        <span class="meta-label">Age/Gender:</span>
-        <span class="meta-value">{{ patient.age|default_if_none:"Not given" }} / {{ patient.get_gender_display|default:"Not given" }}</span>
-      </div>
-      <div class="meta-row">
-        <span class="meta-label">Ref:</span>
-        <span class="meta-value">{{ processtestrequest.reference }}</span>
-      </div>
-    </div>
-
-    <div class="column">
-      <p><strong>Request Details</strong></p>
-      <p>
-        <strong>Requested Date:</strong>
-        {% if requested_date %} {{ requested_date|date:"d M Y" }} {% else %}
-        N/A {% endif %}
-      </p>
-      <p>
-        <strong>Requested Time:</strong>
-        {% if requested_time %} {{ requested_time|time:"H:i" }} {% else %} N/A
+  <table class="particulars">
+    <tr>
+      <td class="label">Name:</td>
+      <td class="value">{{ patient.display_name }}</td>
+      <td class="label">Patient ID:</td>
+      <td class="value">{{ patient.unique_id }}</td>
+      <td class="label"></td>
+      <td class="value"></td>
+    </tr>
+    <tr>
+      <td class="label">Lab No:</td>
+      <td class="value">{{ processtestrequest.reference }}</td>
+      <td class="label">Age:</td>
+      <td class="value">{% if patient.age is None %}Not given{% else %}{{ patient.age }} year{{ patient.age|pluralize }}{% endif %}</td>
+      <td class="label">Sex:</td>
+      <td class="value">{{ patient.get_gender_display|default:"Not given" }}</td>
+    </tr>
+    <tr>
+      <td class="label">Collected On:</td>
+      <td class="value">{{ collected_on|date:"M d Y H:i" }}</td>
+      <td class="label">Registered On:</td>
+      <td class="value">{{ requested_date|date:"M d Y" }} {{ requested_time|time:"H:i" }}</td>
+      <td class="label"></td>
+      <td class="value"></td>
+    </tr>
+    <tr>
+      <td class="label">Referred By:</td>
+      <td class="value">
+        {% if first_labtestrequest.referring_doctor or first_labtestrequest.referring_facility %}
+        {{ first_labtestrequest.referring_doctor|default:"" }}{% if first_labtestrequest.referring_doctor and first_labtestrequest.referring_facility %}, {% endif %}{{ first_labtestrequest.referring_facility|default:"" }}{% if first_labtestrequest.external_reference %} (ref. {{ first_labtestrequest.external_reference }}){% endif %}
+        {% elif attendance_process.doctor %}
+        {{ attendance_process.doctor.first_name }} {{ attendance_process.doctor.last_name }}
         {% endif %}
-      </p>
-      <p>
-        <strong>Results Entered:</strong>
-        {% if result_entered_datetime %} {{ result_entered_datetime|date:"d M Y H:i" }} {% else %} Pending {% endif %}
-      </p>
-    </div>
-  </div>
-  </div>
+      </td>
+      <td class="label">Reported On:</td>
+      <td class="value">{% if approved_on %}{{ approved_on|date:"M d Y H:i" }}{% else %}{{ result_entered_datetime|date:"M d Y H:i" }}{% endif %}</td>
+      <td class="label"></td>
+      <td class="value"></td>
+    </tr>
+  </table>
+
+  {% if report_sections %}
+  <div class="requested">Requested: {% for section in report_sections %}{{ section.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</div>
+  {% endif %}
 
   {% for section in report_sections %}
-  <h2 class="section-title">{{ section.name }}</h2>
-  <table class="results-table">
+  <div class="section-title">{{ section.name }}</div>
+  <table class="results">
     <thead>
       <tr>
-        <th>Test Panel</th>
-        <th>Result</th>
-        <th>Flag</th>
-        <th>Ref Value</th>
-        <th>Unit</th>
+        <th class="col-name">Investigations</th>
+        <th class="col-result">Results</th>
+        <th class="col-unit">Unit</th>
+        <th class="col-flag"></th>
+        <th class="col-range">Ref. Ranges</th>
       </tr>
     </thead>
     <tbody>
@@ -364,147 +295,54 @@
       </tr>
       {% endif %}{% endifchanged %}
       <tr>
-        <td>{{ panel.test_panel_name }}</td>
-        <td>{{ panel.result }}</td>
-        {% if panel.is_qualitative %}
-        <td></td>
-        <td></td>
-        <td></td>
-        {% else %}
-        <td>
-          {% if panel.flag == "Low" %}
-          <span class="flag-low">Low</span>
-          {% elif panel.flag == "High" %}
-          <span class="flag-high">High</span>
-          {% elif panel.flag == "Normal" %}
-          <span class="flag-normal">Normal</span>
-          {% else %}
-          N/A
-          {% endif %}
-        </td>
-        <td>{{ panel.ref_value_low }} - {{ panel.ref_value_high }}</td>
+        <td{% if group.name %} class="grouped"{% endif %}>{{ panel.test_panel_name }}</td>
+        <td{% if panel.flag %} class="abnormal"{% endif %}>{{ panel.result }}</td>
         <td>{{ panel.unit }}</td>
-        {% endif %}
+        <td class="abnormal">{{ panel.flag }}</td>
+        <td>{% if panel.ref_value_low is not None %}{{ panel.ref_value_low }} - {{ panel.ref_value_high }}{% endif %}</td>
       </tr>
       {% endfor %}
       {% endfor %}
     </tbody>
   </table>
   {% endfor %}
-  {% if first_labtestrequest and first_labtestrequest.note %}
-  <p><strong>Notes:</strong></p>
-  <p>{{ first_labtestrequest.note }}</p>
-  {% endif %} {% if report_sections %}
+
+  {% if first_labtestrequest.note %}
+  <div class="notes"><strong>Notes:</strong> {{ first_labtestrequest.note }}</div>
+  {% endif %}
+
   {% if profile_interpretations %}
   <div class="interpretation-section">
     <div class="interpretation-title">Clinical Interpretations</div>
-
     {% for profile in profile_interpretations %}
-    <div class="interpretation-item {% if profile.requires_attention %}critical{% endif %}">
+    <div class="interpretation-item{% if profile.requires_attention %} critical{% endif %}">
       <div class="interpretation-test-name">
         {{ profile.profile_name }}
-        {% if profile.requires_attention %}
-        <span class="attention-flag">⚠ URGENT</span>
-        {% endif %}
+        {% if profile.requires_attention %}<span class="attention-flag">⚠ URGENT</span>{% endif %}
       </div>
-      <div class="interpretation-text">
-        <strong>Interpretation:</strong> {{ profile.interpretation }}
-      </div>
+      <div><strong>Interpretation:</strong> {{ profile.interpretation }}</div>
       {% if profile.clinical_action %}
-      <div class="clinical-action">
-        <strong>Recommended Action:</strong> {{ profile.clinical_action }}
-      </div>
+      <div><strong>Recommended Action:</strong> {{ profile.clinical_action }}</div>
       {% endif %}
     </div>
     {% endfor %}
   </div>
   {% endif %}
-  {% endif %}
 
-  <div class="report-footer">
-    <p><strong>Date Posted:</strong> {{ approved_on }}</p>
-    <p>
-      <strong>Equipment:</strong>
-      {% if first_labtestrequest %}
-      {{ first_labtestrequest.equipment }}
-      {% else %}
-      _______________
-      {% endif %}
-    </p>
+  <div class="signatory">
+    {% if approved_by %}
+    {% if approved_by_sig_url %}<img src="{{ approved_by_sig_url }}" alt="Signature" />{% endif %}
+    <div class="signatory-name">{{ approved_by.first_name }} {{ approved_by.last_name }}</div>
+    {% if approved_by.profession %}<div>{{ approved_by.profession }}</div>{% endif %}
+    {% if approved_by.registration_number %}<div>Reg. No: {{ approved_by.registration_number }}</div>{% endif %}
+    {% if approved_by.phone %}<div>Contact: {{ approved_by.phone }}</div>{% endif %}
+    {% else %}
+    <div class="signatory-name">Results not yet approved</div>
+    {% endif %}
+    {% if attendance_process.lab_tech %}
+    <div class="performed-by">Performed by: {{ attendance_process.lab_tech.first_name }} {{ attendance_process.lab_tech.last_name }}</div>
+    {% endif %}
   </div>
-
-  <div class="signatures">
-    <div class="signature-box">
-      <div class="signature-header">REQUESTED BY</div>
-      <div class="signature-row">
-        <span class="sig-label">Name:</span>
-        <div class="sig-line-text">
-          {% if first_labtestrequest.referring_doctor or first_labtestrequest.referring_facility %}
-          {{ first_labtestrequest.referring_doctor|default:"" }}{% if first_labtestrequest.referring_doctor and first_labtestrequest.referring_facility %}, {% endif %}{{ first_labtestrequest.referring_facility|default:"" }}{% if first_labtestrequest.external_reference %} (ref. {{ first_labtestrequest.external_reference }}){% endif %}
-          {% elif attendance_process.doctor %}
-          {{ attendance_process.doctor.first_name }}
-          {% else %}
-          N/A
-          {% endif %}
-        </div>
-      </div>
-      <div class="signature-row">
-        <span class="sig-label">Date:</span>
-        <div class="sig-line-text"></div>
-      </div>
-      <div class="signature-row">
-        <span class="sig-label">Sign:</span>
-        <div class="sig-line"></div>
-      </div>
-    </div>
-
-    <div class="signature-box">
-      <div class="signature-header">DONE BY</div>
-      <div class="signature-row">
-        <span class="sig-label">Name:</span>
-        <div class="sig-line-text">
-          {% if attendance_process.lab_tech %}
-          {{ attendance_process.lab_tech.first_name }}
-          {% else %}
-          _______________
-          {% endif %}
-        </div>
-      </div>
-      <div class="signature-row">
-        <span class="sig-label">Date:</span>
-        <div class="sig-line-text"></div>
-      </div>
-      <div class="signature-row">
-        <span class="sig-label">Sign:</span>
-        <div class="sig-line"></div>
-      </div>
-    </div>
-
-    <div class="signature-box">
-      <div class="signature-header">APPROVED BY</div>
-      <div class="signature-row">
-        <span class="sig-label">Name:</span>
-        <div class="sig-line-text">
-          {% if approved_by %}{{ approved_by.first_name }} {{ approved_by.last_name }}{% endif %}
-        </div>
-      </div>
-      {% if approved_by.registration_number %}
-      <div class="signature-row">
-        <span class="sig-label">Reg. No:</span>
-        <div class="sig-line-text">{{ approved_by.registration_number }}</div>
-      </div>
-      {% endif %}
-      <div class="signature-row">
-        <span class="sig-label">Date:</span>
-        <div class="sig-line-text">{% if approved_by and approved_on %}{{ approved_on|date:"d/m/Y H:i" }}{% endif %}</div>
-      </div>
-      <div class="signature-row">
-        <span class="sig-label">Sign:</span>
-        <div class="sig-line"></div>
-      </div>
-    </div>
-  </div>
-
 </body>
 
 </html>

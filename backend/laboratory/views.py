@@ -427,6 +427,10 @@ def render_labtestresult_pdf(request, processtestrequest_id):
     # Get signature URLs
     doctor_sig_url = request.build_absolute_uri(attendance_process.doctor.signature.url) if attendance_process.doctor and attendance_process.doctor.signature else None
     lab_tech_sig_url = request.build_absolute_uri(attendance_process.lab_tech.signature.url) if attendance_process.lab_tech and attendance_process.lab_tech.signature else None
+    approved_by_sig_url = request.build_absolute_uri(approved.approved_by.signature.url) if approved and approved.approved_by.signature else None
+    collected_on = (panels.filter(patient_sample__collected_on__isnull=False)
+                    .order_by('patient_sample__collected_on')
+                    .values_list('patient_sample__collected_on', flat=True).first())
 
     context = {
         'processtestrequest': processtestrequest,
@@ -438,6 +442,8 @@ def render_labtestresult_pdf(request, processtestrequest_id):
         'company_logo_url': company_logo_url,
         'doctor_sig_url': doctor_sig_url,
         'lab_tech_sig_url': lab_tech_sig_url,
+        'approved_by_sig_url': approved_by_sig_url,
+        'collected_on': collected_on,
         'attendance_process': attendance_process,
         'approved_on': approved.approved_on if approved else None,
         # The last to approve a result on the report signs it.
@@ -459,7 +465,11 @@ def render_labtestresult_pdf(request, processtestrequest_id):
     for panel in ordered:
         interpretation, action, attention = panel.generate_interpretation()
         
+        # Listed once, under the profile it was written for: sub profiles that
+        # inherit their main profile's interpretation must not each repeat it.
         profile = panel.test_panel.test_profile
+        profile = next(
+            (node for node in reversed(profile.lineage()) if node.interpretations.exists()), profile)
         if profile and profile.id not in profile_interpretations_dict:
             if interpretation or panel.auto_interpretation:
                 profile_interpretations_dict[profile.id] = {
@@ -473,9 +483,10 @@ def render_labtestresult_pdf(request, processtestrequest_id):
             'test_panel_name': panel.test_panel.name,
             'report_group': panel.test_panel.report_group,
             'result': panel.result,
-            'flag': 'N/A',
-            'ref_value_low': 'N/A',
-            'ref_value_high': 'N/A',
+            # Printed beside the result: L or H, and nothing when it is in range.
+            'flag': '',
+            'ref_value_low': None,
+            'ref_value_high': None,
             'unit': panel.test_panel.units.symbol if panel.test_panel.units else '',
         }
 
@@ -495,12 +506,13 @@ def render_labtestresult_pdf(request, processtestrequest_id):
                 result = panel.result
                 try:
                     if float(result) < reference_value.ref_value_low:
-                        flag = 'Low'
+                        flag = 'L'
                     elif float(result) > reference_value.ref_value_high:
-                        flag = 'High'
+                        flag = 'H'
                     else:
-                        flag = 'Normal'
-                    
+                        flag = ''
+
+
                     panel_data['flag'] = flag
                     panel_data['ref_value_low'] = reference_value.ref_value_low
                     panel_data['ref_value_high'] = reference_value.ref_value_high

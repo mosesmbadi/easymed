@@ -13,7 +13,9 @@ from billing.models import InvoiceItem, PaymentMode
 from inventory.models import Department, Item
 from inventory.services import stock as stock_service
 from laboratory import views as lab_views
-from laboratory.models import LabTestPanel, LabTestProfile, LabTestRequest, LabTestRequestPanel, ReferenceValue, Specimen
+from laboratory.models import (
+    LabTestInterpretation, LabTestPanel, LabTestProfile, LabTestRequest, LabTestRequestPanel, ReferenceValue, Specimen,
+)
 from patient.models import AttendanceProcess
 
 User = get_user_model()
@@ -179,14 +181,10 @@ def test_the_report_prints_sections_in_the_set_order(api, cash_mode, urinalysis,
     assert positions == sorted(positions)
 
 
-def test_the_report_flags_a_result_against_a_range_with_blank_ages(
-        api, cash_mode, urinalysis, patient, company, monkeypatch):
-    ReferenceValue.objects.create(
-        lab_test_panel=LabTestPanel.objects.get(name='SG'), sex=patient.gender,
-        ref_value_low=Decimal('0.50'), ref_value_high=Decimal('2.00'))
-    visit = walk_in(api, urinalysis, patient)
+def report_html(api, profile, patient, monkeypatch, result):
+    visit = walk_in(api, profile, patient)
     for run in LabTestRequestPanel.objects.filter(lab_test_request__process=visit.process_test_req):
-        run.result = '1.0'
+        run.result = result
         run.save()
 
     rendered = {}
@@ -200,8 +198,49 @@ def test_the_report_flags_a_result_against_a_range_with_blank_ages(
 
     monkeypatch.setattr(lab_views, 'HTML', FakeHTML)
     lab_views.render_labtestresult_pdf(RequestFactory().get('/'), visit.process_test_req_id)
+    return rendered['html']
 
-    assert '>Normal<' in rendered['html']
+
+def add_sg_range(patient):
+    """Ages left blank, so it covers every age."""
+    ReferenceValue.objects.create(
+        lab_test_panel=LabTestPanel.objects.get(name='SG'), sex=patient.gender,
+        ref_value_low=Decimal('0.50'), ref_value_high=Decimal('2.00'))
+
+
+def test_a_result_in_range_prints_the_range_and_no_flag(api, cash_mode, urinalysis, patient, company, monkeypatch):
+    add_sg_range(patient)
+
+    html = report_html(api, urinalysis, patient, monkeypatch, '1.0')
+
+    assert '0.50 - 2.00' in html
+    assert '<td class="abnormal">L</td>' not in html
+    assert '<td class="abnormal">H</td>' not in html
+
+
+@pytest.mark.parametrize('result, flag', [('3.0', 'H'), ('0.1', 'L')])
+def test_a_result_out_of_range_is_flagged_and_bold(api, cash_mode, urinalysis, patient, company, monkeypatch, result, flag):
+    add_sg_range(patient)
+
+    html = report_html(api, urinalysis, patient, monkeypatch, result)
+
+    assert f'<td class="abnormal">{flag}</td>' in html
+    assert f'<td class="abnormal">{result}</td>' in html
+
+
+def test_a_main_profiles_interpretation_prints_once_under_its_name(
+        api, cash_mode, urinalysis, patient, company, monkeypatch):
+    LabTestInterpretation.objects.create(test_profile=urinalysis, interpretation='Review with the clinical picture')
+
+    html = report_html(api, urinalysis, patient, monkeypatch, '1.0')
+
+    assert html.count('Review with the clinical picture') == 1
+
+
+def test_a_panel_with_no_range_prints_blank_not_na(api, cash_mode, urinalysis, patient, company, monkeypatch):
+    html = report_html(api, urinalysis, patient, monkeypatch, '1.0')
+
+    assert 'N/A' not in html
 
 
 def test_the_report_itself_renders_to_pdf(api, cash_mode, urinalysis, patient, company):

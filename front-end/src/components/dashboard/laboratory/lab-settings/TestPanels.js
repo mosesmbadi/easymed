@@ -125,7 +125,7 @@ const TestPanels = () => {
         <div className="my-2 flex items-center justify-between gap-4 rounded-lg bg-white px-4 py-2 text-sm">
           <span className="text-warning">
             {incompleteCount} {incompleteCount === 1 ? "panel is" : "panels are"} missing a unit or reference
-            range. Results print without a unit, or with N/A for the flag and range, until these are added.
+            range. Results print with those columns blank, and are not flagged High or Low, until these are added.
           </span>
           <button
             type="button"

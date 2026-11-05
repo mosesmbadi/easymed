@@ -83,7 +83,10 @@ the position.
 5. **Approve** — set `result_approved`; the visit's
    `has_approved_lab_results` turns true.
 6. **Report** — `download_labtestresult_pdf/<process_id>/` renders
-   `templates/labtestresult.html`.
+   `templates/labtestresult.html`. To apply the standard report layouts to
+   panels that already exist, run `manage.py arrange_cbc_report` (RBC, WBC,
+   Platelets) or `manage.py arrange_urinalysis_report` (Macroscopy, Biochemistry,
+   Microscopy). Both are safe to re-run, and take `--profile "Exact Name"`.
 
 Lab stock lives in the department resolved by `utils.lab_department()`.
 

@@ -356,7 +356,12 @@ results become visible to the doctor (*Approved Lab Results Available*).
 
 **Step 5. Report.** Under **Lab Results**, select **Preview Results** or
 **Print**. The printed report shows the patient, the referring doctor or
-facility, results, reference ranges and interpretation.
+facility, then each test's result, unit, flag and reference range. Results
+outside the range are in bold and marked **L** (low) or **H** (high). Any
+interpretation follows, and the report closes with the name, profession,
+registration number, contact and signature of whoever approved the results, as
+set on their user profile. To group a test's results under headings, such as RBC,
+WBC and Platelets, put its panels in sub profiles.
 
 ### 6.2 Walk-in patients
 
@@ -425,11 +430,12 @@ Getting a new test ready to sell:
    the units each run uses.
 4. Add **Reference Values**.
 
-> **A unit is blank on the report, or the flag and range show N/A.** The report
-> prints what is set up for each test. On **Test Panels**, click **Show these
-> panels** to list the tests missing a unit or reference range, then add them. A
-> test can also show N/A when it has ranges but none matches the patient's sex
-> and age, so check that the ranges cover that patient.
+> **A unit or reference range is blank on the report.** The report prints what is
+> set up for each test. On **Test Panels**, click **Show these panels** to list
+> the tests missing a unit or reference range, then add them. A range is also
+> blank when the test has ranges but none matches the patient's sex and age, so
+> check that the ranges cover that patient. A result with no range can't be
+> flagged, so a blank flag only means *in range* when a range is printed.
 
 > **"Cannot be billed: the lab cannot run it."** If a test's reagents are not in
 > Lab stock, billing refuses the test and names the missing reagent. Receive the

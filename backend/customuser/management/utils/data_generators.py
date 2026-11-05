@@ -596,13 +596,25 @@ def create_item_department_links():
 NESTED_REPORT_PROFILES = [
     {'name': 'URINALYSIS REPORT', 'price': '600.00', 'specimen': 'Urine', 'subs': [
         ('Macroscopy', [('Colour', True), ('Consistency', True)]),
+        ('Biochemistry', [
+            ('LEU', True), ('NIT', True), ('URO', True), ('PRO', True), ('pH', False),
+            ('BLD', True), ('SG', False), ('KET', True), ('BIL', True), ('GLU', True),
+        ]),
         ('Microscopy', [('Pus Cells', False), ('Red Cells', False), ('Epithelial Cells', False)]),
-        ('Biochemistry', [('pH', False), ('SG', False), ('GLU', True), ('PROT', True), ('UROBIL', True)]),
     ]},
     {'name': 'FULL HEMOGRAM REPORT', 'price': '1200.00', 'specimen': 'Blood', 'subs': [
-        ('Wbc', [('Wbc Count', False), ('Gran', False), ('Lymp', False), ('Baso', False)]),
-        ('Rbc', [('Rbc Count', False), ('Hb', False), ('Mcv', False)]),
-        ('Platelets', [('Plts Count', False), ('Mpv', False)]),
+        ('RBC', [
+            ('RBC', False, 'x10⁶/µL'), ('HGB', False, 'g/dL'), ('HCT', False, '%'), ('MCV', False, 'fL'),
+            ('MCH', False, 'pg'), ('MCHC', False, 'g/dL'), ('RDWs', False, 'fL'), ('RDWc', False, '%'),
+        ]),
+        ('WBC', [
+            ('WBC', False, 'x10³/µL'), ('LYM%', False, '%'), ('LYM', False, 'x10³/µL'), ('MID%', False, '%'),
+            ('MID', False, 'x10³/µL'), ('GRA%', False, '%'), ('GRA', False, 'x10³/µL'),
+        ]),
+        ('Platelets', [
+            ('PLT', False, '10^9/L'), ('PCT', False, '%'), ('PDWs', False, 'fL'), ('PDWc', False, '%'),
+            ('MPV', False, 'fL'), ('P-LCC', False, '10^9/L'), ('P-LCR', False, '%'),
+        ]),
     ]},
 ]
 
@@ -626,7 +638,7 @@ def create_nested_report_profiles():
         for sub_order, (sub_name, panels) in enumerate(spec['subs'], start=1):
             sub, _ = LabTestProfile.objects.get_or_create(
                 name=sub_name, parent=main, defaults={'sort_order': sub_order})
-            for panel_order, (panel_name, qualitative) in enumerate(panels, start=1):
+            for panel_order, (panel_name, qualitative, *unit) in enumerate(panels, start=1):
                 item, _ = Item.objects.get_or_create(
                     name=panel_name, category="Lab Test", units_of_measure="test",
                     defaults={"item_code": lab_item_code(panel_name, main.name),
@@ -637,6 +649,7 @@ def create_nested_report_profiles():
                 LabTestPanel.objects.get_or_create(
                     name=panel_name, test_profile=sub,
                     defaults={'item': item, 'specimen': specimen, 'sort_order': panel_order,
+                              'units': _get_unit(unit[0]) if unit else None,
                               'is_qualitative': qualitative, 'is_quantitative': not qualitative})
         created.append(main)
     return created

@@ -382,4 +382,4 @@ def test_the_report_prints_the_number_and_says_what_was_not_given(lab_client, ca
                                                       'attendance_process': visit})
 
     assert 'Mama Lucy Clinic STUDY-0042' in html
-    assert 'Not given / Not given' in html
+    assert html.count('Not given') == 2  # age and sex
