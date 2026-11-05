@@ -138,7 +138,7 @@ const EditReferenceValueModal = ({ open, setOpen, selectedRowData }) => {
                   <Field
                     className="block border border-gray py-3 px-4 focus:outline-none w-full"
                     type="number"
-                    placeholder="Age Min"
+                    placeholder="Age Min (blank = no limit)"
                     name="age_min"
                   />
                   <ErrorMessage name="age_min" component="div" className="text-warning text-xs" />
@@ -147,7 +147,7 @@ const EditReferenceValueModal = ({ open, setOpen, selectedRowData }) => {
                   <Field
                     className="block border border-gray py-3 px-4 focus:outline-none w-full"
                     type="number"
-                    placeholder="Age Max"
+                    placeholder="Age Max (blank = no limit)"
                     name="age_max"
                   />
                   <ErrorMessage name="age_max" component="div" className="text-warning text-xs" />

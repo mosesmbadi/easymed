@@ -103,7 +103,7 @@ const TestResultsPanels = ({ test }) => {
             <span className={`w-full text-center py-2 ${flagColor}`}>{flag}</span>
             <span className='w-full text-center py-2'>{refLow}</span>
             <span className='w-full text-center py-2'>{refHigh}</span>
-            <span className='w-full text-center py-2'>{foundPanel.unit}</span>
+            <span className='w-full text-center py-2'>{foundPanel.unit_symbol}</span>
             {current_interface === 'lab' && (
               <div className='w-full text-center py-2 flex justify-end' >
                 {item.result && (
@@ -150,7 +150,7 @@ const TestResultsPanels = ({ test }) => {
             <span className={`w-full text-center py-2 ${flagColor}`}>{item.result_approved ? flag : ""}</span>
             <span className='w-full text-center py-2'>{refLow}</span>
             <span className='w-full text-center py-2'>{refHigh}</span>
-            <span className='w-full text-center py-2'>{foundPanel.unit}</span>
+            <span className='w-full text-center py-2'>{foundPanel.unit_symbol}</span>
           </li>
           {/* Display interpretation if available for doctor view */}
           {item.result_approved && item.auto_interpretation && (

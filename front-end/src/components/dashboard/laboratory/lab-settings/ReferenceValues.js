@@ -156,7 +156,7 @@ const ReferenceValues = () => {
                 name="lab_test_panel"
                 options={labTestPanels.map((panel) => ({
                   value: panel.id,
-                  label: `${panel?.name} - (${panel?.unit})`,
+                  label: panel?.unit_symbol ? `${panel?.name} - (${panel.unit_symbol})` : panel?.name,
                 }))}
               />
               <ErrorMessage name="lab_test_panel" component="div" className="text-warning text-xs" />
@@ -173,7 +173,7 @@ const ReferenceValues = () => {
               <Field
                 className="block border border-gray py-3 px-4 focus:outline-none w-full"
                 type="number"
-                placeholder="Age Min"
+                placeholder="Age Min (blank = no limit)"
                 name="age_min"
               />
               <ErrorMessage name="age_min" component="div" className="text-warning text-xs" />
@@ -182,7 +182,7 @@ const ReferenceValues = () => {
               <Field
                 className="block border border-gray py-3 px-4 focus:outline-none w-full"
                 type="number"
-                placeholder="Age Max"
+                placeholder="Age Max (blank = no limit)"
                 name="age_max"
               />
               <ErrorMessage name="age_max" component="div" className="text-warning text-xs" />
@@ -280,8 +280,8 @@ const ReferenceValues = () => {
           />
           <Column dataField="lab_test_panel_name" caption="Test Panel" />
           <Column dataField="sex" caption="Sex" />
-          <Column dataField="age_min" caption="Age Min" />
-          <Column dataField="age_max" caption="Age Max" />
+          <Column dataField="age_min" caption="Age Min" cellRender={({ value }) => value ?? "No limit"} />
+          <Column dataField="age_max" caption="Age Max" cellRender={({ value }) => value ?? "No limit"} />
           <Column dataField="ref_value_low" caption="Low" />
           <Column dataField="ref_value_high" caption="High" />
           <Column dataField="critical_low" caption="C. Low" />

@@ -199,29 +199,9 @@ class LabTestRequestPanelSerializer(serializers.ModelSerializer):
         if not patient:
             return None
 
-        reference_value = instance.test_panel.reference_values.filter(
-            sex=patient.gender,
-            age_min__lte=patient.age,
-            age_max__gte=patient.age
-        ).first()
-        
-        # If no exact match for gender (e.g., gender 'O'), try male reference values as fallback
-        if not reference_value and patient.gender not in ['M', 'F']:
-            reference_value = instance.test_panel.reference_values.filter(
-                sex='M',
-                age_min__lte=patient.age,
-                age_max__gte=patient.age
-            ).first()
+        return instance.test_panel.get_reference_values(patient)
 
-        if reference_value:
-            return {
-                "low": reference_value.ref_value_low,
-                "high": reference_value.ref_value_high,
-                "critical_low": reference_value.critical_low,
-                "critical_high": reference_value.critical_high,
-            }
-        return None
-    
+
     def _get_patient(self, instance):
         # Helper method to get the patient object
         if instance.patient_sample and instance.patient_sample.process:
@@ -518,6 +498,7 @@ class LabTestPanelSerializer(serializers.ModelSerializer):
     test_profile_full_name = serializers.ReadOnlyField(source='test_profile.full_name')
     specimen_name = serializers.ReadOnlyField(source='specimen.name')
     unit_symbol = serializers.ReadOnlyField(source='units.symbol')
+    missing_setup = serializers.ReadOnlyField()
     sale_price = serializers.DecimalField(
         max_digits=12, decimal_places=2, required=False, allow_null=True,
         help_text="What the patient pays for this test. Opens a new effective-dated "

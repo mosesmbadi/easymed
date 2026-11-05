@@ -1,6 +1,6 @@
 import logging
 from django.db import models
-from django.db.models import Sum
+from django.db.models import Q, Sum
 from random import randrange, choices
 from django.conf import settings
 from datetime import datetime
@@ -363,6 +363,61 @@ class LabTestPanel(models.Model):
             min_runs = min(min_runs, runs)
 
         return min_runs if min_runs != float('inf') else 0
+
+    def reference_range_for(self, patient):
+        """
+        The ReferenceValue that applies to this patient, or None.
+
+        A blank age means no limit on that side, so a range with both blank
+        covers every age. A patient whose age is unknown only matches those.
+        When several match, the patient's own sex wins over the fallback, then
+        the range with the most specific ages.
+        """
+        ranges = self.reference_values.all()
+        age = patient.age
+        if age is None:
+            ranges = ranges.filter(age_min__isnull=True, age_max__isnull=True)
+        else:
+            ranges = ranges.filter(
+                Q(age_min__isnull=True) | Q(age_min__lte=age),
+                Q(age_max__isnull=True) | Q(age_max__gte=age))
+
+        # Anyone not recorded as M or F falls back to the male ranges when no
+        # range of their own matches.
+        sexes = [patient.gender] if patient.gender in ('M', 'F') else [patient.gender, 'M']
+        return min(
+            ranges.filter(sex__in=sexes),
+            key=lambda row: (
+                row.sex != patient.gender,
+                (row.age_min is None) + (row.age_max is None),
+                row.pk),
+            default=None)
+
+    def get_reference_values(self, patient):
+        """The patient's range in the shape the API returns it."""
+        reference_value = self.reference_range_for(patient)
+        if reference_value is None:
+            return None
+        return {
+            "low": reference_value.ref_value_low,
+            "high": reference_value.ref_value_high,
+            "critical_low": reference_value.critical_low,
+            "critical_high": reference_value.critical_high,
+        }
+
+    def missing_setup(self):
+        """
+        What this panel lacks to print a unit and a flag on the report.
+        A qualitative result has neither, so it lacks nothing.
+        """
+        if self.is_qualitative:
+            return []
+        missing = []
+        if not self.units_id:
+            missing.append('unit')
+        if not self.reference_values.all():
+            missing.append('reference range')
+        return missing
 
     def __str__(self):
         unit_symbol = self.units.symbol if self.units else ''

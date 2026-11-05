@@ -58,6 +58,7 @@ const TestPanels = () => {
   const [showPageSizeSelector, setShowPageSizeSelector] = useState(true);
   const [showInfo, setShowInfo] = useState(true);
   const [showNavButtons, setShowNavButtons] = useState(true);
+  const [showIncompleteOnly, setShowIncompleteOnly] = useState(false);
 
   useEffect(() => {
     if (auth) {
@@ -97,8 +98,11 @@ const TestPanels = () => {
 
   //   filter Panels based on search query
   const filteredPanels = labTestPanels.filter((panel) => {
+    if (showIncompleteOnly && !panel.missing_setup?.length) return false;
     return panel.name.toLowerCase().includes(searchQuery.toLowerCase())
   });
+
+  const incompleteCount = labTestPanels.filter((panel) => panel.missing_setup?.length).length;
 
   return (
     <section>
@@ -117,6 +121,21 @@ const TestPanels = () => {
           <CreateTestPanelModal />
         </div>
       </Grid>
+      {(incompleteCount > 0 || showIncompleteOnly) && (
+        <div className="my-2 flex items-center justify-between gap-4 rounded-lg bg-white px-4 py-2 text-sm">
+          <span className="text-warning">
+            {incompleteCount} {incompleteCount === 1 ? "panel is" : "panels are"} missing a unit or reference
+            range. Results print without a unit, or with N/A for the flag and range, until these are added.
+          </span>
+          <button
+            type="button"
+            onClick={() => setShowIncompleteOnly((current) => !current)}
+            className="shrink-0 rounded-xl border border-primary px-3 py-1 text-xs text-primary"
+          >
+            {showIncompleteOnly ? "Show all panels" : "Show these panels"}
+          </button>
+        </div>
+      )}
       <DataGrid
         dataSource={filteredPanels}
         allowColumnReordering={true}
@@ -169,10 +188,18 @@ const TestPanels = () => {
           }}
         />
         <Column
-          dataField="unit"
+          dataField="unit_symbol"
           caption="Unit"
           allowFiltering={true}
           allowSearch={true}
+        />
+        <Column
+          caption="Report Setup"
+          cellRender={({ data }) =>
+            data.missing_setup?.length
+              ? <span className="text-warning text-xs">Missing {data.missing_setup.join(" and ")}</span>
+              : <span className="text-gray text-xs">Complete</span>
+          }
         />
         <Column dataField="is_qualitative" caption="Qualitative" />
         <Column dataField="is_quantitative" caption="Quantitative" />

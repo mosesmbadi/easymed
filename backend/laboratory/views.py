@@ -209,7 +209,7 @@ class LabTestPanelViewSet(ForceDeleteMixin, viewsets.ModelViewSet):
     '''
     queryset = LabTestPanel.objects.select_related(
         'item', 'specimen', 'test_profile', 'units').prefetch_related(
-        'reagent_links__reagent_item', 'specimen__consumables__item')
+        'reagent_links__reagent_item', 'specimen__consumables__item', 'reference_values')
     serializer_class = LabTestPanelSerializer
     permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser | IsReceptionistUser,)
 
@@ -489,20 +489,7 @@ def render_labtestresult_pdf(request, processtestrequest_id):
         if panel.test_panel.is_qualitative:
             panel_data['is_qualitative'] = True
         else:
-            # Fetch reference values based on the patient
-            reference_value = panel.test_panel.reference_values.filter(
-                sex=patient.gender,
-                age_min__lte=patient.age,
-                age_max__gte=patient.age
-            ).first()
-            
-            # If no exact match for gender (e.g., gender 'O'), try male reference values as fallback
-            if not reference_value and patient.gender not in ['M', 'F']:
-                reference_value = panel.test_panel.reference_values.filter(
-                    sex='M',
-                    age_min__lte=patient.age,
-                    age_max__gte=patient.age
-                ).first()
+            reference_value = panel.test_panel.reference_range_for(patient)
 
             if reference_value:
                 result = panel.result

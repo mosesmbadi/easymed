@@ -35,9 +35,9 @@ LabTestProfile  (e.g. "Renal Function")
 | `LabTestProfile` | `name`; `billing_items()` |
 | `Specimen` | `name`, `max_archive_duration` (days) |
 | `SpecimenConsumable` | `specimen`, `item` (consumable), quantity |
-| `LabTestPanel` | `name`, `test_profile`, `specimen`, `units`, `item` (1:1), `is_qualitative`, `is_quantitative`, `tat` (turnaround). Methods: `sale_price`, `set_sale_price()`, `can_run(runs)`, `available_runs`, `collection_requirements` |
+| `LabTestPanel` | `name`, `test_profile`, `specimen`, `units`, `item` (1:1), `is_qualitative`, `is_quantitative`, `tat` (turnaround). Methods: `sale_price`, `set_sale_price()`, `can_run(runs)`, `available_runs`, `collection_requirements`, `reference_range_for(patient)`, `get_reference_values(patient)`, `missing_setup()` |
 | `TestPanelReagent` | `test_panel`, `reagent_item` (category `LabReagent`), `units_consumed_per_run` |
-| `ReferenceValue` | `lab_test_panel`, `sex`, `age_min/max`, `ref_value_low/high`, `critical_low/high` |
+| `ReferenceValue` | `lab_test_panel`, `sex`, `age_min/max` (blank = no limit on that side), `ref_value_low/high`, `critical_low/high` |
 | `LabTestInterpretation` | Per profile: interpretation text, `clinical_action`, `requires_immediate_attention` |
 | `LabReagent` | Extra metadata for a reagent item (CAS number, molecular weight, purity) |
 | `LabEquipment` | Analyser: `name`, `ip_address`, `port`, `data_format` (hl7/astm), `com_mode` (tcp/...) |

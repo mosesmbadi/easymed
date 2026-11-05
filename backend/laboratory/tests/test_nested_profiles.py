@@ -13,7 +13,7 @@ from billing.models import InvoiceItem, PaymentMode
 from inventory.models import Department, Item
 from inventory.services import stock as stock_service
 from laboratory import views as lab_views
-from laboratory.models import LabTestPanel, LabTestProfile, LabTestRequest, LabTestRequestPanel, Specimen
+from laboratory.models import LabTestPanel, LabTestProfile, LabTestRequest, LabTestRequestPanel, ReferenceValue, Specimen
 from patient.models import AttendanceProcess
 
 User = get_user_model()
@@ -177,6 +177,31 @@ def test_the_report_prints_sections_in_the_set_order(api, cash_mode, urinalysis,
     positions = [html.index(text) for text in (
         'URINALYSIS REPORT', 'Macroscopy', 'Colour', 'Consistency', 'Biochemistry', '>PH<', '>SG<')]
     assert positions == sorted(positions)
+
+
+def test_the_report_flags_a_result_against_a_range_with_blank_ages(
+        api, cash_mode, urinalysis, patient, company, monkeypatch):
+    ReferenceValue.objects.create(
+        lab_test_panel=LabTestPanel.objects.get(name='SG'), sex=patient.gender,
+        ref_value_low=Decimal('0.50'), ref_value_high=Decimal('2.00'))
+    visit = walk_in(api, urinalysis, patient)
+    for run in LabTestRequestPanel.objects.filter(lab_test_request__process=visit.process_test_req):
+        run.result = '1.0'
+        run.save()
+
+    rendered = {}
+
+    class FakeHTML:
+        def __init__(self, string):
+            rendered['html'] = string
+
+        def write_pdf(self):
+            return b'%PDF'
+
+    monkeypatch.setattr(lab_views, 'HTML', FakeHTML)
+    lab_views.render_labtestresult_pdf(RequestFactory().get('/'), visit.process_test_req_id)
+
+    assert '>Normal<' in rendered['html']
 
 
 def test_the_report_itself_renders_to_pdf(api, cash_mode, urinalysis, patient, company):

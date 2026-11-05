@@ -410,8 +410,8 @@ and a **Reagent Consumption Report** for a chosen period.
 | **Specimens** | Specimen types (Blood, Urine...), the consumables used to collect each, and the maximum archive duration |
 | **Test Profiles** | Groups of tests a doctor orders together |
 | **Lab Equipments** | Analysers: **Equipment Name**, **IP Address**, **Communication Port**, data format (**HL7**, **ASTM**) and connection mode (**TCP**, **RS232**, **NETSHARE**) |
-| **Test Panels** | Individual tests: name, profile, specimen, units, quantitative or qualitative, **turnaround time (TAT) goal**, **Sale Price**, and the **reagents** each run uses (**Units per run**) |
-| **Reference Values** | Normal and critical ranges by **Sex** and age range |
+| **Test Panels** | Individual tests: name, profile, specimen, units, quantitative or qualitative, **turnaround time (TAT) goal**, **Sale Price**, and the **reagents** each run uses (**Units per run**). **Report Setup** shows whether a quantitative test is missing its unit or reference range |
+| **Reference Values** | Normal and critical ranges by **Sex** and age range. Leave an age blank for no limit on that side, or both for every age |
 | **Professional Interpretation** | Interpretation text, recommended action and *Requires Immediate Attention* per profile |
 | **Archive Settings** | The storage layout (see above) |
 | **Global Settings** | Default turnaround-time goal in minutes (used when a test has none) |
@@ -424,6 +424,12 @@ Getting a new test ready to sell:
 3. Create the **Test Panel**: give it a **Sale Price** and add its reagents with
    the units each run uses.
 4. Add **Reference Values**.
+
+> **A unit is blank on the report, or the flag and range show N/A.** The report
+> prints what is set up for each test. On **Test Panels**, click **Show these
+> panels** to list the tests missing a unit or reference range, then add them. A
+> test can also show N/A when it has ranges but none matches the patient's sex
+> and age, so check that the ranges cover that patient.
 
 > **"Cannot be billed: the lab cannot run it."** If a test's reagents are not in
 > Lab stock, billing refuses the test and names the missing reagent. Receive the

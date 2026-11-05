@@ -47,7 +47,10 @@ const EditTestPanelModal = ({ open, setOpen, selectedRowData }) => {
 
   const getSelectedUnit = () => {
     if (!selectedRowData?.units) return null;
-    return unitOptions.find((u) => u.value === selectedRowData?.units) ?? null;
+    // Falls back to the row itself: the options may still be loading, or have
+    // failed, when the form opens, and saving an empty field clears the unit.
+    return unitOptions.find((u) => u.value === selectedRowData?.units)
+      ?? { value: selectedRowData.units, label: selectedRowData.unit_symbol };
   }
 
   const getSpecimens = () => {
