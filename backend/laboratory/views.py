@@ -21,6 +21,7 @@ from patient.models import Patient
 from patient.models import AttendanceProcess
 from inventory.models import StockBalance
 from inventory.services import stock as stock_service
+from .rich_text import rich_text_html
 from .utils import lab_department, reagent_stock, reagent_stock_rows
 
 # Lab stock lives in these categories. 'Lab Test' is a service (billable, no
@@ -474,7 +475,7 @@ def render_labtestresult_pdf(request, processtestrequest_id):
             if interpretation or panel.auto_interpretation:
                 profile_interpretations_dict[profile.id] = {
                     'profile_name': profile.name,
-                    'interpretation': interpretation or panel.auto_interpretation,
+                    'interpretation': rich_text_html(interpretation or panel.auto_interpretation),
                     'clinical_action': action or panel.clinical_action,
                     'requires_attention': attention if interpretation else panel.requires_attention,
                 }

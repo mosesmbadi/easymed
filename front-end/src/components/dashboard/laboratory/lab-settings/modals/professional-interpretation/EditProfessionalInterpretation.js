@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import dynamic from "next/dynamic";
 import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
 import * as Yup from "yup";
@@ -10,6 +11,11 @@ import SeachableSelect from "@/components/select/Searchable";
 import { useAuth } from "@/assets/hooks/use-auth";
 import { updateLabTestInterpretation } from "@/redux/service/laboratory";
 import { updateLabTestInterpretationToStore } from "@/redux/features/laboratory";
+import { richTextSchema } from "@/utils/rich-text";
+
+const RichTextEditor = dynamic(() => import("@/components/common/RichTextEditor"), {
+    ssr: false,
+});
 
 
 
@@ -39,7 +45,7 @@ const EditProfessionalInterpretationModal = ({ open, setOpen, selectedRowData })
 
     const validationSchema = Yup.object().shape({
         test_profile: Yup.object().required("Field is required!"),
-        interpretation: Yup.string().required("Interpretation text is required!"),
+        interpretation: richTextSchema("Interpretation text is required!"),
         clinical_action: Yup.string(),
         requires_immediate_attention: Yup.boolean()
     });
@@ -71,6 +77,9 @@ const EditProfessionalInterpretationModal = ({ open, setOpen, selectedRowData })
             <Dialog
                 fullWidth
                 maxWidth="md"
+                // The editor's image and table dialogs open outside this one, and
+                // their fields can't take focus while MUI holds it in here.
+                disableEnforceFocus
                 open={open}
                 onClose={handleClose}
                 aria-labelledby="alert-dialog-title"
@@ -99,17 +108,11 @@ const EditProfessionalInterpretationModal = ({ open, setOpen, selectedRowData })
                                         />
                                         <ErrorMessage name="test_profile" component="div" className="text-warning text-xs" />
                                     </Grid>
-                                    <Grid item md={6} xs={12}>
-                                        <Field
-                                            as="textarea"
-                                            className="block border border-gray py-3 px-4 focus:outline-none w-full"
-                                            rows={2}
-                                            placeholder="Clinical Interpretation Text"
-                                            name="interpretation"
-                                        />
+                                    <Grid item md={12} xs={12}>
+                                        <RichTextEditor name="interpretation" placeholder="Clinical Interpretation Text" />
                                         <ErrorMessage name="interpretation" component="div" className="text-warning text-xs" />
                                     </Grid>
-                                    <Grid item md={6} xs={12}>
+                                    <Grid item md={12} xs={12}>
                                         <Field
                                             as="textarea"
                                             className="block border border-gray py-3 px-4 focus:outline-none w-full"

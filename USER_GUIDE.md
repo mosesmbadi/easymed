@@ -53,11 +53,15 @@ for you (see [Administration](#17-administration)).
 
 ### Staying signed in
 
-You stay signed in for up to 7 days on the same browser. EasyMed renews your
-session in the background while you work. If it can't (for example, you were
-away for longer than that), you'll see *"Your session has expired. Please login
-again."* and go back to the login page. Anything you hadn't saved is lost, so
-save forms before leaving the computer.
+EasyMed logs you out after **30 minutes** without using it, on every computer. You'll
+see *"You were logged out after 30 minutes of inactivity."* and go back to the login
+page. Moving the mouse, typing, tapping or scrolling all count as using it, in any
+EasyMed tab; a page left open on screen does not. Logging out in one tab logs out
+the others.
+
+While you work, EasyMed renews your session in the background. If it can't, you'll
+see *"Your session has expired. Please login again."* and go back to the login page.
+Anything you hadn't saved is lost, so save forms before leaving the computer.
 
 To sign out, use the menu at the top of the screen. Always sign out on a shared
 computer.
@@ -422,7 +426,7 @@ and a **Reagent Consumption Report** for a chosen period.
 | **Lab Equipments** | Analysers: **Equipment Name**, **IP Address**, **Communication Port**, data format (**HL7**, **ASTM**) and connection mode (**TCP**, **RS232**, **NETSHARE**) |
 | **Test Panels** | Individual tests: name, profile, specimen, units, quantitative or qualitative, **turnaround time (TAT) goal**, **Sale Price**, and the **reagents** each run uses (**Units per run**). **Report Setup** shows whether a quantitative test is missing its unit or reference range |
 | **Reference Values** | Normal and critical ranges by **Sex** and age range. Leave an age blank for no limit on that side, or both for every age |
-| **Professional Interpretation** | Interpretation text, recommended action and *Requires Immediate Attention* per profile |
+| **Professional Interpretation** | Interpretation, recommended action and *Requires Immediate Attention* per profile. The interpretation can hold headings, lists, tables and uploaded images, up to about 1.5 MB of images in total, and prints on the report as laid out. Images print on the report only, not on the result screens, and images linked from a website are removed on saving, so upload them instead |
 | **Archive Settings** | The storage layout (see above) |
 | **Global Settings** | Default turnaround-time goal in minutes (used when a test has none) |
 

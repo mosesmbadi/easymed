@@ -15,7 +15,7 @@ from django.test import RequestFactory
 from django.utils import timezone
 from rest_framework.test import APIClient
 from weasyprint import HTML
-from weasyprint.formatting_structure.boxes import TextBox
+from weasyprint.formatting_structure.boxes import ReplacedBox, TextBox
 
 from inventory.models import Department, Item
 from billing.models import PaymentMode
@@ -259,6 +259,42 @@ def test_an_interpretation_keeps_its_line_breaks_and_stays_escaped(make_visit, m
 
     assert 'Stage 1: &gt;= 90<br>Stage 5: &lt;15' in html
     assert 'Repeat<br>Review' in html
+
+
+PNG = (
+    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
+)
+
+
+def test_a_formatted_interpretation_prints_with_its_table_list_and_image(make_visit, monkeypatch):
+    visit = make_visit(1)
+    profile = results(visit).first().test_panel.test_profile
+    LabTestInterpretation.objects.create(test_profile=profile, interpretation=(
+        f'<ol><li>First</li></ol><table><tbody><tr><td>Cell</td></tr></tbody></table><p><img src="{PNG}"></p>'
+        '<p><img src="file:///etc/passwd"></p>'
+    ))
+
+    html = report_html(visit, monkeypatch)
+    assert '<ol><li>First</li></ol>' in html
+    assert '<td>Cell</td>' in html
+    assert 'passwd' not in html
+
+    boxes = [box for page in laid_out_pages(visit, monkeypatch) for box in walk(page)]
+    assert any(isinstance(box, ReplacedBox) for box in boxes)
+    assert 'FIRST' in ' '.join(printed_text(box) for box in boxes if isinstance(box, TextBox))
+
+
+def test_the_copy_on_each_result_leaves_images_out_and_the_report_still_prints_them(make_visit, monkeypatch):
+    visit = make_visit(1)
+    row = results(visit).first()
+    LabTestInterpretation.objects.create(
+        test_profile=row.test_panel.test_profile, interpretation=f'<p>Text<img src="{PNG}"></p>')
+
+    row.save()
+    row.refresh_from_db()
+
+    assert row.auto_interpretation == '<p>Text</p>'
+    assert PNG in report_html(visit, monkeypatch)
 
 
 # Counts either side of where the last page runs out of room for the sign-off.
