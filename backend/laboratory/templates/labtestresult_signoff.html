@@ -1,0 +1,81 @@
+<table class="signatures">
+  <tr>
+    <td>
+      <div class="signature-header">Requested By</div>
+      <table class="signature-fields">
+        <tr>
+          <td class="sig-label">Name:</td>
+          <td class="sig-value">
+            {% if first_labtestrequest.referring_doctor or first_labtestrequest.referring_facility %}
+            {{ first_labtestrequest.referring_doctor|default:"" }}{% if first_labtestrequest.referring_doctor and first_labtestrequest.referring_facility %}, {% endif %}{{ first_labtestrequest.referring_facility|default:"" }}{% if first_labtestrequest.external_reference %} (ref. {{ first_labtestrequest.external_reference }}){% endif %}
+            {% elif attendance_process.doctor %}
+            {{ attendance_process.doctor.first_name }} {{ attendance_process.doctor.last_name }}
+            {% else %}
+            &nbsp;
+            {% endif %}
+          </td>
+        </tr>
+        <tr>
+          <td class="sig-label">Date:</td>
+          <td class="sig-value">&nbsp;</td>
+        </tr>
+        <tr>
+          <td class="sig-label">Sign:</td>
+          <td class="sig-value sig-sign"></td>
+        </tr>
+      </table>
+    </td>
+    <td>
+      <div class="signature-header">Done By</div>
+      <table class="signature-fields">
+        <tr>
+          <td class="sig-label">Name:</td>
+          <td class="sig-value">{% if attendance_process.lab_tech %}{{ attendance_process.lab_tech.first_name }} {{ attendance_process.lab_tech.last_name }}{% else %}&nbsp;{% endif %}</td>
+        </tr>
+        <tr>
+          <td class="sig-label">Date:</td>
+          <td class="sig-value">&nbsp;</td>
+        </tr>
+        <tr>
+          <td class="sig-label">Sign:</td>
+          <td class="sig-value sig-sign"></td>
+        </tr>
+      </table>
+    </td>
+    <td>
+      <div class="signature-header">Approved By</div>
+      <table class="signature-fields">
+        <tr>
+          <td class="sig-label">Name:</td>
+          <td class="sig-value">{% if approved_by %}{{ approved_by.first_name }} {{ approved_by.last_name }}{% else %}Results not yet approved{% endif %}</td>
+        </tr>
+        {% if approved_by.profession %}
+        <tr>
+          <td class="sig-label">Title:</td>
+          <td class="sig-value">{{ approved_by.profession }}</td>
+        </tr>
+        {% endif %}
+        {% if approved_by.registration_number %}
+        <tr>
+          <td class="sig-label">Reg. No:</td>
+          <td class="sig-value">{{ approved_by.registration_number }}</td>
+        </tr>
+        {% endif %}
+        {% if approved_by.phone %}
+        <tr>
+          <td class="sig-label">Contact:</td>
+          <td class="sig-value">{{ approved_by.phone }}</td>
+        </tr>
+        {% endif %}
+        <tr>
+          <td class="sig-label">Date:</td>
+          <td class="sig-value">{% if approved_by and approved_on %}{{ approved_on|date:"d/m/Y H:i" }}{% else %}&nbsp;{% endif %}</td>
+        </tr>
+        <tr>
+          <td class="sig-label">Sign:</td>
+          <td class="sig-value sig-sign">{% if approved_by_sig_url %}<img src="{{ approved_by_sig_url }}" alt="Signature" />{% endif %}</td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>

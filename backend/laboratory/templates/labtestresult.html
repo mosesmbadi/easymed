@@ -164,27 +164,74 @@
       color: #d32f2f;
     }
 
-    .signatory {
-      margin-top: 28px;
+    /* The sign-off sits at the foot of the last page. The hidden copy holds its
+       exact height in the flow, so results can't run underneath it, and when there
+       isn't room the whole block moves to a new page. */
+    .signoff {
       break-inside: avoid;
     }
 
-    .signatory img {
-      display: block;
-      max-height: 45px;
-      max-width: 160px;
-      margin-bottom: 3px;
+    .signoff-spacer {
+      visibility: hidden;
     }
 
-    .signatory-name {
-      font-size: 11px;
+    .signoff-pinned {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+    }
+
+    .signatures {
+      margin-top: 40px;
+    }
+
+    .signatures > tbody > tr > td {
+      width: 33.33%;
+      padding-right: 18px;
+      vertical-align: top;
+    }
+
+    .signatures > tbody > tr > td:last-child {
+      padding-right: 0;
+    }
+
+    .signature-header {
+      padding-bottom: 4px;
+      border-bottom: 2px solid #ddd;
       font-weight: bold;
+      color: #555;
+      text-transform: uppercase;
     }
 
-    .performed-by {
-      margin-top: 6px;
-      font-size: 9px;
+    table.signature-fields {
+      border-collapse: separate;
+      border-spacing: 0 10px;
+    }
+
+    .signature-fields td {
+      vertical-align: bottom;
+    }
+
+    .signature-fields .sig-label {
+      width: 42px;
+      font-weight: bold;
       color: #555;
+    }
+
+    .signature-fields .sig-value {
+      padding: 0 0 2px 4px;
+      border-bottom: 1px solid #aaa;
+    }
+
+    .signature-fields .sig-sign {
+      height: 34px;
+    }
+
+    .sig-sign img {
+      display: block;
+      max-height: 34px;
+      max-width: 120px;
     }
 
     .footer {
@@ -329,19 +376,9 @@
   </div>
   {% endif %}
 
-  <div class="signatory">
-    {% if approved_by %}
-    {% if approved_by_sig_url %}<img src="{{ approved_by_sig_url }}" alt="Signature" />{% endif %}
-    <div class="signatory-name">{{ approved_by.first_name }} {{ approved_by.last_name }}</div>
-    {% if approved_by.profession %}<div>{{ approved_by.profession }}</div>{% endif %}
-    {% if approved_by.registration_number %}<div>Reg. No: {{ approved_by.registration_number }}</div>{% endif %}
-    {% if approved_by.phone %}<div>Contact: {{ approved_by.phone }}</div>{% endif %}
-    {% else %}
-    <div class="signatory-name">Results not yet approved</div>
-    {% endif %}
-    {% if attendance_process.lab_tech %}
-    <div class="performed-by">Performed by: {{ attendance_process.lab_tech.first_name }} {{ attendance_process.lab_tech.last_name }}</div>
-    {% endif %}
+  <div class="signoff">
+    <div class="signoff-spacer">{% include "labtestresult_signoff.html" %}</div>
+    <div class="signoff-pinned">{% include "labtestresult_signoff.html" %}</div>
   </div>
 </body>
 

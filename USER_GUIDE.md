@@ -358,7 +358,8 @@ results become visible to the doctor (*Approved Lab Results Available*).
 **Print**. The printed report shows the patient, the referring doctor or
 facility, then each test's result, unit, flag and reference range. Results
 outside the range are in bold and marked **L** (low) or **H** (high). Any
-interpretation follows, and the report closes with the name, profession,
+interpretation follows, and the foot of the last page carries the sign-off for
+**Requested By**, **Done By** and **Approved By**. Approved By shows the name, profession,
 registration number, contact and signature of whoever approved the results, as
 set on their user profile. To group a test's results under headings, such as RBC,
 WBC and Platelets, put its panels in sub profiles.

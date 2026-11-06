@@ -5,4 +5,6 @@
 
 - In development, focus on fixing the code. Unless explicitly told, don't try to fix the already generated data.
 
+- The sign-off on the lab report (Requested By, Done By, Approved By, at the foot of the last page) must not be changed, moved or removed unless the user specifically asks for that. A request about alignment, layout or styling is not permission to change it. If a task seems to need a change to it, ask first. It lives in backend/laboratory/templates/labtestresult_signoff.html and backend/laboratory/tests/test_report_signoff.py guards it: if those tests fail, restore the sign-off rather than editing the tests.
+
 - Locally, we run the backend using C:\client_projects\proto-type\easymed\docker-compose-local.yml. So if you need to run any commands to validate or test, use docker exec
