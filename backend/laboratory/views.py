@@ -495,7 +495,15 @@ def render_labtestresult_pdf(request, processtestrequest_id):
         lineage = panel.test_panel.test_profile.lineage()
         section = sections.setdefault(lineage[0].pk, {'name': lineage[0].name, 'groups': {}})
         group_name = " - ".join(profile.name for profile in lineage[1:])
-        section['groups'].setdefault(group_name, {'name': group_name, 'panels': []})['panels'].append(panel_data)
+        group = section['groups'].setdefault(group_name, {'name': group_name, 'heading': None, 'panels': []})
+        # A panel named after its own sub profile is that heading's result, so it
+        # prints on the heading's row rather than repeating the name beneath it.
+        names_its_heading = (len(lineage) > 1
+                             and panel.test_panel.name.strip().lower() == lineage[-1].name.strip().lower())
+        if names_its_heading and group['heading'] is None:
+            group['heading'] = panel_data
+        else:
+            group['panels'].append(panel_data)
 
         if panel.test_panel.is_qualitative:
             panel_data['is_qualitative'] = True

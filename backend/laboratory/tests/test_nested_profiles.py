@@ -201,6 +201,30 @@ def report_html(api, profile, patient, monkeypatch, result):
     return rendered['html']
 
 
+def test_a_panel_named_after_its_sub_profile_prints_on_the_heading_row(
+        api, cash_mode, urine, patient, company, monkeypatch):
+    response = api.post('/lab/lab-test-profile/', {'name': 'Urinalysis', 'sale_price': '600.00'}, format='json')
+    assert response.status_code == 201, response.data
+    main = LabTestProfile.objects.get(pk=response.data['id'])
+    macro = LabTestProfile.objects.create(name='Urine Macroscopy', parent=main, sort_order=1)
+    biochem = LabTestProfile.objects.create(name='Urine Biochemistry', parent=main, sort_order=2)
+    micro = LabTestProfile.objects.create(name='Urine Microscopy', parent=main, sort_order=3)
+    add_panel('Urine Microscopy', micro, urine)
+    add_panel('Leuk', biochem, urine)
+    add_panel('Urine Macroscopy', macro, urine)
+
+    html = report_html(api, main, patient, monkeypatch, '3')
+
+    assert html.count('<td class="group-name">Urine Macroscopy</td>') == 1
+    assert html.count('<td class="group-name">Urine Microscopy</td>') == 1
+    assert '<td class="group-name" colspan="5">Urine Biochemistry</td>' in html
+    # The heading row is the only place each name prints: no second row beneath it.
+    assert html.count('Urine Macroscopy') == 1
+    assert html.count('Urine Microscopy') == 1
+    positions = [html.index(name) for name in ('Urine Macroscopy', 'Urine Biochemistry', 'Leuk', 'Urine Microscopy')]
+    assert positions == sorted(positions)
+
+
 def add_sg_range(patient):
     """Ages left blank, so it covers every age."""
     ReferenceValue.objects.create(

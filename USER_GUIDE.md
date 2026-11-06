@@ -362,7 +362,9 @@ interpretation follows, and the foot of the last page carries the sign-off for
 **Requested By**, **Done By** and **Approved By**. Approved By shows the name, profession,
 registration number, contact and signature of whoever approved the results, as
 set on their user profile. To group a test's results under headings, such as RBC,
-WBC and Platelets, put its panels in sub profiles.
+WBC and Platelets, put its panels in sub profiles. Sub profiles print in their
+**Report Order**, after any panels left directly on the main profile. A panel with
+the same name as its sub profile prints its result on the heading's row.
 
 ### 6.2 Walk-in patients
 

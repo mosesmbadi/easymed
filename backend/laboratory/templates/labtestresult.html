@@ -114,6 +114,9 @@
 
     tr.group-row td {
       padding-top: 6px;
+    }
+
+    td.group-name {
       font-weight: bold;
     }
 
@@ -332,7 +335,15 @@
       {% for group in section.groups %}
       {% if group.name %}
       <tr class="group-row">
-        <td colspan="5">{{ group.name }}</td>
+        {% if group.heading %}
+        <td class="group-name">{{ group.name }}</td>
+        <td{% if group.heading.flag %} class="abnormal"{% endif %}>{{ group.heading.result }}</td>
+        <td>{{ group.heading.unit }}</td>
+        <td class="abnormal">{{ group.heading.flag }}</td>
+        <td>{% if group.heading.ref_value_low is not None %}{{ group.heading.ref_value_low }} - {{ group.heading.ref_value_high }}{% endif %}</td>
+        {% else %}
+        <td class="group-name" colspan="5">{{ group.name }}</td>
+        {% endif %}
       </tr>
       {% endif %}
       {% for panel in group.panels %}
