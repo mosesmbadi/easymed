@@ -1,6 +1,6 @@
 """
-The sign-off on the lab report: Requested By, Done By and Approved By, at the foot
-of the last page.
+The sign-off on the lab report: Done By and Approved By, at the foot of the last
+page. Who requested the tests prints at the top, under Referred By.
 
 These tests are here to stop it being changed by accident, as has happened during
 a layout rewrite. If one fails, restore the sign-off. Only change a test when
@@ -20,7 +20,9 @@ from weasyprint.formatting_structure.boxes import TextBox
 from inventory.models import Department, Item
 from billing.models import PaymentMode
 from laboratory import views as lab_views
-from laboratory.models import LabTestPanel, LabTestProfile, LabTestRequest, LabTestRequestPanel, Specimen
+from laboratory.models import (
+    LabTestInterpretation, LabTestPanel, LabTestProfile, LabTestRequest, LabTestRequestPanel, Specimen,
+)
 from patient.models import AttendanceProcess
 
 User = get_user_model()
@@ -140,31 +142,33 @@ def printed_signoff(visit, monkeypatch):
     return printed_text(signoff)
 
 
-def test_it_has_all_three_parts(make_visit, approver, monkeypatch):
+def test_it_has_both_parts_and_no_requested_by(make_visit, approver, monkeypatch):
     visit = make_visit(1)
     approve(visit, approver)
 
     text = printed_signoff(visit, monkeypatch)
 
-    assert 'REQUESTED BY' in text
     assert 'DONE BY' in text
     assert 'APPROVED BY' in text
-    assert text.index('REQUESTED BY') < text.index('DONE BY') < text.index('APPROVED BY')
+    assert text.index('DONE BY') < text.index('APPROVED BY')
+    assert 'REQUESTED BY' not in text
 
 
-def test_requested_by_names_the_referrer(make_visit, monkeypatch):
+def test_the_referrer_still_prints_at_the_top_and_not_in_the_sign_off(make_visit, monkeypatch):
     visit = make_visit(1)
     LabTestRequest.objects.filter(process=visit.process_test_req).update(
         referring_doctor='Dr Kamau', referring_facility='Lakeside Clinic', external_reference='EXT9')
 
-    assert 'DR KAMAU, LAKESIDE CLINIC (REF. EXT9)' in printed_signoff(visit, monkeypatch)
+    assert 'DR KAMAU, LAKESIDE CLINIC (REF. EXT9)' in printed_text(laid_out_pages(visit, monkeypatch)[0])
+    assert 'DR KAMAU' not in printed_signoff(visit, monkeypatch)
 
 
-def test_requested_by_falls_back_to_the_visits_doctor(make_visit, monkeypatch):
+def test_the_visits_doctor_prints_at_the_top_when_there_is_no_referrer(make_visit, monkeypatch):
     visit = make_visit(1)
     AttendanceProcess.objects.filter(pk=visit.pk).update(doctor=staff('doc@x.test', 'Wanjiku', 'Mwangi'))
 
-    assert 'WANJIKU MWANGI' in printed_signoff(visit, monkeypatch)
+    assert 'WANJIKU MWANGI' in printed_text(laid_out_pages(visit, monkeypatch)[0])
+    assert 'WANJIKU MWANGI' not in printed_signoff(visit, monkeypatch)
 
 
 def test_done_by_names_the_lab_tech(make_visit, monkeypatch):
@@ -199,7 +203,6 @@ def test_approved_by_carries_the_approvers_signature(make_visit, approver, monke
 def test_an_unapproved_report_keeps_the_sign_off_and_says_so(make_visit, monkeypatch):
     text = printed_signoff(make_visit(1), monkeypatch)
 
-    assert 'REQUESTED BY' in text
     assert 'DONE BY' in text
     assert 'APPROVED BY' in text
     assert 'RESULTS NOT YET APPROVED' in text
@@ -228,6 +231,34 @@ def test_it_sits_at_the_foot_of_the_page(make_visit, approver, monkeypatch, pane
 
     foot_of_page = page.content_box_y() + page.height
     assert signoff.position_y + signoff.margin_height() == pytest.approx(foot_of_page, abs=1)
+
+
+@pytest.mark.parametrize('panel_count', [1, LONG_REPORT])
+def test_end_of_report_prints_once_after_the_results_and_above_the_sign_off(
+        make_visit, approver, monkeypatch, panel_count):
+    visit = make_visit(panel_count)
+    approve(visit, approver)
+
+    pages = laid_out_pages(visit, monkeypatch)
+
+    assert sum(printed_text(page).count('END OF REPORT') for page in pages) == 1
+    page = pages[-1]
+    marker = boxes_with_class(page, 'end-of-report')[0]
+    assert marker.position_y + marker.margin_height() <= signoff_on(page).position_y + 1
+    for table in boxes_with_class(page, 'results'):
+        assert table.position_y + table.margin_height() <= marker.position_y + 1
+
+
+def test_an_interpretation_keeps_its_line_breaks_and_stays_escaped(make_visit, monkeypatch):
+    visit = make_visit(1)
+    profile = results(visit).first().test_panel.test_profile
+    LabTestInterpretation.objects.create(
+        test_profile=profile, interpretation='Stage 1: >= 90\nStage 5: <15', clinical_action='Repeat\nReview')
+
+    html = report_html(visit, monkeypatch)
+
+    assert 'Stage 1: &gt;= 90<br>Stage 5: &lt;15' in html
+    assert 'Repeat<br>Review' in html
 
 
 # Counts either side of where the last page runs out of room for the sign-off.

@@ -6,7 +6,7 @@ import jwtDecode from "jwt-decode";
 import SimpleCrypto from "simple-crypto-js";
 import { useDispatch } from "react-redux";
 import { getAllUserPermissions } from "@/redux/features/auth";
-import { TOKEN_REFRESHED_EVENT } from "@/assets/hooks/use-axios";
+import { TOKEN_REFRESHED_EVENT, renewSession } from "@/assets/hooks/use-axios";
 import { toast } from "react-toastify";
 
 export const authContext = createContext();
@@ -42,6 +42,7 @@ export const AuthProvider = ({ children }) => {
   });
 
   const [message, setMessage] = useState("");
+  const [renewingSession, setRenewingSession] = useState(false);
 
   // login User
   const loginUser = async (email, password) => {
@@ -105,7 +106,26 @@ export const AuthProvider = ({ children }) => {
     logoutUser: logoutUser,
     user: user,
     isTokenValid: isTokenValid,
+    renewingSession: renewingSession,
   };
+
+  // An expired access token only means it is time for a new one. The session
+  // itself lasts as long as the refresh token, and the backend decides that.
+  const renewExpiredSession = (token) => {
+    setRenewingSession(true);
+    return renewSession(token).finally(() => setRenewingSession(false));
+  };
+
+  // A page can sit open past the token's expiry with no API call to renew it, and
+  // the route guard would then turn the next navigation away.
+  useEffect(() => {
+    const storedToken = parseStoredToken("token");
+    if (storedToken && !isTokenValid(storedToken) && parseStoredToken("refresh")) {
+      renewExpiredSession(storedToken).catch((error) => {
+        console.error("Could not renew the session:", error);
+      });
+    }
+  }, [router.asPath]);
 
   // Adopt the new access token whenever the axios interceptor silently
   // refreshes it, so the context never keeps serving an expired token.
@@ -127,13 +147,10 @@ export const AuthProvider = ({ children }) => {
 
   // decode the token and set the user when a component mounts
   useEffect(() => {
-    const storedToken = parseStoredToken("token");
-
-    if (storedToken && isTokenValid(storedToken)) {
-      // Token exists and is valid
+    const startSession = (token) => {
       try {
-        const decodedToken = jwtDecode(storedToken);
-        setUser({ ...decodedToken, token: storedToken });
+        const decodedToken = jwtDecode(token);
+        setUser({ ...decodedToken, token });
 
         // Only fetch permissions for non-patient users
         if (decodedToken.role !== 'patient') {
@@ -153,8 +170,21 @@ export const AuthProvider = ({ children }) => {
         // If token decode fails, clear it
         logoutUser();
       }
+    };
+
+    const storedToken = parseStoredToken("token");
+
+    if (storedToken && isTokenValid(storedToken)) {
+      // Token exists and is valid
+      startSession(storedToken);
+    } else if (storedToken && parseStoredToken("refresh")) {
+      // Reopened after the access token expired. renewSession logs the user out
+      // itself if the backend refuses the refresh token.
+      renewExpiredSession(storedToken).then(startSession).catch((error) => {
+        console.error("Could not renew the session:", error);
+      });
     } else if (storedToken) {
-      // Token exists but is invalid/expired
+      // Token expired and nothing to renew it with
       console.log("Token is expired or invalid, logging out");
       logoutUser();
     }
