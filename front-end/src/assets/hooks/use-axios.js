@@ -1,4 +1,5 @@
 import axios from 'axios';
+import jwtDecode from 'jwt-decode';
 import { toast } from 'react-toastify';
 import { APP_API_URL } from '@/assets/api-endpoints';
 
@@ -32,6 +33,75 @@ const forceLogout = (message = 'Your session has expired. Please login again.') 
     }
 };
 
+const stillLive = (token) => {
+    try {
+        return jwtDecode(token).exp > Date.now() / 1000;
+    } catch {
+        return false;
+    }
+};
+
+// The backend blacklists a refresh token the moment it is used, so only one
+// renewal may run at a time: a second one sending the same token is refused,
+// and that refusal would log out a user whose session is healthy.
+const holdingRefreshLock = (work) => (
+    typeof navigator !== 'undefined' && navigator.locks
+        // Shared between tabs. Browsers only offer this over HTTPS or localhost.
+        ? navigator.locks.request('easymed-token-refresh', work)
+        : work()
+);
+
+const fetchNewAccessToken = async (rejectedToken) => {
+    // Another tab, or a renewal that finished while this request was in the air,
+    // may already have replaced the token that was just rejected.
+    const storedToken = parseStoredToken('token');
+    if (storedToken && storedToken !== rejectedToken && stillLive(storedToken)) {
+        return storedToken;
+    }
+
+    const refreshToken = parseStoredToken('refresh');
+    if (!refreshToken) {
+        forceLogout();
+        throw new Error('No refresh token stored');
+    }
+
+    try {
+        // This runs in the browser, so it must go through the Next.js proxy
+        // route, not the bare backend path.
+        const { data } = await axios.post(APP_API_URL.REFRESH_TOKEN, { refresh: refreshToken });
+        localStorage.setItem('token', JSON.stringify(data.access));
+        if (data.refresh) {
+            // simplejwt rotates the refresh token when ROTATE_REFRESH_TOKENS=True
+            localStorage.setItem('refresh', JSON.stringify(data.refresh));
+        }
+        return data.access;
+    } catch (error) {
+        // Only the backend refusing the token ends the session. A network failure
+        // or a server restart says nothing about it, so the user stays logged in.
+        if ([400, 401].includes(error.response?.status)) {
+            forceLogout();
+        }
+        throw error;
+    }
+};
+
+let renewalInFlight = null;
+
+// Resolves with a live access token. Everything asking at once shares one renewal.
+export const renewSession = (rejectedToken) => {
+    if (!renewalInFlight) {
+        renewalInFlight = holdingRefreshLock(() => fetchNewAccessToken(rejectedToken))
+            .then((accessToken) => {
+                announceRefreshedToken(accessToken);
+                return accessToken;
+            })
+            .finally(() => {
+                renewalInFlight = null;
+            });
+    }
+    return renewalInFlight;
+};
+
 const UseAxios = (useAuth) => {
     const user = useAuth;
 
@@ -51,36 +121,12 @@ const UseAxios = (useAuth) => {
             if (error.response?.status === 401 && !originalRequest._retry) {
                 originalRequest._retry = true; // prevent infinite retry loop
 
-                const refreshToken = parseStoredToken('refresh');
+                const rejectedToken = originalRequest.headers['Authorization']?.replace('Bearer ', '');
+                const newAccessToken = await renewSession(rejectedToken);
 
-                if (refreshToken) {
-                    try {
-                        // Attempt silent token refresh.
-                        // This runs in the browser, so it must go through the
-                        // Next.js proxy route, not the bare backend path.
-                        const { data } = await axios.post(APP_API_URL.REFRESH_TOKEN, { refresh: refreshToken });
-                        const newAccessToken = data.access;
-
-                        // Persist the new tokens
-                        localStorage.setItem('token', JSON.stringify(newAccessToken));
-                        if (data.refresh) {
-                            // simplejwt rotates the refresh token when ROTATE_REFRESH_TOKENS=True
-                            localStorage.setItem('refresh', JSON.stringify(data.refresh));
-                        }
-                        announceRefreshedToken(newAccessToken);
-
-                        // Retry original request with the new access token
-                        originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
-                        return axiosInstance(originalRequest);
-                    } catch (refreshError) {
-                        // Refresh token is also invalid/expired — force logout
-                        forceLogout();
-                        return Promise.reject(refreshError);
-                    }
-                }
-
-                // No refresh token stored — force logout
-                forceLogout();
+                // Retry original request with the new access token
+                originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
+                return axiosInstance(originalRequest);
             }
 
             return Promise.reject(error);

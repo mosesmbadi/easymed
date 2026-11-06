@@ -1,31 +1,6 @@
 <table class="signatures">
   <tr>
     <td>
-      <div class="signature-header">Requested By</div>
-      <table class="signature-fields">
-        <tr>
-          <td class="sig-label">Name:</td>
-          <td class="sig-value">
-            {% if first_labtestrequest.referring_doctor or first_labtestrequest.referring_facility %}
-            {{ first_labtestrequest.referring_doctor|default:"" }}{% if first_labtestrequest.referring_doctor and first_labtestrequest.referring_facility %}, {% endif %}{{ first_labtestrequest.referring_facility|default:"" }}{% if first_labtestrequest.external_reference %} (ref. {{ first_labtestrequest.external_reference }}){% endif %}
-            {% elif attendance_process.doctor %}
-            {{ attendance_process.doctor.first_name }} {{ attendance_process.doctor.last_name }}
-            {% else %}
-            &nbsp;
-            {% endif %}
-          </td>
-        </tr>
-        <tr>
-          <td class="sig-label">Date:</td>
-          <td class="sig-value">&nbsp;</td>
-        </tr>
-        <tr>
-          <td class="sig-label">Sign:</td>
-          <td class="sig-value sig-sign"></td>
-        </tr>
-      </table>
-    </td>
-    <td>
       <div class="signature-header">Done By</div>
       <table class="signature-fields">
         <tr>

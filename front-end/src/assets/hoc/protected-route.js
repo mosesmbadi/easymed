@@ -8,11 +8,16 @@ import { authContext } from '@/components/use-context'
 const ProtectedRoute = ({ permission, children }) => {
     const { userPermissions } = useSelector((store) => store.auth);
     const auth = useAuth();
-    const { isTokenValid } = useContext(authContext);
+    const { isTokenValid, renewingSession } = useContext(authContext);
 
     // Check if user is authenticated and has valid token
     const isAuthenticated = auth?.token && auth?.user_id && isTokenValid(auth.token);
-    
+
+    if (!isAuthenticated && renewingSession) {
+        // A new token is on its way: don't flash "session expired" at the user
+        return null;
+    }
+
     if (!isAuthenticated) {
         // User is not authenticated or token is invalid/expired
         return <NotAuthorized isAuthenticated={false} requiredPermission={permission} />

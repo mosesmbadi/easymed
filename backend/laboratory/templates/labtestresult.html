@@ -163,7 +163,21 @@
     }
 
     .interpretation-test-name {
+      margin-bottom: 3px;
       font-weight: bold;
+    }
+
+    .interpretation-text {
+      margin-bottom: 3px;
+      line-height: 1.5;
+    }
+
+    /* Stays with the sign-off, so it is never left alone at the foot of a page. */
+    .end-of-report {
+      break-after: avoid;
+      margin-top: 16px;
+      color: #555;
+      text-align: center;
     }
 
     .attention-flag {
@@ -190,11 +204,11 @@
     }
 
     .signatures {
-      margin-top: 40px;
+      margin-top: 14px;
     }
 
     .signatures > tbody > tr > td {
-      width: 33.33%;
+      width: 50%;
       padding-right: 18px;
       vertical-align: top;
     }
@@ -204,7 +218,7 @@
     }
 
     .signature-header {
-      padding-bottom: 4px;
+      padding-bottom: 2px;
       border-bottom: 2px solid #ddd;
       font-weight: bold;
       color: #555;
@@ -213,7 +227,7 @@
 
     table.signature-fields {
       border-collapse: separate;
-      border-spacing: 0 10px;
+      border-spacing: 0 4px;
     }
 
     .signature-fields td {
@@ -232,12 +246,12 @@
     }
 
     .signature-fields .sig-sign {
-      height: 34px;
+      height: 26px;
     }
 
     .sig-sign img {
       display: block;
-      max-height: 34px;
+      max-height: 26px;
       max-width: 120px;
     }
 
@@ -394,14 +408,16 @@
         {{ profile.profile_name }}
         {% if profile.requires_attention %}<span class="attention-flag">⚠ URGENT</span>{% endif %}
       </div>
-      <div><strong>Interpretation:</strong> {{ profile.interpretation }}</div>
+      <div class="interpretation-text"><strong>Interpretation:</strong><br />{{ profile.interpretation|linebreaksbr }}</div>
       {% if profile.clinical_action %}
-      <div><strong>Recommended Action:</strong> {{ profile.clinical_action }}</div>
+      <div class="interpretation-text"><strong>Recommended Action:</strong><br />{{ profile.clinical_action|linebreaksbr }}</div>
       {% endif %}
     </div>
     {% endfor %}
   </div>
   {% endif %}
+
+  <div class="end-of-report">---------------- End of Report ----------------</div>
 
   <div class="signoff">
     <div class="signoff-spacer">{% include "labtestresult_signoff.html" %}</div>

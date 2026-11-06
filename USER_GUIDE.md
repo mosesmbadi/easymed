@@ -359,8 +359,9 @@ results become visible to the doctor (*Approved Lab Results Available*).
 facility, then each test's result, unit, flag and reference range. Results
 outside the range are in bold and marked **L** (low) or **H** (high). A
 qualitative test prints only its typed result, across the width of the row. Any
-interpretation follows, and the foot of the last page carries the sign-off for
-**Requested By**, **Done By** and **Approved By**. Approved By shows the name, profession,
+interpretation follows, with its line breaks kept as you typed them in Lab Settings,
+then an **End of Report** line. The foot of the last page carries the sign-off for
+**Done By** and **Approved By**. Approved By shows the name, profession,
 registration number, contact and signature of whoever approved the results, as
 set on their user profile. To group a test's results under headings, such as RBC,
 WBC and Platelets, put its panels in sub profiles. Sub profiles print in their
