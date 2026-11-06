@@ -8,13 +8,13 @@ from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema
 from django.http import HttpResponse
 from django.core.exceptions import ValidationError as DjangoValidationError
-from django.db.models import Case, F, IntegerField, Q, Value, When
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.conf import settings
 from datetime import timedelta
 from django.utils import timezone
 from django.template.loader import get_template, render_to_string
-from weasyprint import HTML
+from easymed.pdf import HTML
 
 from company.models import Company
 from patient.models import Patient
@@ -300,15 +300,12 @@ class LabTestRequestPanelViewSet(viewsets.ModelViewSet):
         serializer.save(**({'approved_by': self.request.user} if approving else {}))
 
 
-# Results come up for entry in the order the report will print them.
-REQUEST_PANEL_ORDER = (
-    'test_panel__test_profile__sort_order', 'test_panel__test_profile__name',
-    # LabTestPanel.report_block, in SQL.
-    Case(
-        When(test_panel__test_profile__parent__isnull=True, then=F('test_panel__report_group')),
-        default=Value(0), output_field=IntegerField()),
-    'test_panel__sort_order', 'test_panel__name', 'id',
-)
+def in_report_order(results):
+    """The one order for a request's results: as the report prints them, which is
+    also how they come up for entry. LabTestPanel.display_key holds the rule."""
+    return sorted(
+        results.select_related('test_panel__test_profile__parent__parent'),
+        key=lambda row: (row.test_panel.display_key(), row.pk))
 
 
 class LabTestRequestPanelByLabTestRequestId(generics.ListAPIView):
@@ -316,8 +313,7 @@ class LabTestRequestPanelByLabTestRequestId(generics.ListAPIView):
 
     def get_queryset(self):
         lab_test_request_id = self.kwargs['lab_test_request_id']
-        return LabTestRequestPanel.objects.filter(lab_test_request_id=lab_test_request_id).order_by(
-            *REQUEST_PANEL_ORDER)
+        return in_report_order(LabTestRequestPanel.objects.filter(lab_test_request_id=lab_test_request_id))
     
     
 class PatientSampleByProcessId(generics.ListAPIView):
@@ -366,8 +362,7 @@ class LabTestRequestPanelBySampleView(generics.ListAPIView):
         except PatientSample.DoesNotExist:
             return LabTestRequestPanel.objects.none()  # No panels if patient sample is not found
 
-        return LabTestRequestPanel.objects.filter(patient_sample=patient_sample).order_by(
-            *REQUEST_PANEL_ORDER)
+        return in_report_order(LabTestRequestPanel.objects.filter(patient_sample=patient_sample))
 
     def get(self, request, *args, **kwargs):
         patient_sample_code = self.kwargs.get('patient_sample_code')
@@ -461,9 +456,7 @@ def render_labtestresult_pdf(request, processtestrequest_id):
 
     profile_interpretations_dict = {}
 
-    ordered = sorted(
-        panels.select_related('test_panel__test_profile__parent__parent', 'test_panel__units'),
-        key=lambda row: row.test_panel.display_key())
+    ordered = in_report_order(panels.select_related('test_panel__units'))
     sections = {}
 
     # Only process panels that have results (already filtered in the query)

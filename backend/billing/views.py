@@ -10,7 +10,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.template.loader import get_template
 from django.conf import settings
-from weasyprint import HTML
+from easymed.pdf import HTML
 from rest_framework import serializers
 from rest_framework.response import Response
 from django.db.models import ProtectedError, Sum, Q

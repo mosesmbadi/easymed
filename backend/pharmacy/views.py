@@ -121,7 +121,7 @@ def print_pharmacy_report(request):
         return JsonResponse({"error": "Invalid report type"}, status=400)
 
     from django.template.loader import render_to_string
-    from weasyprint import HTML
+    from easymed.pdf import HTML
     import tempfile
     from django.http import HttpResponse
 

@@ -1,7 +1,7 @@
 from io import BytesIO
 from django.http import HttpResponse
 from django.template.loader import render_to_string, get_template
-from weasyprint import HTML
+from easymed.pdf import HTML
 from .models import PatientAdmission, PatientDischarge
 from company.models import Company
 from laboratory.models import LabTestRequest, PatientSample

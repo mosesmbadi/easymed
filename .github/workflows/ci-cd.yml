@@ -4,9 +4,13 @@ name: CI
 # hospital has its own deployment repo (e.g. afurqan-deployment) that pulls
 # these images at a tag it chooses.
 
+# Pushes to dev branches and pull requests only run the tests: images are published
+# from main and standalone-lab alone, see the `if` on build-and-push.
 on:
   push:
-    branches: [ "main" , "standalone-lab"]
+    branches: [ "main" , "standalone-lab", "dev-*" ]
+  pull_request:
+    branches: [ "main" , "standalone-lab" ]
 
 env:
   # Docker Hub namespace the images are pushed to. Set the DOCKERHUB_NAMESPACE
@@ -61,7 +65,7 @@ jobs:
             -e GEMINI_API_KEY='test-gemini-api-key-for-ci' \
             -e NEXT_PUBLIC_BACKEND_URL='http://localhost:8080/' \
             -e NEXT_PUBLIC_HMIS_VERSION='v0.0.1-test' \
-            backend-test:ci sh -c "python manage.py check && pytest -v --ds=easymed.settings.testing"
+            backend-test:ci sh -c "python manage.py check && python manage.py makemigrations --check --dry-run --settings=easymed.settings.testing && pytest -v --ds=easymed.settings.testing"
 
 
   # ============================ BUILD & PUSH IMAGES ============================ #
@@ -74,6 +78,7 @@ jobs:
   #   latest             main only, so a feature branch never moves it
   # ============================================================================= #
   build-and-push:
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/standalone-lab')
     runs-on: ubuntu-latest
     needs:
       - test-backend

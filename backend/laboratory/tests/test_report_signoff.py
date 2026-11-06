@@ -14,7 +14,7 @@ from django.contrib.auth import get_user_model
 from django.test import RequestFactory
 from django.utils import timezone
 from rest_framework.test import APIClient
-from weasyprint import HTML
+from easymed.pdf import HTML
 from weasyprint.formatting_structure.boxes import ReplacedBox, TextBox
 
 from inventory.models import Department, Item
