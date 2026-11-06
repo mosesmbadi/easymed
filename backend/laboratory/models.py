@@ -271,9 +271,15 @@ class LabTestPanel(models.Model):
     report_group = models.PositiveSmallIntegerField(
         default=0, help_text="Panels sharing a number print together, with a gap before the next number")
 
+    @property
+    def report_block(self):
+        """The block it prints in. Under a sub profile the heading is the grouping,
+        so Report Order alone decides and a report_group left over has no say."""
+        return 0 if self.test_profile.parent_id else self.report_group
+
     def display_key(self):
         """Sorts panels into report order, profile first."""
-        return (self.test_profile.display_key(), self.report_group, self.sort_order, self.name.lower(), self.pk)
+        return (self.test_profile.display_key(), self.report_block, self.sort_order, self.name.lower(), self.pk)
 
     def clean(self):
         if self.item and self.item.category != 'Lab Test':

@@ -225,6 +225,39 @@ def test_a_panel_named_after_its_sub_profile_prints_on_the_heading_row(
     assert positions == sorted(positions)
 
 
+def test_report_order_decides_under_a_heading_whatever_the_report_group(
+        api, cash_mode, urinalysis, patient, company, monkeypatch):
+    LabTestPanel.objects.filter(name='PH').update(report_group=5)
+    LabTestPanel.objects.filter(name='SG').update(report_group=1)
+
+    assert [panel.name for panel in urinalysis.panels_in_report_order()] == ['Colour', 'Consistency', 'PH', 'SG']
+
+    html = report_html(api, urinalysis, patient, monkeypatch, '1.0')
+
+    assert html.index('>PH<') < html.index('>SG<')
+    assert '<tr class="block-gap">' not in html
+
+    entry_order = LabTestRequestPanel.objects.filter(
+        test_panel__test_profile__name='Biochemistry').order_by(*lab_views.REQUEST_PANEL_ORDER)
+    assert [run.test_panel.name for run in entry_order] == ['PH', 'SG']
+
+
+def test_panels_with_no_heading_still_print_in_their_report_groups(
+        api, cash_mode, urine, patient, company, monkeypatch):
+    response = api.post('/lab/lab-test-profile/', {'name': 'Analyzer', 'sale_price': '600.00'}, format='json')
+    assert response.status_code == 201, response.data
+    main = LabTestProfile.objects.get(pk=response.data['id'])
+    add_panel('Alpha', main, urine, order=1)
+    add_panel('Beta', main, urine, order=2)
+    LabTestPanel.objects.filter(name='Alpha').update(report_group=2)
+    LabTestPanel.objects.filter(name='Beta').update(report_group=1)
+
+    html = report_html(api, main, patient, monkeypatch, '1.0')
+
+    assert html.index('>Beta<') < html.index('>Alpha<')
+    assert '<tr class="block-gap">' in html
+
+
 def add_sg_range(patient):
     """Ages left blank, so it covers every age."""
     ReferenceValue.objects.create(
