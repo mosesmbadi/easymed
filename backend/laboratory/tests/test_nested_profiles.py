@@ -267,6 +267,43 @@ def test_a_panel_with_no_range_prints_blank_not_na(api, cash_mode, urinalysis, p
     assert 'N/A' not in html
 
 
+@pytest.fixture
+def stool(urine):
+    profile = LabTestProfile.objects.create(name='Stool Analysis')
+    for name in ('Stool Macroscopy', 'Stool Microscopy'):
+        panel = add_panel(name, profile, urine, qualitative=True)
+        stock_service.set_sale_price(panel.item, Decimal('100.00'))
+    return profile
+
+
+def test_a_typed_result_prints_across_the_row_with_no_unit_or_range_columns(
+        api, cash_mode, stool, patient, company, monkeypatch):
+    html = report_html(api, stool, patient, monkeypatch, 'Brown, semi-formed')
+
+    assert '<td colspan="4">Brown, semi-formed</td>' in html
+    assert '<th colspan="4">Results</th>' in html
+    assert '>Unit<' not in html
+    assert 'Ref. Ranges' not in html
+
+
+def test_a_typed_result_keeps_its_line_breaks(api, cash_mode, stool, patient, company, monkeypatch):
+    html = report_html(api, stool, patient, monkeypatch, 'Brown\nNo o/c seen')
+
+    assert 'Brown<br>No o/c seen' in html
+
+
+def test_a_section_mixing_both_kinds_keeps_its_columns(api, cash_mode, urinalysis, patient, company, monkeypatch):
+    add_sg_range(patient)
+
+    html = report_html(api, urinalysis, patient, monkeypatch, '1.0')
+
+    assert '>Unit<' in html
+    assert 'Ref. Ranges' in html
+    assert '0.50 - 2.00' in html
+    # Colour and Consistency are qualitative; PH and SG are not.
+    assert html.count('<td colspan="4">1.0</td>') == 2
+
+
 def test_the_report_itself_renders_to_pdf(api, cash_mode, urinalysis, patient, company):
     visit = walk_in(api, urinalysis, patient)
     for run in LabTestRequestPanel.objects.filter(lab_test_request__process=visit.process_test_req):

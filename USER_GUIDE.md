@@ -357,7 +357,8 @@ results become visible to the doctor (*Approved Lab Results Available*).
 **Step 5. Report.** Under **Lab Results**, select **Preview Results** or
 **Print**. The printed report shows the patient, the referring doctor or
 facility, then each test's result, unit, flag and reference range. Results
-outside the range are in bold and marked **L** (low) or **H** (high). Any
+outside the range are in bold and marked **L** (low) or **H** (high). A
+qualitative test prints only its typed result, across the width of the row. Any
 interpretation follows, and the foot of the last page carries the sign-off for
 **Requested By**, **Done By** and **Approved By**. Approved By shows the name, profession,
 registration number, contact and signature of whoever approved the results, as

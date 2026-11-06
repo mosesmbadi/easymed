@@ -124,7 +124,7 @@ const EditTestPanelModal = ({ open, setOpen, selectedRowData }) => {
         reagent_item: row.reagent_item,
         units_consumed_per_run: parseInt(row.units_consumed_per_run) || 1,
       })),
-      is_quantitative: formValue.is_quantitative ? true : false,
+      is_quantitative: !formValue.is_qualitative,
       tat: formValue.tat ? (() => {
         const mins = parseInt(formValue.tat);
         const h = Math.floor(mins / 60).toString().padStart(2, '0');

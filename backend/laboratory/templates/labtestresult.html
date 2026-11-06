@@ -91,6 +91,10 @@
       text-transform: uppercase;
     }
 
+    table.results {
+      table-layout: fixed;
+    }
+
     table.results th {
       padding: 3px 4px;
       text-align: left;
@@ -325,10 +329,14 @@
     <thead>
       <tr>
         <th class="col-name">Investigations</th>
+        {% if section.all_qualitative %}
+        <th colspan="4">Results</th>
+        {% else %}
         <th class="col-result">Results</th>
         <th class="col-unit">Unit</th>
         <th class="col-flag"></th>
         <th class="col-range">Ref. Ranges</th>
+        {% endif %}
       </tr>
     </thead>
     <tbody>
@@ -337,10 +345,14 @@
       <tr class="group-row">
         {% if group.heading %}
         <td class="group-name">{{ group.name }}</td>
+        {% if group.heading.is_qualitative %}
+        <td colspan="4">{{ group.heading.result|linebreaksbr }}</td>
+        {% else %}
         <td{% if group.heading.flag %} class="abnormal"{% endif %}>{{ group.heading.result }}</td>
         <td>{{ group.heading.unit }}</td>
         <td class="abnormal">{{ group.heading.flag }}</td>
         <td>{% if group.heading.ref_value_low is not None %}{{ group.heading.ref_value_low }} - {{ group.heading.ref_value_high }}{% endif %}</td>
+        {% endif %}
         {% else %}
         <td class="group-name" colspan="5">{{ group.name }}</td>
         {% endif %}
@@ -354,10 +366,14 @@
       {% endif %}{% endifchanged %}
       <tr>
         <td{% if group.name %} class="grouped"{% endif %}>{{ panel.test_panel_name }}</td>
+        {% if panel.is_qualitative %}
+        <td colspan="4">{{ panel.result|linebreaksbr }}</td>
+        {% else %}
         <td{% if panel.flag %} class="abnormal"{% endif %}>{{ panel.result }}</td>
         <td>{{ panel.unit }}</td>
         <td class="abnormal">{{ panel.flag }}</td>
         <td>{% if panel.ref_value_low is not None %}{{ panel.ref_value_low }} - {{ panel.ref_value_high }}{% endif %}</td>
+        {% endif %}
       </tr>
       {% endfor %}
       {% endfor %}

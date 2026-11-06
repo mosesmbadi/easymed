@@ -528,8 +528,17 @@ def render_labtestresult_pdf(request, processtestrequest_id):
                     # Handle non-numeric results
                     pass
 
+    def all_qualitative(groups):
+        """True when no row in the section has a unit or range to print."""
+        rows = [row for group in groups for row in [group['heading'], *group['panels']] if row]
+        return all(row.get('is_qualitative') for row in rows)
+
     context['report_sections'] = [
-        {'name': section['name'], 'groups': list(section['groups'].values())}
+        {
+            'name': section['name'],
+            'groups': list(section['groups'].values()),
+            'all_qualitative': all_qualitative(section['groups'].values()),
+        }
         for section in sections.values()
     ]
     context['profile_interpretations'] = list(profile_interpretations_dict.values())

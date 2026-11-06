@@ -262,7 +262,7 @@ const AddTestResults = () => {
           caption="Type"
           allowEditing={false}
           cellRender={(cellData) => {
-            return cellData.data.is_quantitative ? "Quantitative" : "Qualitative";
+            return cellData.data.is_qualitative ? "Qualitative" : "Quantitative";
           }}
         />
       </DataGrid>
