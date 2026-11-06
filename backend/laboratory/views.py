@@ -8,7 +8,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema
 from django.http import HttpResponse
 from django.core.exceptions import ValidationError as DjangoValidationError
-from django.db.models import Q
+from django.db.models import Case, F, IntegerField, Q, Value, When
 from django.shortcuts import get_object_or_404
 from django.conf import settings
 from datetime import timedelta
@@ -303,7 +303,11 @@ class LabTestRequestPanelViewSet(viewsets.ModelViewSet):
 # Results come up for entry in the order the report will print them.
 REQUEST_PANEL_ORDER = (
     'test_panel__test_profile__sort_order', 'test_panel__test_profile__name',
-    'test_panel__report_group', 'test_panel__sort_order', 'test_panel__name', 'id',
+    # LabTestPanel.report_block, in SQL.
+    Case(
+        When(test_panel__test_profile__parent__isnull=True, then=F('test_panel__report_group')),
+        default=Value(0), output_field=IntegerField()),
+    'test_panel__sort_order', 'test_panel__name', 'id',
 )
 
 
@@ -482,7 +486,7 @@ def render_labtestresult_pdf(request, processtestrequest_id):
                 
         panel_data = {
             'test_panel_name': panel.test_panel.name,
-            'report_group': panel.test_panel.report_group,
+            'report_group': panel.test_panel.report_block,
             'result': panel.result,
             # Printed beside the result: L or H, and nothing when it is in range.
             'flag': '',

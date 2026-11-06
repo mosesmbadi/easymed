@@ -369,7 +369,8 @@ then an **End of Report** line. The foot of the last page carries the sign-off f
 registration number, contact and signature of whoever approved the results, as
 set on their user profile. To group a test's results under headings, such as RBC,
 WBC and Platelets, put its panels in sub profiles. Sub profiles print in their
-**Report Order**, after any panels left directly on the main profile. A panel with
+**Report Order**, after any panels left directly on the main profile, and each sub
+profile's panels print in their own **Report Order**. A panel with
 the same name as its sub profile prints its result on the heading's row.
 
 ### 6.2 Walk-in patients
