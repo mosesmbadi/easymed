@@ -2,7 +2,7 @@ from django.shortcuts import render
 
 from django.http import HttpResponse
 from django.template.loader import render_to_string
-from weasyprint import HTML
+from easymed.pdf import HTML
 from io import BytesIO
 from django.utils import timezone
 from django.http import JsonResponse

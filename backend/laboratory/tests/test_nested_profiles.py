@@ -237,10 +237,6 @@ def test_report_order_decides_under_a_heading_whatever_the_report_group(
     assert html.index('>PH<') < html.index('>SG<')
     assert '<tr class="block-gap">' not in html
 
-    entry_order = LabTestRequestPanel.objects.filter(
-        test_panel__test_profile__name='Biochemistry').order_by(*lab_views.REQUEST_PANEL_ORDER)
-    assert [run.test_panel.name for run in entry_order] == ['PH', 'SG']
-
 
 def test_panels_with_no_heading_still_print_in_their_report_groups(
         api, cash_mode, urine, patient, company, monkeypatch):

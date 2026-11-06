@@ -1,6 +1,6 @@
 import os
 from datetime import datetime
-from weasyprint import HTML
+from easymed.pdf import HTML
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404
 from django.conf import settings

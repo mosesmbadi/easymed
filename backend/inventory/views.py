@@ -15,7 +15,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from weasyprint import HTML
+from easymed.pdf import HTML
 
 from company.models import Company
 from customuser.models import CustomUser
