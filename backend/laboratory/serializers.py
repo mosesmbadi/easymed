@@ -14,6 +14,7 @@ from company.models import InsuranceCompany
 from customuser.models import CustomUser
 from patient.models import Patient
 from inventory.services import stock as stock_service
+from .rich_text import MAX_RICH_TEXT_LENGTH, has_content, rich_text_html
 from .models import (
     LabReagent,
     LabTestRequest,
@@ -160,7 +161,19 @@ class LabTestProfileSerializer(serializers.ModelSerializer):
         return data
 
 
+class RichTextField(serializers.CharField):
+    """Formatted text, cleaned on the way in and again on the way out, so the
+    screens can display it as HTML whatever got into the database."""
+
+    def to_internal_value(self, data):
+        return rich_text_html(super().to_internal_value(data))
+
+    def to_representation(self, value):
+        return rich_text_html(value)
+
+
 class LabTestRequestPanelSerializer(serializers.ModelSerializer):
+    auto_interpretation = RichTextField(required=False, allow_null=True, allow_blank=True)
     test_panel_name = serializers.ReadOnlyField(source='test_panel.name')
     item = serializers.CharField(source='test_panel.item.id', read_only=True)
     sale_price = serializers.SerializerMethodField()
@@ -690,7 +703,16 @@ class PatientSampleConsumableSerializer(serializers.ModelSerializer):
 
 class LabTestInterpretationSerializer(serializers.ModelSerializer):
     test_profile_name = serializers.ReadOnlyField(source='test_profile.name')
-    
+    interpretation = RichTextField()
+
+    def validate_interpretation(self, value):
+        if not has_content(value):
+            raise serializers.ValidationError("Interpretation text is required.")
+        if len(value) > MAX_RICH_TEXT_LENGTH:
+            raise serializers.ValidationError(
+                "This interpretation is too large to save. Use smaller images, up to about 1.5 MB in total.")
+        return value
+
     class Meta:
         model = LabTestInterpretation
         fields = [

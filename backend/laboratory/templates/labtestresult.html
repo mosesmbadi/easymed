@@ -172,6 +172,46 @@
       line-height: 1.5;
     }
 
+    .interpretation-text p,
+    .interpretation-text ul,
+    .interpretation-text ol,
+    .interpretation-text table,
+    .interpretation-text blockquote {
+      margin: 0 0 4px;
+    }
+
+    .interpretation-text ul,
+    .interpretation-text ol {
+      padding-left: 18px;
+    }
+
+    .interpretation-text h1,
+    .interpretation-text h2,
+    .interpretation-text h3 {
+      margin: 6px 0 3px;
+    }
+
+    .interpretation-text h1 { font-size: 14px; }
+    .interpretation-text h2 { font-size: 12px; }
+    .interpretation-text h3 { font-size: 11px; }
+
+    .interpretation-text th,
+    .interpretation-text td {
+      padding: 2px 4px;
+      border: 1px solid #999;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .interpretation-text tr {
+      break-inside: avoid;
+    }
+
+    .interpretation-text img {
+      max-width: 100%;
+      height: auto;
+    }
+
     /* Stays with the sign-off, so it is never left alone at the foot of a page. */
     .end-of-report {
       break-after: avoid;
@@ -408,7 +448,7 @@
         {{ profile.profile_name }}
         {% if profile.requires_attention %}<span class="attention-flag">⚠ URGENT</span>{% endif %}
       </div>
-      <div class="interpretation-text"><strong>Interpretation:</strong><br />{{ profile.interpretation|linebreaksbr }}</div>
+      <div class="interpretation-text"><strong>Interpretation:</strong><br />{{ profile.interpretation }}</div>
       {% if profile.clinical_action %}
       <div class="interpretation-text"><strong>Recommended Action:</strong><br />{{ profile.clinical_action|linebreaksbr }}</div>
       {% endif %}

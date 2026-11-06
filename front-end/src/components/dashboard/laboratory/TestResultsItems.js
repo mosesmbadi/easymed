@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import { useSelector } from 'react-redux';
 import { useAuth } from '@/assets/hooks/use-auth';
 import { fetchLabTestPanelsByTestRequestId, updateLabRequestPanels } from '@/redux/service/laboratory';
+import RichTextView from '@/components/common/RichTextView';
 
 const TestResultsPanels = ({ test }) => {
   const auth = useAuth()
@@ -119,7 +120,7 @@ const TestResultsPanels = ({ test }) => {
               )}
               <div className="text-sm">
                 <p className="font-semibold text-gray-700 mb-1">Interpretation:</p>
-                <p className="text-gray-600 mb-2">{item.auto_interpretation}</p>
+                <RichTextView className="text-gray-600 mb-2" html={item.auto_interpretation} />
                 {item.clinical_action && (
                   <>
                     <p className="font-semibold text-gray-700 mb-1">Recommended Action:</p>
@@ -160,7 +161,7 @@ const TestResultsPanels = ({ test }) => {
               )}
               <div className="text-sm">
                 <p className="font-semibold text-gray-700 mb-1">Interpretation:</p>
-                <p className="text-gray-600 mb-2">{item.auto_interpretation}</p>
+                <RichTextView className="text-gray-600 mb-2" html={item.auto_interpretation} />
                 {item.clinical_action && (
                   <>
                     <p className="font-semibold text-gray-700 mb-1">Recommended Action:</p>

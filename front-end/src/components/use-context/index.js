@@ -7,6 +7,7 @@ import SimpleCrypto from "simple-crypto-js";
 import { useDispatch } from "react-redux";
 import { getAllUserPermissions } from "@/redux/features/auth";
 import { TOKEN_REFRESHED_EVENT, renewSession } from "@/assets/hooks/use-axios";
+import { clearActivity, hasTimedOut, recordActivity, useIdleLogout } from "@/assets/hooks/use-idle-logout";
 import { toast } from "react-toastify";
 
 export const authContext = createContext();
@@ -29,7 +30,8 @@ export const AuthProvider = ({ children }) => {
 
   const [user, setUser] = useState(() => {
     const token = parseStoredToken("token");
-    if (token) {
+    // A timed out session must not load anything before it is logged out.
+    if (token && !hasTimedOut()) {
       try {
         const decodedToken = jwtDecode(token);
         return { ...decodedToken, token };
@@ -54,6 +56,8 @@ export const AuthProvider = ({ children }) => {
       console.log("RESPOSNSE AFTER LOGIN", response)
       if (response.status === 200) {
         const decodedUser = jwtDecode(response.data.access);
+        // First, so a time left over from an earlier session can't end this one.
+        recordActivity();
         setUser({ ...decodedUser, token: response.data.access });
         try {
           localStorage.setItem("token", JSON.stringify(response.data.access));
@@ -97,8 +101,18 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     localStorage.removeItem("token");
     localStorage.removeItem("refresh");
+    clearActivity();
     router.push("/auth/login");
   };
+
+  useIdleLogout({
+    onTimeout: () => {
+      logoutUser();
+      toast.info("You were logged out after 30 minutes of inactivity.");
+    },
+    // Logging out in one tab ends the session in the others too.
+    onLoggedOutElsewhere: logoutUser,
+  });
 
   let contextData = {
     loginUser: loginUser,

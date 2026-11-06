@@ -69,6 +69,10 @@ const fetchNewAccessToken = async (rejectedToken) => {
         // This runs in the browser, so it must go through the Next.js proxy
         // route, not the bare backend path.
         const { data } = await axios.post(APP_API_URL.REFRESH_TOKEN, { refresh: refreshToken });
+        // The user logged out while this was in the air: don't log them back in.
+        if (!localStorage.getItem('refresh')) {
+            throw new Error('Logged out during token renewal');
+        }
         localStorage.setItem('token', JSON.stringify(data.access));
         if (data.refresh) {
             // simplejwt rotates the refresh token when ROTATE_REFRESH_TOKENS=True

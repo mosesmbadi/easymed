@@ -20,8 +20,14 @@ import {
 } from "@/redux/features/laboratory";
 import { createLabTestInterpretation, deleteLabTestInterpretation } from "@/redux/service/laboratory";
 import EditProfessionalInterpretationModal from "./modals/professional-interpretation/EditProfessionalInterpretation";
+import RichTextView from "@/components/common/RichTextView";
+import { richTextSchema } from "@/utils/rich-text";
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
+  ssr: false,
+});
+
+const RichTextEditor = dynamic(() => import("@/components/common/RichTextEditor"), {
   ssr: false,
 });
 
@@ -67,7 +73,7 @@ const ProfessionalInterpretation = () => {
 
   const validationSchema = Yup.object().shape({
     test_profile: Yup.object().required("Field is required!"),
-    interpretation: Yup.string().required("Interpretation text is required!"),
+    interpretation: richTextSchema("Interpretation text is required!"),
     clinical_action: Yup.string(),
     requires_immediate_attention: Yup.boolean()
   });
@@ -163,17 +169,11 @@ const ProfessionalInterpretation = () => {
                 />
                 <ErrorMessage name="test_profile" component="div" className="text-warning text-xs" />
               </Grid>
-              <Grid item md={6} xs={12}>
-                <Field
-                  as="textarea"
-                  className="block border border-gray py-3 px-4 focus:outline-none w-full"
-                  rows={2}
-                  placeholder="Clinical Interpretation Text"
-                  name="interpretation"
-                />
+              <Grid item md={12} xs={12}>
+                <RichTextEditor name="interpretation" placeholder="Clinical Interpretation Text" />
                 <ErrorMessage name="interpretation" component="div" className="text-warning text-xs" />
               </Grid>
-              <Grid item md={6} xs={12}>
+              <Grid item md={12} xs={12}>
                 <Field
                   as="textarea"
                   className="block border border-gray py-3 px-4 focus:outline-none w-full"
@@ -245,7 +245,13 @@ const ProfessionalInterpretation = () => {
             showNavigationButtons={showNavButtons}
           />
           <Column dataField="test_profile_name" caption="Test Profile" />
-          <Column dataField="interpretation" caption="Interpretation" />
+          <Column
+            dataField="interpretation"
+            caption="Interpretation"
+            cellRender={({ data }) => (
+              <RichTextView className="max-h-40 overflow-hidden" html={data.interpretation} />
+            )}
+          />
           <Column dataField="clinical_action" caption="Clinical Action" />
           <Column dataField="" caption="" width={50} cellRender={actionsFunc} />
         </DataGrid>

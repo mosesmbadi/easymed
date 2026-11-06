@@ -10,6 +10,7 @@ from django.core.validators import FileExtensionValidator
 from django.core.exceptions import ValidationError
 
 from customuser.models import CustomUser
+from .rich_text import without_images
 
 
 # TestKitCounter used to live here, mirroring reagent stock alongside
@@ -792,7 +793,10 @@ class LabTestRequestPanel(models.Model):
         if self.result and self.test_panel and self.patient_sample:
             interpretation, action, attention = self.generate_interpretation()
             if interpretation:
-                self.auto_interpretation = interpretation
+                # A copy on every result of the profile, returned with each of them,
+                # so a CBC would carry its images twenty times over. The report
+                # prints them from the profile's own interpretation.
+                self.auto_interpretation = without_images(interpretation)
                 self.clinical_action = action
                 self.requires_attention = attention
 
