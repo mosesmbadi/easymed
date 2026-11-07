@@ -2,6 +2,8 @@
 const nextConfig = {
   output: "standalone",
   reactStrictMode: true,
+  // Browser tests build elsewhere, so they can't disturb a running `next start`.
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   // eslint: {
   //   ignoreDuringBuilds: true,
   // },

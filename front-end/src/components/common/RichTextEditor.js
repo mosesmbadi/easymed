@@ -1,28 +1,52 @@
 import React from "react";
 import { useField } from "formik";
-import HtmlEditor, {
-  ImageUpload,
-  Item,
-  MediaResizing,
-  TableContextMenu,
-  TableResizing,
-  Toolbar,
-} from "devextreme-react/html-editor";
+import HtmlEditor from "devextreme-react/html-editor";
 
-const TABLE_TOOLS = [
-  "insertTable",
-  "insertHeaderRow",
-  "insertRowAbove",
-  "insertRowBelow",
-  "insertColumnLeft",
-  "insertColumnRight",
-  "deleteRow",
-  "deleteColumn",
-  "deleteTable",
-];
-
-const TEXT_TOOLS = ["bold", "italic", "underline", "strike", "color", "background"];
-const LAYOUT_TOOLS = ["alignLeft", "alignCenter", "alignRight", "orderedList", "bulletList", "increaseIndent", "decreaseIndent"];
+// These live out here, and are passed as props, for a reason. A change to the
+// `toolbar` option makes DevExtreme rebuild the whole editor. Declared inside the
+// component, or as child elements, they count as changed on every render, and the
+// form renders on every keystroke: the editor would lose focus after one character
+// and destroy its own table and image dialogs as they opened.
+const TOOLBAR = {
+  multiline: true,
+  items: [
+    "undo",
+    "redo",
+    "separator",
+    { name: "header", acceptedValues: [false, 1, 2, 3] },
+    "bold",
+    "italic",
+    "underline",
+    "strike",
+    "color",
+    "background",
+    "separator",
+    "alignLeft",
+    "alignCenter",
+    "alignRight",
+    "orderedList",
+    "bulletList",
+    "increaseIndent",
+    "decreaseIndent",
+    "separator",
+    "image",
+    "separator",
+    "insertTable",
+    "insertHeaderRow",
+    "insertRowAbove",
+    "insertRowBelow",
+    "insertColumnLeft",
+    "insertColumnRight",
+    "deleteRow",
+    "deleteColumn",
+    "deleteTable",
+    "separator",
+    "clear",
+  ],
+};
+// The image travels inside the text. A link to one would be removed on saving.
+const IMAGE_UPLOAD = { tabs: ["file"], fileUploadMode: "base64" };
+const ENABLED = { enabled: true };
 
 // Load with next/dynamic and ssr: false: the editor needs a browser.
 const RichTextEditor = ({ name, placeholder, height = 320 }) => {
@@ -33,30 +57,14 @@ const RichTextEditor = ({ name, placeholder, height = 320 }) => {
       height={height}
       placeholder={placeholder}
       value={field.value}
+      toolbar={TOOLBAR}
+      imageUpload={IMAGE_UPLOAD}
+      mediaResizing={ENABLED}
+      tableContextMenu={ENABLED}
+      tableResizing={ENABLED}
       onValueChanged={({ value }) => helpers.setValue(value)}
       onFocusOut={() => helpers.setTouched(true)}
-    >
-      <MediaResizing enabled={true} />
-      {/* The image travels inside the text. A link to one would be removed on saving. */}
-      <ImageUpload tabs={["file"]} fileUploadMode="base64" />
-      <TableContextMenu enabled={true} />
-      <TableResizing enabled={true} />
-      <Toolbar multiline={true}>
-        <Item name="undo" />
-        <Item name="redo" />
-        <Item name="separator" />
-        <Item name="header" acceptedValues={[false, 1, 2, 3]} />
-        {TEXT_TOOLS.map((tool) => <Item key={tool} name={tool} />)}
-        <Item name="separator" />
-        {LAYOUT_TOOLS.map((tool) => <Item key={tool} name={tool} />)}
-        <Item name="separator" />
-        <Item name="image" />
-        <Item name="separator" />
-        {TABLE_TOOLS.map((tool) => <Item key={tool} name={tool} />)}
-        <Item name="separator" />
-        <Item name="clear" />
-      </Toolbar>
-    </HtmlEditor>
+    />
   );
 };
 

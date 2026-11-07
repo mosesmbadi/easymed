@@ -192,6 +192,27 @@ def test_approved_by_carries_the_approvers_details_and_date(make_visit, approver
     assert timezone.localtime(approved_on).strftime('%d/%m/%Y %H:%M') in text
 
 
+def test_the_reg_no_label_stays_on_one_line(make_visit, approver, monkeypatch):
+    visit = make_visit(1)
+    approve(visit, approver)
+
+    signoff = signoff_on(laid_out_pages(visit, monkeypatch)[-1])
+
+    assert 'Reg. No:' in [box.text.strip() for box in walk(signoff) if isinstance(box, TextBox)]
+
+
+def test_it_lines_up_with_the_results_on_both_sides(make_visit, approver, monkeypatch):
+    visit = make_visit(1)
+    approve(visit, approver)
+
+    page = laid_out_pages(visit, monkeypatch)[-1]
+    signoff = signoff_on(page)
+    table = boxes_with_class(page, 'results')[0]
+
+    assert signoff.position_x == pytest.approx(table.position_x, abs=1)
+    assert signoff.margin_width() == pytest.approx(table.margin_width(), abs=1)
+
+
 def test_approved_by_carries_the_approvers_signature(make_visit, approver, monkeypatch):
     visit = make_visit(1)
     User.objects.filter(pk=approver.pk).update(signature='signatures/amina.png')
