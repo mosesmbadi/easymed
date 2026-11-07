@@ -98,7 +98,10 @@
       table-layout: fixed;
     }
 
+    /* These cells set the column widths. Without border-box their padding is added
+       to the percentages and the table runs past the right margin. */
     table.results th {
+      box-sizing: border-box;
       padding: 3px 4px;
       text-align: left;
       font-size: 10px;
