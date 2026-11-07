@@ -8,6 +8,13 @@ const nextConfig = {
   //   ignoreDuringBuilds: true,
   // },
 
+  // Markdown imports as its text, so the user guide (src/content) can be
+  // rendered in the app from the one file people edit.
+  webpack(config) {
+    config.module.rules.push({ test: /\.md$/, type: "asset/source" });
+    return config;
+  },
+
   // Proxy backend media files so the browser never hits the Docker-internal hostname
   async rewrites() {
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";

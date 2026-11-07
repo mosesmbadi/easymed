@@ -22,6 +22,12 @@ const MainSettingsNav = ( { setSelectedRoute, selectedRoute } ) => {
         >
             Announcements
         </li>
+        <li
+          className={`cursor-pointer ${selectedRoute === 'guide' ? "font-semibold text-xl text-warning ": ""}`}
+          onClick={()=>setSelectedRoute("guide")}
+        >
+            User Guide
+        </li>
         <li>
           <Link href="/dashboard/admin-interface/docs" className='cursor-pointer hover:text-warning'>
             Docs
