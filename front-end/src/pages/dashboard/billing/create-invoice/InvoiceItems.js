@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useAuth } from "@/assets/hooks/use-auth";
 import { getPaymentModes } from "@/redux/features/billing";
+import { toast } from "react-toastify";
 import CategorizedItems from "./CategorizedItems";
 
 const { Grid } = require("@mui/material");
@@ -32,17 +33,37 @@ const InvoiceItems = ({ items, selectedPatient, onLineChange }) => {
     }, [authUser]);
 
     // One at a time: a profile can put a dozen lines on one invoice, and each
-    // one re-totals it.
+    // one re-totals it. Driven by the lines still pending, not by whatever refs
+    // happen to be registered, so a line that can't be billed is counted as a
+    // failure instead of being skipped without a word.
     const handleBillAll = async () => {
+        const pending = (items || []).filter((item) => item.status !== 'billed');
+        if (pending.length === 0) {
+            toast.info("Every item on this invoice is already billed");
+            return;
+        }
+        const noun = pending.length === 1 ? "item" : "items";
+        if (!window.confirm(`Bill ${pending.length} ${noun} on this invoice?`)) return;
+
         setBillAllLoading(true);
+        const failed = [];
+        let billed = 0;
         try {
-            for (const ref of Object.values(itemRefs.current)) {
-                if (ref?.billItem) {
-                    await ref.billItem();
-                }
+            for (const item of pending) {
+                const ref = itemRefs.current[item.id];
+                const ok = ref?.billItem ? await ref.billItem() : false;
+                if (ok) billed += 1;
+                else failed.push(item.item_name);
             }
         } finally {
             setBillAllLoading(false);
+        }
+
+        if (billed > 0) {
+            toast.success(`${billed} ${billed === 1 ? "item" : "items"} billed`);
+        }
+        if (failed.length > 0) {
+            toast.error(`Could not bill: ${failed.join(", ")}`);
         }
     };
 

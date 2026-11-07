@@ -59,6 +59,28 @@ def test_an_unknown_tag_goes_but_its_text_stays():
     assert rich_text_html('<p><font>Kept</font></p>') == '<p>Kept</p>'
 
 
+@pytest.mark.parametrize('html, expected', [
+    ('<p>Kept</p><p><br></p>', '<p>Kept</p>'),
+    ('<p>Kept</p><p>&nbsp;</p><p></p>', '<p>Kept</p>'),
+    ('<p>Kept</p><p style="text-align: center;"><br></p>', '<p>Kept</p>'),
+    ('<ol><li>Kept</li></ol><p><br></p>', '<ol><li>Kept</li></ol>'),
+    ('<table><tbody><tr><td>Kept</td></tr></tbody></table><p><br></p>',
+     '<table><tbody><tr><td>Kept</td></tr></tbody></table>'),
+])
+def test_blank_lines_at_the_end_are_dropped(html, expected):
+    assert rich_text_html(html) == expected
+
+
+@pytest.mark.parametrize('html', [
+    '<p>One</p><p><br></p><p>Two</p>',
+    '<p><br></p><p>Kept</p>',
+    f'<p>Kept</p><p><img src="{PNG}"></p>',
+    '<p>Kept</p><p><br></p>Loose text',
+])
+def test_anything_else_is_left_as_typed(html):
+    assert rich_text_html(html) == html
+
+
 def test_plain_text_is_escaped_and_keeps_its_line_breaks():
     assert rich_text_html('Stage 1: >= 90\nStage 5: <15') == 'Stage 1: &gt;= 90<br>Stage 5: &lt;15'
 

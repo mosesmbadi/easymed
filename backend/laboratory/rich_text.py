@@ -106,8 +106,24 @@ class _Allowlist(Filter):
             yield token
 
 
+def _is_blank_paragraph(element):
+    if element.tag != 'p' or (element.tail or '').strip():
+        return False
+    only_line_breaks = all(child.tag == 'br' for child in element.iter() if child is not element)
+    return only_line_breaks and not ''.join(element.itertext()).strip()
+
+
+def _drop_trailing_blank_paragraphs(fragment):
+    """The editor leaves one after a table or list. Blank lines between paragraphs were typed, and stay."""
+    for element in reversed(list(fragment)):
+        if not _is_blank_paragraph(element):
+            break
+        fragment.remove(element)
+
+
 def sanitize_html(value, images=True):
     fragment = html5lib.parseFragment(value, treebuilder='etree', namespaceHTMLElements=False)
+    _drop_trailing_blank_paragraphs(fragment)
     stream = html5lib.getTreeWalker('etree')(fragment)
     serializer = HTMLSerializer(omit_optional_tags=False, quote_attr_values='always')
     return serializer.render(_Allowlist(stream, images))

@@ -68,6 +68,42 @@ jobs:
             backend-test:ci sh -c "python manage.py check && python manage.py makemigrations --check --dry-run --settings=easymed.settings.testing && pytest -v --ds=easymed.settings.testing"
 
 
+  test-frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: front-end
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # The same install as front-end/Dockerfile.
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Run unit tests
+        run: npm test
+
+      # In Chrome, which GitHub's runners already have, against a fake backend.
+      # real-stack.spec.mjs skips itself: it needs the local stack.
+      - name: Run browser tests
+        run: npm run test:e2e
+
+      - name: Keep what a failed browser test saw
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: front-end/test-results
+          retention-days: 7
+
+
   # ============================ BUILD & PUSH IMAGES ============================ #
   # Images are built here, never on a hospital's server: a Next.js production
   # build needs more memory than a server has spare while the stack is running.
@@ -82,6 +118,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - test-backend
+      - test-frontend
 
     strategy:
       fail-fast: true
