@@ -48,10 +48,21 @@ const MultiTestProfileSelector = ({
     }
   };
 
+  const profileById = (profileId) =>
+    labTestProfiles.find((profile) => profile.id === Number(profileId));
+
+  // A profile ordered as a whole: all its panels go on the order, none can be unticked.
+  const isLocked = (profileId) => Boolean(profileById(profileId)?.locked_by);
+
+  // A sub profile of a locked main profile is only ordered through that main profile.
+  const orderableProfiles = labTestProfiles.filter(
+    (profile) => !profile.locked_by || profile.locked_by === profile.id
+  );
+
   const handleCheckboxChange = (panel, sectionId) => {
-    setTestProfileSections((prevSections) => 
+    setTestProfileSections((prevSections) =>
       prevSections.map(section => {
-        if (section.id === sectionId) {
+        if (section.id === sectionId && !isLocked(section.testProfile)) {
           const isSelected = section.selectedPanels.find(panelItem => panelItem.id === panel.id);
           return {
             ...section,
@@ -68,7 +79,7 @@ const MultiTestProfileSelector = ({
   const handleSelectAllChange = (sectionId) => {
     setTestProfileSections((prevSections) =>
       prevSections.map(section => {
-        if (section.id === sectionId) {
+        if (section.id === sectionId && !isLocked(section.testProfile)) {
           return {
             ...section,
             selectedPanels: section.selectedPanels.length === section.panelsData.length
@@ -165,7 +176,7 @@ const MultiTestProfileSelector = ({
               value={section.testProfile || ""}
             >
               <option value="">Select Test Profile</option>
-              {labTestProfiles.map((test, index) => (
+              {orderableProfiles.map((test, index) => (
                 <option key={index} value={test.id}>
                   {test?.full_name || test?.name}
                 </option>
@@ -176,16 +187,22 @@ const MultiTestProfileSelector = ({
           {section.testProfile && section.panelsData.length > 0 && (
             <div>
               <label className="text-sm font-medium">Select Panels</label>
-              <div className="flex items-center mb-2">
-                <Checkbox
-                  checked={section.selectedPanels.length === section.panelsData.length}
-                  onChange={() => handleSelectAllChange(section.id)}
-                  size="small"
-                />
-                <span className="text-sm">
-                  {section.selectedPanels.length === section.panelsData.length ? "unselect all" : "select all"}
-                </span>
-              </div>
+              {isLocked(section.testProfile) ? (
+                <p className="text-xs text-gray-500 mb-2">
+                  This profile is ordered as a whole, so all of its panels are included.
+                </p>
+              ) : (
+                <div className="flex items-center mb-2">
+                  <Checkbox
+                    checked={section.selectedPanels.length === section.panelsData.length}
+                    onChange={() => handleSelectAllChange(section.id)}
+                    size="small"
+                  />
+                  <span className="text-sm">
+                    {section.selectedPanels.length === section.panelsData.length ? "unselect all" : "select all"}
+                  </span>
+                </div>
+              )}
               <Grid container spacing={2}>
                 {section.panelsData.map((panel, index) => (
                   <React.Fragment key={panel.id}>
@@ -202,6 +219,7 @@ const MultiTestProfileSelector = ({
                       <Checkbox
                         checked={section.selectedPanels.some((panelItem) => panelItem.id === panel.id)}
                         onChange={() => handleCheckboxChange(panel, section.id)}
+                        disabled={isLocked(section.testProfile)}
                         size="small"
                       />
                       <span className="text-sm">{panel.name}</span>

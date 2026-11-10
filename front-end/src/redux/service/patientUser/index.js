@@ -1,5 +1,6 @@
 import axios from "axios";
 import { APP_API_URL } from "@/assets/api-endpoints";
+import { apiErrorMessage } from "@/assets/api-error";
 
 export const patientLabtestRequest = (payload) => {
     return new Promise ((resolve, reject)=> {
@@ -7,7 +8,7 @@ export const patientLabtestRequest = (payload) => {
         .then((res)=> {
             resolve(res.data)
         }).catch((err)=>{
-            reject(err.message)
+            reject(apiErrorMessage(err))
         });
     });
 }
@@ -19,7 +20,7 @@ export const patientPublicPrescriptionRequest = (payload) => {
             resolve(res.data)
         })
         .catch((err)=>{
-            reject(err.message)
+            reject(apiErrorMessage(err))
         })
     })
 }

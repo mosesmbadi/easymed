@@ -1,6 +1,7 @@
 import axios from "axios";
 import { APP_API_URL } from "@/assets/api-endpoints";
 import UseAxios from "@/assets/hooks/use-axios";
+import { apiErrorMessage } from "@/assets/api-error";
 
 export const fetchAnnouncements = (auth) =>{
     const axiosInstance = UseAxios(auth);
@@ -10,7 +11,7 @@ export const fetchAnnouncements = (auth) =>{
             resolve(res.data)
         })
         .catch((err) =>{
-            reject(err.message)
+            reject(apiErrorMessage(err))
         })
     });
 }
@@ -23,7 +24,7 @@ export const postAnnouncements = (auth, payload) =>{
             resolve(res.data)
         })
         .catch((err) =>{
-            reject(err.message)
+            reject(apiErrorMessage(err))
         })
     });
 }
@@ -36,7 +37,7 @@ export const fetchAnnouncementChannels = (auth) =>{
             resolve(res.data)
         })
         .catch((err) =>{
-            reject(err.message)
+            reject(apiErrorMessage(err))
         })
     });
 }
@@ -50,7 +51,7 @@ export const createAnnouncementChannels = (auth, payload) =>{
             resolve(res.data)
         })
         .catch((err) =>{
-            reject(err.message)
+            reject(apiErrorMessage(err))
         })
     });
 }
@@ -67,7 +68,7 @@ export const updateAnnouncementChannels = (channel_id, payload, auth) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }

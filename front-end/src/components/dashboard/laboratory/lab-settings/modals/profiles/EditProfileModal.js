@@ -24,6 +24,7 @@ const EditTestProfileModal = ({ open, setOpen, selectedRowData }) => {
     parent: selectedRowData?.parent ?? "",
     sort_order: selectedRowData?.sort_order ?? 0,
     sale_price: selectedRowData?.item ? selectedRowData?.sale_price ?? "" : "",
+    orders_as_whole: Boolean(selectedRowData?.orders_as_whole),
   };
 
   // Not itself, and nothing nested under it, which the server refuses too.

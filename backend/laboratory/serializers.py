@@ -158,7 +158,36 @@ class LabTestProfileSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data['sale_price'] = instance.sale_price
+        # Itself, or the main profile above it that is ordered whole. The order
+        # screens lock its panels on, and only offer the locking profile itself.
+        lock = instance.locked_by()
+        data['locked_by'] = lock.pk if lock else None
+        data['locked_by_name'] = lock.name if lock else None
         return data
+
+
+def check_whole_profiles(panels):
+    """
+    Refuse an order that leaves panels off a profile ordered as a whole.
+
+    Works from the panels alone, so it holds whichever profiles the screen says
+    were picked: a panel under a locked profile brings in all of that profile.
+    """
+    picked = {panel.pk for panel in panels}
+    checked, problems = set(), []
+    for panel in panels:
+        lock = panel.test_profile.locked_by()
+        if lock is None or lock.pk in checked:
+            continue
+        checked.add(lock.pk)
+        missing = [p.name for p in lock.panels_in_report_order() if p.pk not in picked]
+        if missing:
+            problems.append(
+                f"{lock.name} is ordered as a whole. Add {', '.join(missing)}, "
+                f"or leave {lock.name} off.")
+    if problems:
+        raise serializers.ValidationError(problems)
+    return panels
 
 
 class RichTextField(serializers.CharField):
@@ -363,7 +392,7 @@ class SpecimenConsumableSerializer(serializers.ModelSerializer):
         ]
 
     def get_available_quantity(self, obj):
-        return _available_quantity(obj.item)
+        return _available_from_context(self.context, obj.item)
 
     def validate_item(self, value):
         # limit_choices_to only constrains forms, so the API has to check too.
@@ -464,6 +493,30 @@ def _available_quantity(item):
     return stock_service.available_quantity(item, lab_department())
 
 
+def _available_from_context(context, item):
+    """Lab stock for item, from a list's bulk lookup when there is one."""
+    cached = (context or {}).get('lab_available_stock')
+    if cached is not None:
+        return cached.get(item.id, 0)
+    return _available_quantity(item)
+
+
+def _profile_full_names():
+    """Every profile's full_name, from one query instead of a walk per panel."""
+    profiles = {pk: (name, parent_id) for pk, name, parent_id in
+                LabTestProfile.objects.values_list('id', 'name', 'parent_id')}
+    names = {}
+    for pk in profiles:
+        # Same walk as LabTestProfile.lineage, cycle guard included.
+        chain, seen, node = [], set(), pk
+        while node is not None and node in profiles and node not in seen:
+            seen.add(node)
+            chain.insert(0, profiles[node][0])
+            node = profiles[node][1]
+        names[pk] = " > ".join(chain)
+    return names
+
+
 class TestPanelReagentSerializer(serializers.ModelSerializer):
     test_panel_name = serializers.ReadOnlyField(source='test_panel.name')
     reagent_name = serializers.ReadOnlyField(source='reagent_item.name')
@@ -484,7 +537,7 @@ class TestPanelReagentSerializer(serializers.ModelSerializer):
         ]
 
     def get_available_quantity(self, obj):
-        return _available_quantity(obj.reagent_item)
+        return _available_from_context(self.context, obj.reagent_item)
 
     def validate_reagent_item(self, value):
         # limit_choices_to only constrains forms, so the API has to check too.
@@ -493,6 +546,17 @@ class TestPanelReagentSerializer(serializers.ModelSerializer):
                 f"'{value.name}' is a {value.category} item, not a Lab Reagent."
             )
         return value
+
+
+class _PanelSalePriceField(serializers.DecimalField):
+    """The panel's price, read from a list's bulk lookup when there is one."""
+
+    def get_attribute(self, instance):
+        prices = self.context.get('panel_prices')
+        if prices is None:
+            return super().get_attribute(instance)
+        # Mirrors LabTestPanel.sale_price -> Item.current_sale_price.
+        return prices.get(instance.item_id, 0) if instance.item_id else None
 
 
 class LabTestPanelSerializer(serializers.ModelSerializer):
@@ -508,11 +572,11 @@ class LabTestPanelSerializer(serializers.ModelSerializer):
     available_runs = serializers.SerializerMethodField()
     item_name = serializers.ReadOnlyField(source='item.name')
     test_profile_name = serializers.ReadOnlyField(source='test_profile.name')
-    test_profile_full_name = serializers.ReadOnlyField(source='test_profile.full_name')
+    test_profile_full_name = serializers.SerializerMethodField()
     specimen_name = serializers.ReadOnlyField(source='specimen.name')
     unit_symbol = serializers.ReadOnlyField(source='units.symbol')
     missing_setup = serializers.ReadOnlyField()
-    sale_price = serializers.DecimalField(
+    sale_price = _PanelSalePriceField(
         max_digits=12, decimal_places=2, required=False, allow_null=True,
         help_text="What the patient pays for this test. Opens a new effective-dated "
                   "price on the panel's billing item.")
@@ -536,8 +600,67 @@ class LabTestPanelSerializer(serializers.ModelSerializer):
             return obj.get_reference_values(patient)
         return None
 
+    @staticmethod
+    def bulk_context(panels):
+        '''
+        Everything a list of panels would otherwise look up one panel at a
+        time -- prices, profile names, lab stock -- fetched once for the lot.
+        Several queries per panel took the Test Panels page past 3 seconds.
+        Pass the result in as serializer context; without it each field falls
+        back to its own per-panel lookup.
+        '''
+        from django.db.models import prefetch_related_objects
+        from inventory.models import ItemPrice
+
+        from .utils import lab_department
+
+        panels = list(panels)
+        if not panels:
+            return {}
+        # Skips whatever the caller already prefetched.
+        prefetch_related_objects(
+            panels, 'item', 'units', 'specimen__consumables__item',
+            'reference_values', 'reagent_links__reagent_item')
+
+        stock_items = {}
+        for panel in panels:
+            for link in panel.reagent_links.all():
+                stock_items[link.reagent_item_id] = link.reagent_item
+            if panel.specimen_id:
+                for row in panel.specimen.consumables.all():
+                    stock_items[row.item_id] = row.item
+
+        return {
+            'panel_prices': ItemPrice.current_prices_for(
+                panel.item_id for panel in panels if panel.item_id),
+            'profile_full_names': _profile_full_names(),
+            # lab_department() is only asked when there is stock to count,
+            # as before: it raises if no stock location exists at all.
+            'lab_available_stock': stock_service.available_quantities(
+                stock_items.values(), lab_department()) if stock_items else {},
+        }
+
+    def get_test_profile_full_name(self, obj):
+        if not obj.test_profile_id:
+            return None
+        names = self.context.get('profile_full_names')
+        if names is not None and obj.test_profile_id in names:
+            return names[obj.test_profile_id]
+        return obj.test_profile.full_name
+
     def get_available_runs(self, obj):
-        return obj.available_runs()
+        cached = self.context.get('lab_available_stock')
+        if cached is None:
+            return obj.available_runs()
+        # LabTestPanel.available_runs, from the bulk stock lookup.
+        links = obj.reagent_links.all()
+        if not links:
+            return 0
+        min_runs = float('inf')
+        for link in links:
+            if link.units_consumed_per_run > 0:
+                min_runs = min(min_runs, cached.get(link.reagent_item_id, 0) // link.units_consumed_per_run)
+        return min_runs if min_runs != float('inf') else 0
 
     def get_collection_consumables(self, obj):
         '''
@@ -547,8 +670,11 @@ class LabTestPanelSerializer(serializers.ModelSerializer):
         '''
         if not obj.specimen_id:
             return []
-        return SpecimenConsumableSerializer(
-            obj.specimen.consumables.select_related('item'), many=True).data
+        # .all() so a list's prefetch is used; the context carries its bulk stock.
+        rows = obj.specimen.consumables.all()
+        if 'consumables' not in getattr(obj.specimen, '_prefetched_objects_cache', {}):
+            rows = rows.select_related('item')
+        return SpecimenConsumableSerializer(rows, many=True, context=self.context).data
 
     def validate_reagent_items(self, rows):
         '''Normalise to {item_id: defaults}, rejecting anything that is not a reagent.'''
@@ -949,7 +1075,7 @@ class WalkInLabRequestSerializer(serializers.Serializer):
         # The same test twice would bill the patient twice for one sample.
         # A panel with no price is billed at zero: many are only ever sold as
         # part of a profile, which is where their price sits.
-        return list({panel.id: panel for panel in panels}.values())
+        return check_whole_profiles(list({panel.id: panel for panel in panels}.values()))
 
     def validate(self, attrs):
         has_patient = attrs.get('patient') is not None

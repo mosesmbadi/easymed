@@ -82,7 +82,18 @@ const AddInpatientTestModal = ({ labOpen, setLabOpen, process }) => {
     }
   };
 
+  // A profile ordered as a whole: all its panels go on the order, none can be unticked.
+  const locked = Boolean(
+    labTestProfiles.find((profile) => profile.id === Number(testProfile))?.locked_by
+  );
+
+  // A sub profile of a locked main profile is only ordered through that main profile.
+  const orderableProfiles = labTestProfiles.filter(
+    (profile) => !profile.locked_by || profile.locked_by === profile.id
+  );
+
   const handleCheckboxChange = (panel) => {
+    if (locked) return;
     setSelectedPanels((prevSelectedPanels) => {
       const isSelected = prevSelectedPanels.find((panelItem=>panelItem.id === panel.id));
 
@@ -93,6 +104,7 @@ const AddInpatientTestModal = ({ labOpen, setLabOpen, process }) => {
   };
 
   const handleSelectAllChange = () => {
+    if (locked) return;
     setSelectedPanels((prevSelectedPanels) =>
       prevSelectedPanels.length === labTestPanelsById.length
         ? [] // Unselect all if all are currently selected
@@ -153,7 +165,7 @@ const AddInpatientTestModal = ({ labOpen, setLabOpen, process }) => {
                           name="test_profile"
                         >
                           <option value="">Select Test Profile</option>
-                          {labTestProfiles.map((test, index) => (
+                          {orderableProfiles.map((test, index) => (
                             <option key={index} value={test.id}>
                               {test?.name}
                             </option>
@@ -168,19 +180,26 @@ const AddInpatientTestModal = ({ labOpen, setLabOpen, process }) => {
                       {testProfile && (
                         <div>
                           <label>Select Panels</label>
-                          <div className="flex items-center">
-                            <Checkbox
-                              checked={selectedPanels.length === labTestPanelsById.length}
-                              onChange={handleSelectAllChange}
-                            />
-                            <span>{selectedPanels.length === labTestPanelsById.length ? "unselect all" : "select all"}</span>
-                          </div>
+                          {locked ? (
+                            <p className="text-xs text-gray-500">
+                              This profile is ordered as a whole, so all of its panels are included.
+                            </p>
+                          ) : (
+                            <div className="flex items-center">
+                              <Checkbox
+                                checked={selectedPanels.length === labTestPanelsById.length}
+                                onChange={handleSelectAllChange}
+                              />
+                              <span>{selectedPanels.length === labTestPanelsById.length ? "unselect all" : "select all"}</span>
+                            </div>
+                          )}
                           <Grid container spacing={4}>
                             {labTestPanelsById.map((panel) => (
                               <Grid className="flex items-center" key={panel.id} item xs={3}>
                                 <Checkbox
                                   checked={selectedPanels.some((panelItem) => panelItem.id === panel.id)}
                                   onChange={() => handleCheckboxChange(panel)}
+                                  disabled={locked}
                                 />
                                 <span>{panel.name}</span>
                               </Grid>

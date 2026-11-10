@@ -1,6 +1,7 @@
 import axios from "axios";
 import { APP_API_URL } from "@/assets/api-endpoints";
 import UseAxios from "@/assets/hooks/use-axios";
+import { apiErrorMessage } from "@/assets/api-error";
 
 
 
@@ -11,7 +12,7 @@ export const registerUser = (payload) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -24,7 +25,7 @@ export const createUser = (payload,auth) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -39,7 +40,7 @@ export const createGroup = (payload, auth) => {
             } 
         })
         .then(res => resolve(res.data))
-        .catch(err => reject(err.message));
+        .catch(err => reject(apiErrorMessage(err)));
     });
 };
 
@@ -55,7 +56,7 @@ export const addPermission = (group_id, payload, auth) => {
                 resolve(res.data);
             })
             .catch((err) => {
-                reject(err.message);
+                reject(apiErrorMessage(err));
             });
     });
 };
@@ -92,7 +93,7 @@ export const fetchGroupPermissions = (group_id, auth) => {
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -105,7 +106,7 @@ export const fetchGroups = (auth) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -118,7 +119,7 @@ export const fetchAllThePermissions = (auth) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -135,7 +136,7 @@ export const fetchPatientGroup = (name) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -148,7 +149,7 @@ export const fetchDepartments = (auth) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }

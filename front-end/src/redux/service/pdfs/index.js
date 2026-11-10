@@ -1,6 +1,7 @@
 import axios from "axios";
 import { APP_API_URL } from "@/assets/api-endpoints";
 import UseAxios from "@/assets/hooks/use-axios";
+import { apiErrorMessage } from "@/assets/api-error";
 
 export const downloadPDF = (item_id, item_name, auth) => {
     const axiosInstance = UseAxios(auth);
@@ -16,7 +17,7 @@ export const downloadPDF = (item_id, item_name, auth) => {
                 resolve({ url });
             })
             .catch((err) => {
-                reject(err.message);
+                reject(apiErrorMessage(err));
             });
     });
 };
@@ -35,7 +36,7 @@ export const downloadResultPDF = (item_id, item_name, auth) => {
                 resolve({ url });
             })
             .catch((err) => {
-                reject(err.message);
+                reject(apiErrorMessage(err));
             });
     });
 };
@@ -47,7 +48,7 @@ export const saleByDateRangePdf = () => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -59,7 +60,7 @@ export const saleByDateRangeAndItemPdf = () => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -78,7 +79,7 @@ export const downloadLabReportPDF = (type, auth) => {
                 resolve({ url });
             })
             .catch((err) => {
-                reject(err.message);
+                reject(apiErrorMessage(err));
             });
     });
 };
@@ -97,7 +98,7 @@ export const downloadPharmacyReportPDF = (type, auth) => {
                 resolve({ url });
             })
             .catch((err) => {
-                reject(err.message);
+                reject(apiErrorMessage(err));
             });
     });
 };

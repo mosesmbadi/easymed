@@ -513,6 +513,21 @@ class ItemPrice(AbstractBaseModel):
             Q(effective_to__isnull=True) | Q(effective_to__gte=on)
         ).order_by('-effective_from', '-id').first()
 
+    @classmethod
+    def current_prices_for(cls, item_ids, on=None):
+        """current_for over many items in one query, as {item_id: sale_price}."""
+        on = on or timezone.localdate()
+        rows = cls.objects.filter(
+            item_id__in=set(item_ids),
+            effective_from__lte=on,
+        ).filter(
+            Q(effective_to__isnull=True) | Q(effective_to__gte=on)
+        ).order_by('item_id', '-effective_from', '-id').values_list('item_id', 'sale_price')
+        prices = {}
+        for item_id, sale_price in rows:
+            prices.setdefault(item_id, sale_price)
+        return prices
+
     def clean(self):
         if self.effective_to and self.effective_to < self.effective_from:
             raise ValidationError("effective_to cannot be before effective_from")

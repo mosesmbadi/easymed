@@ -1,6 +1,7 @@
 import axios from "axios";
 import { APP_API_URL } from "@/assets/api-endpoints";
 import UseAxios from "@/assets/hooks/use-axios";
+import { apiErrorMessage } from "@/assets/api-error";
 
 
 export const createFacilityBed = (auth, payload, ward_id) =>{
@@ -15,7 +16,7 @@ export const createFacilityBed = (auth, payload, ward_id) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -33,7 +34,7 @@ export const editFacilityBed = (auth, payload, ward_id, bed_id) => {
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -51,7 +52,7 @@ export const fetchFacilityBeds = (auth, ward_id) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -64,7 +65,7 @@ export const createFacilityWards = (auth, payload) => {
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -81,7 +82,7 @@ export const editFacilityWard = (auth, payload, ward_id) => {
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -94,7 +95,7 @@ export const fetchFacilityWards = (auth) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -107,7 +108,7 @@ export const admitPatient = (auth, payload) => {
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -123,7 +124,7 @@ export const dischargePatient = (auth, payload, admission_id) => {
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -143,7 +144,7 @@ export const fetchAdmittedPatients = (auth, ward, admission_id='', processFilter
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -160,7 +161,7 @@ export const fetchAdmittedPatientsVitals = (auth, admission_id='') =>{
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -177,7 +178,7 @@ export const AddAdmittedPatientsVitals = (auth, payload, admission_id) =>{
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -194,7 +195,7 @@ export const updateAdmissionDetails = (auth, payload, admission_id) => {
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -207,7 +208,7 @@ export const createNurseDuty = (auth, payload) => {
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -224,7 +225,7 @@ export const fetchNursesDuties = (auth, ward_id) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -241,7 +242,7 @@ export const updateNursesDuties = (auth, payload, duty_id) => {
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -258,7 +259,7 @@ export const fetchAdmittedPatientSchedules = (auth, admission_id) => {
                 resolve(res.data);
             })
             .catch((err) => {
-                reject(err.message);
+                reject(apiErrorMessage(err));
             });
     });
 }
@@ -277,7 +278,7 @@ export const updateSheduledDrug = (auth, admission_id, scheduled_drug_id, payloa
                 resolve(res.data);
             })
             .catch((err) => {
-                reject(err.message);
+                reject(apiErrorMessage(err));
             });
     });
 }
@@ -294,7 +295,7 @@ export const createScheduledDrug = (auth, admission_id, payload) => {
                 resolve(res.data);
             })
             .catch((err) => {
-                reject(err.message);
+                reject(apiErrorMessage(err));
             });
     });
 }
@@ -311,7 +312,7 @@ export const createScheduledLabTest = (auth, admission_id, payload) => {
                 resolve(res.data);
             })
             .catch((err) => {
-                reject(err.message);
+                reject(apiErrorMessage(err));
             });
     });
 }

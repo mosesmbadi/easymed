@@ -214,6 +214,19 @@ class LabTestPanelViewSet(ForceDeleteMixin, viewsets.ModelViewSet):
     serializer_class = LabTestPanelSerializer
     permission_classes = (IsDoctorUser | IsNurseUser | IsLabTechUser | IsReceptionistUser,)
 
+    def list(self, request, *args, **kwargs):
+        # Prices, profile names and stock fetched once for the whole list,
+        # not once per panel. See LabTestPanelSerializer.bulk_context.
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        panels = list(page if page is not None else queryset)
+        context = {**self.get_serializer_context(),
+                   **LabTestPanelSerializer.bulk_context(panels)}
+        serializer = self.get_serializer(panels, many=True, context=context)
+        if page is not None:
+            return self.get_paginated_response(serializer.data)
+        return Response(serializer.data)
+
     def perform_destroy(self, instance):
         # The billing item exists only for this panel, and takes it along.
         (instance.item if instance.item_id else instance).delete()
@@ -242,7 +255,8 @@ class LabTestPanelViewSet(ForceDeleteMixin, viewsets.ModelViewSet):
 
         # Asking for a main profile brings in everything nested under it.
         lab_test_panels = test_profile.panels_in_report_order()
-        serializer = LabTestPanelSerializer(lab_test_panels, many=True, context={'patient': patient})
+        serializer = LabTestPanelSerializer(lab_test_panels, many=True, context={
+            'patient': patient, **LabTestPanelSerializer.bulk_context(lab_test_panels)})
         return Response(serializer.data)
 
 

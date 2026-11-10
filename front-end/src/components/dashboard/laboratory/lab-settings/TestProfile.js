@@ -23,7 +23,7 @@ const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
 
 const allowedPageSizes = [5, 10, 'all'];
 
-const initialValues = { name: "", parent: "", sort_order: 0, sale_price: "" };
+const initialValues = { name: "", parent: "", sort_order: 0, sale_price: "", orders_as_whole: false };
 
 const TestProfile = () => {
     const auth = useAuth()
@@ -122,6 +122,16 @@ const TestProfile = () => {
                     />
                     <Column dataField="full_name" caption="Name" />
                     <Column dataField="sort_order" caption="Report Order" width={110} />
+                    <Column
+                        dataField="orders_as_whole"
+                        caption="Ordered As"
+                        width={130}
+                        cellRender={({ data }) =>
+                            data.locked_by
+                                ? data.locked_by === data.id ? "Whole" : `Whole, with ${data.locked_by_name}`
+                                : "Pick panels"
+                        }
+                    />
                     <Column
                         dataField="sale_price"
                         caption="Sale Price"

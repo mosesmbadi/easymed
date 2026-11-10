@@ -194,7 +194,7 @@ const AddInventory = () => {
         router.push('/dashboard/inventory')
       });
     } catch (err) {
-      toast.error(err);
+      toast.error(typeof err === "string" ? err : "Failed to add inventory");
       setLoading(false);
     }
   };
@@ -221,7 +221,20 @@ const AddInventory = () => {
                 <SeachableSelect
                   label="Select Item"
                   name="item"
-                  options={item.map((item) => ({ value: item.id, label: `${item?.name}` }))}
+                  // Services (lab tests, appointments) are billed, never stocked;
+                  // the server refuses stock for them, so don't offer them here.
+                  // Code and category in the label: names repeat (a reagent and
+                  // the test it's for are often both "FSH").
+                  options={item
+                    .filter((item) => item.is_stock_tracked !== false)
+                    .map((item) => ({
+                      value: item.id,
+                      label: [
+                        item?.name,
+                        item?.item_code,
+                        item?.category?.replace(/([a-z])([A-Z])/g, "$1 $2"),
+                      ].filter(Boolean).join(" · "),
+                    }))}
                 />
                 <ErrorMessage
                   name="item"

@@ -1,6 +1,7 @@
 import axios from "axios";
 import { APP_API_URL } from "@/assets/api-endpoints";
 import UseAxios from "@/assets/hooks/use-axios";
+import { apiErrorMessage } from "@/assets/api-error";
 
 
 export const fetchPatientBillingAppointments = (patient__id) =>{
@@ -14,7 +15,7 @@ export const fetchPatientBillingAppointments = (patient__id) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -31,7 +32,7 @@ export const fetchPatientBillingLabRequest = (patient_id) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -48,7 +49,7 @@ export const fetchPatientBillingPrescribedDrug = (patient_id) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -65,7 +66,7 @@ export const billingInvoiceItems = (auth,payloads) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -86,7 +87,7 @@ export const updateInvoiceItems = (auth,payloads, invoice_item) =>{
                 if(err.response.status === 422){
                     reject(err.response.data.error)
                 }else{
-                    reject(err.message)
+                    reject(apiErrorMessage(err))
                 }
             })
     })
@@ -100,7 +101,7 @@ export const getBillingInvoiceItems = (auth) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -113,7 +114,7 @@ export const billingInvoices = (auth,payload) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -126,7 +127,7 @@ export const payInvoices = (auth, payload) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -139,7 +140,7 @@ export const allocatePayment = (auth, payload) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -156,7 +157,7 @@ export const updateInvoices = (auth, invoice, payload) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -169,7 +170,7 @@ export const payBillingInvoices = (auth,payload) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -189,7 +190,7 @@ export const fetchInvoices = (auth, processFilter, selectedSearchFilter, status)
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -207,7 +208,7 @@ export const fetchPatientInvoices = (auth, patient_id, status) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -225,7 +226,7 @@ export const fetchInsuranceInvoices = (auth, insurance_id, status) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -242,7 +243,7 @@ export const fetchInvoiceItemsByInvoiceId = (auth, invoice_id) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -308,7 +309,7 @@ export const fetchPaymentModes = (auth) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -321,7 +322,7 @@ export const fetchPaymentReceipts = (auth) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -334,7 +335,7 @@ export const createPaymentModes = (auth, payload) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -351,7 +352,7 @@ export const updatePaymentModes = (auth, payload, payment_mode_id) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -364,7 +365,7 @@ export const fetchMainAccounts = (auth) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -377,7 +378,7 @@ export const createMainAccount = (auth, payload) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -390,7 +391,7 @@ export const updateMainAccount = (auth, payload, main_account_id) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -403,7 +404,7 @@ export const fetchSubAccounts = (auth) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -416,7 +417,7 @@ export const createSubAccount = (auth, payload) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -429,7 +430,7 @@ export const updateSubAccount = (auth, payload, sub_account_id) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -450,7 +451,7 @@ export const getAccountingSummary = (auth, filters = {}) => {
                 resolve(res.data);
             })
             .catch((err) => {
-                reject(err.message);
+                reject(apiErrorMessage(err));
             });
     });
 }
