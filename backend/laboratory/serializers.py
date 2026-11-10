@@ -764,7 +764,10 @@ class LabTestPanelSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        data['sale_price'] = instance.sale_price
+        # The raw value (a number in the JSON, not the field's string), taken
+        # from a list's bulk lookup when there is one: instance.sale_price
+        # costs a query per panel.
+        data['sale_price'] = self.fields['sale_price'].get_attribute(instance)
         return data
 
 

@@ -122,4 +122,6 @@ def test_query_count_does_not_grow_with_the_panels(lab, nested_profile, blood):
     with CaptureQueriesContext(connection) as many:
         serialise_in_bulk()
 
-    assert len(many) == len(few)
+    few_sql = {query['sql'] for query in few.captured_queries}
+    repeated = [query['sql'] for query in many.captured_queries if query['sql'] not in few_sql]
+    assert len(many) == len(few), "Queries run per panel:\n" + "\n".join(repeated[:5])

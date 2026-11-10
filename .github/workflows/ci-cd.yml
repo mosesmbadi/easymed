@@ -8,9 +8,9 @@ name: CI
 # from main and standalone-lab alone, see the `if` on build-and-push.
 on:
   push:
-    branches: [ "main" , "standalone-lab", "dev-*" ]
+    branches: [ "main"]
   pull_request:
-    branches: [ "main" , "standalone-lab" ]
+    branches: [ "main"]
 
 env:
   # Docker Hub namespace the images are pushed to. Set the DOCKERHUB_NAMESPACE
