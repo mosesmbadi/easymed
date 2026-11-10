@@ -66,7 +66,14 @@ test("a table, a numbered list and an uploaded image are saved as formatted HTML
   await editor(page).locator("td").first().click();
   await page.keyboard.type("Stage 1");
 
+  // The image dialog inserts wherever the editor's cursor was when it opened,
+  // or at the very end, after the table, if it had none yet. A click sets the
+  // cursor asynchronously; on a slow CI runner the toolbar click overtook it
+  // and the image never landed. A key press moves the cursor through the
+  // editor itself, so it is in place before the dialog reads it.
   await editor(page).locator("ol li").last().click();
+  await expect(editor(page)).toBeFocused();
+  await page.keyboard.press("End");
   await insertImage(page, page, { name: "chart.png", mimeType: "image/png", buffer: PNG });
   await expect(editor(page).locator('img[src^="data:image/png;base64,"]')).toHaveCount(1);
 
