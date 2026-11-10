@@ -24,13 +24,14 @@ const EditTestPanelModal = ({ open, setOpen, selectedRowData }) => {
   const { item } = useSelector((store) => store.inventory)
   const { specimens, labTestProfiles } = useSelector((store) => store.laboratory)
 
+  // Fetched the first time the modal opens, not on page load.
   useEffect(() => {
-    if (!auth?.token) return;
+    if (!open || !auth?.token || unitOptions.length) return;
     fetchUnits(auth).then((data) => {
       const results = Array.isArray(data) ? data : (data?.results ?? []);
       setUnitOptions(results.map((u) => ({ value: u.id, label: `${u.symbol} — ${u.name}` })));
     }).catch(() => {});
-  }, [auth?.token]);
+  }, [open, auth?.token]);
 
   // Re-seed whenever a different panel is opened, so the modal never shows the
   // last one's reagents.

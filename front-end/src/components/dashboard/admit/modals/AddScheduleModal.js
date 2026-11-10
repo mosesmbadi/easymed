@@ -51,6 +51,20 @@ const AddScheduleModal = ({ process, admission_id }) => {
     setSelectedPanels([]);
   }, [open, activityType, auth?.token, selectedLabProfile?.value, dispatch]);
 
+  // A profile ordered as a whole: all its panels go on the order, none can be unticked.
+  const locked = Boolean(
+    labTestProfiles.find((profile) => profile.id === Number(selectedLabProfile?.value))?.locked_by
+  );
+
+  // A sub profile of a locked main profile is only ordered through that main profile.
+  const orderableProfiles = labTestProfiles.filter(
+    (profile) => !profile.locked_by || profile.locked_by === profile.id
+  );
+
+  useEffect(() => {
+    if (locked) setSelectedPanels(labTestPanelsById || []);
+  }, [locked, labTestPanelsById]);
+
   const initialValues = {
     // Medication (same as prescribe flow)
     item: null,
@@ -96,6 +110,7 @@ const AddScheduleModal = ({ process, admission_id }) => {
   });
 
   const handleCheckboxChange = (panel) => {
+    if (locked) return;
     setSelectedPanels((prev) => {
       const isSelected = prev.some((p) => p.id === panel.id);
       return isSelected ? prev.filter((p) => p.id !== panel.id) : [...prev, panel];
@@ -103,6 +118,7 @@ const AddScheduleModal = ({ process, admission_id }) => {
   };
 
   const handleSelectAllPanels = () => {
+    if (locked) return;
     setSelectedPanels((prev) =>
       prev.length === labTestPanelsById.length ? [] : labTestPanelsById.map((p) => p)
     );
@@ -324,7 +340,7 @@ const AddScheduleModal = ({ process, admission_id }) => {
                     <SeachableSelect
                         name="lab_test_profile"
                         label="Select Test"
-                        options={labTestProfiles.map((test) => ({ value: test.id, label: test.name }))}
+                        options={orderableProfiles.map((test) => ({ value: test.id, label: test.name }))}
                       setSelectedItem={setSelectedLabProfile}
                     />
                     <ErrorMessage
@@ -342,7 +358,7 @@ const AddScheduleModal = ({ process, admission_id }) => {
                         className="text-sm underline"
                         onClick={() => {
                           dispatch(getAllLabTestPanelsByProfile(values.lab_test_profile.value, auth));
-                          setSelectedPanels([]);
+                          setSelectedPanels(locked ? labTestPanelsById || [] : []);
                         }}
                       >
                         Load / Refresh Panels
@@ -350,14 +366,20 @@ const AddScheduleModal = ({ process, admission_id }) => {
 
                       {labTestPanelsById?.length > 0 && (
                         <div className="mt-2">
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="checkbox"
-                              checked={selectedPanels.length === labTestPanelsById.length}
-                              onChange={handleSelectAllPanels}
-                            />
-                            <span className="text-sm">Select all</span>
-                          </div>
+                          {locked ? (
+                            <p className="text-xs text-gray-500">
+                              This profile is ordered as a whole, so all of its panels are included.
+                            </p>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                checked={selectedPanels.length === labTestPanelsById.length}
+                                onChange={handleSelectAllPanels}
+                              />
+                              <span className="text-sm">Select all</span>
+                            </div>
+                          )}
                           <div className="grid grid-cols-2 gap-2 mt-2">
                             {labTestPanelsById.map((panel) => (
                               <label key={panel.id} className="flex items-center gap-2 text-sm">
@@ -365,6 +387,7 @@ const AddScheduleModal = ({ process, admission_id }) => {
                                   type="checkbox"
                                   checked={selectedPanels.some((p) => p.id === panel.id)}
                                   onChange={() => handleCheckboxChange(panel)}
+                                  disabled={locked}
                                 />
                                 <span>{panel.name}</span>
                               </label>

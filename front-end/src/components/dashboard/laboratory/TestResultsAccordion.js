@@ -45,7 +45,7 @@ const AccordionDetails = styled(MuiAccordionDetails)(({ theme }) => ({
 }));
 
 
-const TestResultsAccordion = ({ testReq }) => {
+const TestResultsAccordion = ({ testReq, refreshKey }) => {
     const [expanded, setExpanded] = useState(null);
 
     const handleChange = (panel) => (event, newExpanded) => {
@@ -63,7 +63,7 @@ const TestResultsAccordion = ({ testReq }) => {
       </AccordionSummary>
       <AccordionDetails>
         <Typography>
-          <TestResultsPanels test={testReq.id}/>
+          <TestResultsPanels test={testReq.id} refreshKey={refreshKey}/>
         </Typography>
       </AccordionDetails>
     </Accordion>

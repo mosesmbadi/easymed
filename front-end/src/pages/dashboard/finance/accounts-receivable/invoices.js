@@ -124,6 +124,12 @@ const InvoicesPage = () => {
     return true;
   });
 
+  // Totals for whatever the filters currently show.
+  const totalInvoiceValue = filteredInvoices.reduce(
+    (sum, inv) => sum + (parseFloat(inv.invoice_amount) || 0), 0
+  );
+  const totalsLabel = statusOptions.find((opt) => opt.value === statusFilter)?.label || 'All';
+
   const handleClearFilters = () => {
     setStatusFilter('all');
     setDateFrom('');
@@ -318,6 +324,19 @@ const InvoicesPage = () => {
         setSelectedSearchFilter={setSelectedSearchFilter}
         items={items}
       />
+
+      <Box className='bg-white shadow rounded p-4 my-4 flex flex-wrap gap-8'>
+        <div>
+          <p className='text-xs text-gray-500'>{totalsLabel} invoices</p>
+          <p className='text-xl font-semibold'>{filteredInvoices.length.toLocaleString()}</p>
+        </div>
+        <div>
+          <p className='text-xs text-gray-500'>Total value</p>
+          <p className='text-xl font-semibold'>
+            KES {totalInvoiceValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </p>
+        </div>
+      </Box>
 
       <DataGrid
         dataSource={filteredInvoices}

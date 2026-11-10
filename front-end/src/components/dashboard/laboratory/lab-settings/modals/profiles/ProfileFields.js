@@ -26,6 +26,7 @@ export const profilePayload = (values) => ({
   parent: values.parent ? Number(values.parent) : null,
   sort_order: parseInt(values.sort_order) || 0,
   sale_price: values.sale_price === "" ? null : values.sale_price,
+  orders_as_whole: Boolean(values.orders_as_whole),
 });
 
 /** The fields shared by adding and editing a profile. `parents` are the options for "Part of". */
@@ -63,6 +64,17 @@ const ProfileFields = ({ parents }) => (
         Set it on the main profile and leave its panels at 0.
       </p>
       <ErrorMessage name="sale_price" component="div" className="text-warning text-xs" />
+    </Grid>
+    <Grid item xs={12}>
+      <label className="flex items-center gap-2">
+        <Field type="checkbox" name="orders_as_whole" />
+        <span>Order as a whole</span>
+      </label>
+      <p className="text-xs text-gray-500 mt-1">
+        Tick for a profile that is always run complete, such as a CBC or urinalysis: when it is
+        requested every panel under it is ordered and none can be unticked. Leave it unticked for
+        a menu of separate tests, such as Microbiology, where only the ones needed are picked.
+      </p>
     </Grid>
   </Grid>
 );

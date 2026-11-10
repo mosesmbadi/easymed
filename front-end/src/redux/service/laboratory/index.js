@@ -1,6 +1,7 @@
 import axios from "axios";
 import { APP_API_URL } from "@/assets/api-endpoints";
 import UseAxios from "@/assets/hooks/use-axios";
+import { apiErrorMessage } from "@/assets/api-error";
 
 
 export const fetchLabResults = (auth) => {
@@ -11,7 +12,7 @@ export const fetchLabResults = (auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -28,7 +29,7 @@ export const fetchLabRequests = (auth, process_id = "") => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -45,7 +46,7 @@ export const fetchLabRequestsDetails = (test_id, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -59,7 +60,7 @@ export const fetchQualitativeLabRequests = (auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -72,7 +73,7 @@ export const fetchLabEquipment = (auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -85,7 +86,7 @@ export const createLabEquipment = (auth, payload) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -102,7 +103,7 @@ export const updateLabEquipment = (equipment_id, payload, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -115,7 +116,7 @@ export const fetchLabTestPanels = (auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -128,7 +129,7 @@ export const createLabTestPanels = (payload, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -145,7 +146,7 @@ export const updateLabTestPanel = (panel_id, payload, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -158,7 +159,7 @@ export const sendLabRequestsPanels = (payload, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -171,7 +172,7 @@ export const updateLabRequestPanels = (payload, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -184,7 +185,7 @@ export const updateLabRequestPanelResult = (panelId, payload, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -203,7 +204,7 @@ export const fetchLabTestPanelsByProfileId = (profile_id, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -216,7 +217,7 @@ export const sendLabRequests = (payload, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -234,7 +235,7 @@ export const updateLabRequest = (test_req_id, payload, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -247,7 +248,7 @@ export const sendLabResults = (payload, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -260,7 +261,7 @@ export const sendLabResultQualitative = (payload, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -273,7 +274,7 @@ export const addTestResultPanel = (payload, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -286,7 +287,7 @@ export const addQualitativeTestResultPanel = (payload, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -333,7 +334,7 @@ export const publicLabRequest = (payload) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -346,7 +347,7 @@ export const fetchPublicLabRequests = (auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -359,7 +360,7 @@ export const updatePublicLabRequest = (payload, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -372,7 +373,7 @@ export const fetchLabTestProfile = (auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -385,7 +386,7 @@ export const createLabTestProfile = (payload, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 
@@ -403,7 +404,7 @@ export const updateLabTestProfile = (profile_id, payload, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 
@@ -421,7 +422,7 @@ export const fetchSpecificPatientLabRequests = (patient_id, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -440,7 +441,7 @@ export const fetchLabTestPanelsByTestRequestId = (test_request_id, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -458,7 +459,7 @@ export const fetchLabTestPanelsBySpecificSample = (sample_id, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -476,7 +477,7 @@ export const fetchLabTestByProcessId = (process_id, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -495,7 +496,7 @@ export const fetchResultPanelsByResultsId = (result_id, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -513,7 +514,7 @@ export const fetchQualitativeResultPanelsByResultsId = (result_id, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -527,7 +528,7 @@ export const approveLabResult = (payload, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 
@@ -542,7 +543,7 @@ export const approveQualitativeLabResult = (payload, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -560,7 +561,7 @@ export const fetchSamplesForSpecificProcess = (process_id, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 
@@ -574,7 +575,7 @@ export const fetchSpecimens = (auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 
@@ -588,7 +589,7 @@ export const createSpecimen = (payload, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 
@@ -607,7 +608,7 @@ export const updateSpecimen = (specimen_id, payload, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 
@@ -621,7 +622,7 @@ export const fetchReferenceValues = (auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -634,7 +635,7 @@ export const createReferenceValue = (payload, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -651,7 +652,7 @@ export const updateReferenceValue = (reference_value_id, payload, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -664,7 +665,7 @@ export const fetchPhlebotomySamples = (auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -677,7 +678,7 @@ export const updatePhlebotomySamples = (payload, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -691,7 +692,7 @@ export const fetchLowStockReagents = (auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -704,7 +705,7 @@ export const fetchRecentReagentUsage = (auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -722,7 +723,7 @@ export const fetchReagentConsumptionReport = (startDate, endDate, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -735,7 +736,7 @@ export const fetchLabTestInterpretations = (auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -748,7 +749,7 @@ export const createLabTestInterpretation = (payload, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -765,7 +766,7 @@ export const updateLabTestInterpretation = (id, payload, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -782,7 +783,7 @@ export const deleteLabTestInterpretation = (id, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -795,7 +796,7 @@ export const fetchLabSettings = (auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -808,7 +809,7 @@ export const updateLabSettings = (payload, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -819,7 +820,7 @@ export const fetchArchives = (auth) => {
     return new Promise((resolve, reject) => {
         axiosInstance.get(`${APP_API_URL.ARCHIVE}`)
             .then((res) => resolve(res.data))
-            .catch((err) => reject(err.message))
+            .catch((err) => reject(apiErrorMessage(err)))
     })
 }
 
@@ -828,7 +829,7 @@ export const createArchive = (payload, auth) => {
     return new Promise((resolve, reject) => {
         axiosInstance.post(`${APP_API_URL.ARCHIVE}`, payload)
             .then((res) => resolve(res.data))
-            .catch((err) => reject(err.message))
+            .catch((err) => reject(apiErrorMessage(err)))
     })
 }
 
@@ -837,7 +838,7 @@ export const updateArchive = (id, payload, auth) => {
     return new Promise((resolve, reject) => {
         axiosInstance.patch(`${APP_API_URL.ARCHIVE}?id=${id}`, payload)
             .then((res) => resolve(res.data))
-            .catch((err) => reject(err.message))
+            .catch((err) => reject(apiErrorMessage(err)))
     })
 }
 
@@ -846,7 +847,7 @@ export const deleteArchive = (id, auth) => {
     return new Promise((resolve, reject) => {
         axiosInstance.delete(`${APP_API_URL.ARCHIVE}?id=${id}`)
             .then((res) => resolve(res.data))
-            .catch((err) => reject(err.message))
+            .catch((err) => reject(apiErrorMessage(err)))
     })
 }
 
@@ -856,7 +857,7 @@ export const fetchArchiveComponents = (auth) => {
     return new Promise((resolve, reject) => {
         axiosInstance.get(`${APP_API_URL.ARCHIVE_COMPONENT}`)
             .then((res) => resolve(res.data))
-            .catch((err) => reject(err.message))
+            .catch((err) => reject(apiErrorMessage(err)))
     })
 }
 
@@ -865,7 +866,7 @@ export const createArchiveComponent = (payload, auth) => {
     return new Promise((resolve, reject) => {
         axiosInstance.post(`${APP_API_URL.ARCHIVE_COMPONENT}`, payload)
             .then((res) => resolve(res.data))
-            .catch((err) => reject(err.message))
+            .catch((err) => reject(apiErrorMessage(err)))
     })
 }
 
@@ -874,7 +875,7 @@ export const updateArchiveComponent = (id, payload, auth) => {
     return new Promise((resolve, reject) => {
         axiosInstance.patch(`${APP_API_URL.ARCHIVE_COMPONENT}?id=${id}`, payload)
             .then((res) => resolve(res.data))
-            .catch((err) => reject(err.message))
+            .catch((err) => reject(apiErrorMessage(err)))
     })
 }
 
@@ -883,7 +884,7 @@ export const deleteArchiveComponent = (id, auth) => {
     return new Promise((resolve, reject) => {
         axiosInstance.delete(`${APP_API_URL.ARCHIVE_COMPONENT}?id=${id}`)
             .then((res) => resolve(res.data))
-            .catch((err) => reject(err.message))
+            .catch((err) => reject(apiErrorMessage(err)))
     })
 }
 
@@ -893,7 +894,7 @@ export const fetchArchiveSections = (auth) => {
     return new Promise((resolve, reject) => {
         axiosInstance.get(`${APP_API_URL.ARCHIVE_SECTION}`)
             .then((res) => resolve(res.data))
-            .catch((err) => reject(err.message))
+            .catch((err) => reject(apiErrorMessage(err)))
     })
 }
 
@@ -902,7 +903,7 @@ export const createArchiveSection = (payload, auth) => {
     return new Promise((resolve, reject) => {
         axiosInstance.post(`${APP_API_URL.ARCHIVE_SECTION}`, payload)
             .then((res) => resolve(res.data))
-            .catch((err) => reject(err.message))
+            .catch((err) => reject(apiErrorMessage(err)))
     })
 }
 
@@ -911,7 +912,7 @@ export const updateArchiveSection = (id, payload, auth) => {
     return new Promise((resolve, reject) => {
         axiosInstance.patch(`${APP_API_URL.ARCHIVE_SECTION}?id=${id}`, payload)
             .then((res) => resolve(res.data))
-            .catch((err) => reject(err.message))
+            .catch((err) => reject(apiErrorMessage(err)))
     })
 }
 
@@ -920,7 +921,7 @@ export const deleteArchiveSection = (id, auth) => {
     return new Promise((resolve, reject) => {
         axiosInstance.delete(`${APP_API_URL.ARCHIVE_SECTION}?id=${id}`)
             .then((res) => resolve(res.data))
-            .catch((err) => reject(err.message))
+            .catch((err) => reject(apiErrorMessage(err)))
     })
 }
 
@@ -930,7 +931,7 @@ export const fetchArchiveRacks = (auth) => {
     return new Promise((resolve, reject) => {
         axiosInstance.get(`${APP_API_URL.ARCHIVE_RACK}`)
             .then((res) => resolve(res.data))
-            .catch((err) => reject(err.message))
+            .catch((err) => reject(apiErrorMessage(err)))
     })
 }
 
@@ -939,7 +940,7 @@ export const createArchiveRack = (payload, auth) => {
     return new Promise((resolve, reject) => {
         axiosInstance.post(`${APP_API_URL.ARCHIVE_RACK}`, payload)
             .then((res) => resolve(res.data))
-            .catch((err) => reject(err.message))
+            .catch((err) => reject(apiErrorMessage(err)))
     })
 }
 
@@ -948,7 +949,7 @@ export const updateArchiveRack = (id, payload, auth) => {
     return new Promise((resolve, reject) => {
         axiosInstance.patch(`${APP_API_URL.ARCHIVE_RACK}?id=${id}`, payload)
             .then((res) => resolve(res.data))
-            .catch((err) => reject(err.message))
+            .catch((err) => reject(apiErrorMessage(err)))
     })
 }
 
@@ -957,7 +958,7 @@ export const deleteArchiveRack = (id, auth) => {
     return new Promise((resolve, reject) => {
         axiosInstance.delete(`${APP_API_URL.ARCHIVE_RACK}?id=${id}`)
             .then((res) => resolve(res.data))
-            .catch((err) => reject(err.message))
+            .catch((err) => reject(apiErrorMessage(err)))
     })
 }
 
@@ -967,7 +968,7 @@ export const fetchArchivePositions = (auth) => {
     return new Promise((resolve, reject) => {
         axiosInstance.get(`${APP_API_URL.ARCHIVE_POSITION}`)
             .then((res) => resolve(res.data))
-            .catch((err) => reject(err.message))
+            .catch((err) => reject(apiErrorMessage(err)))
     })
 }
 
@@ -976,7 +977,7 @@ export const createArchivePosition = (payload, auth) => {
     return new Promise((resolve, reject) => {
         axiosInstance.post(`${APP_API_URL.ARCHIVE_POSITION}`, payload)
             .then((res) => resolve(res.data))
-            .catch((err) => reject(err.message))
+            .catch((err) => reject(apiErrorMessage(err)))
     })
 }
 
@@ -985,7 +986,7 @@ export const updateArchivePosition = (id, payload, auth) => {
     return new Promise((resolve, reject) => {
         axiosInstance.patch(`${APP_API_URL.ARCHIVE_POSITION}?id=${id}`, payload)
             .then((res) => resolve(res.data))
-            .catch((err) => reject(err.message))
+            .catch((err) => reject(apiErrorMessage(err)))
     })
 }
 
@@ -994,7 +995,7 @@ export const deleteArchivePosition = (id, auth) => {
     return new Promise((resolve, reject) => {
         axiosInstance.delete(`${APP_API_URL.ARCHIVE_POSITION}?id=${id}`)
             .then((res) => resolve(res.data))
-            .catch((err) => reject(err.message))
+            .catch((err) => reject(apiErrorMessage(err)))
     })
 }
 
@@ -1004,7 +1005,7 @@ export const fetchPatientSampleArchives = (auth) => {
     return new Promise((resolve, reject) => {
         axiosInstance.get(`${APP_API_URL.PATIENT_SAMPLE_ARCHIVE}`)
             .then((res) => resolve(res.data))
-            .catch((err) => reject(err.message))
+            .catch((err) => reject(apiErrorMessage(err)))
     })
 }
 
@@ -1013,7 +1014,7 @@ export const createPatientSampleArchive = (payload, auth) => {
     return new Promise((resolve, reject) => {
         axiosInstance.post(`${APP_API_URL.PATIENT_SAMPLE_ARCHIVE}`, payload)
             .then((res) => resolve(res.data))
-            .catch((err) => reject(err.message))
+            .catch((err) => reject(apiErrorMessage(err)))
     })
 }
 
@@ -1022,7 +1023,7 @@ export const updatePatientSampleArchive = (id, payload, auth) => {
     return new Promise((resolve, reject) => {
         axiosInstance.patch(`${APP_API_URL.PATIENT_SAMPLE_ARCHIVE}?id=${id}`, payload)
             .then((res) => resolve(res.data))
-            .catch((err) => reject(err.message))
+            .catch((err) => reject(apiErrorMessage(err)))
     })
 }
 
@@ -1031,7 +1032,7 @@ export const deletePatientSampleArchive = (id, auth) => {
     return new Promise((resolve, reject) => {
         axiosInstance.delete(`${APP_API_URL.PATIENT_SAMPLE_ARCHIVE}?id=${id}`)
             .then((res) => resolve(res.data))
-            .catch((err) => reject(err.message))
+            .catch((err) => reject(apiErrorMessage(err)))
     })
 }
 
@@ -1041,7 +1042,7 @@ export const fetchReleasedSamples = (auth) => {
     return new Promise((resolve, reject) => {
         axiosInstance.get(`${APP_API_URL.RELEASED_SAMPLES}`)
             .then((res) => resolve(res.data))
-            .catch((err) => reject(err.message))
+            .catch((err) => reject(apiErrorMessage(err)))
     })
 }
 
@@ -1118,7 +1119,7 @@ export const searchWalkInPatients = (search, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }

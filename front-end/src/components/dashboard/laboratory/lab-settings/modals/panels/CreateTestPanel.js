@@ -80,8 +80,10 @@ const CreateTestPanelModal = () => {
     }
   }
 
+  // Only once the modal opens: on page load these queued behind the panel
+  // list itself and slowed the Test Panels page down.
   useEffect(() => {
-    if (auth) {
+    if (open && auth) {
       fetchItems()
       fetchAllSpecimens(auth)
       fetchAllTestProfiles(auth)
@@ -90,7 +92,7 @@ const CreateTestPanelModal = () => {
         setUnitOptions(results.map((u) => ({ value: u.id, label: `${u.symbol} — ${u.name}` })));
       }).catch(() => {});
     }
-  }, [])
+  }, [open])
 
 
   const initialValues = {

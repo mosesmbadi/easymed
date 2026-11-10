@@ -673,6 +673,35 @@ def available_quantity(item, department=None, include_expired=False):
     return max(on_hand - reserved_quantity(item, department), 0)
 
 
+def available_quantities(items, department=None, include_expired=False):
+    """
+    available_quantity for many items in two queries, as {item_id: quantity}.
+    Items that are not stock tracked are left out; read them as 0.
+    """
+    ids = {item.id for item in items if item.is_stock_tracked}
+    if not ids:
+        return {}
+
+    on_hand = StockBalance.objects.filter(item_id__in=ids, quantity__gt=0)
+    reserved = StockReservation.objects.filter(
+        item_id__in=ids, status=StockReservation.Status.ACTIVE).filter(
+        Q(expires_at__isnull=True) | Q(expires_at__gte=timezone.now()))
+    if department is not None:
+        on_hand = on_hand.filter(department=department)
+        reserved = reserved.filter(department=department)
+    if not include_expired:
+        on_hand = on_hand.exclude(lot__expiry_date__lt=timezone.localdate())
+
+    # order_by() clears any Meta ordering, which would split the GROUP BY.
+    def totals(qs):
+        return dict(qs.order_by().values('item_id').annotate(total=Sum('quantity'))
+                    .values_list('item_id', 'total'))
+
+    on_hand, reserved = totals(on_hand), totals(reserved)
+    return {item_id: max((on_hand.get(item_id) or 0) - (reserved.get(item_id) or 0), 0)
+            for item_id in ids}
+
+
 @transaction.atomic
 def reserve(
     *,

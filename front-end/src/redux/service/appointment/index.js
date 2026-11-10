@@ -1,5 +1,6 @@
 import axios from "axios";
 import { APP_API_URL } from "@/assets/api-endpoints";
+import { apiErrorMessage } from "@/assets/api-error";
 
 
 export const bookAppointment = (payload) =>{
@@ -9,7 +10,7 @@ export const bookAppointment = (payload) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -21,7 +22,7 @@ export const createAppointment = (payload) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -33,7 +34,7 @@ export const fetchAppointment = () =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -50,7 +51,7 @@ export const fetchDoctorAppointments = (assigned_doctor__id) => {
           resolve(res.data);
         })
         .catch((err) => {
-          reject(err.message);
+          reject(apiErrorMessage(err));
         });
     });
   };
@@ -63,7 +64,7 @@ export const fetchPatientAppointments = () =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -79,7 +80,7 @@ export const fetchAppointmentsByPatientId = (patient_id) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
