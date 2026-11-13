@@ -8,9 +8,9 @@ import { useRouter } from 'next/navigation'
 import dynamic from "next/dynamic";
 import { Column, Pager } from "devextreme-react/data-grid";
 import { Grid, Container } from "@mui/material";
-import { createPrescription, fetchPatientById, updateAttendanceProcesses, updatePrescription } from "@/redux/service/patients";
+import { createPrescription, fetchAllAttendanceProcesses, fetchPatientById, updateAttendanceProcesses, updatePrescription } from "@/redux/service/patients";
 import { prescribeDrug } from "@/redux/service/patients";
-import { clearAllPrescriptionItems, getAllProcesses } from "@/redux/features/patients";
+import { clearAllPrescriptionItems } from "@/redux/features/patients";
 import { removeAPrescriptionItem } from "@/redux/features/patients";
 import { toast } from "react-toastify";
 import CmtDropdownMenu from "@/assets/DropdownMenu";
@@ -49,8 +49,12 @@ const PrescribePatient = () => {
   const { prescriptionItems } = useSelector(({ patient }) => patient);
   const { prescriptionsPrescribed, prescriptions } = useSelector((store) => store.prescription);
   const { processes, patients } = useSelector((store)=> store.patient);
-  const thisProcess = processes.find((process)=> process.id === parseInt(params.process_id))
   const auth = useAuth();
+  // The store holds only the queue the doctor came from (one page of visits),
+  // so fetch this visit on its own when it isn't there, e.g. after a reload.
+  const [fetchedProcess, setFetchedProcess] = useState(null)
+  const thisProcess = processes.find((process)=> process.id === parseInt(params.process_id))
+    || (fetchedProcess?.id === parseInt(params.process_id) ? fetchedProcess : undefined)
   let currentDate = new Date();
   let year = currentDate.getFullYear();
   let month = String(currentDate.getMonth() + 1).padStart(2, '0');
@@ -79,8 +83,15 @@ const PrescribePatient = () => {
   };
 
   useEffect(()=> {
-    if(auth){
-      getAllProcesses(auth)
+    if (auth && params?.process_id && !thisProcess) {
+      fetchAllAttendanceProcesses(auth, params.process_id)
+        .then(setFetchedProcess)
+        .catch(() => console.log("ERROR GETTING VISIT"))
+    }
+  }, [auth, params?.process_id, thisProcess])
+
+  useEffect(()=> {
+    if(auth && thisProcess){
       getPatientDetailsForThisTestRequest()
     }
   }, [thisProcess])

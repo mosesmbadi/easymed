@@ -1,6 +1,7 @@
 import pdb
 from random import randrange, choices
 
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 
 from inventory.models import Item
@@ -302,6 +303,12 @@ class PatientSampleSerializer(serializers.ModelSerializer):
     is_released = serializers.SerializerMethodField()
     consumables = serializers.SerializerMethodField()
     consumables_used = serializers.SerializerMethodField()
+    # The visit the sample was taken on, so the sample list can show the
+    # visit and patient without loading every visit to look them up. Views
+    # select_related('process__attendanceprocess__patient__referred_from').
+    track_number = serializers.SerializerMethodField()
+    patient_name = serializers.SerializerMethodField()
+    patient_number = serializers.SerializerMethodField()
 
     class Meta:
         model = PatientSample
@@ -313,6 +320,9 @@ class PatientSampleSerializer(serializers.ModelSerializer):
             'specimen_name',
             'lab_test_request',
             'process',
+            'track_number',
+            'patient_name',
+            'patient_number',
             'is_archived',
             'is_disposed',
             'is_retested',
@@ -333,6 +343,27 @@ class PatientSampleSerializer(serializers.ModelSerializer):
 
     def get_specimen_name(self, obj):
         return obj.specimen.name
+
+    @staticmethod
+    def _visit(obj):
+        if not obj.process_id:
+            return None
+        try:
+            return obj.process.attendanceprocess
+        except ObjectDoesNotExist:
+            return None
+
+    def get_track_number(self, obj):
+        visit = self._visit(obj)
+        return visit.track_number if visit else ''
+
+    def get_patient_name(self, obj):
+        visit = self._visit(obj)
+        return visit.patient.display_name if visit else ''
+
+    def get_patient_number(self, obj):
+        visit = self._visit(obj)
+        return visit.patient_number if visit else ''
 
     def get_consumables(self, obj):
         """

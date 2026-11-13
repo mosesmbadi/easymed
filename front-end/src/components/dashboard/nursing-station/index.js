@@ -13,6 +13,7 @@ import AddTriageModal from './add-triage-modal';
 import { getAllDoctors } from "@/redux/features/doctors";
 import { useAuth } from "@/assets/hooks/use-auth";
 import ProcessFilter from "@/components/common/process/ProcessFilter";
+import ProcessesTruncatedNotice from '@/components/common/process/ProcessesTruncatedNotice';
 
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
@@ -73,7 +74,6 @@ const NursePatientDataGrid = () => {
   useEffect(() =>{
     if(auth){
       dispatch(getAllPatients(auth));
-      dispatch(getAllProcesses(auth))
       dispatch(getAllDoctors(auth))
     }
   },[]);
@@ -119,17 +119,16 @@ const NursePatientDataGrid = () => {
   });
 
   useEffect(() => {
-      // This effect handles the debouncing logic
-      const timerId = setTimeout(() => {
-          // Dispatch the action only after a 500ms delay
-          dispatch(getAllProcesses(auth, null, processFilter, selectedSearchFilter))
-      }, 500); // 500ms delay, adjust as needed
-
-      // Cleanup function: clears the timer if searchTerm changes before the delay is over
-      return () => {
-          clearTimeout(timerId);
-      };
-  }, [processFilter.search]); // The effect re-runs only when the local `searchTerm` state changes
+    if (!auth) return;
+    // Debounced: the backend filters by track and search, so reload when
+    // either changes (500ms after the last keystroke).
+    const timerId = setTimeout(() => {
+      dispatch(getAllProcesses(auth, null, processFilter, selectedSearchFilter))
+    }, 500);
+    return () => {
+      clearTimeout(timerId);
+    };
+  }, [auth, processFilter.search, processFilter.track, selectedSearchFilter?.value]);
 
   return (
     <section>
@@ -140,6 +139,7 @@ const NursePatientDataGrid = () => {
         setSelectedSearchFilter={setSelectedSearchFilter}
         items={items}
       />
+      <ProcessesTruncatedNotice />
       <DataGrid
         dataSource={billedDocSchedules}
         allowColumnReordering={true}

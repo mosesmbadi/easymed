@@ -8,7 +8,7 @@ import { BiPaperPlane } from 'react-icons/bi';
 import { useAuth } from '@/assets/hooks/use-auth';
 import CmtDropdownMenu from '@/assets/DropdownMenu';
 import { getAllPhlebotomySamples, getAllReleasedSamples } from '@/redux/features/laboratory';
-import { getAllProcesses, getAllPatients } from '@/redux/features/patients';
+import { getAllPatients } from '@/redux/features/patients';
 import ReleaseSampleModal from './modals/ReleaseSampleModal';
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
@@ -46,22 +46,23 @@ const PatientSampleList = () => {
     const collectedSamples = phlebotomySamples
         .filter(ps => ps.is_sample_collected && !releasedIds.has(ps.id))
         .map(ps => {
-            // A sample belongs to a ProcessTestRequest; the visit points at it.
-            const process = processes.find(p => p.process_test_req === ps.process);
+            // The sample carries its visit's track number and patient; the
+            // store's visits are only the fallback (they hold one recent page,
+            // not every visit).
+            const process = ps.track_number ? null : processes.find(p => p.process_test_req === ps.process);
             const patient = process ? patients.find(pt => pt.id === process.patient) : null;
             return {
                 ...ps,
-                track_number: process ? process.track_number : '',
-                patient_name: process?.patient_name
+                track_number: ps.track_number || (process ? process.track_number : ''),
+                patient_name: ps.patient_name || process?.patient_name
                     || (patient ? `${patient.first_name} ${patient.second_name}` : ''),
-                patient_id: process ? process.patient_number : '',
+                patient_id: ps.patient_number || (process ? process.patient_number : ''),
             };
         });
 
     useEffect(() => {
         dispatch(getAllPhlebotomySamples(auth));
         dispatch(getAllReleasedSamples(auth));
-        dispatch(getAllProcesses(auth));
         dispatch(getAllPatients(auth));
     }, []);
 

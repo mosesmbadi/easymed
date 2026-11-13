@@ -7,7 +7,7 @@ import { Checkbox, DialogTitle, Grid } from "@mui/material";
 import { toast } from "react-toastify";
 import { sendLabRequests, sendLabRequestsPanels, updateLabRequest } from "@/redux/service/laboratory";
 import { useAuth } from "@/assets/hooks/use-auth";
-import { getPatientTriage, getAllPatients, getAllProcesses } from "@/redux/features/patients";
+import { getPatientTriage, getAllPatients, refreshProcesses } from "@/redux/features/patients";
 import { useDispatch, useSelector } from "react-redux";
 
 import { updateAttendanceProcesses } from "@/redux/service/patients";
@@ -46,7 +46,7 @@ const DirectToTheLabModal = ({ labOpen, setLabOpen, selectedData }) => {
   const saveAllPanels = async (testReqPanelPayload) => {
     try{
       const response = await sendLabRequestsPanels(testReqPanelPayload, auth);
-      dispatch(getAllProcesses(auth));
+      dispatch(refreshProcesses(auth));
       // Only create invoice items if there's a valid response with an item
       if (response && response.item) {
         const payload = {
@@ -104,7 +104,7 @@ const DirectToTheLabModal = ({ labOpen, setLabOpen, selectedData }) => {
 
       // Update attendance process track to lab
       await updateAttendanceProcesses({track: "lab"}, selectedData.id, auth);
-      dispatch(getAllProcesses(auth));
+      dispatch(refreshProcesses(auth));
       
       helpers.resetForm();
       setLoading(false);

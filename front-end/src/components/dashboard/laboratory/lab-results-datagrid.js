@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { toast } from "react-toastify";
 import dynamic from "next/dynamic";
@@ -12,7 +12,9 @@ import { IoEyeOutline } from "react-icons/io5";
 import { downloadResultPDF } from "@/redux/service/pdfs";
 import { useAuth } from "@/assets/hooks/use-auth";
 import ApproveResults from "./add-result/ApproveResults";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { getAllProcesses } from "@/redux/features/patients";
+import ProcessesTruncatedNotice from '@/components/common/process/ProcessesTruncatedNotice';
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
   ssr: false,
@@ -30,6 +32,21 @@ const LabResultDataGrid = () => {
   const [showNavButtons, setShowNavButtons] = useState(true);
 
   const { processes, patients } = useSelector((store)=> store.patient)
+  const dispatch = useDispatch();
+
+  // Only the most recent visits are loaded, so search by patient number on
+  // the server to reach older ones (500ms after the last keystroke).
+  useEffect(() => {
+    if (!auth) return;
+    const timerId = setTimeout(() => {
+      dispatch(getAllProcesses(
+        auth, null,
+        { track: 'lab,pharmacy,doctor', search: searchQuery },
+        searchQuery ? { value: 'patient_number' } : null,
+      ));
+    }, 500);
+    return () => clearTimeout(timerId);
+  }, [auth, searchQuery]);
 
   const labTestsResultsSchedules = processes.filter((process)=> process.track==="lab" || process.track === "pharmacy" || process.track === "doctor")
   const searchedProcesses = labTestsResultsSchedules.filter((process)=> process.patient_number.includes(searchQuery))
@@ -107,6 +124,7 @@ const LabResultDataGrid = () => {
       </Grid>
 
       {/* DATAGRID STARTS HERE */}
+      <ProcessesTruncatedNotice />
       <DataGrid
         dataSource={searchedProcesses}
         allowColumnReordering={true}

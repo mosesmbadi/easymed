@@ -25,7 +25,9 @@ const CheckInPage = () => {
   // Load initial data
   useEffect(() => {
     dispatch(getAllPatients(auth));
-    dispatch(getAllProcesses(auth, null, { track: 'reception', search: '' }));
+    // The queue shows reception and triage; the summary counts doctor, lab and
+    // pharmacy. Both read the most recent page of visits on those tracks.
+    dispatch(getAllProcesses(auth, null, { track: 'reception,triage,doctor,lab,pharmacy', search: '' }));
   }, [refreshTrigger]);
 
   const handleCheckInSuccess = () => {

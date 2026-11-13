@@ -338,7 +338,8 @@ class PatientSampleByProcessId(generics.ListAPIView):
         # The serializer lists each sample's specimen consumables, so pull them
         # in one go rather than per sample.
         return PatientSample.objects.filter(process=process_id).select_related(
-            'specimen').prefetch_related('specimen__consumables__item')
+            'specimen', 'process__attendanceprocess__patient__referred_from',
+        ).prefetch_related('specimen__consumables__item')
 
 class LabTestRequestByProcessId(generics.ListAPIView):
     serializer_class = LabTestRequestSerializer
@@ -359,7 +360,8 @@ class ProcessTestRequestViewSet(viewsets.ModelViewSet):
 
 
 class PatientSampleViewSet(viewsets.ModelViewSet):
-    queryset = PatientSample.objects.select_related('specimen').prefetch_related(
+    queryset = PatientSample.objects.select_related(
+        'specimen', 'process__attendanceprocess__patient__referred_from').prefetch_related(
         'specimen__consumables__item', 'consumables_used__item').order_by('-id')
     serializer_class = PatientSampleSerializer
 

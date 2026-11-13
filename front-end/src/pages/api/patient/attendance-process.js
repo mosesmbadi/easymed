@@ -22,17 +22,25 @@ export default async function handler(req, res) {
 
             const query = req.query;
             const process_id = query.process_id ? query.process_id : null;
-            const search_field = query.search_field
-            const search_value = query.search_value
+            const present = (value) => value && value !== "null" && value !== "undefined";
 
             let url = API_URL.PATIENT_ATTENDANCE_PROCESS;
 
             if (process_id) {
                 url = `${API_URL.PATIENT_ATTENDANCE_PROCESS}${process_id}/`
-            } else if (search_field && search_value) {
-                url = `${API_URL.PATIENT_ATTENDANCE_PROCESS}?search_field=${search_field}&search=${search_value}`
-            } else if (search_value && search_value !== "null" && search_value !== null) {
-                url = `${API_URL.PATIENT_ATTENDANCE_PROCESS}?search=${search_value}`;
+            } else {
+                // The backend pages this list, so pass on which track(s) and how
+                // many visits the screen wants along with any search.
+                const params = new URLSearchParams();
+                if (present(query.search_value)) {
+                    params.set("search", query.search_value);
+                    if (present(query.search_field)) params.set("search_field", query.search_field);
+                }
+                if (present(query.track)) params.set("track", query.track);
+                if (present(query.page)) params.set("page", query.page);
+                if (present(query.page_size)) params.set("page_size", query.page_size);
+                const qs = params.toString();
+                if (qs) url = `${url}?${qs}`;
             }
 
             await backendAxiosInstance.get(url, config).then(response => {

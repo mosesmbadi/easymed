@@ -10,7 +10,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { useAuth } from "@/assets/hooks/use-auth";
 import SeachableSelect from "@/components/select/Searchable";
 import { updateAttendanceProcesses } from "@/redux/service/patients";
-import { getAllProcesses } from "@/redux/features/patients";
+import { refreshProcesses } from "@/redux/features/patients";
 import { getItems } from "@/redux/features/inventory";
 import { billingInvoiceItems } from "@/redux/service/billing";
 
@@ -72,7 +72,7 @@ export default function AssignDoctorModal({
       await updateAttendanceProcesses(formData, selectedData?.id, auth).then(() => {
         helpers.resetForm();
         saveInvoiceItem(selectedData.invoice, parseInt(formValue.item.value))
-        dispatch(getAllProcesses(authUser))
+        dispatch(refreshProcesses(authUser))
         toast.success("Doctor Assigned, proceed to Billing!");
         setLoading(false);
         handleClose();

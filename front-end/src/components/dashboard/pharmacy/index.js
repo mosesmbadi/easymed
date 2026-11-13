@@ -20,6 +20,7 @@ import { LuMoreHorizontal } from "react-icons/lu";
 import ViewPrescribedDrugsModal from "./view-prescribed-drugs-modal";
 import { GiMedicinePills } from "react-icons/gi";
 import ProcessFilter from "@/components/common/process/ProcessFilter";
+import ProcessesTruncatedNotice from '@/components/common/process/ProcessesTruncatedNotice';
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
   ssr: false,
@@ -121,7 +122,6 @@ const PharmacyDataGrid = () => {
       dispatch(getAllPrescribedDrugs(auth));
       dispatch(getAllDoctors(auth));
       dispatch(getAllPatients(auth))
-      dispatch(getAllProcesses(auth))
     }
   }, [auth]);
 
@@ -151,17 +151,16 @@ const PharmacyDataGrid = () => {
   };
 
   useEffect(() => {
-      // This effect handles the debouncing logic
-      const timerId = setTimeout(() => {
-          // Dispatch the action only after a 500ms delay
-          dispatch(getAllProcesses(auth, null, processsFilter, selectedSearchFilter))
-      }, 500); // 500ms delay, adjust as needed
-
-      // Cleanup function: clears the timer if searchTerm changes before the delay is over
-      return () => {
-          clearTimeout(timerId);
-      };
-  }, [processsFilter.search]); // The effect re-runs only when the local `searchTerm` state changes
+    if (!auth) return;
+    // Debounced: the backend filters by track and search, so reload when
+    // either changes (500ms after the last keystroke).
+    const timerId = setTimeout(() => {
+      dispatch(getAllProcesses(auth, null, processsFilter, selectedSearchFilter))
+    }, 500);
+    return () => {
+      clearTimeout(timerId);
+    };
+  }, [auth, processsFilter.search, processsFilter.track, selectedSearchFilter?.value]);
 
   return (
     <section className=" my-0">
@@ -172,6 +171,7 @@ const PharmacyDataGrid = () => {
         setSelectedSearchFilter={setSelectedSearchFilter}
         items={items}
       />
+      <ProcessesTruncatedNotice />
       <DataGrid
         dataSource={searchedProcesses}
         allowColumnReordering={true}
