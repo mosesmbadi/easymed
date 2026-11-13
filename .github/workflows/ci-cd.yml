@@ -27,9 +27,20 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # Cached in GitHub's cache: the system packages and pip install (most of
+      # the build, compiled on Alpine) are rebuilt only when requirements.txt or
+      # the Dockerfile changes. It also reuses what build-and-push cached.
       - name: Build backend test image
-        run: |
-          docker build -f backend/Dockerfile -t backend-test:ci ./backend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: backend/Dockerfile
+          tags: backend-test:ci
+          load: true
+          cache-from: |
+            type=gha,scope=backend-test
+            type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend-test
 
       # pytest gets --ds because the DJANGO_SETTINGS_MODULE below overrides
       # pytest.ini. `check` should see the real settings; the tests need
@@ -80,6 +91,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
+          # Keeps npm's download cache between runs, keyed on the lockfile.
+          cache: npm
+          cache-dependency-path: front-end/package-lock.json
 
       # The same install as front-end/Dockerfile.
       - name: Install dependencies

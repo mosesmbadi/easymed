@@ -158,7 +158,12 @@ test.describe("editing an existing interpretation in the dialog", () => {
     await insertTable(dialog, page, { rows: 3, columns: 2 });
     await expect(editor(dialog).locator("table tr")).toHaveCount(3);
 
+    // As in the first test: a click sets the cursor asynchronously, and on a
+    // slow runner the toolbar click overtook it and the image never landed.
+    // A key press puts the cursor in place before the image dialog reads it.
     await editor(dialog).locator("p").first().click();
+    await expect(editor(dialog)).toBeFocused();
+    await page.keyboard.press("End");
     await insertImage(dialog, page, { name: "chart.png", mimeType: "image/png", buffer: PNG });
     await expect(editor(dialog).locator("img")).toHaveCount(1);
 
