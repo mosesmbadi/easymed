@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Grid } from '@mui/material';
 import dynamic from "next/dynamic";
 import * as Yup from "yup";
-import { Formik, Field, Form, ErrorMessage } from "formik";
+import { Formik, Form, ErrorMessage } from "formik";
 import { Column, Pager, Editing } from "devextreme-react/data-grid";
 import CmtDropdownMenu from '@/assets/DropdownMenu';
 import { LuMoreHorizontal } from 'react-icons/lu';
@@ -16,7 +16,7 @@ import { useAuth } from '@/assets/hooks/use-auth';
 
 import { removeItemToLabResultsItems, getAllLabRequests, getAllPhlebotomySamples, getAllLabTestPanelsBySample, updateItemToLabResultsItems, getAllLabTestPanels } from '@/redux/features/laboratory';
 import SeachableSelect from '@/components/select/Searchable';
-import { updateLabRequestPanels, updateLabRequestPanelResult } from '@/redux/service/laboratory';
+import { updateLabRequestPanels, updateLabRequestPanelResult, fetchLabRequestsDetails, updateLabRequest } from '@/redux/service/laboratory';
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
   ssr: false,
@@ -45,6 +45,9 @@ const AddTestResults = () => {
   const [loading, setLoading] = useState(false);
   const [selected, setSelectedItem] = useState(null);
   const [savingResults, setSavingResults] = useState(new Set()); // Track which results are being saved
+  // The lab's comment, kept on the sample's lab request and printed on the
+  // report under that profile's results.
+  const [comment, setComment] = useState("");
   const dispatch = useDispatch();
   const { labResultItems  } = useSelector((store) => store.laboratory);
   const { labTestPanels  } = useSelector((store) => store.laboratory);
@@ -55,7 +58,6 @@ const AddTestResults = () => {
 
   const token = useAuth();
   const initialValues = {
-    title: "",
     lab_test_request: null,
     recorded_by:token.user_id,
   };
@@ -71,6 +73,20 @@ const AddTestResults = () => {
       }
     }
   }, [token, selected]);
+
+  // The lab request the selected sample was taken for.
+  const labTestRequestId = phlebotomySamples.find((sample) => sample.id === selected?.value)?.lab_test_request;
+
+  // Show any comment already saved, so reopening the sample edits it.
+  useEffect(() => {
+    setComment("");
+    if (!auth || !labTestRequestId) return;
+    let cancelled = false;
+    fetchLabRequestsDetails(labTestRequestId, auth)
+      .then((request) => { if (!cancelled) setComment(request?.lab_comment || ""); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [labTestRequestId]); // eslint-disable-line react-hooks/exhaustive-deps
   
   // Debug logging for labResultItems
   useEffect(() => {
@@ -108,9 +124,12 @@ const AddTestResults = () => {
       }    
       
       setLoading(true);
-      
-      // Since we're using auto-save, results are already saved
-      // Just show success message and navigate back
+
+      // Results are auto-saved; the comment is saved here.
+      if (labTestRequestId) {
+        await updateLabRequest(labTestRequestId, { lab_comment: comment.trim() }, auth);
+      }
+
       toast.success("Results completed successfully!");
       setLoading(false);
       router.back();
@@ -267,18 +286,13 @@ const AddTestResults = () => {
         />
       </DataGrid>
       <Grid className='py-2' item md={4} xs={12}>
-          <Field
-            as='textarea'
+          <textarea
             rows={4}
             className="block border rounded-lg text-sm border-gray py-2 px-4 focus:outline-card w-full"
-            maxWidth="sm"
-            placeholder="Comments"
-            name="title"
-          />
-          <ErrorMessage
-            name="title"
-            component="div"
-            className="text-warning text-xs"
+            placeholder="Comments (printed on the report)"
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            disabled={!labTestRequestId}
           />
         </Grid>
       <Grid item md={12} xs={12}>

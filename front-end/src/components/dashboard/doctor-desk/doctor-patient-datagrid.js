@@ -23,6 +23,7 @@ import LabModal from "./lab-modal";
 import ViewAddedResults from "./ViewAddedResults";
 import ApproveResults from "../laboratory/add-result/ApproveResults";
 import ProcessFilter from "@/components/common/process/ProcessFilter";
+import ProcessesTruncatedNotice from '@/components/common/process/ProcessesTruncatedNotice';
 import AdmitModal from "./admit-modal";
 import AITriageModal from "./ai-triage-modal";
 
@@ -136,7 +137,6 @@ const DoctorPatientDataGrid = () => {
   useEffect(() => {
     if (auth) {
       dispatch(getAllPatients(auth));
-      dispatch(getAllProcesses(auth))
     }
   }, [auth]);
 
@@ -199,17 +199,16 @@ const DoctorPatientDataGrid = () => {
   };
 
   useEffect(() => {
-    // This effect handles the debouncing logic
+    if (!auth) return;
+    // Debounced: the backend filters by track and search, so reload when
+    // either changes (500ms after the last keystroke).
     const timerId = setTimeout(() => {
-      // Dispatch the action only after a 500ms delay
       dispatch(getAllProcesses(auth, null, processFilter, selectedSearchFilter))
-    }, 500); // 500ms delay, adjust as needed
-
-    // Cleanup function: clears the timer if searchTerm changes before the delay is over
+    }, 500);
     return () => {
       clearTimeout(timerId);
     };
-  }, [processFilter.search]); // The effect re-runs only when the local `searchTerm` state changes
+  }, [auth, processFilter.search, processFilter.track, selectedSearchFilter?.value]);
 
   return (
     <section>
@@ -220,6 +219,7 @@ const DoctorPatientDataGrid = () => {
         setSelectedSearchFilter={setSelectedSearchFilter}
         items={items}
       />
+      <ProcessesTruncatedNotice />
       <DataGrid
         dataSource={doctorsSchedules}
         allowColumnReordering={true}

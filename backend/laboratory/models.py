@@ -555,7 +555,11 @@ class SampleConsignment(models.Model):
 class LabTestRequest(models.Model):
     process = models.ForeignKey(ProcessTestRequest, on_delete=models.CASCADE, null=True, blank=True, related_name="attendace_test_requests") # from patient app
     test_profile = models.ForeignKey(LabTestProfile, on_delete=models.CASCADE, null=True, blank=True)
+    # Written by whoever requested the test, e.g. the doctor sending the patient.
     note = models.TextField(null=True, blank=True)
+    # Written by the lab when entering results; printed under this profile's
+    # results on the report.
+    lab_comment = models.TextField(blank=True, default='')
     requested_by = models.ForeignKey(CustomUser, on_delete=models.PROTECT, null=True, blank=True)
     # Who ordered the test when it was not one of our own doctors: a walk-in
     # carrying a referral from a clinician elsewhere. Printed on the report.

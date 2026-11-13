@@ -1,13 +1,10 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { Container } from "@mui/material";
-import { useDispatch, useSelector } from 'react-redux'
 
 import DashboardLayout from "@/components/layout/dashboard-layout";
 import AuthGuard from "@/assets/hoc/auth-guard";
 import ProtectedRoute from "@/assets/hoc/protected-route";
 import AppointmentCard from "@/components/dashboard/cards/AppointmentCard";
-import { getAllProcesses } from "@/redux/features/patients";
-import { useAuth } from "@/assets/hooks/use-auth";
 import { useFacility } from "@/assets/hooks/use-facility";
 import Link from "next/link";
 
@@ -33,14 +30,7 @@ const LabHome = () => (
 );
 
 const Dashboard = () => {
-  const dispatch = useDispatch();
-  const auth = useAuth()
-  const { processes } = useSelector((store)=>store.patient);
   const { settled, isLabFirst } = useFacility();
-
-  useEffect(()=>{
-      dispatch(getAllProcesses(auth))
-  },[])
 
   if (!settled) return null;
 

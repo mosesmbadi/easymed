@@ -322,24 +322,28 @@ export const fetchPatientPrescribeDrugs = (patient_id) => {
     })
 }
 
+// How many of the most recent visits a work queue loads. Older ones are found
+// by searching, which the backend does across all of them.
+export const DEFAULT_PROCESSES_PAGE_SIZE = 200;
+
 export const fetchAllAttendanceProcesses = (auth, process_id = null, processsFilter, selectedSearchFilter) => {
     const axiosInstance = UseAxios(auth);
+    // A list is paged by the backend ({count, results}); a single visit
+    // (process_id) comes back as the object itself.
     const params = {
         process_id: process_id,
         search_field: selectedSearchFilter?.value ? selectedSearchFilter.value : null,
         search_value: processsFilter?.search || null,
+        track: processsFilter?.track || null,
+        page_size: process_id ? null : (processsFilter?.page_size || DEFAULT_PROCESSES_PAGE_SIZE),
     };
-    console.log("SERVICE: fetchAllAttendanceProcesses called with params:", params);
-    console.log("SERVICE: Making API call to:", APP_API_URL.PATIENT_ATTENDANCE_PROCESS);
 
     return new Promise((resolve, reject) => {
         axiosInstance.get(`${APP_API_URL.PATIENT_ATTENDANCE_PROCESS}`, { params })
             .then((res) => {
-                console.log("SERVICE: API call successful, response:", res.data);
                 resolve(res.data)
             })
             .catch((err) => {
-                console.log("SERVICE: API call failed, error:", err);
                 reject(apiErrorMessage(err))
             })
     })

@@ -20,7 +20,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useAuth } from '@/assets/hooks/use-auth';
 import { createPatient, initiateNewAttendanceProcesses } from '@/redux/service/patients';
 import { getAllInsurance } from '@/redux/features/insurance';
-import { getAllPatients, getAllProcesses } from '@/redux/features/patients';
+import { getAllPatients, refreshProcesses } from '@/redux/features/patients';
 import { MdPersonAdd, MdPersonSearch } from 'react-icons/md';
 import { IoMdCheckmarkCircle } from 'react-icons/io';
 import AssignDoctorModal from '../reception-interface/assign-doctor-modal';
@@ -120,7 +120,7 @@ const UnifiedCheckInForm = ({ onSuccess }) => {
       resetForm();
       
       // Refresh processes
-      dispatch(getAllProcesses(auth));
+      dispatch(refreshProcesses(auth));
       
       if (onSuccess) onSuccess();
     } catch (error) {
@@ -156,7 +156,7 @@ const UnifiedCheckInForm = ({ onSuccess }) => {
     setSelectedPatient(null);
     setVisitCreated(false);
     setCurrentProcess(null);
-    dispatch(getAllProcesses(auth));
+    dispatch(refreshProcesses(auth));
     if (onSuccess) onSuccess();
   };
 

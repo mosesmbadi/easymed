@@ -48,7 +48,7 @@ LabTestProfile  (e.g. "Renal Function")
 | Model | Key fields |
 | --- | --- |
 | `ProcessTestRequest` | Per-visit container; `reference` = visit `track_number`. Created with the `AttendanceProcess` |
-| `LabTestRequest` | `process`, `test_profile`, `requested_by`, `referring_doctor`, `referring_facility`, `consignment`, `external_reference` (the sender's own number), `note`, `has_result` |
+| `LabTestRequest` | `process`, `test_profile`, `requested_by`, `referring_doctor`, `referring_facility`, `consignment`, `external_reference` (the sender's own number), `note` (the requester's; every request's note prints under "Notes"), `lab_comment` (the lab's, from the Comments box on results entry; prints under that profile's results), `has_result` |
 | `SampleConsignment` | A delivery of samples from another facility: `reference` (`RS-YYMMDD-NNN`), `facility` (a `facility` credit account), `received_at`, `received_by`, `courier`, `request_form` (scan), `note` |
 | `LabTestRequestPanel` | One test on a request: `test_panel`, `lab_test_request`, `patient_sample`, `result`, `test_code` (`TC-NNNN`), `category` (qualitative/quantitative), `result_approved`, `approved_on`, `approved_by` (signs the report), `is_billed`, `auto_interpretation`, `clinical_action`, `requires_attention` |
 | `PatientSample` | `specimen`, `process`, `lab_test_request`, `patient_sample_code` (unique, yearly sequence), `is_sample_collected`, `collected_on`; for a sample sent in, `collected_externally` (no draw kit of ours deducted), `collected_by`, `received_on`, `condition`, `rejected`, `rejection_reason` |

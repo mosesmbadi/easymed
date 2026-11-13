@@ -71,6 +71,20 @@ container starts, from the deployment's `NGINX_SERVER_NAME` (host names) and
 The backend is reached by the frontend's server-side proxy routes, not directly
 by the browser.
 
+## Static and uploaded files
+
+None of this depends on `DEBUG`, which is off in production
+(`easymed.settings.production`; set `DEBUG=True` in `.env` only to debug).
+
+- **Static** (`/static/`, admin and Swagger assets): collected by the
+  entrypoint's `collectstatic` and served by WhiteNoise.
+- **Uploads** (`/images/`, `MEDIA_ROOT`: company logo, signatures, referral
+  documents): served by Django's file view in `easymed/urls.py`. The browser
+  reaches them through the frontend's `/backend-media/` rewrite. They need no
+  login, so keep port 8080 off the internet.
+- **PDFs** embed uploads by URL, but `easymed/pdf.py` reads any `/images/` or
+  `/static/` URL straight from disk instead of fetching it over HTTP.
+
 ## Monitoring
 
 `django_prometheus` exposes `/metrics` on the backend. Running a Prometheus

@@ -7,7 +7,7 @@ import * as Yup from "yup";
 import { Formik, Field, Form, ErrorMessage } from "formik";
 import { toast } from "react-toastify";
 import { useAuth } from "@/assets/hooks/use-auth";
-import { getAllProcesses, getPatientTriage } from "@/redux/features/patients";
+import { refreshProcesses, getPatientTriage } from "@/redux/features/patients";
 import { updateAttendanceProcesses, updatePatientTriage } from "@/redux/service/patients";
 import { getVitalSignColor } from "@/utils/triage-flags";
 import { getTriageSettings } from "@/redux/features/patients";
@@ -88,7 +88,7 @@ export default function AddTriageModal({
   const sendToDoc = async (payload, process_id) => {
     try {
       const response = await updateAttendanceProcesses(payload, process_id, auth)
-      dispatch(getAllProcesses(auth))
+      dispatch(refreshProcesses(auth))
       console.log("SUCCESSFULLY SENT TO DOC", response)
 
     } catch (error) {

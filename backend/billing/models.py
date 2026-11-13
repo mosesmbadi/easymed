@@ -198,6 +198,21 @@ class InvoicePayment(models.Model):
         return self.invoice.invoice_number
     
     
+def with_agreed_insurance_price(queryset):
+    """
+    Annotate invoice lines with whether the line's insurer has an agreed price
+    for its item, which `InvoiceItem.price_source` otherwise asks the database
+    for line by line.
+    """
+    InsuranceItemSalePrice = apps.get_model('inventory', 'InsuranceItemSalePrice')
+    return queryset.annotate(has_agreed_insurance_price=models.Exists(
+        InsuranceItemSalePrice.objects.filter(
+            item_id=models.OuterRef('item_id'),
+            insurance_company_id=models.OuterRef('payment_mode__insurance_id'),
+        )
+    ))
+
+
 class InvoiceItem(models.Model):
     STATUS_CHOICES = (
         ('pending', 'Pending'),
@@ -289,10 +304,14 @@ class InvoiceItem(models.Model):
         if self.payment_mode and self.payment_mode.payment_category == 'insurance':
             InsuranceItemSalePrice = apps.get_model('inventory', 'InsuranceItemSalePrice')
             if self.payment_mode.insurance_id:
-                ins_price = InsuranceItemSalePrice.objects.filter(
-                    item=self.item, 
-                    insurance_company_id=self.payment_mode.insurance_id
-                ).exists()
+                # A list annotates this up front (with_agreed_insurance_price)
+                # so it costs no query per line; otherwise ask.
+                ins_price = getattr(self, 'has_agreed_insurance_price', None)
+                if ins_price is None:
+                    ins_price = InsuranceItemSalePrice.objects.filter(
+                        item=self.item,
+                        insurance_company_id=self.payment_mode.insurance_id
+                    ).exists()
                 if ins_price:
                     return 'insurance'
                 if self.payment_mode.insurance.bills_list_price_when_unagreed:

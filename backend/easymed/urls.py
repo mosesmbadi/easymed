@@ -1,5 +1,6 @@
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
+from django.views.static import serve as serve_file
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.conf import settings
 from django.conf.urls.static import static
@@ -55,5 +56,18 @@ urlpatterns = [
 
 ]
 
-urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# Uploads (company logo, staff signatures, referral documents). Served by
+# Django whatever DEBUG is: `static()` adds this route only while DEBUG is on,
+# and the frontend's /backend-media/ proxy relies on it. Traffic is a logo and
+# the odd signature, so Django's file view is enough. PDFs don't come through
+# here: easymed.pdf reads images straight from MEDIA_ROOT.
+def serve_media(request, path):
+    return serve_file(request, path, document_root=settings.MEDIA_ROOT)
+
+
+urlpatterns += [
+    re_path(r'^%s(?P<path>.*)$' % settings.MEDIA_URL.lstrip('/'), serve_media, name='media'),
+]
+# Collected static files (admin, Swagger) are served by WhiteNoise in
+# production; this covers runserver while DEBUG is on.
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

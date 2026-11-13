@@ -5,7 +5,9 @@ from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404
 from django.conf import settings
 from django.template.loader import render_to_string
+from django.db.models import Exists, OuterRef, Prefetch
 from rest_framework import viewsets, status
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.request import Request
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -47,6 +49,7 @@ from .serializers import (
 )
 from .filters import (
     AttendanceProcessFilter,
+    AttendanceProcessTrackFilter,
     PatientFilter,
     ConsultationFilter,
     PatientFilterSearch,
@@ -197,11 +200,50 @@ class TriageViewSet(viewsets.ModelViewSet):
     filterset_class = TriageFilter
 
 
+class AttendanceProcessPagination(PageNumberPagination):
+    """
+    Visits are read a page at a time. The list used to return every visit the
+    facility had ever recorded, each with its invoice lines, on every call from
+    about ten screens; as the history grew, the API process grew with it until
+    the kernel killed it (2026-11-12/13). `?page_size=` lets a screen ask for
+    more, up to the cap.
+    """
+    page_size = 100
+    page_size_query_param = 'page_size'
+    max_page_size = 500
+
+
+def with_attendance_relations(queryset):
+    """
+    Everything AttendanceProcessSerializer reads, fetched up front, so a page
+    of visits costs a fixed handful of queries rather than several per visit.
+    """
+    from billing.models import InvoiceItem, with_agreed_insurance_price
+    from laboratory.models import LabTestRequestPanel
+
+    approved_results = LabTestRequestPanel.objects.filter(
+        lab_test_request__process=OuterRef('process_test_req'),
+        result_approved=True,
+    )
+    invoice_lines = with_agreed_insurance_price(
+        InvoiceItem.objects.select_related('item', 'payment_mode__insurance', 'source_tag'))
+    return queryset.select_related(
+        'patient__referred_from', 'doctor', 'triage', 'invoice',
+        'clinical_note', 'referral',
+    ).prefetch_related(
+        'patient__insurances',
+        Prefetch('invoice__invoice_items', queryset=invoice_lines),
+    ).annotate(
+        has_approved_lab_results_annotated=Exists(approved_results),
+    )
+
+
 class AttendanceProcessViewSet(viewsets.ModelViewSet):
-    queryset = AttendanceProcess.objects.all().order_by('-id')
+    queryset = with_attendance_relations(AttendanceProcess.objects.all()).order_by('-id')
     serializer_class = AttendanceProcessSerializer
+    pagination_class = AttendanceProcessPagination
     filter_backends = [AttendanceProcessFilter, DjangoFilterBackend]
-    filterset_fields = ['track']
+    filterset_class = AttendanceProcessTrackFilter
     search_fields = [
         'patient__first_name', 'patient__second_name', 'track_number', 'patient_number',
         'doctor__first_name', 'doctor__last_name',

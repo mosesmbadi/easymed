@@ -14,6 +14,9 @@ import {
 
 const initialState = {
   processes: [],
+  // How many visits matched on the server; more than processes.length when
+  // only the most recent page was loaded.
+  processesCount: 0,
   processDetails: {},
   services: [],
   patients: [],
@@ -31,6 +34,9 @@ const PatientSlice = createSlice({
   reducers: {
     setProcesses: (state, action) => {
       state.processes = action.payload;
+    },
+    setProcessesCount: (state, action) => {
+      state.processesCount = action.payload;
     },
     setOneProcess: (state, action) => {
       state.processDetails = action.payload;
@@ -110,22 +116,39 @@ export const {
   clearPrescriptionItems,
   setPatientPrescribedDrugs,
   setProcesses,
+  setProcessesCount,
   setOneProcess,
   setPrescriptionItem,
   updateAttendaceProcessStoreClinicalNotes,
   updateAttendaceProcessStoreRefer
 } = PatientSlice.actions;
 
+// The query the visible queue last loaded, so a modal that changes a visit can
+// reload that same queue (refreshProcesses) instead of replacing it with an
+// unfiltered list.
+let lastProcessesQuery = { processsFilter: undefined, selectedSearchFilter: undefined };
+
+/**
+ * Load a queue of visits. processsFilter: { track, search, page_size }, where
+ * track is one track or several comma-separated ("lab,pharmacy,doctor").
+ * The backend returns the most recent page_size visits that match, plus how
+ * many matched in all.
+ */
 export const getAllProcesses = (auth, process_id = null, processsFilter, selectedSearchFilter) => async (dispatch) => {
+  lastProcessesQuery = { processsFilter, selectedSearchFilter };
   try {
-    console.log("REDUX ACTION: Calling fetchAllAttendanceProcesses with:", { auth, process_id, processsFilter, selectedSearchFilter });
     const response = await fetchAllAttendanceProcesses(auth, process_id, processsFilter, selectedSearchFilter);
-    console.log("REDUX ACTION: fetchAllAttendanceProcesses response:", response);
-    dispatch(setProcesses(response));
+    const results = Array.isArray(response) ? response : (response?.results ?? []);
+    dispatch(setProcesses(results));
+    dispatch(setProcessesCount(Array.isArray(response) ? response.length : (response?.count ?? results.length)));
   } catch (error) {
     console.log("ATTENDANCE_PROCESSES_ERROR ", error);
   }
 };
+
+/** Reload whatever queue is on screen, after a visit was changed. */
+export const refreshProcesses = (auth) => (dispatch) =>
+  dispatch(getAllProcesses(auth, null, lastProcessesQuery.processsFilter, lastProcessesQuery.selectedSearchFilter));
 
 export const updateAttendanceProcessStoreClinicalNotesData = (payload) => (dispatch) => {
   dispatch(updateAttendaceProcessStoreClinicalNotes(payload));

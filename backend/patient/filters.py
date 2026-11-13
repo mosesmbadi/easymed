@@ -69,6 +69,23 @@ class PrescribedDrugFilter(django_filters.FilterSet):
 #         model = AttendanceProcess
 #         fields = "__all__"
 
+class AttendanceProcessTrackFilter(django_filters.FilterSet):
+    """
+    `?track=lab` or several at once, `?track=lab,pharmacy,doctor`. Each screen
+    asks only for the visits on its own track(s), so the list it gets is its
+    queue rather than every visit the facility has ever had.
+    """
+    track = django_filters.CharFilter(method='filter_track')
+
+    class Meta:
+        model = AttendanceProcess
+        fields = ['track']
+
+    def filter_track(self, queryset, name, value):
+        tracks = [t.strip() for t in value.split(',') if t.strip()]
+        return queryset.filter(track__in=tracks) if tracks else queryset
+
+
 class AttendanceProcessFilter(filters.SearchFilter):
     def get_search_fields(self, view, request):
         # Get the value of the 'search_field' query parameter

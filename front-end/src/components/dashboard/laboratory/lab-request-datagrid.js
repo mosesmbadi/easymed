@@ -13,6 +13,7 @@ import EquipmentModal from "./equipment-modal";
 import RequestInfoModal from "./RequestInfoModal";
 import LabModal from "../doctor-desk/lab-modal";
 import ProcessFilter from "@/components/common/process/ProcessFilter";
+import ProcessesTruncatedNotice from '@/components/common/process/ProcessesTruncatedNotice';
 import { getAllProcesses } from "@/redux/features/patients";
 import { useAuth } from "@/assets/hooks/use-auth";
 
@@ -143,6 +144,7 @@ const LabRequestDataGrid = ( ) => {
       />
 
       {/* DATAGRID STARTS HERE */}
+      <ProcessesTruncatedNotice />
       <DataGrid
         dataSource={searchedProcesses}
         allowColumnReordering={true}
