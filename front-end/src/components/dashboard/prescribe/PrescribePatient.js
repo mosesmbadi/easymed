@@ -53,8 +53,10 @@ const PrescribePatient = () => {
   // The store holds only the queue the doctor came from (one page of visits),
   // so fetch this visit on its own when it isn't there, e.g. after a reload.
   const [fetchedProcess, setFetchedProcess] = useState(null)
-  const thisProcess = processes.find((process)=> process.id === parseInt(params.process_id))
-    || (fetchedProcess?.id === parseInt(params.process_id) ? fetchedProcess : undefined)
+  // params is null while Next pre-renders the page at build time.
+  const processId = parseInt(params?.process_id)
+  const thisProcess = processes.find((process)=> process.id === processId)
+    || (fetchedProcess?.id === processId ? fetchedProcess : undefined)
   let currentDate = new Date();
   let year = currentDate.getFullYear();
   let month = String(currentDate.getMonth() + 1).padStart(2, '0');
