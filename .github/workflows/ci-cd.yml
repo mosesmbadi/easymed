@@ -4,13 +4,11 @@ name: CI
 # hospital has its own deployment repo (e.g. afurqan-deployment) that pulls
 # these images at a tag it chooses.
 
-# Pushes to dev branches and pull requests only run the tests: images are published
-# from main and standalone-lab alone, see the `if` on build-and-push.
+# Runs only when main changes, i.e. when a pull request is merged into it.
+# Pushes to dev branches, and pull requests while they are open, run nothing.
 on:
   push:
-    branches: [ "main"]
-  pull_request:
-    branches: [ "main"]
+    branches: [ "main" ]
 
 env:
   # Docker Hub namespace the images are pushed to. Set the DOCKERHUB_NAMESPACE

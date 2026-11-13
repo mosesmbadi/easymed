@@ -108,7 +108,7 @@ Full instructions: [backup/README.md](../backup/README.md).
 
 This repo tests EasyMed and publishes its images. **It does not deploy.**
 
-On push to `main` or `standalone-lab`:
+On push to `main`, which is when a pull request is merged. Pushes to other branches and open pull requests run nothing:
 
 1. **test-backend** — build `backend/Dockerfile`, run `manage.py check` and
    `pytest --ds=easymed.settings.testing` with dummy env vars (SQLite, in-memory
