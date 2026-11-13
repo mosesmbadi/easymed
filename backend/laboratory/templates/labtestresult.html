@@ -87,15 +87,20 @@
       font-style: italic;
     }
 
-    .section-title {
-      margin: 12px 0 6px;
+    /* The profile's name is the first row of its table's header, which
+       WeasyPrint repeats at the top of every page the table runs onto. So a
+       profile's results never continue onto a page without its name, and the
+       name can't be left alone at the foot of a page. */
+    table.results {
+      margin-top: 12px;
+      table-layout: fixed;
+    }
+
+    table.results th.section-title {
+      padding: 0 0 6px;
       font-size: 11px;
       font-weight: bold;
       text-transform: uppercase;
-    }
-
-    table.results {
-      table-layout: fixed;
     }
 
     /* These cells set the column widths. Without border-box their padding is added
@@ -145,6 +150,12 @@
 
     .notes {
       margin-top: 14px;
+    }
+
+    .section-comment {
+      margin-top: 4px;
+      padding: 0 4px;
+      break-inside: avoid;
     }
 
     .interpretation-section {
@@ -385,9 +396,19 @@
   {% endif %}
 
   {% for section in report_sections %}
-  <div class="section-title">{{ section.name }}</div>
   <table class="results">
+    {# The widths are set here: with a fixed layout they would otherwise come from the title row, which spans every column. #}
+    <colgroup>
+      <col class="col-name" />
+      <col class="col-result" />
+      <col class="col-unit" />
+      <col class="col-flag" />
+      <col class="col-range" />
+    </colgroup>
     <thead>
+      <tr>
+        <th class="section-title" colspan="5">{{ section.name }}</th>
+      </tr>
       <tr>
         <th class="col-name">Investigations</th>
         {% if section.all_qualitative %}
@@ -440,10 +461,13 @@
       {% endfor %}
     </tbody>
   </table>
+  {% for comment in section.comments %}
+  <div class="section-comment"><strong>Comment:</strong> {{ comment|linebreaksbr }}</div>
+  {% endfor %}
   {% endfor %}
 
-  {% if first_labtestrequest.note %}
-  <div class="notes"><strong>Notes:</strong> {{ first_labtestrequest.note }}</div>
+  {% if request_notes %}
+  <div class="notes"><strong>Notes:</strong>{% for note in request_notes %} {{ note|linebreaksbr }}{% if not forloop.last %}<br />{% endif %}{% endfor %}</div>
   {% endif %}
 
   {% if profile_interpretations %}

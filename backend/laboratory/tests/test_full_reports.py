@@ -112,9 +112,10 @@ def report_rows(html):
     rows = []
     for element in body:
         classes = (element.get('class') or '').split()
-        if 'section-title' in classes:
-            rows.append(('section', element.text.strip()))
-        elif 'results' in classes:
+        if 'results' in classes:
+            # The profile's name heads its table, so it repeats on each page.
+            title = element.find("thead/tr/th[@class='section-title']")
+            rows.append(('section', title.text.strip()))
             for row in element.find('tbody').findall('tr'):
                 kind = {'group-row': 'heading', 'block-gap': 'gap'}.get(row.get('class'), 'row')
                 rows.append((kind, *cells(row)))

@@ -507,7 +507,9 @@ def render_labtestresult_pdf(request, processtestrequest_id):
         # Main profile, then sub profile, then the panels in their order. The
         # rows are sorted that way, so groups appear in the order first met.
         lineage = panel.test_panel.test_profile.lineage()
-        section = sections.setdefault(lineage[0].pk, {'name': lineage[0].name, 'groups': {}})
+        section = sections.setdefault(lineage[0].pk, {'name': lineage[0].name, 'groups': {}, 'requests': []})
+        if panel.lab_test_request_id not in section['requests']:
+            section['requests'].append(panel.lab_test_request_id)
         group_name = " - ".join(profile.name for profile in lineage[1:])
         group = section['groups'].setdefault(group_name, {'name': group_name, 'heading': None, 'panels': []})
         # A panel named after its own sub profile is that heading's result, so it
@@ -547,14 +549,30 @@ def render_labtestresult_pdf(request, processtestrequest_id):
         rows = [row for group in groups for row in [group['heading'], *group['panels']] if row]
         return all(row.get('is_qualitative') for row in rows)
 
+    # The lab's comments on each request, printed under the profile whose
+    # results that request holds.
+    lab_comments = {
+        request_id: comment.strip()
+        for request_id, comment in labtestrequests.values_list('id', 'lab_comment')
+        if comment and comment.strip()
+    }
+
+    def unique(texts):
+        return list(dict.fromkeys(texts))
+
     context['report_sections'] = [
         {
             'name': section['name'],
             'groups': list(section['groups'].values()),
             'all_qualitative': all_qualitative(section['groups'].values()),
+            'comments': unique(lab_comments[r] for r in section['requests'] if r in lab_comments),
         }
         for section in sections.values()
     ]
+    # Every request's note, not just the first: a report can cover several.
+    context['request_notes'] = unique(
+        note.strip() for note in labtestrequests.order_by('id').values_list('note', flat=True)
+        if note and note.strip())
     context['profile_interpretations'] = list(profile_interpretations_dict.values())
 
     html_template = get_template('labtestresult.html').render(context)
