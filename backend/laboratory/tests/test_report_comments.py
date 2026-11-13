@@ -8,7 +8,7 @@ import re
 import pytest
 
 from inventory.models import Item
-from laboratory.models import LabTestPanel, LabTestProfile, LabTestRequest
+from laboratory.models import LabTestPanel, LabTestProfile, LabTestRequest, Specimen
 from laboratory.tests.test_report_signoff import api, lab_setup, report_html, results  # noqa: F401  (fixtures)
 from patient.models import AttendanceProcess
 
@@ -16,6 +16,8 @@ from patient.models import AttendanceProcess
 @pytest.fixture
 def two_profile_visit(api, patient, company):
     """One visit with two profiles requested, so two lab requests on one report."""
+    # A test needs a specimen: entering its result creates the sample from it.
+    specimen = Specimen.objects.create(name='Blood')
     profiles, panels = [], []
     for name in ('Haematology', 'Chemistry'):
         response = api.post('/lab/lab-test-profile/', {'name': name, 'sale_price': '500.00'}, format='json')
@@ -24,7 +26,8 @@ def two_profile_visit(api, patient, company):
         item = Item.objects.create(
             name=f'{name} test', desc=name, category='Lab Test', units_of_measure='test', item_code=f'C-{name}')
         profiles.append(profile)
-        panels.append(LabTestPanel.objects.create(name=f'{name} test', test_profile=profile, item=item))
+        panels.append(LabTestPanel.objects.create(
+            name=f'{name} test', test_profile=profile, specimen=specimen, item=item))
 
     response = api.post('/lab/walk-in-requests/', {
         'patient': patient.id, 'profiles': [p.id for p in profiles], 'panels': [p.id for p in panels],
