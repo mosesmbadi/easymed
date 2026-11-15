@@ -436,63 +436,71 @@ def render_labtestresult_pdf(request, processtestrequest_id):
     company_logo_url = request.build_absolute_uri(company.logo.url) if company and company.logo else None
 
     first_request = labtestrequests.first() if labtestrequests.exists() else None
-    first_panel = panels.first() if panels.exists() else None
-    approved = (panels.filter(result_approved=True, approved_by__isnull=False)
-                .select_related('approved_by').order_by('-approved_on', '-id').first())
-    
-    # Get signature URLs
-    doctor_sig_url = request.build_absolute_uri(attendance_process.doctor.signature.url) if attendance_process.doctor and attendance_process.doctor.signature else None
-    lab_tech_sig_url = request.build_absolute_uri(attendance_process.lab_tech.signature.url) if attendance_process.lab_tech and attendance_process.lab_tech.signature else None
-    approved_by_sig_url = request.build_absolute_uri(approved.approved_by.signature.url) if approved and approved.approved_by.signature else None
-    collected_on = (panels.filter(patient_sample__collected_on__isnull=False)
-                    .order_by('patient_sample__collected_on')
-                    .values_list('patient_sample__collected_on', flat=True).first())
+    def page_details(rows):
+        """
+        The dates and the approver for a page of the report, from the results
+        it prints. Each main profile prints as a report of its own, so it is
+        signed by whoever approved its results.
+        """
+        first_row = rows.first()
+        approved = (rows.filter(result_approved=True, approved_by__isnull=False)
+                    .select_related('approved_by').order_by('-approved_on', '-id').first())
+        approved_by = approved.approved_by if approved else None
+        return {
+            'collected_on': (rows.filter(patient_sample__collected_on__isnull=False)
+                             .order_by('patient_sample__collected_on')
+                             .values_list('patient_sample__collected_on', flat=True).first()),
+            'approved_on': approved.approved_on if approved else None,
+            # The last to approve a result on the page signs it.
+            'approved_by': approved_by,
+            'approved_by_sig_url': (request.build_absolute_uri(approved_by.signature.url)
+                                    if approved_by and approved_by.signature else None),
+            'result_entered_datetime': first_row.approved_on if first_row else None,
+        }
 
     context = {
         'processtestrequest': processtestrequest,
         'labtestrequests': labtestrequests,
         'report_sections': [],
-        'profile_interpretations': [],
         'patient': patient,
         'company': company,
         'company_logo_url': company_logo_url,
-        'doctor_sig_url': doctor_sig_url,
-        'lab_tech_sig_url': lab_tech_sig_url,
-        'approved_by_sig_url': approved_by_sig_url,
-        'collected_on': collected_on,
         'attendance_process': attendance_process,
-        'approved_on': approved.approved_on if approved else None,
-        # The last to approve a result on the report signs it.
-        'approved_by': approved.approved_by if approved else None,
         'first_labtestrequest': first_request,
         'requested_date': first_request.created_on if first_request else None,
         'requested_time': first_request.requested_on if first_request else None,
-        'result_entered_datetime': first_panel.approved_on if first_panel else None,
     }
-
-    profile_interpretations_dict = {}
 
     ordered = in_report_order(panels.select_related('test_panel__units'))
     sections = {}
 
     # Only process panels that have results (already filtered in the query)
     for panel in ordered:
+        # Main profile, then sub profile, then the panels in their order. The
+        # rows are sorted that way, so groups appear in the order first met.
+        lineage = panel.test_panel.test_profile.lineage()
+        section = sections.setdefault(lineage[0].pk, {
+            'name': lineage[0].name, 'groups': {}, 'requests': [], 'rows': [], 'interpretations': {}})
+        section['rows'].append(panel.pk)
+        if panel.lab_test_request_id not in section['requests']:
+            section['requests'].append(panel.lab_test_request_id)
+
         interpretation, action, attention = panel.generate_interpretation()
-        
+
         # Listed once, under the profile it was written for: sub profiles that
         # inherit their main profile's interpretation must not each repeat it.
-        profile = panel.test_panel.test_profile
+        # It prints on its main profile's page.
         profile = next(
-            (node for node in reversed(profile.lineage()) if node.interpretations.exists()), profile)
-        if profile and profile.id not in profile_interpretations_dict:
+            (node for node in reversed(lineage) if node.interpretations.exists()), lineage[-1])
+        if profile.id not in section['interpretations']:
             if interpretation or panel.auto_interpretation:
-                profile_interpretations_dict[profile.id] = {
+                section['interpretations'][profile.id] = {
                     'profile_name': profile.name,
                     'interpretation': rich_text_html(interpretation or panel.auto_interpretation),
                     'clinical_action': action or panel.clinical_action,
                     'requires_attention': attention if interpretation else panel.requires_attention,
                 }
-                
+
         panel_data = {
             'test_panel_name': panel.test_panel.name,
             'report_group': panel.test_panel.report_block,
@@ -504,12 +512,6 @@ def render_labtestresult_pdf(request, processtestrequest_id):
             'unit': panel.test_panel.units.symbol if panel.test_panel.units else '',
         }
 
-        # Main profile, then sub profile, then the panels in their order. The
-        # rows are sorted that way, so groups appear in the order first met.
-        lineage = panel.test_panel.test_profile.lineage()
-        section = sections.setdefault(lineage[0].pk, {'name': lineage[0].name, 'groups': {}, 'requests': []})
-        if panel.lab_test_request_id not in section['requests']:
-            section['requests'].append(panel.lab_test_request_id)
         group_name = " - ".join(profile.name for profile in lineage[1:])
         group = section['groups'].setdefault(group_name, {'name': group_name, 'heading': None, 'panels': []})
         # A panel named after its own sub profile is that heading's result, so it
@@ -556,24 +558,35 @@ def render_labtestresult_pdf(request, processtestrequest_id):
         for request_id, comment in labtestrequests.values_list('id', 'lab_comment')
         if comment and comment.strip()
     }
+    request_notes = {
+        request_id: note.strip()
+        for request_id, note in labtestrequests.values_list('id', 'note')
+        if note and note.strip()
+    }
 
     def unique(texts):
         return list(dict.fromkeys(texts))
 
+    # Each main profile prints on a page of its own, headed and signed off as
+    # though it had been requested alone.
     context['report_sections'] = [
         {
             'name': section['name'],
             'groups': list(section['groups'].values()),
             'all_qualitative': all_qualitative(section['groups'].values()),
             'comments': unique(lab_comments[r] for r in section['requests'] if r in lab_comments),
+            # Every request's note, not just the first: a profile can span several.
+            'notes': unique(request_notes[r] for r in sorted(section['requests']) if r in request_notes),
+            'interpretations': list(section['interpretations'].values()),
+            **page_details(panels.filter(pk__in=section['rows'])),
         }
         for section in sections.values()
-    ]
-    # Every request's note, not just the first: a report can cover several.
-    context['request_notes'] = unique(
-        note.strip() for note in labtestrequests.order_by('id').values_list('note', flat=True)
-        if note and note.strip())
-    context['profile_interpretations'] = list(profile_interpretations_dict.values())
+    ] or [{
+        # Nothing resulted yet: still one page, headed and signed off.
+        'name': None, 'groups': [], 'comments': [], 'interpretations': [],
+        'notes': unique(request_notes[r] for r in sorted(request_notes)),
+        **page_details(panels),
+    }]
 
     html_template = get_template('labtestresult.html').render(context)
 

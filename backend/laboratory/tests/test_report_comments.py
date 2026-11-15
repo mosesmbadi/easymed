@@ -1,7 +1,7 @@
 """
 What the lab and the requester write about a request, on the printed report:
 the lab's comment under the results of the profile it is about, and every
-request's note, not only the first's.
+request's note, not only the first's, on the page of the profile it is about.
 """
 import re
 
@@ -87,7 +87,15 @@ def test_no_comment_prints_nothing(two_profile_visit, monkeypatch):
     assert 'Comment:' not in html
 
 
-def test_every_requests_note_prints(two_profile_visit, monkeypatch):
+def page_notes(html, name):
+    """The notes on the page a main profile prints on (each has a page of its own)."""
+    page = next(page for page in html.split('<div class="report-page">')[1:]
+                if re.search(rf'<th class="section-title"[^>]*>\s*{name}\s*</th>', page, re.I))
+    found = re.search(r'<div class="notes">(.*?)</div>', page, re.S)
+    return found.group(1) if found else ''
+
+
+def test_every_requests_note_prints_on_its_profiles_page(two_profile_visit, monkeypatch):
     LabTestRequest.objects.filter(
         process=two_profile_visit.process_test_req, test_profile__name='Haematology').update(note='Fasting sample')
     LabTestRequest.objects.filter(
@@ -95,14 +103,16 @@ def test_every_requests_note_prints(two_profile_visit, monkeypatch):
 
     html = report_html(two_profile_visit, monkeypatch)
 
-    notes = re.search(r'<div class="notes">(.*?)</div>', html, re.S).group(1)
-    assert 'Fasting sample' in notes
-    assert 'On warfarin' in notes
+    assert 'Fasting sample' in page_notes(html, 'Haematology')
+    assert 'On warfarin' not in page_notes(html, 'Haematology')
+    assert 'On warfarin' in page_notes(html, 'Chemistry')
+    assert 'Fasting sample' not in page_notes(html, 'Chemistry')
 
 
-def test_the_same_note_on_two_requests_prints_once(two_profile_visit, monkeypatch):
+def test_the_same_note_on_two_requests_prints_once_on_each_page(two_profile_visit, monkeypatch):
     LabTestRequest.objects.filter(process=two_profile_visit.process_test_req).update(note='Fasting sample')
 
     html = report_html(two_profile_visit, monkeypatch)
 
-    assert html.count('Fasting sample') == 1
+    assert page_notes(html, 'Haematology').count('Fasting sample') == 1
+    assert page_notes(html, 'Chemistry').count('Fasting sample') == 1
