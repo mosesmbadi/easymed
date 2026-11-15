@@ -12,7 +12,7 @@ const TodayOnlyToggle = ({ todayOnly, setTodayOnly, searching = false }) => (
       checked={todayOnly}
       onChange={(e) => setTodayOnly(e.target.checked)}
     />
-    Today's visits only
+    Today&apos;s visits only
     {todayOnly && searching && <span className="text-gray-500 italic">(searching all dates)</span>}
   </label>
 )
