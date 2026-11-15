@@ -23,6 +23,8 @@ export const fetchPatient = (auth, processsFilter = { search: "" }, selectedSear
             params: {
                 search_field: selectedSearchFilter.value ? selectedSearchFilter.value : null,
                 search_value: processsFilter.search,
+                // 'today': only patients with a visit today.
+                visited_on: processsFilter.visited_on || null,
             }
         })
             .then((res) => {
@@ -335,6 +337,8 @@ export const fetchAllAttendanceProcesses = (auth, process_id = null, processsFil
         search_field: selectedSearchFilter?.value ? selectedSearchFilter.value : null,
         search_value: processsFilter?.search || null,
         track: processsFilter?.track || null,
+        // 'today': only visits made today.
+        visited_on: processsFilter?.visited_on || null,
         page_size: process_id ? null : (processsFilter?.page_size || DEFAULT_PROCESSES_PAGE_SIZE),
     };
 

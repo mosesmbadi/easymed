@@ -14,6 +14,7 @@ import RequestInfoModal from "./RequestInfoModal";
 import LabModal from "../doctor-desk/lab-modal";
 import ProcessFilter from "@/components/common/process/ProcessFilter";
 import ProcessesTruncatedNotice from '@/components/common/process/ProcessesTruncatedNotice';
+import TodayOnlyToggle, { visitedOn } from '@/components/common/process/TodayOnlyToggle';
 import { getAllProcesses } from "@/redux/features/patients";
 import { useAuth } from "@/assets/hooks/use-auth";
 
@@ -45,7 +46,10 @@ const LabRequestDataGrid = ( ) => {
   const [showNavButtons, setShowNavButtons] = useState(true);
   const [processFilter, setProcessFilter] = useState({ track: "lab", search: "" })
   const [selectedSearchFilter, setSelectedSearchFilter] = useState({label: "", value: ""})
-  
+  // Opens on today's visits; kept apart from processFilter, which the track
+  // tabs replace whole.
+  const [todayOnly, setTodayOnly] = useState(true)
+
 
   const items = [
     {label: "None", value: ""},
@@ -128,10 +132,13 @@ const LabRequestDataGrid = ( ) => {
   useEffect(() => {
     if (!auth) return; // wait for auth context
     const handler = setTimeout(() => {
-      dispatch(getAllProcesses(auth, null, processFilter, selectedSearchFilter));
+      dispatch(getAllProcesses(
+        auth, null,
+        { ...processFilter, visited_on: visitedOn(todayOnly, processFilter.search) },
+        selectedSearchFilter));
     }, 500);
     return () => clearTimeout(handler);
-  }, [auth, processFilter.search, processFilter.track, selectedSearchFilter?.value]);
+  }, [auth, processFilter.search, processFilter.track, selectedSearchFilter?.value, todayOnly]);
 
   return (
     <>
@@ -142,6 +149,10 @@ const LabRequestDataGrid = ( ) => {
         setSelectedSearchFilter={setSelectedSearchFilter}
         items={items}
       />
+
+      <div className="mb-2">
+        <TodayOnlyToggle todayOnly={todayOnly} setTodayOnly={setTodayOnly} searching={!!processFilter.search} />
+      </div>
 
       {/* DATAGRID STARTS HERE */}
       <ProcessesTruncatedNotice />

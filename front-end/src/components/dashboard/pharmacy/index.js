@@ -21,6 +21,7 @@ import ViewPrescribedDrugsModal from "./view-prescribed-drugs-modal";
 import { GiMedicinePills } from "react-icons/gi";
 import ProcessFilter from "@/components/common/process/ProcessFilter";
 import ProcessesTruncatedNotice from '@/components/common/process/ProcessesTruncatedNotice';
+import TodayOnlyToggle, { visitedOn } from '@/components/common/process/TodayOnlyToggle';
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
   ssr: false,
@@ -150,17 +151,23 @@ const PharmacyDataGrid = () => {
     );
   };
 
+  // Opens on today's visits; a search looks through every day.
+  const [todayOnly, setTodayOnly] = useState(true);
+
   useEffect(() => {
     if (!auth) return;
     // Debounced: the backend filters by track and search, so reload when
     // either changes (500ms after the last keystroke).
     const timerId = setTimeout(() => {
-      dispatch(getAllProcesses(auth, null, processsFilter, selectedSearchFilter))
+      dispatch(getAllProcesses(
+        auth, null,
+        { ...processsFilter, visited_on: visitedOn(todayOnly, processsFilter.search) },
+        selectedSearchFilter))
     }, 500);
     return () => {
       clearTimeout(timerId);
     };
-  }, [auth, processsFilter.search, processsFilter.track, selectedSearchFilter?.value]);
+  }, [auth, processsFilter.search, processsFilter.track, selectedSearchFilter?.value, todayOnly]);
 
   return (
     <section className=" my-0">
@@ -171,6 +178,9 @@ const PharmacyDataGrid = () => {
         setSelectedSearchFilter={setSelectedSearchFilter}
         items={items}
       />
+      <div className="mb-2">
+        <TodayOnlyToggle todayOnly={todayOnly} setTodayOnly={setTodayOnly} searching={!!processsFilter.search} />
+      </div>
       <ProcessesTruncatedNotice />
       <DataGrid
         dataSource={searchedProcesses}

@@ -18,6 +18,7 @@ import { getAllProcesses, refreshProcesses } from '@/redux/features/patients';
 import { useAuth } from '@/assets/hooks/use-auth';
 import ProcessFilter from '@/components/common/process/ProcessFilter';
 import ProcessesTruncatedNotice from '@/components/common/process/ProcessesTruncatedNotice';
+import TodayOnlyToggle, { visitedOn } from '@/components/common/process/TodayOnlyToggle';
 
 const allowedPageSizes = [5, 10, 'all'];
 
@@ -180,17 +181,23 @@ const AppointmentCard = () => {
 
     const receptionProcesses = processes.filter((process)=> process.track.includes(processsFilter.track))
 
+    // Opens on today's visits; a search looks through every day.
+    const [todayOnly, setTodayOnly] = useState(true);
+
     useEffect(() => {
         if (!auth) return;
         // Debounced: the backend filters by track and search, so reload when
         // either changes (500ms after the last keystroke).
         const timerId = setTimeout(() => {
-            dispatch(getAllProcesses(auth, null, processsFilter, selectedSearchFilter))
+            dispatch(getAllProcesses(
+                auth, null,
+                { ...processsFilter, visited_on: visitedOn(todayOnly, processsFilter.search) },
+                selectedSearchFilter))
         }, 500);
         return () => {
             clearTimeout(timerId);
         };
-    }, [auth, processsFilter.search, processsFilter.track, selectedSearchFilter?.value]);
+    }, [auth, processsFilter.search, processsFilter.track, selectedSearchFilter?.value, todayOnly]);
 
   return (
     <>
@@ -201,6 +208,9 @@ const AppointmentCard = () => {
         setSelectedSearchFilter={setSelectedSearchFilter}
         items={items}
     />
+    <div className="mb-2">
+        <TodayOnlyToggle todayOnly={todayOnly} setTodayOnly={setTodayOnly} searching={!!processsFilter.search} />
+    </div>
     <ProcessesTruncatedNotice />
     <DataGrid
         dataSource={receptionProcesses}

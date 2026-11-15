@@ -15,6 +15,7 @@ import ApproveResults from "./add-result/ApproveResults";
 import { useDispatch, useSelector } from "react-redux";
 import { getAllProcesses } from "@/redux/features/patients";
 import ProcessesTruncatedNotice from '@/components/common/process/ProcessesTruncatedNotice';
+import TodayOnlyToggle, { visitedOn } from '@/components/common/process/TodayOnlyToggle';
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
   ssr: false,
@@ -33,6 +34,8 @@ const LabResultDataGrid = () => {
 
   const { processes, patients } = useSelector((store)=> store.patient)
   const dispatch = useDispatch();
+  // Opens on today's visits; a search looks through every day.
+  const [todayOnly, setTodayOnly] = useState(true);
 
   // Only the most recent visits are loaded, so search by patient number on
   // the server to reach older ones (500ms after the last keystroke).
@@ -41,12 +44,12 @@ const LabResultDataGrid = () => {
     const timerId = setTimeout(() => {
       dispatch(getAllProcesses(
         auth, null,
-        { track: 'lab,pharmacy,doctor', search: searchQuery },
+        { track: 'lab,pharmacy,doctor', search: searchQuery, visited_on: visitedOn(todayOnly, searchQuery) },
         searchQuery ? { value: 'patient_number' } : null,
       ));
     }, 500);
     return () => clearTimeout(timerId);
-  }, [auth, searchQuery]);
+  }, [auth, searchQuery, todayOnly]);
 
   const labTestsResultsSchedules = processes.filter((process)=> process.track==="lab" || process.track === "pharmacy" || process.track === "doctor")
   const searchedProcesses = labTestsResultsSchedules.filter((process)=> process.patient_number.includes(searchQuery))
@@ -122,6 +125,10 @@ const LabResultDataGrid = () => {
           </Link>
         </Grid>
       </Grid>
+
+      <div className="mb-2">
+        <TodayOnlyToggle todayOnly={todayOnly} setTodayOnly={setTodayOnly} searching={!!searchQuery} />
+      </div>
 
       {/* DATAGRID STARTS HERE */}
       <ProcessesTruncatedNotice />

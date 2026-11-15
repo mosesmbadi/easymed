@@ -11,7 +11,7 @@ import {
 import { useRouter } from 'next/navigation'
 import AddPatientModal from "./add-patient-modal";
 import { Chip } from "@mui/material";
-import { getAllPatients } from "@/redux/features/patients";
+import { fetchPatient } from "@/redux/service/patients";
 import { useSelector, useDispatch } from "react-redux";
 import CmtDropdownMenu from "@/assets/DropdownMenu";
 import { MdAddCircle } from "react-icons/md";
@@ -26,6 +26,7 @@ import { useAuth } from "@/assets/hooks/use-auth";
 import ShowInsurancesPopover from "./ShowInsurancesPopover";
 import PAtientSearch from "./PatientSearch";
 import { useFacility } from "@/assets/hooks/use-facility";
+import TodayOnlyToggle, { visitedOn } from "@/components/common/process/TodayOnlyToggle";
 
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
@@ -60,8 +61,11 @@ const getActions = ({ canCheckIn, canOrderLab }) => {
 
 const PatientsDataGrid = () => {
   const [searchQuery, setSearchQuery] = React.useState("");
-  const { patients } = useSelector((store) => store.patient);
-  const dispatch = useDispatch();
+  // The shared list is reloaded, unfiltered, by the modals here and elsewhere
+  // after a patient is added or changed. This screen keeps its own list, and
+  // reloads it with its own filter whenever that happens.
+  const { patients: sharedPatients } = useSelector((store) => store.patient);
+  const [patients, setPatients] = useState([]);
   const auth = useAuth()
   const { isModuleEnabled } = useFacility();
   const { userPermissions } = useSelector((store) => store.auth);
@@ -80,7 +84,10 @@ const PatientsDataGrid = () => {
   const router = useRouter()
   const [processsFilter, setProcessFilter] = useState({ search: "" })
   const [selectedSearchFilter, setSelectedSearchFilter] = useState({label: "", value: ""})
-  
+  // Opens on the patients who came in today. A search looks through everyone,
+  // so a returning patient can still be found to start their visit.
+  const [todayOnly, setTodayOnly] = useState(true)
+
   const onMenuClick = async (menu, data) => {
     if (menu.action === "add") {
       setSelectedRowData(data);
@@ -139,17 +146,25 @@ const PatientsDataGrid = () => {
   // }, []);
 
   useEffect(() => {
-      // This effect handles the debouncing logic
-      const timerId = setTimeout(() => {
-          // Dispatch the action only after a 500ms delay
-          dispatch(getAllPatients(auth, processsFilter, selectedSearchFilter))
-      }, 500); // 500ms delay, adjust as needed
+      // Loaded 500ms after the last change, and only the latest answer kept.
+      let current = true;
+      const timerId = setTimeout(async () => {
+          try {
+              const response = await fetchPatient(
+                  auth,
+                  { ...processsFilter, visited_on: visitedOn(todayOnly, processsFilter.search) },
+                  selectedSearchFilter);
+              if (current) setPatients(Array.isArray(response) ? response : (response?.results ?? []));
+          } catch (error) {
+              console.log("PATIENT_ERROR ", error);
+          }
+      }, 500);
 
-      // Cleanup function: clears the timer if searchTerm changes before the delay is over
       return () => {
+          current = false;
           clearTimeout(timerId);
       };
-  }, [processsFilter.search]); // The effect re-runs only when the local `searchTerm` state changes
+  }, [processsFilter.search, todayOnly, sharedPatients]);
 
   return (
     <>
@@ -162,6 +177,7 @@ const PatientsDataGrid = () => {
           setSelectedSearchFilter={setSelectedSearchFilter}
         />
         <AddPatientModal />
+        <TodayOnlyToggle todayOnly={todayOnly} setTodayOnly={setTodayOnly} searching={!!processsFilter.search} />
         {referredCount > 0 && (
           <label className="flex items-center gap-2 text-sm whitespace-nowrap">
             <input

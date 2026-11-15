@@ -14,6 +14,7 @@ import { getAllDoctors } from "@/redux/features/doctors";
 import { useAuth } from "@/assets/hooks/use-auth";
 import ProcessFilter from "@/components/common/process/ProcessFilter";
 import ProcessesTruncatedNotice from '@/components/common/process/ProcessesTruncatedNotice';
+import TodayOnlyToggle, { visitedOn } from '@/components/common/process/TodayOnlyToggle';
 
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
@@ -118,17 +119,23 @@ const NursePatientDataGrid = () => {
     return hasAppointment
   });
 
+  // Opens on today's visits; a search looks through every day.
+  const [todayOnly, setTodayOnly] = useState(true);
+
   useEffect(() => {
     if (!auth) return;
     // Debounced: the backend filters by track and search, so reload when
     // either changes (500ms after the last keystroke).
     const timerId = setTimeout(() => {
-      dispatch(getAllProcesses(auth, null, processFilter, selectedSearchFilter))
+      dispatch(getAllProcesses(
+        auth, null,
+        { ...processFilter, visited_on: visitedOn(todayOnly, processFilter.search) },
+        selectedSearchFilter))
     }, 500);
     return () => {
       clearTimeout(timerId);
     };
-  }, [auth, processFilter.search, processFilter.track, selectedSearchFilter?.value]);
+  }, [auth, processFilter.search, processFilter.track, selectedSearchFilter?.value, todayOnly]);
 
   return (
     <section>
@@ -139,6 +146,9 @@ const NursePatientDataGrid = () => {
         setSelectedSearchFilter={setSelectedSearchFilter}
         items={items}
       />
+      <div className="mb-2">
+        <TodayOnlyToggle todayOnly={todayOnly} setTodayOnly={setTodayOnly} searching={!!processFilter.search} />
+      </div>
       <ProcessesTruncatedNotice />
       <DataGrid
         dataSource={billedDocSchedules}
