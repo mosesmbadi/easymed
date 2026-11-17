@@ -6,7 +6,7 @@ import { Grid } from '@mui/material';
 import dynamic from "next/dynamic";
 import * as Yup from "yup";
 import { Formik, Form, ErrorMessage } from "formik";
-import { Column, Pager, Editing } from "devextreme-react/data-grid";
+import { Column, Paging, Editing } from "devextreme-react/data-grid";
 import CmtDropdownMenu from '@/assets/DropdownMenu';
 import { LuMoreHorizontal } from 'react-icons/lu';
 import { SlMinus } from 'react-icons/sl';
@@ -234,7 +234,6 @@ const AddTestResults = () => {
         showColumnLines={true}
         showRowLines={true}
         wordWrapEnabled={true}
-        allowPaging={true}
         className="shadow-xl"
         onRowUpdating={updateRow}
       >
@@ -242,11 +241,9 @@ const AddTestResults = () => {
           mode="cell"
           allowUpdating={true}
         />
-        <Pager
-          visible={false}
-          showPageSizeSelector={true}
-          showNavigationButtons={true}
-        />
+        {/* Show every panel of the sample: the pager is hidden, so paging
+            would cut the list off at the default page size of 20. */}
+        <Paging enabled={false} />
         <Column 
           dataField="test_panel"
           caption="Test Panel" 
