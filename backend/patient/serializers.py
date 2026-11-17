@@ -235,18 +235,25 @@ class AttendanceProcessSerializer(serializers.ModelSerializer):
         return obj.patient.display_name
     
     def get_invoice_items(self, obj):
-        invoice = obj.invoice.pk
-        invoice_items = InvoiceItem.objects.filter(invoice=invoice)
-        serialized_items = InvoiceItemSerializer(invoice_items, many=True)
-        return serialized_items.data
+        # Read through the relation so the view's prefetch is used: a page of
+        # visits then costs no query per visit for its lines.
+        if not obj.invoice_id:
+            return []
+        return InvoiceItemSerializer(obj.invoice.invoice_items.all(), many=True).data
+
+    def _triage_settings(self):
+        # One read per response, not one per visit: a list shares this
+        # serializer across every row.
+        if not hasattr(self, '_cached_triage_settings'):
+            self._cached_triage_settings = TriageSettings.objects.first()
+        return self._cached_triage_settings
 
     def get_has_critical_triage(self, obj):
-        from .models import TriageSettings
         triage = obj.triage
         if not triage:
             return False
 
-        settings = TriageSettings.objects.first()
+        settings = self._triage_settings()
         if not settings or not settings.is_active:
             return False
 
@@ -265,10 +272,16 @@ class AttendanceProcessSerializer(serializers.ModelSerializer):
         return False
 
     def get_has_approved_lab_results(self, obj):
+        # Answered by the list's annotation when there is one (see
+        # with_attendance_relations); a freshly created or updated visit falls
+        # back to asking.
+        annotated = getattr(obj, 'has_approved_lab_results_annotated', None)
+        if annotated is not None:
+            return annotated
         from laboratory.models import LabTestRequestPanel
-        if not obj.process_test_req:
+        if not obj.process_test_req_id:
             return False
-            
+
         return LabTestRequestPanel.objects.filter(
             lab_test_request__process=obj.process_test_req,
             result_approved=True

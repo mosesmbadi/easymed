@@ -8,7 +8,6 @@ import LabNav from "@/components/dashboard/laboratory/LabNav";
 import ProtectedRoute from "@/assets/hoc/protected-route";
 import LabRequestDataGrid from "@/components/dashboard/laboratory/lab-request-datagrid";
 import RecentReagentUsage from "@/components/dashboard/laboratory/RecentReagentUsage";
-import { getAllProcesses } from "@/redux/features/patients";
 import { getAllLabEquipments } from "@/redux/features/laboratory";
 
 const LabResults = () => {
@@ -17,7 +16,7 @@ const LabResults = () => {
 
   useEffect(() => {
     if (token) {
-      dispatch(getAllProcesses(token))
+      // LabRequestDataGrid loads its own queue (track "lab").
       dispatch(getAllLabEquipments(token))
     }
   }, [token]);

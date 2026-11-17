@@ -1,5 +1,6 @@
 import { APP_API_URL } from "@/assets/api-endpoints";
 import UseAxios from "@/assets/hooks/use-axios";
+import { apiErrorMessage } from "@/assets/api-error";
 
 export const getUserName = (user_id, auth) =>{
 
@@ -14,7 +15,7 @@ export const getUserName = (user_id, auth) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -32,7 +33,7 @@ export const getAllUsers = (auth, role="") =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -55,7 +56,7 @@ export const resetPassword = (userData, auth) => {
           resolve(res.data);
         })
         .catch((err) => {
-          reject(err.message);
+          reject(apiErrorMessage(err));
         });
     });
   };
@@ -74,7 +75,7 @@ export const getUserById = (auth) =>{
             resolve(res.data)
         })
         .catch((err) =>{
-            reject(err.message)
+            reject(apiErrorMessage(err))
         })
     })
 }
@@ -91,7 +92,7 @@ export const updateUser = (payload, auth) =>{
             })
             .catch((err) =>{
                 console.log("USER_STATUS_UPDATE_ERROR ",err)
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -109,7 +110,7 @@ export const deleteUser = (payload, auth) =>{
             })
             .catch((err) =>{
                 console.log("USER_DELETE_ERROR ",err)
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }

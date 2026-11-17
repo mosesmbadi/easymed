@@ -116,9 +116,20 @@ class LabTestProfile(models.Model):
         'inventory.Item', on_delete=models.SET_NULL, null=True, blank=True,
         related_name='lab_test_profile',
         help_text="The invoice line raised when this profile is requested. Empty when only its panels are charged.")
+    # A CBC or a urinalysis is run whole, so it is ordered whole. A catch-all
+    # such as Microbiology is a menu of separate tests and is left unlocked.
+    # This decides what can be ordered, not how it is priced.
+    orders_as_whole = models.BooleanField(
+        default=False,
+        help_text="Every panel under this profile, sub profiles included, is ordered "
+                  "whenever it is requested; none can be left off.")
 
     def __str__(self):
         return self.name
+
+    def locked_by(self):
+        """The outermost profile in this one's lineage that is ordered whole, or None."""
+        return next((profile for profile in self.lineage() if profile.orders_as_whole), None)
 
     def lineage(self):
         """This profile's chain of parents, outermost first, ending with itself."""
@@ -544,7 +555,11 @@ class SampleConsignment(models.Model):
 class LabTestRequest(models.Model):
     process = models.ForeignKey(ProcessTestRequest, on_delete=models.CASCADE, null=True, blank=True, related_name="attendace_test_requests") # from patient app
     test_profile = models.ForeignKey(LabTestProfile, on_delete=models.CASCADE, null=True, blank=True)
+    # Written by whoever requested the test, e.g. the doctor sending the patient.
     note = models.TextField(null=True, blank=True)
+    # Written by the lab when entering results; printed under this profile's
+    # results on the report.
+    lab_comment = models.TextField(blank=True, default='')
     requested_by = models.ForeignKey(CustomUser, on_delete=models.PROTECT, null=True, blank=True)
     # Who ordered the test when it was not one of our own doctors: a walk-in
     # carrying a referral from a clinician elsewhere. Printed on the report.

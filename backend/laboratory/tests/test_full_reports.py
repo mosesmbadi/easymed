@@ -110,11 +110,13 @@ def report_rows(html):
     """What the results part of the report prints, top to bottom."""
     body = html5lib.parse(html, treebuilder='etree', namespaceHTMLElements=False).find('body')
     rows = []
-    for element in body:
+    # Each main profile prints in a page block of its own, so look inside them.
+    for element in body.iter('table'):
         classes = (element.get('class') or '').split()
-        if 'section-title' in classes:
-            rows.append(('section', element.text.strip()))
-        elif 'results' in classes:
+        if 'results' in classes:
+            # The profile's name heads its table, so it repeats on each page.
+            title = element.find("thead/tr/th[@class='section-title']")
+            rows.append(('section', title.text.strip()))
             for row in element.find('tbody').findall('tr'):
                 kind = {'group-row': 'heading', 'block-gap': 'gap'}.get(row.get('class'), 'row')
                 rows.append((kind, *cells(row)))

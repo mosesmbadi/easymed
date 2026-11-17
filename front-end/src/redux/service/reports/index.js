@@ -1,6 +1,7 @@
 import axios from "axios";
 import { APP_API_URL } from "@/assets/api-endpoints";
 import UseAxios from "@/assets/hooks/use-axios";
+import { apiErrorMessage } from "@/assets/api-error";
 
 export const saleByDateRange = (payload, auth) => {
     const axiosInstance = UseAxios(auth);
@@ -10,7 +11,7 @@ export const saleByDateRange = (payload, auth) => {
             resolve(res.data)
         })
         .catch((err) =>{
-            reject(err.message)
+            reject(apiErrorMessage(err))
         })
     })
 }
@@ -23,7 +24,7 @@ export const saleByDateRangeAndItem = (payload, auth) =>{
             resolve(res.data)
         })
         .catch((err) =>{
-            reject(err.message)
+            reject(apiErrorMessage(err))
         })
     })
 }
@@ -41,7 +42,7 @@ export const dayTransaction = (payload, auth) =>{
             resolve(res.data)
         })
         .catch((err) =>{
-            reject(err.message)
+            reject(apiErrorMessage(err))
         })
     })
 }

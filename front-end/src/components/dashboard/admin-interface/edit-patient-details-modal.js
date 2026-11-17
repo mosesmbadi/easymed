@@ -37,17 +37,10 @@ const EditPatientDetails = ({ open, setOpen, selectedRowData }) => {
     }
   }
 
-  const patientInsurances = () =>{
-    if(selectedRowData?.insurances?.length > 0){
-      let ids = [];
-      selectedRowData?.insurances.forEach((insurance)=> {
-        ids.push(`${insurance.id}`)
-      })
-      return ids 
-    }else{
-      return null
-    }
-  }
+  // Always a list: the backend rejects null for insurances, which is what a
+  // patient without an insurer used to send.
+  const patientInsurances = () =>
+    (selectedRowData?.insurances || []).map((insurance) => `${insurance.id}`);
 
   const initialValues = {
     first_name: selectedRowData?.first_name || "",
@@ -55,9 +48,8 @@ const EditPatientDetails = ({ open, setOpen, selectedRowData }) => {
     date_of_birth: selectedRowData?.date_of_birth || "",
     gender: getGenderValue() || "",
     insurances: patientInsurances(),
-    user_id: selectedRowData?.user_id || null,
-    phone: selectedRowData?.phone || null,
-    email: selectedRowData?.email || null
+    phone: selectedRowData?.phone || "",
+    email: selectedRowData?.email || ""
   };
 
   const validationSchema = Yup.object().shape({
@@ -65,28 +57,30 @@ const EditPatientDetails = ({ open, setOpen, selectedRowData }) => {
     second_name: Yup.string().required("Second Name is required!"),
     date_of_birth: Yup.string().required("Date is required!"),
     gender: Yup.string().required("Select gender!"),
-    phone: Yup.string().required("Phone NUmber is Required!"),
-    email: Yup.string().required("Email Address is Required!"),
+    phone: Yup.string().required("Phone Number is Required!"),
+    // Many patients have no email; it is optional on the patient record.
+    email: Yup.string().trim().email("Enter a valid email address"),
   });
 
   const handleEditPatient = async (formValue, helpers) => {
-    console.log("EDIT_PAYLOAD ", formValue);
     try {
       const formData = {
         ...formValue,
+        email: formValue.email?.trim() || null,
+        insurances: formValue.insurances || [],
         id:selectedRowData?.id,
       };
       setLoading(true);
-      await editPatient(formData, auth).then(() => {
-        helpers.resetForm();
-        toast.success("Patient Edited Successfully!");
-        setLoading(false);
-        dispatch(getAllPatients(auth));
-        handleClose();
-      });
+      await editPatient(formData, auth);
+      helpers.resetForm();
+      toast.success("Patient Edited Successfully!");
+      dispatch(getAllPatients(auth));
+      handleClose();
     } catch (err) {
-      toast.error(err);
+      toast.error(typeof err === "string" ? err : "Failed to update patient");
       console.log("EDIT_ERROR ", err);
+    } finally {
+      setLoading(false);
     }
   };
 

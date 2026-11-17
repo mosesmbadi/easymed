@@ -1,6 +1,7 @@
 import axios from "axios";
 import { APP_API_URL } from "@/assets/api-endpoints";
 import UseAxios from "@/assets/hooks/use-axios";
+import { apiErrorMessage } from "@/assets/api-error";
 
 
 
@@ -12,7 +13,7 @@ export const addInventory = (payload, auth) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err, "Failed to add inventory"))
             })
     })
 }
@@ -32,7 +33,7 @@ export const fetchInventories = (auth, department='', item='', processFilter={ s
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -45,7 +46,7 @@ export const fetchItems = (auth) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -58,7 +59,7 @@ export const fetchItem = (auth) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -70,7 +71,7 @@ export const fetchUnits = (auth, category = '') => {
             params: category ? { category } : {}
         })
             .then((res) => { resolve(res.data) })
-            .catch((err) => { reject(err.message) })
+            .catch((err) => { reject(apiErrorMessage(err)) })
     })
 }
 
@@ -82,7 +83,7 @@ export const createItem = (payload, auth) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -99,7 +100,7 @@ export const updateItem = (item_id, payload, auth) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -111,7 +112,7 @@ export const deleteItem = (id) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -124,7 +125,7 @@ export const fetchSuppliers = (auth) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -136,7 +137,7 @@ export const fetchOrderBills = () =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -149,7 +150,7 @@ export const addRequisition = (payload, auth) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -166,7 +167,7 @@ export const updateRequisition = (payload, requisition_id, auth) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -203,7 +204,7 @@ export const fetchAllRequisitionItems = (auth) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -220,7 +221,7 @@ export const addRequisitionItem = (payload, requisition_id, auth) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -238,7 +239,7 @@ export const updateRequisitionItem = (payload, requisition_id, requisition_item_
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -256,7 +257,7 @@ export const deleteRequisitionItem = (requisition_id, requisition_item_id, auth)
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -274,7 +275,7 @@ export const fetchRequisitions = (auth, processFilter, selectedSearchFilter) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -312,7 +313,7 @@ export const updatePurchaseOrder = (payload, requisition_id, purchase_order, aut
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -330,7 +331,7 @@ export const fetchPurchaseOrders = (auth, processFilter, selectedSearchFilter) =
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -342,7 +343,7 @@ export const addPurchaseOrdersItem = (payload) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -361,7 +362,7 @@ export const fetchIncomingItems = (auth, filter={}, processFilter, selectedSearc
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -412,7 +413,7 @@ export const updateIncomingItem = (incoming_item, payload, auth) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -425,7 +426,7 @@ export const createSupplierInvoice = (payload, auth) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -438,7 +439,7 @@ export const createGRNote = (payload, auth) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -455,7 +456,7 @@ export const fetchLowDrugs = (auth) => {
             resolve(res.data);
         })
         .catch((err) => {
-            reject(err.message);
+            reject(apiErrorMessage(err));
         });
     });
 };
@@ -471,7 +472,7 @@ export const fetchSupplierInvoice = (auth) => {
             resolve(res.data);
         })
         .catch((err) => {
-            reject(err.message);
+            reject(apiErrorMessage(err));
         });
     });
 };
@@ -488,7 +489,7 @@ export const fetchSupplierInvoicesBySupplier = (auth, supplier_id) => {
             resolve(res.data);
         })
         .catch((err) => {
-            reject(err.message);
+            reject(apiErrorMessage(err));
         });
     });
 };

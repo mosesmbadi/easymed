@@ -5,7 +5,7 @@ import { useAuth } from '@/assets/hooks/use-auth';
 import { fetchLabTestPanelsByTestRequestId, updateLabRequestPanels } from '@/redux/service/laboratory';
 import RichTextView from '@/components/common/RichTextView';
 
-const TestResultsPanels = ({ test }) => {
+const TestResultsPanels = ({ test, refreshKey }) => {
   const auth = useAuth()
   const router = useRouter()
   const [loading, setLoading] = useState(false)
@@ -28,7 +28,7 @@ const TestResultsPanels = ({ test }) => {
     if (auth) {
       getTestPanelsByTestReq(test, auth)
     }
-  }, [test])
+  }, [test, refreshKey])
 
   function checkRange(ref_value_low, ref_value_high, result, critical_low, critical_high) {
     if (ref_value_low == null || ref_value_high == null || result == null || result === "") return "";

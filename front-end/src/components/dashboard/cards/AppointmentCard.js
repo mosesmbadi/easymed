@@ -14,9 +14,11 @@ import { BsCapsule } from "react-icons/bs";
 import { GiMicroscope } from "react-icons/gi";
 import DirectToTheLabModal from '../doctor-desk/DirectToTheLabModal';
 import { updateAttendanceProcesses } from '@/redux/service/patients';
-import { getAllProcesses } from '@/redux/features/patients';
+import { getAllProcesses, refreshProcesses } from '@/redux/features/patients';
 import { useAuth } from '@/assets/hooks/use-auth';
 import ProcessFilter from '@/components/common/process/ProcessFilter';
+import ProcessesTruncatedNotice from '@/components/common/process/ProcessesTruncatedNotice';
+import TodayOnlyToggle, { visitedOn } from '@/components/common/process/TodayOnlyToggle';
 
 const allowedPageSizes = [5, 10, 'all'];
 
@@ -169,7 +171,7 @@ const AppointmentCard = () => {
         try {
             const response = await updateAttendanceProcesses({track: "pharmacy"}, selectedData.id, auth)
             console.log(response)
-            dispatch(getAllProcesses(auth))
+            dispatch(refreshProcesses(auth))
             handleClose()
 
         }catch(error){
@@ -179,18 +181,23 @@ const AppointmentCard = () => {
 
     const receptionProcesses = processes.filter((process)=> process.track.includes(processsFilter.track))
 
-    useEffect(() => {
-        // This effect handles the debouncing logic
-        const timerId = setTimeout(() => {
-            // Dispatch the action only after a 500ms delay
-            dispatch(getAllProcesses(auth, null, processsFilter, selectedSearchFilter))
-        }, 500); // 500ms delay, adjust as needed
+    // Opens on today's visits; a search looks through every day.
+    const [todayOnly, setTodayOnly] = useState(true);
 
-        // Cleanup function: clears the timer if searchTerm changes before the delay is over
+    useEffect(() => {
+        if (!auth) return;
+        // Debounced: the backend filters by track and search, so reload when
+        // either changes (500ms after the last keystroke).
+        const timerId = setTimeout(() => {
+            dispatch(getAllProcesses(
+                auth, null,
+                { ...processsFilter, visited_on: visitedOn(todayOnly, processsFilter.search) },
+                selectedSearchFilter))
+        }, 500);
         return () => {
             clearTimeout(timerId);
         };
-    }, [processsFilter.search]); // The effect re-runs only when the local `searchTerm` state changes
+    }, [auth, processsFilter.search, processsFilter.track, selectedSearchFilter?.value, todayOnly]);
 
   return (
     <>
@@ -201,6 +208,10 @@ const AppointmentCard = () => {
         setSelectedSearchFilter={setSelectedSearchFilter}
         items={items}
     />
+    <div className="mb-2">
+        <TodayOnlyToggle todayOnly={todayOnly} setTodayOnly={setTodayOnly} searching={!!processsFilter.search} />
+    </div>
+    <ProcessesTruncatedNotice />
     <DataGrid
         dataSource={receptionProcesses}
         allowColumnReordering={true}

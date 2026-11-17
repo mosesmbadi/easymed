@@ -1,6 +1,7 @@
 import axios from "axios";
 import { APP_API_URL } from "@/assets/api-endpoints";
 import UseAxios from "@/assets/hooks/use-axios";
+import { apiErrorMessage } from "@/assets/api-error";
 
 export const fetchPrescriptions = (auth) => {
     const axiosInstance = UseAxios(auth);
@@ -10,7 +11,7 @@ export const fetchPrescriptions = (auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -23,7 +24,7 @@ export const fetchPublicPrescriptions = (auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -40,7 +41,7 @@ export const fetchPrescribedDrugs = (auth, prescription_id = "") => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -58,7 +59,7 @@ export const fetchPrescriptionsPrescribedDrugs = (prescription_id, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -76,7 +77,7 @@ export const updatePrescription = (payload, auth) => {
             })
             .catch((err) => {
                 console.log("PRESCRIPTION_STATUS_UPDATE_ERROR ", err)
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -86,7 +87,7 @@ export const fetchDrugCategories = (auth) => {
     return new Promise((resolve, reject) => {
         axiosInstance.get(`${APP_API_URL.DRUG_CATEGORIES}`)
             .then((res) => resolve(res.data))
-            .catch((err) => reject(err.message))
+            .catch((err) => reject(apiErrorMessage(err)))
     })
 }
 
@@ -95,7 +96,7 @@ export const createDrugCategory = (payload, auth) => {
     return new Promise((resolve, reject) => {
         axiosInstance.post(`${APP_API_URL.DRUG_CATEGORIES}`, payload)
             .then((res) => resolve(res.data))
-            .catch((err) => reject(err.message))
+            .catch((err) => reject(apiErrorMessage(err)))
     })
 }
 
@@ -104,7 +105,7 @@ export const updateDrugCategory = (payload, auth) => {
     return new Promise((resolve, reject) => {
         axiosInstance.patch(`${APP_API_URL.DRUG_CATEGORIES}${payload.id}/`, payload)
             .then((res) => resolve(res.data))
-            .catch((err) => reject(err.message))
+            .catch((err) => reject(apiErrorMessage(err)))
     })
 }
 
@@ -113,7 +114,7 @@ export const deleteDrugCategory = (id, auth) => {
     return new Promise((resolve, reject) => {
         axiosInstance.delete(`${APP_API_URL.DRUG_CATEGORIES}${id}/`)
             .then((res) => resolve(res.data))
-            .catch((err) => reject(err.message))
+            .catch((err) => reject(apiErrorMessage(err)))
     })
 }
 
@@ -122,7 +123,7 @@ export const fetchDrugModes = (auth) => {
     return new Promise((resolve, reject) => {
         axiosInstance.get(`${APP_API_URL.DRUG_MODES}`)
             .then((res) => resolve(res.data))
-            .catch((err) => reject(err.message))
+            .catch((err) => reject(apiErrorMessage(err)))
     })
 }
 
@@ -131,7 +132,7 @@ export const createDrugMode = (payload, auth) => {
     return new Promise((resolve, reject) => {
         axiosInstance.post(`${APP_API_URL.DRUG_MODES}`, payload)
             .then((res) => resolve(res.data))
-            .catch((err) => reject(err.message))
+            .catch((err) => reject(apiErrorMessage(err)))
     })
 }
 
@@ -140,7 +141,7 @@ export const updateDrugMode = (payload, auth) => {
     return new Promise((resolve, reject) => {
         axiosInstance.patch(`${APP_API_URL.DRUG_MODES}${payload.id}/`, payload)
             .then((res) => resolve(res.data))
-            .catch((err) => reject(err.message))
+            .catch((err) => reject(apiErrorMessage(err)))
     })
 }
 
@@ -149,7 +150,7 @@ export const deleteDrugMode = (id, auth) => {
     return new Promise((resolve, reject) => {
         axiosInstance.delete(`${APP_API_URL.DRUG_MODES}${id}/`)
             .then((res) => resolve(res.data))
-            .catch((err) => reject(err.message))
+            .catch((err) => reject(apiErrorMessage(err)))
     })
 }
 
@@ -158,7 +159,7 @@ export const fetchDrugStates = (auth) => {
     return new Promise((resolve, reject) => {
         axiosInstance.get(`${APP_API_URL.DRUG_STATES}`)
             .then((res) => resolve(res.data))
-            .catch((err) => reject(err.message))
+            .catch((err) => reject(apiErrorMessage(err)))
     })
 }
 
@@ -167,7 +168,7 @@ export const createDrugState = (payload, auth) => {
     return new Promise((resolve, reject) => {
         axiosInstance.post(`${APP_API_URL.DRUG_STATES}`, payload)
             .then((res) => resolve(res.data))
-            .catch((err) => reject(err.message))
+            .catch((err) => reject(apiErrorMessage(err)))
     })
 }
 
@@ -176,7 +177,7 @@ export const updateDrugState = (payload, auth) => {
     return new Promise((resolve, reject) => {
         axiosInstance.patch(`${APP_API_URL.DRUG_STATES}${payload.id}/`, payload)
             .then((res) => resolve(res.data))
-            .catch((err) => reject(err.message))
+            .catch((err) => reject(apiErrorMessage(err)))
     })
 }
 
@@ -185,7 +186,7 @@ export const deleteDrugState = (id, auth) => {
     return new Promise((resolve, reject) => {
         axiosInstance.delete(`${APP_API_URL.DRUG_STATES}${id}/`)
             .then((res) => resolve(res.data))
-            .catch((err) => reject(err.message))
+            .catch((err) => reject(apiErrorMessage(err)))
     })
 }
 
@@ -194,7 +195,7 @@ export const fetchDrugs = (auth) => {
     return new Promise((resolve, reject) => {
         axiosInstance.get(`${APP_API_URL.DRUGS}`)
             .then((res) => resolve(res.data))
-            .catch((err) => reject(err.message))
+            .catch((err) => reject(apiErrorMessage(err)))
     })
 }
 
@@ -203,7 +204,7 @@ export const createDrug = (payload, auth) => {
     return new Promise((resolve, reject) => {
         axiosInstance.post(`${APP_API_URL.DRUGS}`, payload)
             .then((res) => resolve(res.data))
-            .catch((err) => reject(err.message))
+            .catch((err) => reject(apiErrorMessage(err)))
     })
 }
 
@@ -212,7 +213,7 @@ export const updateDrug = (payload, auth) => {
     return new Promise((resolve, reject) => {
         axiosInstance.patch(`${APP_API_URL.DRUGS}${payload.id}/`, payload)
             .then((res) => resolve(res.data))
-            .catch((err) => reject(err.message))
+            .catch((err) => reject(apiErrorMessage(err)))
     })
 }
 
@@ -221,6 +222,6 @@ export const deleteDrug = (id, auth) => {
     return new Promise((resolve, reject) => {
         axiosInstance.delete(`${APP_API_URL.DRUGS}${id}/`)
             .then((res) => resolve(res.data))
-            .catch((err) => reject(err.message))
+            .catch((err) => reject(apiErrorMessage(err)))
     })
 }

@@ -49,6 +49,9 @@ class Patient(models.Model):
     # billing history with it.
     user = models.OneToOneField(
         CustomUser, on_delete=models.SET_NULL, null=True, blank=True)
+    # When the patient was registered. Blank for those registered before it
+    # was recorded: their day isn't known, and must not be taken for today.
+    registered_at = models.DateTimeField(auto_now_add=True, null=True)
 
     def __str__(self):
         return self.display_name

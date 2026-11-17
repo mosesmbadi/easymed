@@ -22,7 +22,7 @@ export default async function handler(req, res) {
 
             const query = req.query
     
-            await backendAxiosInstance.get(`${API_URL.FETCH_ONE_LAB_REQUESTS}${query.test_id}`, config).then(response => {
+            await backendAxiosInstance.get(`${API_URL.FETCH_ONE_LAB_REQUESTS}${query.test_id}/`, config).then(response => {
                 res.status(200).json(response.data);
 
             }).catch(e => {

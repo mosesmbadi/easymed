@@ -378,8 +378,10 @@ def test_the_report_prints_the_number_and_says_what_was_not_given(lab_client, ca
                                  'panels': [urea.id]})
     visit = AttendanceProcess.objects.get()
 
+    # The header prints on each profile's page, so render one (empty) page.
     html = get_template('labtestresult.html').render({'patient': visit.patient,
-                                                      'attendance_process': visit})
+                                                      'attendance_process': visit,
+                                                      'report_sections': [{}]})
 
     assert 'Mama Lucy Clinic STUDY-0042' in html
     assert html.count('Not given') == 2  # age and sex

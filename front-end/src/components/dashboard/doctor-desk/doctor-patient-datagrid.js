@@ -23,6 +23,8 @@ import LabModal from "./lab-modal";
 import ViewAddedResults from "./ViewAddedResults";
 import ApproveResults from "../laboratory/add-result/ApproveResults";
 import ProcessFilter from "@/components/common/process/ProcessFilter";
+import ProcessesTruncatedNotice from '@/components/common/process/ProcessesTruncatedNotice';
+import TodayOnlyToggle, { visitedOn } from '@/components/common/process/TodayOnlyToggle';
 import AdmitModal from "./admit-modal";
 import AITriageModal from "./ai-triage-modal";
 
@@ -136,7 +138,6 @@ const DoctorPatientDataGrid = () => {
   useEffect(() => {
     if (auth) {
       dispatch(getAllPatients(auth));
-      dispatch(getAllProcesses(auth))
     }
   }, [auth]);
 
@@ -198,18 +199,23 @@ const DoctorPatientDataGrid = () => {
     setSelectedRecords(selectedRowKeys);
   };
 
-  useEffect(() => {
-    // This effect handles the debouncing logic
-    const timerId = setTimeout(() => {
-      // Dispatch the action only after a 500ms delay
-      dispatch(getAllProcesses(auth, null, processFilter, selectedSearchFilter))
-    }, 500); // 500ms delay, adjust as needed
+  // Opens on today's visits; a search looks through every day.
+  const [todayOnly, setTodayOnly] = useState(true);
 
-    // Cleanup function: clears the timer if searchTerm changes before the delay is over
+  useEffect(() => {
+    if (!auth) return;
+    // Debounced: the backend filters by track and search, so reload when
+    // either changes (500ms after the last keystroke).
+    const timerId = setTimeout(() => {
+      dispatch(getAllProcesses(
+        auth, null,
+        { ...processFilter, visited_on: visitedOn(todayOnly, processFilter.search) },
+        selectedSearchFilter))
+    }, 500);
     return () => {
       clearTimeout(timerId);
     };
-  }, [processFilter.search]); // The effect re-runs only when the local `searchTerm` state changes
+  }, [auth, processFilter.search, processFilter.track, selectedSearchFilter?.value, todayOnly]);
 
   return (
     <section>
@@ -220,6 +226,10 @@ const DoctorPatientDataGrid = () => {
         setSelectedSearchFilter={setSelectedSearchFilter}
         items={items}
       />
+      <div className="mb-2">
+        <TodayOnlyToggle todayOnly={todayOnly} setTodayOnly={setTodayOnly} searching={!!processFilter.search} />
+      </div>
+      <ProcessesTruncatedNotice />
       <DataGrid
         dataSource={doctorsSchedules}
         allowColumnReordering={true}

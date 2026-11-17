@@ -1,6 +1,7 @@
 import axios from "axios";
 import { APP_API_URL } from "@/assets/api-endpoints";
 import UseAxios from "@/assets/hooks/use-axios";
+import { apiErrorMessage } from "@/assets/api-error";
 
 
 export const fetchServices = () => {
@@ -10,7 +11,7 @@ export const fetchServices = () => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -22,13 +23,15 @@ export const fetchPatient = (auth, processsFilter = { search: "" }, selectedSear
             params: {
                 search_field: selectedSearchFilter.value ? selectedSearchFilter.value : null,
                 search_value: processsFilter.search,
+                // 'today': only patients with a visit today.
+                visited_on: processsFilter.visited_on || null,
             }
         })
             .then((res) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -45,7 +48,7 @@ export const fetchPatientById = (patient_id, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -63,7 +66,7 @@ export const searchPatients = (first_name) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -80,7 +83,7 @@ export const fetchPatientProfile = (auth, userId) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -93,7 +96,7 @@ export const createPatient = (payload, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -107,7 +110,7 @@ export const editPatient = (payload, auth) => {
             })
             .catch((err) => {
                 console.log("EDIT_ERROR ", err)
-                reject(err.message)
+                reject(apiErrorMessage(err, "Failed to update patient"))
             })
     })
 }
@@ -134,7 +137,7 @@ export const prescribePatient = (payload) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -146,7 +149,7 @@ export const assignDoctor = (payload) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -160,7 +163,7 @@ export const consultPatient = (auth, payload) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -178,7 +181,7 @@ export const updatePatientConsult = (auth, payload, consult_id) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -191,7 +194,7 @@ export const referPatient = (auth, payload) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -208,7 +211,7 @@ export const updatePatientRefer = (auth, payload, refer_id) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -221,7 +224,7 @@ export const prescribeDrug = (payload, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -234,7 +237,7 @@ export const updatePrescribeDrug = (payload, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -249,7 +252,7 @@ export const createPrescription = (payload, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -266,7 +269,7 @@ export const updatePrescription = (prescription_id, payload, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -283,7 +286,7 @@ export const fetchPatientTriage = (id, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -300,7 +303,7 @@ export const updatePatientTriage = (id, payload, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -316,30 +319,36 @@ export const fetchPatientPrescribeDrugs = (patient_id) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
 
+// How many of the most recent visits a work queue loads. Older ones are found
+// by searching, which the backend does across all of them.
+export const DEFAULT_PROCESSES_PAGE_SIZE = 200;
+
 export const fetchAllAttendanceProcesses = (auth, process_id = null, processsFilter, selectedSearchFilter) => {
     const axiosInstance = UseAxios(auth);
+    // A list is paged by the backend ({count, results}); a single visit
+    // (process_id) comes back as the object itself.
     const params = {
         process_id: process_id,
         search_field: selectedSearchFilter?.value ? selectedSearchFilter.value : null,
         search_value: processsFilter?.search || null,
+        track: processsFilter?.track || null,
+        // 'today': only visits made today.
+        visited_on: processsFilter?.visited_on || null,
+        page_size: process_id ? null : (processsFilter?.page_size || DEFAULT_PROCESSES_PAGE_SIZE),
     };
-    console.log("SERVICE: fetchAllAttendanceProcesses called with params:", params);
-    console.log("SERVICE: Making API call to:", APP_API_URL.PATIENT_ATTENDANCE_PROCESS);
 
     return new Promise((resolve, reject) => {
         axiosInstance.get(`${APP_API_URL.PATIENT_ATTENDANCE_PROCESS}`, { params })
             .then((res) => {
-                console.log("SERVICE: API call successful, response:", res.data);
                 resolve(res.data)
             })
             .catch((err) => {
-                console.log("SERVICE: API call failed, error:", err);
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -352,7 +361,7 @@ export const initiateNewAttendanceProcesses = (payload, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -369,7 +378,7 @@ export const updateAttendanceProcesses = (payload, process_id, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -382,7 +391,7 @@ export const patientNextOfKin = (payload, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -395,7 +404,7 @@ export const patientNextOfKinContact = (payload, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -408,7 +417,7 @@ export const fetchTriageSettings = (auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -421,7 +430,7 @@ export const updateTriageSettings = (payload, auth) => {
                 resolve(res.data)
             })
             .catch((err) => {
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }

@@ -1,6 +1,7 @@
 import axios from "axios";
 import { APP_API_URL } from "@/assets/api-endpoints";
 import UseAxios from "@/assets/hooks/use-axios";
+import { apiErrorMessage } from "@/assets/api-error";
 
 
 export const fetchInsurance = (auth) =>{
@@ -11,7 +12,7 @@ export const fetchInsurance = (auth) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -24,7 +25,7 @@ export const fetchInventoryInsurancePrices = (auth) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -49,7 +50,7 @@ export const fetchInsurancePriceForItem = (auth, itemId, insuranceCompanyId) =>{
                 }
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -62,7 +63,7 @@ export const createInventoryInsurancePrices = (auth, payload) =>{
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -79,7 +80,7 @@ export const updateInventoryInsurancePrices = (insurance_price_id, payload, auth
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -92,7 +93,7 @@ export const createInsurance = (payload, auth) => {
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 }
@@ -109,7 +110,7 @@ export const updateInsurance  = (insurance_id, payload, auth) => {
                 resolve(res.data)
             })
             .catch((err) =>{
-                reject(err.message)
+                reject(apiErrorMessage(err))
             })
     })
 
