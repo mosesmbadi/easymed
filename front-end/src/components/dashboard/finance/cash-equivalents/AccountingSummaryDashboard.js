@@ -71,25 +71,28 @@ const AccountingSummaryDashboard = () => {
         getAccountingSummary(auth, filters),
       ]);
 
-      // Build lookup from summary totals keyed by "mainAccount::subAccount"
-      const lookup = {};
-      for (const row of summary.sub_account_totals || []) {
-        lookup[`${row.main_account}::${row.sub_account}`] = row;
+      // The summary's positions follow the selected dates: the balance brought
+      // forward at the start date, money in and out during the range, and the
+      // balance at the end date.
+      const positions = {};
+      for (const row of summary.account_positions || []) {
+        positions[row.id] = row;
       }
 
-      // Merge: every sub-account appears, with debit/credit from summary
+      // Every sub-account appears, even one with no movement in the range.
       const merged = (subAccounts || []).map((sa) => {
-        const key = `${sa.main_account_name}::${sa.name}`;
-        const totals = lookup[key] || {};
+        const position = positions[sa.id] || {};
         return {
           id: sa.id,
           active: sa.active,
           main_account: sa.main_account_name,
           sub_account: sa.name,
-          total_debit: totals.total_debited || 0,
-          total_credit: totals.total_credited || 0,
-          opening_balance: parseFloat(sa.opening_bal) || 0,
-          balance: parseFloat(sa.balance) || 0,
+          total_debit: parseFloat(position.total_debit) || 0,
+          total_credit: parseFloat(position.total_credit) || 0,
+          opening_balance: parseFloat(position.opening_balance ?? sa.opening_bal) || 0,
+          balance: parseFloat(position.balance ?? sa.balance) || 0,
+          // Today's balance: what the account can actually pay out now.
+          current_balance: parseFloat(sa.balance) || 0,
         };
       });
 
@@ -607,7 +610,8 @@ const AccountingSummaryDashboard = () => {
                                     <CmtDropdownMenu
                                       items={subAccountActions}
                                       onItemClick={() => {
-                                        setTransferAccount(sub);
+                                        // A transfer moves today's money, whatever dates are selected.
+                                        setTransferAccount({ ...sub, balance: sub.current_balance });
                                       }}
                                       TriggerComponent={
                                         <LuMoreHorizontal
@@ -653,7 +657,7 @@ const AccountingSummaryDashboard = () => {
 
       <TransferFundsModal
         account={transferAccount}
-        accounts={subAccountRows}
+        accounts={subAccountRows.map((row) => ({ ...row, balance: row.current_balance }))}
         onClose={() => setTransferAccount(null)}
         onTransferred={() => {
           setTransferAccount(null);

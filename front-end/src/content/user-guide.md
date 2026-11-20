@@ -713,7 +713,8 @@ Open **Finance → Accounts Receivable → Receive Payments**.
    - **Pay Amount**;
    - **Reference Number** (M-Pesa code, bank transfer number...). This is
      required;
-   - **Payment Date**.
+   - **Payment Date**: always the day the payment is recorded. It can't be
+     changed, so a payment can't be backdated.
 5. Check the **Payment Summary**. It shows **Fully Paid**, **Underpayment
    (Amount Due)** or **Overpayment (Excess)**, then confirm.
 

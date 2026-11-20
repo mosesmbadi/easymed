@@ -1356,4 +1356,4 @@ class AllocateSupplierPaymentRequestSerializer(serializers.Serializer):
     sub_account = serializers.IntegerField(required=True)
     amount = serializers.DecimalField(max_digits=12, decimal_places=2, required=True)
     reference_number = serializers.CharField(max_length=100, required=True)
-    payment_date = serializers.DateField(required=False, allow_null=True)
+    # No payment_date: the server dates a payment the day it is recorded.

@@ -45,11 +45,6 @@ const InvoicePayModal = () => {
       reference_number: formData.reference_number,
     };
 
-    // Add payment_date only if provided
-    if (formData.payment_date) {
-      payload.payment_date = formData.payment_date;
-    }
-
     // Add either patient_id or insurance_id based on category
     if (formData.paymentCategory === 'cash') {
       payload.patient_id = formData.customer.value;

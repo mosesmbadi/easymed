@@ -292,7 +292,9 @@ class AllocatePaymentRequestSerializer(serializers.Serializer):
     sub_account = serializers.IntegerField()
     amount = serializers.DecimalField(max_digits=12, decimal_places=2)
     reference_number = serializers.CharField(max_length=100)
-    payment_date = serializers.DateField(required=False, allow_null=True)
+    # No payment_date: a payment is dated the day it is recorded, by the
+    # server. Letting the cashier pick the date would let money be booked
+    # into a day that has already been reconciled.
 
     def validate(self, data):
         # Ensure either patient_id or insurance_id is provided, but not both

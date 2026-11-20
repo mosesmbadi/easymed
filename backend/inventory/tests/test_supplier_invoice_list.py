@@ -162,3 +162,20 @@ def test_the_report_is_a_pdf_of_the_filtered_invoices(api, new_invoice):
 
 def test_a_bad_date_is_refused(api):
     assert api.get(URL, {'date_from': 'yesterday'}).status_code == 400
+
+
+def test_a_payment_is_dated_the_day_it_is_recorded(api, new_invoice, bank):
+    """The client can't backdate a payment: that would let money leave a day already reconciled."""
+    invoice = new_invoice('BACKDATED')
+
+    response = api.post('/inventory/allocate-supplier-payment/', {
+        'supplier_id': invoice.supplier_id,
+        'invoice_ids': [invoice.id],
+        'sub_account': bank.id,
+        'amount': '100.00',
+        'reference_number': 'TRX-OLD',
+        'payment_date': (timezone.localdate() - timedelta(days=30)).isoformat(),
+    }, format='json')
+
+    assert response.status_code == 201
+    assert invoice.payment_allocations.get().receipt.payment_date == timezone.localdate()

@@ -47,7 +47,6 @@ const UnifiedPaymentForm = ({
   const [payAmount, setPayAmount] = useState('');
   const [selectedPayMode, setSelectedPayMode] = useState(null);
   const [referenceNumber, setReferenceNumber] = useState('');
-  const [paymentDate, setPaymentDate] = useState(getTodayDate());
   const [allMode] = useState('allPages');
 
   // Fetch invoices when customer is selected
@@ -65,11 +64,6 @@ const UnifiedPaymentForm = ({
     { value: 'cash', label: 'Cash (Patient)' },
     { value: 'credit', label: 'Credit (Insurance)' },
   ];
-
-  function getTodayDate() {
-    const today = new Date();
-    return today.toISOString().split('T')[0];
-  }
 
   const handleSelectionChanged = (selectedRowKeys) => {
     setSelectedItems(selectedRowKeys);
@@ -130,11 +124,6 @@ const UnifiedPaymentForm = ({
       toast.error("Please enter a reference number");
       return;
     }
-    if (!paymentDate) {
-      toast.error("Please select a payment date");
-      return;
-    }
-
     // Prepare data for submission
     const invoiceIds = selectedItems.selectedRowsData.map(inv => inv.id);
     const totalOwed = calculateTotalOwed();
@@ -147,7 +136,6 @@ const UnifiedPaymentForm = ({
       totalOwed,
       sub_account: selectedPayMode.value,
       reference_number: referenceNumber,
-      payment_date: paymentDate,
     };
 
     onSubmit(submitData);
@@ -416,14 +404,16 @@ const UnifiedPaymentForm = ({
               />
             </Grid>
             <Grid item md={4} xs={12}>
+              {/* Shown for reference only: the server dates the payment the day it is recorded. */}
               <TextField
                 fullWidth
                 label="Payment Date"
                 type="date"
-                value={paymentDate}
-                onChange={(e) => setPaymentDate(e.target.value)}
+                value={new Date().toLocaleDateString("en-CA")}
                 InputLabelProps={{ shrink: true }}
-                required
+                InputProps={{ readOnly: true }}
+                disabled
+                helperText="Payments are dated the day they are recorded"
               />
             </Grid>
           </Grid>

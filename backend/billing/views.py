@@ -13,8 +13,9 @@ from django.conf import settings
 from easymed.pdf import HTML
 from rest_framework import serializers
 from rest_framework.response import Response
-from django.db.models import ProtectedError, Sum, Q
+from django.db.models import F, ProtectedError, Sum, Q
 from django.db import transaction
+from django.utils import timezone
 from decimal import Decimal
 from rest_framework.decorators import action
 from rest_framework.views import APIView
@@ -408,7 +409,8 @@ class AllocatePaymentView(APIView):
         req_ser = AllocatePaymentRequestSerializer(data=request.data)
         req_ser.is_valid(raise_exception=True)
         try:
-            receipt = allocate_payment(**req_ser.validated_data)
+            # Dated by the server, never by the client: see the request serializer.
+            receipt = allocate_payment(**req_ser.validated_data, payment_date=timezone.localdate())
         except PaymentAllocationError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         return Response(PaymentReceiptSerializer(receipt).data, status=status.HTTP_201_CREATED)
@@ -521,6 +523,72 @@ def download_invoice_pdf(request, invoice_id):
     response['Content-Disposition'] = f'inline; filename="invoice_report_{invoice_id}.pdf"'
 
     return response
+def cash_account_positions(start_date=None, end_date=None):
+    """
+    Each sub-account's position over the selected days: the balance brought
+    forward at the start of `start_date`, the money in and out during the
+    range, and the balance at the end of `end_date`. Either date may be left
+    out; with neither, it is the account's whole history and `balance` equals
+    SubAccount.balance.
+
+    It counts money the way SubAccount.balance does -- whole receipts, supplier
+    payments and transfers -- so a row always reads
+    opening + debit - credit = balance. A receipt counts on its payment date,
+    or the day it was entered when it has none.
+    """
+    from django.db.models.functions import Coalesce, TruncDate
+    from inventory.models import SupplierPaymentReceipt
+
+    during = Q()
+    if start_date:
+        during &= Q(day__gte=start_date)
+    if end_date:
+        during &= Q(day__lte=end_date)
+    before = Q(day__lt=start_date) if start_date else None
+
+    def totals(qs, account_field, amount_field):
+        """{account id: (amount before the range, amount during it)}"""
+        aggregates = {'during': Sum(amount_field, filter=during) if during else Sum(amount_field)}
+        if before is not None:
+            aggregates['before'] = Sum(amount_field, filter=before)
+        rows = (qs.filter(**{f'{account_field}__isnull': False})
+                .order_by().values(account_field).annotate(**aggregates))
+        return {
+            row[account_field]: (row.get('before') or Decimal('0'), row['during'] or Decimal('0'))
+            for row in rows
+        }
+
+    receipt_day = Coalesce('payment_date', TruncDate('created_at'))
+    received = totals(PaymentReceipt.objects.annotate(day=receipt_day), 'sub_account', 'total_amount')
+    paid_out = totals(SupplierPaymentReceipt.objects.annotate(day=receipt_day), 'sub_account', 'total_amount')
+    transfers = AccountTransfer.objects.annotate(day=F('transfer_date'))
+    transferred_in = totals(transfers, 'to_account', 'amount')
+    transferred_out = totals(transfers, 'from_account', 'amount')
+
+    nothing = (Decimal('0'), Decimal('0'))
+    positions = []
+    for sa in SubAccount.objects.select_related('main_account').order_by('main_account__name', 'name'):
+        r_before, r_during = received.get(sa.id, nothing)
+        p_before, p_during = paid_out.get(sa.id, nothing)
+        i_before, i_during = transferred_in.get(sa.id, nothing)
+        o_before, o_during = transferred_out.get(sa.id, nothing)
+
+        opening = (sa.opening_bal or Decimal('0')) + r_before - p_before + i_before - o_before
+        money_in = r_during + i_during
+        money_out = p_during + o_during
+        positions.append({
+            'id': sa.id,
+            'main_account': sa.main_account.name if sa.main_account else '',
+            'sub_account': sa.name,
+            'active': sa.active,
+            'opening_balance': opening,
+            'total_debit': money_in,
+            'total_credit': money_out,
+            'balance': opening + money_in - money_out,
+        })
+    return positions
+
+
 class AccountingSummaryView(APIView):
     """
     API View to summarize accounting data based on:
@@ -720,6 +788,8 @@ class AccountingSummaryView(APIView):
         return Response({
             'totals': totals,
             'sub_account_totals': list(sub_account_totals),
+            # Opening and closing balances for the selected days, per sub-account.
+            'account_positions': cash_account_positions(start_date, end_date),
             'transactions': transactions
         })
 
@@ -759,49 +829,10 @@ def download_accounting_summary_pdf(request):
     response = view.get(fake_request)
     data = response.data
 
-    # Sub-account summary rows
-    sub_account_totals = data.get('sub_account_totals', [])
     transactions = data.get('transactions', [])
 
-    # Merge sub-account totals with balance from SubAccount model
-    sub_accounts_qs = SubAccount.objects.select_related('main_account').all()
-    sa_lookup = {}
-    for sa in sub_accounts_qs:
-        key = f"{sa.main_account.name if sa.main_account else ''}::{sa.name}"
-        sa_lookup[key] = float(sa.balance or 0)
-
-    # Build opening balance lookup from SubAccount model
-    sa_opening_lookup = {}
-    for sa in sub_accounts_qs:
-        key = f"{sa.main_account.name if sa.main_account else ''}::{sa.name}"
-        sa_opening_lookup[key] = Decimal(str(sa.opening_bal or 0))
-
-    sub_account_rows = []
-    for row in sub_account_totals:
-        key = f"{row['main_account']}::{row['sub_account']}"
-        sub_account_rows.append({
-            'main_account': row['main_account'],
-            'sub_account': row['sub_account'],
-            'opening_balance': sa_opening_lookup.get(key, Decimal('0')),
-            'total_debit': Decimal(str(row.get('total_debited', 0))),
-            'total_credit': Decimal(str(row.get('total_credited', 0))),
-            'balance': Decimal(str(sa_lookup.get(key, row.get('net_balance', 0)))),
-        })
-
-    # Also include sub-accounts with zero transactions
-    seen_keys = {f"{r['main_account']}::{r['sub_account']}" for r in sub_account_rows}
-    for sa in sub_accounts_qs:
-        key = f"{sa.main_account.name if sa.main_account else ''}::{sa.name}"
-        if key not in seen_keys:
-            sub_account_rows.append({
-                'main_account': sa.main_account.name if sa.main_account else '',
-                'sub_account': sa.name,
-                'opening_balance': Decimal(str(sa.opening_bal or 0)),
-                'total_debit': Decimal('0'),
-                'total_credit': Decimal('0'),
-                'balance': Decimal(str(sa.balance or 0)),
-            })
-    sub_account_rows.sort(key=lambda r: (r['main_account'], r['sub_account']))
+    # Sub-account summary rows: balances as at the selected days, not today's.
+    sub_account_rows = data.get('account_positions', [])
 
     summary_totals = {
         'opening_balance': sum(r['opening_balance'] for r in sub_account_rows),

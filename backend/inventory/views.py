@@ -1217,7 +1217,8 @@ class AllocateSupplierPaymentView(APIView):
                 payment_mode=sub_account.payment_mode,
                 total_amount=amount,
                 reference_number=data['reference_number'],
-                payment_date=data.get('payment_date'),
+                # The day it is recorded; the client does not choose it.
+                payment_date=timezone.localdate(),
             )
 
             remaining = float(amount)

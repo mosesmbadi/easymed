@@ -21,7 +21,6 @@ const RecordSupplierPaymentModal = ({ invoice, onClose, onPaid }) => {
   const [accountId, setAccountId] = useState("");
   const [amount, setAmount] = useState("");
   const [reference, setReference] = useState("");
-  const [date, setDate] = useState(today());
   const [saving, setSaving] = useState(false);
 
   const outstanding = Number(invoice?.outstanding_amount || 0);
@@ -31,7 +30,6 @@ const RecordSupplierPaymentModal = ({ invoice, onClose, onPaid }) => {
     setAccountId("");
     setAmount(invoice.outstanding_amount);
     setReference("");
-    setDate(today());
     fetchSubAccounts(auth)
       .then((rows) =>
         setAccounts(rows.filter((row) => row.active !== false && Number(row.balance) > 0))
@@ -52,7 +50,6 @@ const RecordSupplierPaymentModal = ({ invoice, onClose, onPaid }) => {
       return toast.error(`${account.name} only has ${formatMoney(account.balance)}`);
     }
     if (!reference.trim()) return toast.error("Enter the payment reference");
-    if (!date) return toast.error("Choose the payment date");
 
     setSaving(true);
     try {
@@ -62,7 +59,6 @@ const RecordSupplierPaymentModal = ({ invoice, onClose, onPaid }) => {
         sub_account: account.id,
         amount: value,
         reference_number: reference.trim(),
-        payment_date: date,
       });
       toast.success(value === outstanding ? "Invoice paid" : "Part payment recorded");
       onPaid();
@@ -121,12 +117,13 @@ const RecordSupplierPaymentModal = ({ invoice, onClose, onPaid }) => {
           </label>
           <label className="block">
             Payment Date
+            {/* Shown for reference only: the server dates the payment the day it is recorded. */}
             <input
-              className={`${inputClass} mt-1`}
+              className={`${inputClass} mt-1 bg-gray-100 text-gray-500`}
               type="date"
-              max={today()}
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
+              value={today()}
+              readOnly
+              disabled
             />
           </label>
           <div className="flex justify-end gap-2 pt-2">

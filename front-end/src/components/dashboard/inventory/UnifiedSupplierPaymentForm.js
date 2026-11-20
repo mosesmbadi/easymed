@@ -47,7 +47,6 @@ const UnifiedSupplierPaymentForm = ({
   const [payAmount, setPayAmount] = useState('');
   const [selectedSubAccount, setSelectedSubAccount] = useState(null);
   const [referenceNumber, setReferenceNumber] = useState('');
-  const [paymentDate, setPaymentDate] = useState(getTodayDate());
   const [allMode] = useState('allPages');
 
   // Fetch suppliers on mount
@@ -81,11 +80,6 @@ const UnifiedSupplierPaymentForm = ({
     setSelectedRowKeys([]);
     setPayAmount('');
   }, [selectedSupplier, auth, dispatch]);
-
-  function getTodayDate() {
-    const today = new Date();
-    return today.toISOString().split('T')[0];
-  }
 
   const handleSelectionChanged = useCallback((e) => {
     setSelectedItems(e);
@@ -143,18 +137,12 @@ const UnifiedSupplierPaymentForm = ({
       return;
     }
 
-    if (!paymentDate) {
-      toast.error("Please select a payment date");
-      return;
-    }
-
     const payload = {
       supplier_id: selectedSupplier.value,
       invoice_ids: selectedItems.selectedRowsData.map(inv => inv.id),
       sub_account: selectedSubAccount.value,
       amount: parseFloat(payAmount),
       reference_number: referenceNumber,
-      payment_date: paymentDate,
     };
 
     if (onSubmit) {
@@ -169,7 +157,6 @@ const UnifiedSupplierPaymentForm = ({
     setPayAmount('');
     setSelectedSubAccount(null);
     setReferenceNumber('');
-    setPaymentDate(getTodayDate());
   };
 
   const onMenuItemClick = (menu, data) => {
@@ -425,14 +412,16 @@ const UnifiedSupplierPaymentForm = ({
               />
             </Grid>
             <Grid item md={4} xs={12}>
+              {/* Shown for reference only: the server dates the payment the day it is recorded. */}
               <TextField
                 fullWidth
                 label="Payment Date"
                 type="date"
-                value={paymentDate}
-                onChange={(e) => setPaymentDate(e.target.value)}
+                value={new Date().toLocaleDateString("en-CA")}
                 InputLabelProps={{ shrink: true }}
-                required
+                InputProps={{ readOnly: true }}
+                disabled
+                helperText="Payments are dated the day they are recorded"
               />
             </Grid>
           </Grid>
