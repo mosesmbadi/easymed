@@ -503,12 +503,39 @@ the cause and the result is posted.
 | --- | --- |
 | **No sample code** | The code wasn't entered on the analyzer. Select **Assign sample** and enter the code from the tube label. Every result in that run is posted to it |
 | **Sample not found** | Check the code, or register the sample, then select **Retry** |
-| **Unmapped** | Select **Map code** and link the analyzer's code to a test panel |
-| **Not requested** | Add the test to the request and **Retry**, or **Ignore** |
-| **Already approved** | The approved result was kept. **Ignore**, or un-approve it and **Retry** |
-| **Invalid** | The value can't be stored. Enter it by hand and **Ignore** this one |
+| **Code not mapped** | Select **Map code** and link the analyzer's code to a test panel, or choose **Don't import** for a code the lab doesn't report. See [Mapping analyzer codes](#mapping-analyzer-codes) below |
+| **Test not requested** | Add the test to the request and **Retry**, or **Ignore** |
+| **Result already approved** | The approved result was kept. **Ignore**, or un-approve it and **Retry** |
+| **Invalid value** | The value can't be stored. Enter it by hand and **Ignore** this one |
 
-**Retry all** tries every open result again, for example after adding mappings.
+**Retry all** tries every open result again, for example after registering a
+missing sample.
+
+#### Mapping analyzer codes
+
+Each result arrives with the analyzer's own code for the test, such as `HGB`,
+`LYM%` or `GRA%`. EasyMed posts it to a test panel in one of two ways:
+
+- **A mapping exists** for that code on that analyzer: the result goes to the
+  mapped panel.
+- **No mapping, but a requested panel has exactly the same name** as the code
+  (capitals don't matter): the result goes to that panel, and EasyMed saves the
+  mapping for next time.
+
+Otherwise the result shows **Code not mapped**. This is why some codes from a run
+post and others don't: a panel called `WBC` matches the code `WBC`, but a panel
+called *Lymphocytes %* does not match `LYM%`.
+
+To fix it, select **Map code** on the result (or open **Test mappings** for the
+analyzer in **Lab Settings → Lab Equipments**) and choose the test panel for
+each code. Saving a mapping posts every waiting result with that code
+straight away, so you don't need to **Retry**. Map each code once per analyzer
+and future results post automatically.
+
+If a result then shows **Test not requested**, the mapping worked but that test
+isn't on the patient's request. Add the test and **Retry**, or **Ignore** it.
+Choose **Don't import** for codes the lab never reports, so they stop
+appearing in the inbox.
 
 If the inbox says an analyzer is *not recognised*, copy the name it calls itself
 into that equipment's **Sender ID** in **Lab Settings → Lab Equipments**.
@@ -1319,6 +1346,7 @@ location it's issued from. Receive or transfer stock, then bill again.
 
 **Analyzer results aren't showing on the patient's tests.**
 Open **Analyzer Inbox**. Each waiting result says what's wrong and how to fix it.
+For **Code not mapped**, see [Mapping analyzer codes](#mapping-analyzer-codes).
 
 **The sending clinic isn't in the list on Receive Samples.**
 Add it under **Finance → Accounts Receivable → Settings → Credit Accounts** with
