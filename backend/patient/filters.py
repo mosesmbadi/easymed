@@ -36,9 +36,6 @@ class PatientFilter(django_filters.FilterSet):
     user_id__id = django_filters.NumberFilter(lookup_expr="exact", label="user_id")
     # Patients registered that day or with a visit that day: who came in.
     visited_on = django_filters.CharFilter(method='filter_visited_on')
-    # `?samples_pending=true`: only visits with a sample not yet collected
-    # (the phlebotomy queue).
-    samples_pending = django_filters.BooleanFilter(method='filter_samples_pending')
 
     class Meta:
         model = Patient
@@ -108,6 +105,9 @@ class AttendanceProcessTrackFilter(django_filters.FilterSet):
     track = django_filters.CharFilter(method='filter_track')
     # `?visited_on=today` (or a YYYY-MM-DD date): only that day's visits.
     visited_on = django_filters.CharFilter(method='filter_visited_on')
+    # `?samples_pending=true`: only visits with a sample not yet collected
+    # (the phlebotomy queue).
+    samples_pending = django_filters.BooleanFilter(method='filter_samples_pending')
 
     class Meta:
         model = AttendanceProcess
