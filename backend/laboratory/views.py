@@ -8,7 +8,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema
 from django.http import HttpResponse
 from django.core.exceptions import ValidationError as DjangoValidationError
-from django.db.models import Q
+from django.db.models import Exists, OuterRef, Q
 from django.shortcuts import get_object_or_404
 from django.conf import settings
 from datetime import timedelta
@@ -364,6 +364,16 @@ class PatientSampleViewSet(viewsets.ModelViewSet):
         'specimen', 'process__attendanceprocess__patient__referred_from').prefetch_related(
         'specimen__consumables__item', 'consumables_used__item').order_by('-id')
     serializer_class = PatientSampleSerializer
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        # `?results_pending=true`: collected samples with a test still waiting
+        # for its result -- what result entry has left to do.
+        if self.action == 'list' and self.request.query_params.get('results_pending') == 'true':
+            awaiting_result = LabTestRequestPanel.objects.filter(
+                patient_sample=OuterRef('pk')).filter(Q(result__isnull=True) | Q(result=''))
+            queryset = queryset.filter(is_sample_collected=True).filter(Exists(awaiting_result))
+        return queryset
 
 '''
 TODO: This is not shwoing is_billed in response

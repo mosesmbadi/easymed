@@ -20,7 +20,10 @@ export default async function handler(req, res) {
                 }
             };
     
-            await backendAxiosInstance.get(`${API_URL.PHLEBOTOMY_PATIENT_SAMPLES}`, config).then(response => {
+            // Pass on filters such as results_pending=true.
+            const qs = new URLSearchParams(req.query).toString();
+            const url = `${API_URL.PHLEBOTOMY_PATIENT_SAMPLES}${qs ? `?${qs}` : ''}`;
+            await backendAxiosInstance.get(url, config).then(response => {
                 res.status(200).json(response.data);
 
             }).catch(e => {

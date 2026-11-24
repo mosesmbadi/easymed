@@ -16,7 +16,8 @@ from billing.models import InvoiceItem, PaymentMode
 from company.models import InsuranceCompany
 from inventory.models import Department, InsuranceItemSalePrice, Item
 from inventory.services import stock as stock_service
-from laboratory.models import PatientSample, Specimen
+from laboratory.models import (
+    LabTestPanel, LabTestProfile, LabTestRequest, LabTestRequestPanel, PatientSample, Specimen)
 from patient.models import AttendanceProcess
 
 URL = '/patients/initiate-attendance-process/'
@@ -136,6 +137,8 @@ def test_list_rows_keep_their_fields(authenticated_admin_client, patient, admin_
     assert row['invoice_items'] == []
     assert len(row['insurances']) == 2
     assert row['has_approved_lab_results'] is False
+    assert row['has_uncollected_samples'] is False
+    assert row['lab_results_status'] is None
     assert row['has_critical_triage'] is False
 
 
@@ -166,3 +169,54 @@ def test_sample_carries_its_visit(authenticated_admin_client, patient, admin_use
     assert row['track_number'] == visit.track_number
     assert row['patient_name'] == patient.display_name
     assert row['patient_number'] == visit.patient_number
+
+
+def add_lab_tests(visit, user, n):
+    """n tests on one blood sample for the visit; the sample starts uncollected."""
+    profile = LabTestProfile.objects.create(name=f'Profile {visit.id}')
+    specimen = Specimen.objects.create(name=f'Blood {visit.id}')
+    request = LabTestRequest(process=visit.process_test_req, test_profile=profile, requested_by=user)
+    request.skip_profile_charge = True
+    request.save()
+    return [
+        LabTestRequestPanel.objects.create(
+            lab_test_request=request,
+            test_panel=LabTestPanel.objects.create(
+                name=f'Test {visit.id}-{i}', test_profile=profile, specimen=specimen))
+        for i in range(n)
+    ]
+
+
+def rows_by_id(client, params=None):
+    return {r['id']: r for r in client.get(URL, params or {}).json()['results']}
+
+
+@pytest.mark.django_db
+def test_phlebotomy_queue_only_lists_visits_with_samples_to_collect(
+        authenticated_admin_client, patient, admin_user):
+    waiting, collected = make_visits(patient, admin_user, 2, track='lab')
+    add_lab_tests(waiting, admin_user, 1)
+    add_lab_tests(collected, admin_user, 1)
+    PatientSample.objects.filter(process=collected.process_test_req).update(is_sample_collected=True)
+
+    rows = rows_by_id(authenticated_admin_client, {'track': 'lab', 'samples_pending': 'true'})
+
+    assert set(rows) == {waiting.id}
+    assert rows[waiting.id]['has_uncollected_samples'] is True
+    assert rows_by_id(authenticated_admin_client)[collected.id]['has_uncollected_samples'] is False
+
+
+@pytest.mark.django_db
+def test_lab_results_status_counts_approved_tests(authenticated_admin_client, patient, admin_user):
+    none_, partial, full = make_visits(patient, admin_user, 3, track='lab')
+    add_lab_tests(none_, admin_user, 2)
+    LabTestRequestPanel.objects.filter(
+        pk=add_lab_tests(partial, admin_user, 2)[0].pk).update(result_approved=True)
+    LabTestRequestPanel.objects.filter(
+        pk__in=[p.pk for p in add_lab_tests(full, admin_user, 2)]).update(result_approved=True)
+
+    rows = rows_by_id(authenticated_admin_client)
+
+    assert rows[none_.id]['lab_results_status'] == 'none'
+    assert rows[partial.id]['lab_results_status'] == 'partial'
+    assert rows[full.id]['lab_results_status'] == 'full'

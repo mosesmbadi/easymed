@@ -66,7 +66,8 @@ const AddTestResults = () => {
     if (token) {
       dispatch(getAllLabRequests(token));
       dispatch(getAllLabTestPanels(auth))
-      dispatch(getAllPhlebotomySamples(token))
+      // Only samples with a test still waiting for its result.
+      dispatch(getAllPhlebotomySamples(token, { results_pending: true }))
       if(selected){
         console.log("Fetching lab test panels for sample:", selected.label);
         dispatch(getAllLabTestPanelsBySample(selected.label, token));

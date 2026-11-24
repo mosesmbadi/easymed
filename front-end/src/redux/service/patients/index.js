@@ -339,6 +339,8 @@ export const fetchAllAttendanceProcesses = (auth, process_id = null, processsFil
         track: processsFilter?.track || null,
         // 'today': only visits made today.
         visited_on: processsFilter?.visited_on || null,
+        // true: only visits with a sample still to collect (phlebotomy).
+        samples_pending: processsFilter?.samples_pending ? true : null,
         page_size: process_id ? null : (processsFilter?.page_size || DEFAULT_PROCESSES_PAGE_SIZE),
     };
 

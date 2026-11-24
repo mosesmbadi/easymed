@@ -5,7 +5,8 @@ from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404
 from django.conf import settings
 from django.template.loader import render_to_string
-from django.db.models import Exists, OuterRef, Prefetch
+from django.db.models import Count, Exists, IntegerField, OuterRef, Prefetch, Subquery
+from django.db.models.functions import Coalesce
 from rest_framework import viewsets, status
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.request import Request
@@ -221,10 +222,20 @@ def with_attendance_relations(queryset):
     from billing.models import InvoiceItem, with_agreed_insurance_price
     from laboratory.models import LabTestRequestPanel
 
-    approved_results = LabTestRequestPanel.objects.filter(
-        lab_test_request__process=OuterRef('process_test_req'),
-        result_approved=True,
-    )
+    from laboratory.models import PatientSample
+
+    visit_panels = LabTestRequestPanel.objects.filter(
+        lab_test_request__process=OuterRef('process_test_req'))
+    approved_results = visit_panels.filter(result_approved=True)
+    # A sample still waiting on phlebotomy keeps the visit in that queue.
+    uncollected_samples = PatientSample.objects.filter(
+        process=OuterRef('process_test_req'), is_sample_collected=False)
+
+    def panel_count(panels):
+        counted = (panels.order_by().values('lab_test_request__process')
+                   .annotate(n=Count('id')).values('n'))
+        return Coalesce(Subquery(counted, output_field=IntegerField()), 0)
+
     invoice_lines = with_agreed_insurance_price(
         InvoiceItem.objects.select_related('item', 'payment_mode__insurance', 'source_tag'))
     return queryset.select_related(
@@ -235,6 +246,9 @@ def with_attendance_relations(queryset):
         Prefetch('invoice__invoice_items', queryset=invoice_lines),
     ).annotate(
         has_approved_lab_results_annotated=Exists(approved_results),
+        has_uncollected_samples_annotated=Exists(uncollected_samples),
+        lab_panels_total_annotated=panel_count(visit_panels),
+        lab_panels_approved_annotated=panel_count(approved_results),
     )
 
 

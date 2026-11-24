@@ -8,7 +8,7 @@ import { Column, Paging, Pager } from "devextreme-react/data-grid";
 import { Grid } from "@mui/material";
 import { addRequisition, addRequisitionItem } from "@/redux/service/inventory";
 import { useSelector, useDispatch } from "react-redux";
-import { removeItemToInventoryPdf, clearItemsToInventoryPdf, getAllSuppliers, getItems  } from "@/redux/features/inventory";
+import { removeItemToInventoryPdf, clearItemsToInventoryPdf, getAllSuppliers, getItems, addItemToInventoryList } from "@/redux/features/inventory";
 import { toast } from "react-toastify";
 import AddRequisitionItemModal from "./create-requisition-dialog";
 import CmtDropdownMenu from "@/assets/DropdownMenu";
@@ -108,6 +108,16 @@ const CreateRequisition = () => {
         toast.error("No requisition items");
         return;
       }
+      // Lines added from the stock page's re-order list arrive without a
+      // supplier; without one the backend would pick any supplier on file.
+      if (inventoryItems.some((line) => !line.preferred_supplier)) {
+        toast.error("Choose a supplier for every item");
+        return;
+      }
+      if (inventoryItems.some((line) => !(parseInt(line.quantity_requested) > 0))) {
+        toast.error("Every item needs a quantity above zero");
+        return;
+      }
     
       setLoading(true);
     
@@ -198,14 +208,40 @@ const CreateRequisition = () => {
           <Column 
             dataField="preferred_supplier" 
             caption="Supplier Name"
-            cellRender={(cellData) => {
-              const supplier = suppliers.find(supplier => supplier.id === parseInt(cellData.data.preferred_supplier));
-              return supplier ? `${supplier.official_name}` : 'null';
-            }}        
+            cellRender={({ data }) => (
+              <select
+                className={`border rounded px-2 py-1 text-sm w-full ${data.preferred_supplier ? '' : 'border-warning'}`}
+                value={data.preferred_supplier ?? ''}
+                onChange={(e) => dispatch(addItemToInventoryList({
+                  ...data, preferred_supplier: e.target.value || null,
+                }))}
+              >
+                <option value="">Choose supplier</option>
+                {suppliers.map((supplier) => (
+                  <option key={supplier.id} value={supplier.id}>{supplier.official_name}</option>
+                ))}
+              </select>
+            )}
           />
           <Column
             dataField="quantity_requested"
             caption="Quantity"
+            cellRender={({ data }) => (
+              // Saved on blur: the grid redraws its cells when the list
+              // changes, which would drop focus on every keystroke.
+              <input
+                key={`${data.item}-${data.quantity_requested}`}
+                type="number"
+                min="1"
+                className="border rounded px-2 py-1 text-sm w-24"
+                defaultValue={data.quantity_requested}
+                onBlur={(e) => {
+                  if (e.target.value !== String(data.quantity_requested)) {
+                    dispatch(addItemToInventoryList({ ...data, quantity_requested: e.target.value }));
+                  }
+                }}
+              />
+            )}
           />
           <Column
             dataField="item_unit"

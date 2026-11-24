@@ -41,3 +41,38 @@ def test_generate_sample_code_new_year_reset(patient_sample):
     )
 
     assert new_sample.patient_sample_code == f"DDLR00001-{current_year}"  
+
+
+@pytest.mark.django_db
+def test_result_entry_lists_only_samples_still_waiting_for_results(
+        authenticated_admin_client, user):
+    from laboratory.models import LabTestPanel, ProcessTestRequest, Specimen
+
+    profile = LabTestProfile.objects.create(name='Haemogram')
+
+    def sample_with_tests(results, collected=True):
+        process = ProcessTestRequest.objects.create(reference='R')
+        specimen = Specimen.objects.create(name=f'Blood {process.id}')
+        request = LabTestRequest(process=process, test_profile=profile, requested_by=user)
+        request.skip_profile_charge = True
+        request.save()
+        for i, result in enumerate(results):
+            LabTestRequestPanel.objects.create(
+                lab_test_request=request, result=result,
+                test_panel=LabTestPanel.objects.create(
+                    name=f'Test {process.id}-{i}', test_profile=profile, specimen=specimen))
+        sample = PatientSample.objects.get(process=process)
+        PatientSample.objects.filter(pk=sample.pk).update(is_sample_collected=collected)
+        return sample
+
+    waiting = sample_with_tests([None])
+    half_done = sample_with_tests(['5.0', ''])
+    done = sample_with_tests(['5.0', '6.1'])
+    not_collected = sample_with_tests([None], collected=False)
+
+    pending = authenticated_admin_client.get(
+        '/lab/patient-samples/', {'results_pending': 'true'}).json()
+    every = authenticated_admin_client.get('/lab/patient-samples/').json()
+
+    assert {s['id'] for s in pending} == {waiting.id, half_done.id}
+    assert {waiting.id, half_done.id, done.id, not_collected.id} <= {s['id'] for s in every}
