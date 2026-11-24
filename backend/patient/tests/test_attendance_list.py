@@ -171,6 +171,12 @@ def test_sample_carries_its_visit(authenticated_admin_client, patient, admin_use
     assert row['patient_number'] == visit.patient_number
 
 
+def lab_panel(name, profile, specimen):
+    item = Item.objects.create(
+        name=name, desc=name, category='Lab Test', units_of_measure='test', item_code=f'LAB-{name}')
+    return LabTestPanel.objects.create(name=name, test_profile=profile, specimen=specimen, item=item)
+
+
 def add_lab_tests(visit, user, n):
     """n tests on one blood sample for the visit; the sample starts uncollected."""
     profile = LabTestProfile.objects.create(name=f'Profile {visit.id}')
@@ -181,8 +187,7 @@ def add_lab_tests(visit, user, n):
     return [
         LabTestRequestPanel.objects.create(
             lab_test_request=request,
-            test_panel=LabTestPanel.objects.create(
-                name=f'Test {visit.id}-{i}', test_profile=profile, specimen=specimen))
+            test_panel=lab_panel(f'Test {visit.id}-{i}', profile, specimen))
         for i in range(n)
     ]
 

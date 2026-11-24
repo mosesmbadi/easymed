@@ -46,6 +46,7 @@ def test_generate_sample_code_new_year_reset(patient_sample):
 @pytest.mark.django_db
 def test_result_entry_lists_only_samples_still_waiting_for_results(
         authenticated_admin_client, user):
+    from inventory.models import Item
     from laboratory.models import LabTestPanel, ProcessTestRequest, Specimen
 
     profile = LabTestProfile.objects.create(name='Haemogram')
@@ -60,7 +61,10 @@ def test_result_entry_lists_only_samples_still_waiting_for_results(
             LabTestRequestPanel.objects.create(
                 lab_test_request=request, result=result,
                 test_panel=LabTestPanel.objects.create(
-                    name=f'Test {process.id}-{i}', test_profile=profile, specimen=specimen))
+                    name=f'Test {process.id}-{i}', test_profile=profile, specimen=specimen,
+                    item=Item.objects.create(
+                        name=f'Test {process.id}-{i}', desc='Test', category='Lab Test',
+                        units_of_measure='test', item_code=f'LAB-{process.id}-{i}')))
         sample = PatientSample.objects.get(process=process)
         PatientSample.objects.filter(pk=sample.pk).update(is_sample_collected=collected)
         return sample
