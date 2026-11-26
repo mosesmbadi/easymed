@@ -55,9 +55,10 @@ const AccountingSummaryDashboard = () => {
   const canTransfer = isAdmin(auth);
   const companyDetails = useSelector((store) => store.company.companyDetails);
 
-  // Date filters
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  // Date filters: open on today (the viewer's own day, not UTC's). "Clear
+  // dates" still shows every date.
+  const [startDate, setStartDate] = useState(() => new Date().toLocaleDateString("en-CA"));
+  const [endDate, setEndDate] = useState(() => new Date().toLocaleDateString("en-CA"));
 
   const loadData = async () => {
     try {

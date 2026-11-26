@@ -37,7 +37,7 @@ const RequestInfoModal = ({requestInfoOpen, setRequestInfoOpen, selectedRowData}
 
     const samplesByProcess = labSamplesByProcess.map((sample)=>{
         return(
-            <SamplesAccordion key={`phlebotomy-sample-${sample.id}`} sample={sample}/>
+            <SamplesAccordion key={`phlebotomy-sample-${sample.id}`} sample={sample} patient={testPatient}/>
         )
     })
 

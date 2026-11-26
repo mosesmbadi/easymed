@@ -33,8 +33,15 @@ const insertTable = async (scope, page, { rows, columns }) => {
 const insertImage = async (scope, page, file) => {
   await tool(scope, "image").click();
   const dialog = page.locator(".dx-formdialog .dx-overlay-content:visible").last();
+  const add = dialog.getByRole("button", { name: /add/i });
   await dialog.locator('input[type="file"]').setInputFiles(file);
-  await dialog.getByRole("button", { name: /add/i }).click();
+  // DevExtreme keeps Add disabled until its uploader has taken the file in and
+  // validated it, which lands a moment after setInputFiles. A click before
+  // then hits a disabled button, the dialog stays open and no image is added:
+  // the intermittent failure on CI.
+  await expect(add).not.toHaveClass(/dx-state-disabled/);
+  await add.click();
+  await expect(add).toBeHidden();
 };
 
 const setUp = async (page, context, options) => {

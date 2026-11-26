@@ -11,6 +11,7 @@ import { toast } from 'react-toastify';
 import { useAuth } from '@/assets/hooks/use-auth';
 import TestPanelsItem from './TestPanelsItem';
 import { updatePhlebotomySamples } from '@/redux/service/laboratory';
+import { printSampleLabel } from './printSampleLabel';
 
 const Accordion = styled((props) => (
   <MuiAccordion disableGutters elevation={0} square {...props} />
@@ -48,7 +49,7 @@ const AccordionDetails = styled(MuiAccordionDetails)(({ theme }) => ({
   borderTop: '1px solid rgba(0, 0, 0, .125)',
 }));
 
-const SamplesAccordion = ({ sample: initialSample }) => {
+const SamplesAccordion = ({ sample: initialSample, patient }) => {
   const [sample, setSample] = useState(initialSample);
   const [expanded, setExpanded] = useState('');
   const auth = useAuth();
@@ -84,6 +85,12 @@ const SamplesAccordion = ({ sample: initialSample }) => {
     }
   };
 
+  const printLabel = () => {
+    if (!printSampleLabel(sample, patient)) {
+      toast.error("Allow pop-ups for this site to print the label");
+    }
+  };
+
   const handleChange = (sampleId) => (event, newExpanded) => {
     setExpanded(newExpanded ? sampleId : false);
   };
@@ -100,12 +107,20 @@ return (
         <div className='flex w-full py-2 items-center px-2 justify-between'>
           <p className='flex'>{`${sample.specimen_name}`}</p>
           <p className='flex'>{`${sample.patient_sample_code}`}</p>
-          <button
-            onClick={() => approveCollection(sample.id)}
-            className="bg-primary text-white px-3 py-1 rounded-lg"
-          >
-            Collect Sample
-          </button>
+          <div className='flex gap-2'>
+            <button
+              onClick={() => approveCollection(sample.id)}
+              className="bg-primary text-white px-3 py-1 rounded-lg"
+            >
+              Collect Sample
+            </button>
+            <button
+              onClick={printLabel}
+              className="border border-primary text-primary px-3 py-1 rounded-lg"
+            >
+              Print Label
+            </button>
+          </div>
         </div>
         <div className='px-2 pb-2 text-xs'>
           <span className='font-semibold'>Consumables required: </span>
@@ -142,9 +157,21 @@ return (
       {sample.is_sample_collected && (
         <AccordionSummary aria-controls="panel1d-content" id="panel1d-header">
           <Typography className='w-full' component='div'>
-            <div className='flex w-full justify-between'>
+            <div className='flex w-full justify-between items-center'>
               <p className='flex'>{`${sample.specimen_name}`}</p>
               <p className='flex'>{`${sample.patient_sample_code}`}</p>
+              {/* A reprint, for a label that was lost or smudged. */}
+              <span
+                role="button"
+                tabIndex={0}
+                onClick={(e) => { e.stopPropagation(); printLabel(); }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); printLabel(); }
+                }}
+                className="border border-primary text-primary text-sm px-3 py-1 rounded-lg cursor-pointer"
+              >
+                Print Label
+              </span>
             </div>
             <div className='text-xs mt-1'>
               <span className='font-semibold'>Collected with: </span>

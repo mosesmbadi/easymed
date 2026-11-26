@@ -11,8 +11,9 @@ const AccountTransfers = () => {
   const auth = useAuth();
   const [transfers, setTransfers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  // Opens on today's transfers (the viewer's own day); "Clear dates" shows all.
+  const [startDate, setStartDate] = useState(() => new Date().toLocaleDateString("en-CA"));
+  const [endDate, setEndDate] = useState(() => new Date().toLocaleDateString("en-CA"));
   const [reversing, setReversing] = useState(null);
 
   const load = useCallback(() => {

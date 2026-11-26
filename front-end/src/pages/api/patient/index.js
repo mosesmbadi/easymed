@@ -19,20 +19,17 @@ export default async function handler(req, res) {
                     'Authorization': req.headers.authorization,
                 }
             };
-            const query = req.query;
-            const search_field = query.search_field
-            const search_value = query.search_value
+            const { search_field, search_value, visited_on } = req.query;
 
-            let url = `${API_URL.FETCH_PATIENT}?search=${search_value}`;
-            
+            // Passed on as params so each is encoded, and left out when empty.
+            config.params = {
+                search: search_value || undefined,
+                search_field: search_field || undefined,
+                // 'today' or YYYY-MM-DD: only the patients who came in that day.
+                visited_on: visited_on || undefined,
+            };
 
-            if (search_field){
-                url = `${API_URL.FETCH_PATIENT}?search_field=${search_field}&search=${search_value}`
-            }
-
-    
-
-            await backendAxiosInstance.get(url, config).then(response => {
+            await backendAxiosInstance.get(`${API_URL.FETCH_PATIENT}`, config).then(response => {
                 res.status(200).json(response.data);
 
             }).catch(e => {
