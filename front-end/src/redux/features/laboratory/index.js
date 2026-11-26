@@ -330,9 +330,9 @@ export const updateInpatientLabTestsStore = (payload) => (dispatch) => {
   dispatch(updateAddedLabRequestToStore(payload));
 };
 
-export const getAllPhlebotomySamples = (auth) => async (dispatch) => {
+export const getAllPhlebotomySamples = (auth, params) => async (dispatch) => {
   try {
-    const response = await fetchPhlebotomySamples(auth);
+    const response = await fetchPhlebotomySamples(auth, params);
     dispatch(setPhlebotomySamples(response));
   } catch (error) {
     console.log("PHLEBOTOMY SAMPLES ", error);

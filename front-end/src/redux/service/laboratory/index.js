@@ -657,10 +657,12 @@ export const updateReferenceValue = (reference_value_id, payload, auth) => {
     })
 }
 
-export const fetchPhlebotomySamples = (auth) => {
+// params: { results_pending: true } for only the collected samples that still
+// have a test without a result (result entry).
+export const fetchPhlebotomySamples = (auth, params = {}) => {
     const axiosInstance = UseAxios(auth);
     return new Promise((resolve, reject) => {
-        axiosInstance.get(`${APP_API_URL.PHLEBOTOMY_PATIENT_SAMPLES}`, auth)
+        axiosInstance.get(`${APP_API_URL.PHLEBOTOMY_PATIENT_SAMPLES}`, { params })
             .then((res) => {
                 resolve(res.data)
             })

@@ -213,6 +213,9 @@ class AttendanceProcessSerializer(serializers.ModelSerializer):
     patient_name = serializers.SerializerMethodField()
     has_critical_triage = serializers.SerializerMethodField()
     has_approved_lab_results = serializers.SerializerMethodField()
+    has_uncollected_samples = serializers.SerializerMethodField()
+    # 'full', 'partial' or 'none' approved; null when the visit has no tests.
+    lab_results_status = serializers.SerializerMethodField()
     referral = ReferralSerializer(read_only=True)
     clinical_note = ConsultationSerializer(read_only=True)
     class Meta:
@@ -286,6 +289,33 @@ class AttendanceProcessSerializer(serializers.ModelSerializer):
             lab_test_request__process=obj.process_test_req,
             result_approved=True
         ).exists()
+
+    def get_has_uncollected_samples(self, obj):
+        annotated = getattr(obj, 'has_uncollected_samples_annotated', None)
+        if annotated is not None:
+            return annotated
+        from laboratory.models import PatientSample
+        if not obj.process_test_req_id:
+            return False
+        return PatientSample.objects.filter(
+            process=obj.process_test_req, is_sample_collected=False).exists()
+
+    def get_lab_results_status(self, obj):
+        total = getattr(obj, 'lab_panels_total_annotated', None)
+        approved = getattr(obj, 'lab_panels_approved_annotated', None)
+        if total is None or approved is None:
+            from laboratory.models import LabTestRequestPanel
+            if not obj.process_test_req_id:
+                return None
+            panels = LabTestRequestPanel.objects.filter(
+                lab_test_request__process=obj.process_test_req)
+            total = panels.count()
+            approved = panels.filter(result_approved=True).count()
+        if not total:
+            return None
+        if approved >= total:
+            return 'full'
+        return 'partial' if approved else 'none'
 
 class TriageSettingsSerializer(serializers.ModelSerializer):
     class Meta:

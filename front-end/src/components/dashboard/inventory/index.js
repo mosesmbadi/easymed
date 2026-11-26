@@ -3,6 +3,7 @@ import { useSelector } from "react-redux";
 import dynamic from "next/dynamic";
 import { Column, Pager, Paging, Scrolling } from "devextreme-react/data-grid";
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import {
   Grid,
   Card,
@@ -17,7 +18,7 @@ import {
   AttachMoney as AttachMoneyIcon
 } from '@mui/icons-material';
 import { formatPackQuantity, formatPackPricing } from "@/functions/inventory";
-import { getAllInventories, getAllPurchaseOrders } from "@/redux/features/inventory";
+import { getAllInventories, getAllPurchaseOrders, addItemToInventoryList } from "@/redux/features/inventory";
 import { useDispatch } from "react-redux";
 import { useAuth } from "@/assets/hooks/use-auth";
 import { getAllInvoiceItems } from "@/redux/features/billing";
@@ -25,6 +26,7 @@ import { getAllTheDepartments } from "@/redux/features/auth";
 import SearchOnlyFilter from "@/components/common/process/SearchOnly";
 import ForceDeleteDialog from "@/components/common/ForceDeleteDialog";
 import { isAdmin } from "@/utils/permissions";
+import { toast } from "react-toastify";
 
 const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
   ssr: false,
@@ -32,13 +34,35 @@ const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
 
 const allowedPageSizes = [5, 10, 'all'];
 
+const CardButton = ({ active, onClick, children }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={`${active ? 'bg-primary text-white' : 'bg-light text-primary'} rounded px-2 py-1 text-xs`}
+  >
+    {children}
+  </button>
+);
+
 const money = (value) =>
   Number(value || 0).toLocaleString(undefined, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
 
+const escapeHtml = (value) =>
+  String(value ?? '').replace(/[&<>"']/g, (c) => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+// Re-order is set per item per department, so compare it with the stock across
+// all that item's lots there, not with one lot.
+const onHand = (inventory) =>
+  parseInt(inventory.total_quantity ?? inventory.quantity_at_hand) || 0;
+
 const InventoryDataGrid = ({ department }) => {
+  const router = useRouter();
+  // Which card's list the grid shows: null (all stock), 'short_expiry' or 'reorder'.
+  const [cardView, setCardView] = useState(null);
   const { inventories } = useSelector((store) => store.inventory);
   const dispatch = useDispatch()
   const auth = useAuth();
@@ -65,8 +89,9 @@ const InventoryDataGrid = ({ department }) => {
   const filteredInventories = inventories
 
   const metrics = useMemo(() => {
-    let shortExpiries = 0;
-    let reorderLevels = 0;
+    const shortExpiryRows = [];
+    const reorderRows = [];
+    const reorderSeen = new Set();
     let totalValue = 0;
 
     const today = new Date();
@@ -78,7 +103,7 @@ const InventoryDataGrid = ({ department }) => {
       if (inventory.expiry_date) {
         const expiryDate = new Date(inventory.expiry_date);
         if (expiryDate > today && expiryDate <= ninetyDaysFromNow) {
-          shortExpiries += 1;
+          shortExpiryRows.push(inventory);
         }
       }
 
@@ -86,8 +111,11 @@ const InventoryDataGrid = ({ department }) => {
       // re-order level of 0 is not silently treated as 5.
       const reOrderLevel = inventory.re_order_level ?? 5;
       const quantity = parseInt(inventory.quantity_at_hand) || 0;
-      if (quantity <= reOrderLevel) {
-        reorderLevels += 1;
+      // One row per item and department, however many lots it has.
+      const reorderKey = `${inventory.item}-${inventory.department}`;
+      if (onHand(inventory) <= reOrderLevel && !reorderSeen.has(reorderKey)) {
+        reorderSeen.add(reorderKey);
+        reorderRows.push(inventory);
       }
 
       // Cost of what is on the shelf, at the backend's precision where it
@@ -96,10 +124,84 @@ const InventoryDataGrid = ({ department }) => {
         inventory.lot_value ?? (parseFloat(inventory.purchase_price) || 0) * quantity;
     });
 
-    return { shortExpiries, reorderLevels, totalValue, totalItems: filteredInventories.length };
+    return {
+      shortExpiryRows,
+      reorderRows,
+      shortExpiries: shortExpiryRows.length,
+      reorderLevels: reorderRows.length,
+      totalValue,
+      totalItems: filteredInventories.length,
+    };
   }, [filteredInventories]);
 
-  const MetricCard = ({ title, value, icon, color, subtitle, smallValue }) => (
+  const gridRows =
+    cardView === 'short_expiry' ? metrics.shortExpiryRows
+      : cardView === 'reorder' ? metrics.reorderRows
+        : filteredInventories;
+
+  const toggleCardView = (view) => setCardView((current) => (current === view ? null : view));
+
+  const printShortExpiries = () => {
+    const rows = [...metrics.shortExpiryRows].sort(
+      (a, b) => new Date(a.expiry_date) - new Date(b.expiry_date));
+    const body = rows.map((row) => `
+      <tr>
+        <td>${escapeHtml(row.item_code)}</td>
+        <td>${escapeHtml(row.item_name)}</td>
+        <td>${escapeHtml(row.department_name)}</td>
+        <td>${escapeHtml(row.lot_number)}</td>
+        <td>${escapeHtml(row.expiry_date)}</td>
+        <td>${escapeHtml(formatPackQuantity(row, row.quantity_at_hand))}</td>
+      </tr>`).join('');
+    const win = window.open('', '_blank');
+    if (!win) {
+      toast.error('Allow pop-ups to print the list.');
+      return;
+    }
+    win.document.write(`<!doctype html><html><head><title>Short Expiries</title>
+      <style>
+        body { font-family: sans-serif; font-size: 12px; margin: 24px; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #999; padding: 4px 6px; text-align: left; }
+        th { background: #eee; }
+      </style></head><body>
+      <h2>Short Expiries (next 90 days)</h2>
+      <p>Printed ${escapeHtml(new Date().toLocaleString())} · ${rows.length} lot${rows.length !== 1 ? 's' : ''}</p>
+      <table>
+        <thead><tr><th>Code</th><th>Name</th><th>Department</th><th>Lot No</th><th>Expiry Date</th><th>Quantity</th></tr></thead>
+        <tbody>${body || '<tr><td colspan="6">No lots expire in the next 90 days.</td></tr>'}</tbody>
+      </table></body></html>`);
+    win.document.close();
+    win.focus();
+    win.print();
+  };
+
+  // Put every item at or below its re-order level on the requisition form.
+  // The suggested quantity tops stock up to twice the re-order level; it and
+  // the supplier are set on the form before saving.
+  const requisitionReorderItems = () => {
+    if (metrics.reorderRows.length === 0) {
+      toast.info('No items are at their re-order level.');
+      return;
+    }
+    const byItem = new Map();
+    metrics.reorderRows.forEach((row) => {
+      const level = row.re_order_level ?? 5;
+      const suggested = Math.max(level * 2 - onHand(row), 1);
+      byItem.set(row.item, Math.max(byItem.get(row.item) ?? 0, suggested));
+    });
+    byItem.forEach((quantity, item) => {
+      dispatch(addItemToInventoryList({
+        item,
+        preferred_supplier: null,
+        quantity_requested: String(quantity),
+        item_unit: null,
+      }));
+    });
+    router.push('/dashboard/inventory/create-requisition');
+  };
+
+  const MetricCard = ({ title, value, icon, color, subtitle, smallValue, actions }) => (
     <Card sx={{ height: '100%', boxShadow: 2, borderRadius: 1 }}>
       <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1} sx={{ mb: 1 }}>
@@ -127,6 +229,11 @@ const InventoryDataGrid = ({ department }) => {
             </Typography>
           </Box>
         </Stack>
+        {actions && (
+          <Stack direction="row" spacing={1} justifyContent="flex-end">
+            {actions}
+          </Stack>
+        )}
       </CardContent>
     </Card>
   );
@@ -211,6 +318,12 @@ const InventoryDataGrid = ({ department }) => {
             value={metrics.shortExpiries}
             icon={<WarningIcon sx={{ color: 'warning.main' }} />}
             color="warning"
+            actions={<>
+              <CardButton active={cardView === 'short_expiry'} onClick={() => toggleCardView('short_expiry')}>
+                {cardView === 'short_expiry' ? 'Show all' : 'View'}
+              </CardButton>
+              <CardButton onClick={printShortExpiries}>Print</CardButton>
+            </>}
           />
         </Grid>
         <Grid item xs={12} sm={4} md={3} lg={2.5}>
@@ -219,6 +332,12 @@ const InventoryDataGrid = ({ department }) => {
             value={metrics.reorderLevels}
             icon={<InventoryIcon sx={{ color: 'error.main' }} />}
             color="error"
+            actions={<>
+              <CardButton active={cardView === 'reorder'} onClick={() => toggleCardView('reorder')}>
+                {cardView === 'reorder' ? 'Show all' : 'View'}
+              </CardButton>
+              <CardButton onClick={requisitionReorderItems}>Create Requisition</CardButton>
+            </>}
           />
         </Grid>
         <Grid item xs={12} sm={4} md={3} lg={2.5}>
@@ -245,6 +364,18 @@ const InventoryDataGrid = ({ department }) => {
           </div>
         </Link>
       </div>
+      {cardView && (
+        <div className="flex items-center gap-3 mb-2 text-sm">
+          <span>
+            Showing {cardView === 'short_expiry'
+              ? 'lots expiring in the next 90 days'
+              : 'items at or below their re-order level (stock across all lots)'}
+          </span>
+          <button type="button" className="text-link underline" onClick={() => setCardView(null)}>
+            Show all stock
+          </button>
+        </div>
+      )}
       <SearchOnlyFilter
         selectedFilter={processFilter}
         setProcessFilter={setProcessFilter}
@@ -254,7 +385,7 @@ const InventoryDataGrid = ({ department }) => {
       />
 
       <DataGrid
-        dataSource={filteredInventories}
+        dataSource={gridRows}
         allowColumnReordering={true}
         rowAlternationEnabled={true}
         showBorders={true}

@@ -1,7 +1,7 @@
 from datetime import date
 
 import django_filters
-from django.db.models import Q
+from django.db.models import Exists, OuterRef, Q
 from django.utils import timezone
 from rest_framework import filters
 
@@ -105,6 +105,9 @@ class AttendanceProcessTrackFilter(django_filters.FilterSet):
     track = django_filters.CharFilter(method='filter_track')
     # `?visited_on=today` (or a YYYY-MM-DD date): only that day's visits.
     visited_on = django_filters.CharFilter(method='filter_visited_on')
+    # `?samples_pending=true`: only visits with a sample not yet collected
+    # (the phlebotomy queue).
+    samples_pending = django_filters.BooleanFilter(method='filter_samples_pending')
 
     class Meta:
         model = AttendanceProcess
@@ -117,6 +120,14 @@ class AttendanceProcessTrackFilter(django_filters.FilterSet):
     def filter_visited_on(self, queryset, name, value):
         day = visit_day(value)
         return queryset.filter(created_at__date=day) if day else queryset
+
+    def filter_samples_pending(self, queryset, name, value):
+        if value is None:
+            return queryset
+        from laboratory.models import PatientSample
+        uncollected = PatientSample.objects.filter(
+            process=OuterRef('process_test_req'), is_sample_collected=False)
+        return queryset.filter(Exists(uncollected)) if value else queryset.exclude(Exists(uncollected))
 
 
 class AttendanceProcessFilter(filters.SearchFilter):

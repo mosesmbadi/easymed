@@ -23,6 +23,23 @@ const DataGrid = dynamic(() => import("devextreme-react/data-grid"), {
 
 const allowedPageSizes = [5, 10, 'all'];
 
+// How many of a visit's tests have approved results (lab_results_status).
+const RESULT_STATUSES = {
+  full: { label: "Fully approved", className: "bg-success text-white" },
+  partial: { label: "Partially approved", className: "bg-orange text-white" },
+  none: { label: "Not approved", className: "bg-gray_dark_light text-primary" },
+};
+
+const ResultStatusBadge = ({ status }) => {
+  const badge = RESULT_STATUSES[status];
+  if (!badge) return null;
+  return (
+    <span className={`${badge.className} rounded-full text-xs px-2 py-0.5 whitespace-nowrap`}>
+      {badge.label}
+    </span>
+  );
+};
+
 const LabResultDataGrid = () => {
   const [searchQuery, setSearchQuery] = React.useState("");
   const auth = useAuth();
@@ -36,6 +53,7 @@ const LabResultDataGrid = () => {
   const dispatch = useDispatch();
   // Opens on today's visits; a search looks through every day.
   const [todayOnly, setTodayOnly] = useState(true);
+  const [statusFilter, setStatusFilter] = useState("");
 
   // Only the most recent visits are loaded, so search by patient number on
   // the server to reach older ones (500ms after the last keystroke).
@@ -52,7 +70,9 @@ const LabResultDataGrid = () => {
   }, [auth, searchQuery, todayOnly]);
 
   const labTestsResultsSchedules = processes.filter((process)=> process.track==="lab" || process.track === "pharmacy" || process.track === "doctor")
-  const searchedProcesses = labTestsResultsSchedules.filter((process)=> process.patient_number.includes(searchQuery))
+  const searchedProcesses = labTestsResultsSchedules
+    .filter((process)=> process.patient_number.includes(searchQuery))
+    .filter((process)=> !statusFilter || process.lab_results_status === statusFilter)
 
   const patientName = (data) => {
     // The visit carries the name (or, for a coded sample, the facility's number).
@@ -64,6 +84,7 @@ const LabResultDataGrid = () => {
   const patientNameRender = ({ data }) => (
     <div className="flex items-center gap-3">
       <span>{patientName(data)}</span>
+      <ResultStatusBadge status={data.lab_results_status} />
       <button
         type="button"
         title="View and approve results"
@@ -103,11 +124,16 @@ const LabResultDataGrid = () => {
     <>
       <Grid className="my-2 flex gap-8 justify-between">
         <Grid className="flex justify-between gap-8 rounded-lg w-full">
-          <select className="px-4 w-full py-2 border broder-gray rounded-lg focus:outline-none" name="" id="">
-              <option value="" selected>
-                All the Items
-              </option>
-            </select>
+          <select
+            className="px-4 w-full py-2 border broder-gray rounded-lg focus:outline-none"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option value="">All results</option>
+            {Object.entries(RESULT_STATUSES).map(([value, { label }]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
         </Grid>
         <Grid className="flex bg-white px-2 items-center rounded-lg w-full" item md={4} xs={4}>
           <img className="h-4 w-4" src='/images/svgs/search.svg'/>

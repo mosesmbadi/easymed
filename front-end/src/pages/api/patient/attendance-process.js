@@ -39,6 +39,8 @@ export default async function handler(req, res) {
                 if (present(query.track)) params.set("track", query.track);
                 if (present(query.page)) params.set("page", query.page);
                 if (present(query.page_size)) params.set("page_size", query.page_size);
+                if (present(query.visited_on)) params.set("visited_on", query.visited_on);
+                if (present(query.samples_pending)) params.set("samples_pending", query.samples_pending);
                 const qs = params.toString();
                 if (qs) url = `${url}?${qs}`;
             }

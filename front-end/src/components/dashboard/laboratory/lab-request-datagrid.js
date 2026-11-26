@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import dynamic from "next/dynamic";
 import { Column, Paging, Pager, Scrolling,
@@ -84,6 +84,11 @@ const LabRequestDataGrid = ( ) => {
       return false;
     }
     
+    // Phlebotomy only needs visits with a sample still to draw.
+    if (process.has_uncollected_samples === false) {
+      return false;
+    }
+
     // Check if any of the invoice items for lab tests have status "billed"
     const hasBilledLabTests = process.invoice_items.some(item => 
       item.category === "Lab Test" && item.status === "billed"
@@ -128,17 +133,29 @@ const LabRequestDataGrid = ( ) => {
     );
   };
 
+  const loadQueue = () => dispatch(getAllProcesses(
+    auth, null,
+    { ...processFilter, samples_pending: true, visited_on: visitedOn(todayOnly, processFilter.search) },
+    selectedSearchFilter));
+
   // Debounced fetch of processes when the search input changes
   useEffect(() => {
     if (!auth) return; // wait for auth context
-    const handler = setTimeout(() => {
-      dispatch(getAllProcesses(
-        auth, null,
-        { ...processFilter, visited_on: visitedOn(todayOnly, processFilter.search) },
-        selectedSearchFilter));
-    }, 500);
+    const handler = setTimeout(loadQueue, 500);
     return () => clearTimeout(handler);
   }, [auth, processFilter.search, processFilter.track, selectedSearchFilter?.value, todayOnly]);
+
+  // Samples are collected in the request modal; reload when it closes so a
+  // visit with nothing left to draw drops off the queue.
+  const requestInfoWasOpen = useRef(false);
+  useEffect(() => {
+    if (requestInfoOpen) {
+      requestInfoWasOpen.current = true;
+    } else if (requestInfoWasOpen.current && auth) {
+      requestInfoWasOpen.current = false;
+      loadQueue();
+    }
+  }, [requestInfoOpen]);
 
   return (
     <>
